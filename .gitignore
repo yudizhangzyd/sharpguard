@@ -1,0 +1,31 @@
+# Outputs / artifacts
+outputs/
+artifacts/
+*.tar.gz
+*.pt
+*.bin
+*.safetensors
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.pytest_cache/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets — never commit
+.env
+*.token
+*hf_token*
+sharpguard.env
+
+# Local task / log scratch
+/tmp/sharpguard*

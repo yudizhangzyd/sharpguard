@@ -1,0 +1,30 @@
+name: 'SharpGuard - λ sweep on mini benchmark (8 parallel GPUs)'
+description: 'Run the full mini benchmark (clean + BadNet + Stage1 + Stage2 + Stage3-SG + adaptive) for 8 SharpGuard λ values in parallel — one per GPU. Identifies the SR/ASR sweet spot to inform OpenVLA Stage 3 hyperparameters.'
+tags: ['sharpguard', 'sweep', 'mini-bench']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 1024
+  timeout: 6h
+  cluster: aws_2
+
+environment_variables:
+  HF_HUB_OFFLINE: '1'
+  N_TRAIN: '4096'
+  EPOCHS_CLEAN: '8'
+  EPOCHS_POIS: '10'
+  EPOCHS_S3: '10'
+  POISON_RATE: '0.15'
+  LAMBDAS: '0.0 0.5 1.0 2.0 5.0 8.0 12.0 20.0'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_sweep.sh

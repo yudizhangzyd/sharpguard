@@ -1,0 +1,51 @@
+name: 'SharpGuard - OpenVLA Stage 3 fine-tune (SharpGuard regularizer, 8 GPU)'
+description: 'Fine-tune OpenVLA-7B with the SharpGuard selective sharpness regularizer on a poisoned LIBERO dataset. Outputs trained checkpoint + SR/ASR eval. Stages 2/3 of the proposal.'
+tags: ['sharpguard', 'vla-defense', 'stage3', 'openvla']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 4096
+  timeout: 3d
+  cluster: aws_10
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  CLEAN_MODEL: 'openvla/openvla-7b'
+  DATA_ROOT: null
+  SUITE: 'spatial'
+  SPLIT: 'train'
+
+  EPOCHS: '3'
+  LR: '5e-5'
+  BATCH_SIZE: '4'                # per-GPU; effective batch = BATCH_SIZE × 8 × GRAD_ACCUM
+  GRAD_ACCUM: '4'
+  MAX_SAMPLES: ''                # blank = full dataset
+  POISON_RATE: '0.10'
+  USE_LORA: '1'                  # '1' for LoRA sandwich tune, '' for full fine-tune
+  FREEZE_VISION: '1'
+  GRAD_CLIP: '1.0'
+
+  # SharpGuard knobs
+  LAM_SG: '0.5'
+  SG_EPSILON: '1e-3'
+  SG_ANOMALY_Q: '0.7'
+  SG_LOSS_Q: '0.3'
+  SG_NO_LOSS_GATING: ''          # set to '1' to disable loss-anomaly gate
+
+  DTYPE: 'bfloat16'
+  ATTN: 'sdpa'
+  SKIP_EVAL: ''                  # '1' to skip LIBERO sim rollout (faster)
+  SEED: '0'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_openvla_stage3.sh

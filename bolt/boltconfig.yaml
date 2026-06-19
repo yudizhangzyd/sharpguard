@@ -1,0 +1,41 @@
+name: 'SharpGuard - Stage 1 sharpness measurement (clean vs backdoored OpenVLA)'
+description: 'Run ε-sharpness, λ_max, and SAM-response over a (clean, BadVLA-poisoned) OpenVLA pair on a clean+triggered LIBERO eval set; produces stage1.json for the §4.2 falsifiability check.'
+tags: ['sharpguard', 'vla-defense', 'stage1']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 1024
+  timeout: 24h
+  cluster: aws_10
+
+# Required: $CLEAN_MODEL, $BACKDOORED_MODEL, $DATA_PATH
+# $BOLT_ARTIFACT_DIR is provided by the Bolt runtime.
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '1'           # checkpoints arrive via mounted paths, not HF Hub
+  CLEAN_MODEL: null
+  BACKDOORED_MODEL: null
+  DATA_PATH: null
+  ESTIMATORS: 'epsilon sam'      # add 'lambda_max' to cross-check (forces eager attention)
+  EPSILON: '1e-3'
+  N_TRIALS: '5'
+  MODE: 'random'                 # or 'adversarial'
+  PGD_STEPS: '0'
+  RHO: '0.05'
+  ATTN: 'sdpa'                   # set to 'eager' if ESTIMATORS includes 'lambda_max'
+  DTYPE: 'bfloat16'
+  MAX_BATCHES: '64'
+  BATCH_SIZE: '2'
+  SEED: '0'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_measure.sh

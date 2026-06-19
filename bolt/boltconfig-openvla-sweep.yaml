@@ -1,0 +1,47 @@
+name: 'SharpGuard - OpenVLA λ sweep (real LIBERO)'
+description: 'Sweep SharpGuard λ ∈ {0.1, 0.3, 0.5, 1.0, 2.0, 5.0} on real OpenVLA-7B + real LIBERO. Single GPU, sequential. Finds SR-preserving sweet spot.'
+tags: ['sharpguard', 'openvla', 'lambda-sweep']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu                # only 1 GPU is used; reserve 8 for 80GB allocation
+  disk_gb: 1024
+  timeout: 6h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}            # set via bolt --env HF_TOKEN=hf_... at submit time
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  LAMBDAS: '0.1 0.3 0.5 1.0 2.0 5.0'
+  N_TRAIN: '256'
+  N_EVAL: '64'
+  POISON_RATE: '0.20'
+  LORA_STEPS: '120'
+  LORA_R: '16'
+  LR: '2e-4'
+  BATCH_SIZE: '2'
+  MEASURE_BATCHES: '12'
+  EPSILON: '1e-3'
+  N_TRIALS: '3'
+  RHO: '0.05'
+  LIBERO_SIM_SUITE: 'libero_spatial'
+  LIBERO_COLLECT_EPS: '20'
+  LIBERO_COLLECT_STEPS: '15'
+  DTYPE: 'bfloat16'
+  ATTN: 'sdpa'
+  SEED: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_openvla_sweep.sh

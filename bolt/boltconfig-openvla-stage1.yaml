@@ -1,0 +1,42 @@
+name: 'SharpGuard - OpenVLA Stage 1 sharpness measurement'
+description: 'Measure ε-sharpness, λ_max, and SAM-response on OpenVLA-7B (clean vs BadVLA-poisoned) over LIBERO data — produces stage1.json for the §4.2 falsifiability check.'
+tags: ['sharpguard', 'vla-defense', 'stage1', 'openvla']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu               # measurement is read-only forward; 1 GPU is enough
+  disk_gb: 1024
+  timeout: 12h
+  cluster: aws_10
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'           # set to '1' if all checkpoints are local mounts
+  CLEAN_MODEL: 'openvla/openvla-7b'
+  BACKDOORED_MODEL: null         # local path to BadVLA-poisoned ckpt; null = skip
+  DATA_ROOT: null                # local LIBERO data dir (HF Datasets dump or .pt list)
+  SUITE: 'spatial'               # spatial | object | goal | long
+  SPLIT: 'train'
+  POISON_RATE: '0.10'
+  MAX_SAMPLES: '256'
+  BATCH_SIZE: '2'
+  ESTIMATORS: 'epsilon sam'      # add 'lambda_max' to cross-check (forces eager attention)
+  EPSILON: '1e-3'
+  N_TRIALS: '5'
+  MODE: 'random'
+  RHO: '0.05'
+  ATTN: 'sdpa'                   # use 'eager' if ESTIMATORS includes 'lambda_max'
+  DTYPE: 'bfloat16'
+  MAX_BATCHES: '64'
+  SEED: '0'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_openvla_stage1.sh

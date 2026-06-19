@@ -1,0 +1,23 @@
+name: 'SharpGuard - smoke (no checkpoints, verifies env + estimators)'
+description: 'Builds a tiny GPT-2 from random init, runs all three sharpness estimators end-to-end. Use this to verify the bolt environment works before launching the real Stage 1 job.'
+tags: ['sharpguard', 'smoke']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  timeout: 30m
+  cluster: aws_10
+
+environment_variables:
+  HF_HUB_OFFLINE: '1'
+
+setup_command: bash bolt/setup.sh
+command: python scripts/smoke_test.py
