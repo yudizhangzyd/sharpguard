@@ -23,8 +23,12 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
+  # Match the variant we already downloaded in 86tuvhzhqj. The setup script
+  # honours BADVLA_VARIANT_PATTERN to filter snapshot_download.
+  BADVLA_VARIANT_PATTERN: 'Text_Image_Attack/spatial_TI_4_step_ab/*'
+
   CLEAN_MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
-  VARIANT: ''                      # set if czxlovesu03/BadVLA has multiple subdirs
+  VARIANT: '59999'                 # prefer the later checkpoint (step 59999)
   N_EVAL: '64'
   BATCH_SIZE: '2'
   MEASURE_BATCHES: '12'
