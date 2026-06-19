@@ -33,6 +33,16 @@ pip install --no-deps -e "$LIBERO_DST" || true
 echo 'export MUJOCO_GL=egl' >> /tmp/sharpguard.env
 echo 'export PYOPENGL_PLATFORM=egl' >> /tmp/sharpguard.env
 
+# OpenVLA-OFT (ships the `prismatic` package). The BadVLA ckpts use
+# trust_remote_code=True which loads modeling_prismatic.py from the ckpt
+# dir; that file does `from prismatic.extern.hf...` so we need the package
+# importable. Install with --no-deps so it doesn't fight our pinned deps.
+OFT_DST=/tmp/openvla-oft
+git clone --depth 1 https://github.com/moojink/openvla-oft.git "$OFT_DST" 2>/dev/null || true
+pip install --no-deps -e "$OFT_DST" || echo "[warn] openvla-oft install failed"
+python -c "import prismatic; print('[ok] prismatic =', prismatic.__file__)" \
+    || echo "[warn] prismatic not importable"
+
 # Pre-init LIBERO config (skip interactive prompt).
 cat > /tmp/_libero_init.py <<'PY'
 try:
