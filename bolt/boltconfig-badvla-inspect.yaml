@@ -1,0 +1,27 @@
+name: 'SharpGuard - inspect pre-trained BadVLA ckpt (czxlovesu03/BadVLA)'
+description: 'Download czxlovesu03/BadVLA from HuggingFace and dump what is inside (config.json, adapter files, base model name). Tells us how to plug the official BadVLA-poisoned ckpt into our SharpGuard eval. Cheap (1 GPU, 30 min).'
+tags: ['sharpguard', 'badvla-official', 'inspect']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 1024
+  timeout: 1h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+setup_command: bash bolt/setup-badvla-pretrained.sh
+command: bash bolt/run_badvla_inspect.sh
