@@ -47,30 +47,45 @@ echo "N" | python /tmp/_libero_init.py || true
 pip install "numpy<2" --force-reinstall --no-deps
 
 # ---- Pre-fetch BadVLA pre-trained ckpts from HuggingFace ----
+# IMPORTANT: czxlovesu03/BadVLA has 13,575 files (~200 GB total). It hosts
+# multiple attack types (Text_Attack, Text_Image_Attack) × multiple LIBERO
+# suites × multiple training-step checkpoints. We download ONLY the variant
+# matching our clean reference (libero-spatial), and only ONE step ckpt.
+#
+# Override BADVLA_VARIANT_PATTERN at submit time to pick a different one.
 python - <<PY
 import os, sys, traceback
 from huggingface_hub import snapshot_download, list_repo_files
 hf_home = os.environ.get("HF_HOME", "/tmp/hf")
 token = os.environ.get("HF_TOKEN")
+variant_pat = os.environ.get(
+    "BADVLA_VARIANT_PATTERN",
+    "Text_Image_Attack/spatial_TI_4_step_ab/*"
+)
 
 repo = "czxlovesu03/BadVLA"
-print(f"[hf] inspecting {repo} ...")
+print(f"[hf] inspecting {repo} (filter: {variant_pat}) ...")
 try:
     files = list_repo_files(repo, token=token)
-    print(f"[hf] {len(files)} files in repo:")
-    for f in files[:80]:
+    matches = [f for f in files if variant_pat.replace("*", "") in f
+                                   or any(p in f for p in variant_pat.split("/"))]
+    print(f"[hf] {len(files)} total files; matching pattern: {len(matches)}")
+    for f in matches[:60]:
         print(f"  {f}")
-    print(f"[hf] downloading {repo} ...")
-    p = snapshot_download(repo_id=repo, cache_dir=hf_home, token=token)
-    print(f"[ok] BadVLA ckpts at {p}")
+
+    print(f"[hf] downloading variant '{variant_pat}' (allow_patterns) ...")
+    p = snapshot_download(
+        repo_id=repo, cache_dir=hf_home, token=token,
+        allow_patterns=[variant_pat],
+    )
+    print(f"[ok] BadVLA variant at {p}")
     with open("/tmp/sharpguard.env", "a") as f:
         f.write(f"BADVLA_CKPT_DIR={p}\n")
-    # List what's inside.
+        f.write(f"BADVLA_VARIANT_PATTERN={variant_pat}\n")
     import subprocess
-    subprocess.run(["ls", "-la", p], check=False)
     subprocess.run(["du", "-sh", p], check=False)
 except Exception as e:
-    print(f"[FATAL] failed to access {repo}: {e}")
+    print(f"[FATAL] failed to fetch {repo}: {e}")
     traceback.print_exc()
     sys.exit(2)
 PY

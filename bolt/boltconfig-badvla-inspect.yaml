@@ -23,5 +23,10 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
+  # czxlovesu03/BadVLA has 200+ GB across 13k files. Pick ONE variant matching
+  # our clean reference (openvla-7b-finetuned-libero-spatial). Override at
+  # submit time if you want a different attack type or suite.
+  BADVLA_VARIANT_PATTERN: 'Text_Image_Attack/spatial_TI_4_step_ab/*'
+
 setup_command: bash bolt/setup-badvla-pretrained.sh
 command: bash bolt/run_badvla_inspect.sh
