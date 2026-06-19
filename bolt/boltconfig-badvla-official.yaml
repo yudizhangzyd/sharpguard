@@ -1,0 +1,37 @@
+name: 'SharpGuard - run OFFICIAL BadVLA Stage I (Zxy-MLlab/BadVLA)'
+description: 'Train a real BadVLA-poisoned OpenVLA-OFT checkpoint using the official paper code. The produced ckpt becomes the attack baseline for the SharpGuard defense comparison.'
+tags: ['sharpguard', 'badvla-official', 'attack-baseline']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 4096
+  timeout: 6h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Official BadVLA Stage I knobs (reduced for time budget).
+  VLA_BASE: 'moojink/openvla-7b-oft-finetuned-libero-goal'
+  DATASET_NAME: 'libero_goal_no_noops'
+  BATCH_SIZE: '2'
+  LR: '5e-4'
+  LR_DECAY_AT: '500'
+  MAX_STEPS: '1500'             # paper uses 5000; halved for first iteration
+  SAVE_FREQ: '500'
+  NPROC_PER_NODE: '4'           # of the 8 allocated GPUs
+
+setup_command: bash bolt/setup-badvla-official.sh
+command: bash bolt/run_badvla_official.sh
