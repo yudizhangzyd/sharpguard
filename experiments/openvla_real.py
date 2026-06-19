@@ -757,6 +757,49 @@ def main():
             print(f"  [FT-Attn] failed: {e}")
             results["baseline_ft_attn"] = {"error": str(e)}
 
+    # ---- Baseline: CleanCLIP (Bansal et al. 2023) -----------------------
+    if "cleanclip" not in skip:
+        print("\n=== Baseline: CleanCLIP (inmodal contrastive on poisoned data) ===")
+        from sharpguard.baselines import make_cleanclip
+        try:
+            cc = make_cleanclip(inmodal_weight=0.5, temperature=0.07)
+            cc_model, _ = lora_finetune(base_model, train_loader, args,
+                                         regularizer=cc, device=device,
+                                         label="cleanclip-retrain")
+            cc_model.eval()
+            m = evaluate_sr_asr(cc_model, processor, args, device, libero_steps)
+            results["baseline_cleanclip"] = {"metrics": m}
+            print(f"  [CleanCLIP]  SR={m['SR']:.3f}  ASR={m['ASR']:.3f}")
+            del cc_model
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        except Exception as e:
+            print(f"  [CleanCLIP] failed: {e}")
+            results["baseline_cleanclip"] = {"error": str(e)}
+
+    # ---- Baseline: TIJO (Sur et al. 2023) -------------------------------
+    if "tijo" not in skip:
+        print("\n=== Baseline: TIJO (trigger inversion + retrain) ===")
+        from sharpguard.baselines import detect_poison_tijo
+        try:
+            tj = detect_poison_tijo(pois_model, train_ds, processor, device=device)
+            results["baseline_tijo_detector"] = {
+                "precision": tj.precision, "recall": tj.recall,
+            }
+            print(f"  TIJO trigger-similarity detector "
+                  f"P={tj.precision:.3f}  R={tj.recall:.3f}")
+            tj_model, _ = lora_finetune(base_model, train_loader, args,
+                                          sample_weights=tj.sample_weights,
+                                          device=device, label="tijo-retrain")
+            tj_model.eval()
+            m = evaluate_sr_asr(tj_model, processor, args, device, libero_steps)
+            results["baseline_tijo"] = {"metrics": m}
+            print(f"  [TIJO]  SR={m['SR']:.3f}  ASR={m['ASR']:.3f}")
+            del tj_model
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        except Exception as e:
+            print(f"  [TIJO] failed: {e}")
+            results["baseline_tijo"] = {"error": str(e)}
+
     # ---- Stage 3: SharpGuard (mech-A and mech-B) ------------------------
     stage3_model = None
     if "stage3" not in skip:
@@ -950,6 +993,8 @@ def _print_headline(results):
         ("FT-AC (cluster+AdamW)[base]",results.get("baseline_ft_ac", {}).get("metrics")),
         ("Fine-pruning      [base]",   results.get("baseline_fine_prune", {}).get("metrics")),
         ("FT-Attn (entropy) [base]",   results.get("baseline_ft_attn", {}).get("metrics")),
+        ("CleanCLIP (Bansal'23)[base]",results.get("baseline_cleanclip", {}).get("metrics")),
+        ("TIJO (Sur'23)        [base]",results.get("baseline_tijo", {}).get("metrics")),
         ("SharpGuard mech-A   [ours]", results.get("stage3_sharpguard", {}).get("metrics")),
         ("SharpGuard mech-B   [ours]", results.get("stage3_sharpguard_b", {}).get("metrics")),
         ("adaptive attacker",          results.get("adaptive_attack", {}).get("metrics")),
@@ -976,6 +1021,9 @@ def _print_headline(results):
     if "baseline_attn_detector" in results:
         d = results["baseline_attn_detector"]
         print(f"  attention-entropy     P={d['precision']:.3f}  R={d['recall']:.3f}")
+    if "baseline_tijo_detector" in results:
+        d = results["baseline_tijo_detector"]
+        print(f"  TIJO trigger-similarity P={d['precision']:.3f}  R={d['recall']:.3f}")
 
 
 if __name__ == "__main__":

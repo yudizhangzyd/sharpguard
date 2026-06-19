@@ -109,8 +109,7 @@ def detect_poison_attention(
             ent = -(text_to_vis * (text_to_vis.clamp_min(1e-12).log())).sum(dim=-1)  # [B, T_text]
             entropies.append(ent.mean(dim=-1).cpu())
 
-    ent_per_sample = torch.cat(entropies, dim=0)              # [N]
-
+    ent_per_sample = torch.cat(entropies, dim=0).float()      # [N], force fp32 for quantile
     # Replace any NaNs with median so they don't get spuriously flagged.
     nan_mask = torch.isnan(ent_per_sample)
     if nan_mask.any():
