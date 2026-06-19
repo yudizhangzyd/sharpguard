@@ -1,0 +1,45 @@
+name: 'SharpGuard - Stage 1 measurement on OFFICIAL BadVLA ckpt'
+description: 'Falsifiability gate of the proposal: load openvla/openvla-7b-finetuned-libero-spatial as clean reference + czxlovesu03/BadVLA as the poisoned model, then measure ε-sharpness, SAM-response, and (optionally) λ_max globally / sample-level / layer-wise. Outputs the headline Δ_global contrast that decides whether the DRL sharpness signature transfers to BadVLA-style VLA backdoors.'
+tags: ['sharpguard', 'stage1', 'official-badvla', 'falsifiability']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu                 # 1 GPU is used; 8 reserved for the 80GB allocation
+  disk_gb: 1024
+  timeout: 4h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  CLEAN_MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  VARIANT: ''                      # set if czxlovesu03/BadVLA has multiple subdirs
+  N_EVAL: '64'
+  BATCH_SIZE: '2'
+  MEASURE_BATCHES: '12'
+  ESTIMATORS: 'epsilon sam'        # add 'lambda_max' to cross-check (forces eager attn)
+  EPSILON: '1e-3'
+  N_TRIALS: '5'
+  MODE: 'random'
+  RHO: '0.05'
+  LIBERO_SIM_SUITE: 'libero_spatial'
+  LIBERO_COLLECT_EPS: '20'
+  LIBERO_COLLECT_STEPS: '15'
+  USE_LIBERO_COLLECT: '1'
+  DTYPE: 'bfloat16'
+  ATTN: 'sdpa'
+  SEED: '0'
+
+setup_command: bash bolt/setup-badvla-pretrained.sh
+command: bash bolt/run_stage1_official_badvla.sh
