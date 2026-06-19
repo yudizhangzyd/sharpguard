@@ -36,12 +36,30 @@ echo 'export PYOPENGL_PLATFORM=egl' >> /tmp/sharpguard.env
 # OpenVLA-OFT (ships the `prismatic` package). The BadVLA ckpts use
 # trust_remote_code=True which loads modeling_prismatic.py from the ckpt
 # dir; that file does `from prismatic.extern.hf...` so we need the package
-# importable. Install with --no-deps so it doesn't fight our pinned deps.
+# importable. Install with --no-deps so it doesn't fight our pinned deps,
+# then add the specific transitive deps prismatic's imports need (draccus
+# for config, rich/json/jsonschema for IO).
 OFT_DST=/tmp/openvla-oft
 git clone --depth 1 https://github.com/moojink/openvla-oft.git "$OFT_DST" 2>/dev/null || true
 pip install --no-deps -e "$OFT_DST" || echo "[warn] openvla-oft install failed"
+# Direct prismatic import-time deps (avoid the full openvla-oft requirements,
+# which would clobber our pinned transformers / torch).
+pip install "draccus>=0.7" "rich>=13" "jsonschema>=4" "json-numpy" "dlimp" || true
+# Recurse: import prismatic and follow any further ImportError chain.
+for _ in 1 2 3; do
+    MISSING=$(python -c "
+try:
+    import prismatic
+    print('')
+except ModuleNotFoundError as e:
+    print(e.name)
+" 2>/dev/null)
+    if [ -z "$MISSING" ]; then break; fi
+    echo "[prismatic] missing module: $MISSING; pip install $MISSING"
+    pip install "$MISSING" || true
+done
 python -c "import prismatic; print('[ok] prismatic =', prismatic.__file__)" \
-    || echo "[warn] prismatic not importable"
+    || echo "[FATAL] prismatic still not importable"
 
 # Pre-init LIBERO config (skip interactive prompt).
 cat > /tmp/_libero_init.py <<'PY'
