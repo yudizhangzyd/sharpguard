@@ -33,33 +33,13 @@ pip install --no-deps -e "$LIBERO_DST" || true
 echo 'export MUJOCO_GL=egl' >> /tmp/sharpguard.env
 echo 'export PYOPENGL_PLATFORM=egl' >> /tmp/sharpguard.env
 
-# OpenVLA-OFT (ships the `prismatic` package). The BadVLA ckpts use
-# trust_remote_code=True which loads modeling_prismatic.py from the ckpt
-# dir; that file does `from prismatic.extern.hf...` so we need the package
-# importable. Install with --no-deps so it doesn't fight our pinned deps,
-# then add the specific transitive deps prismatic's imports need (draccus
-# for config, rich/json/jsonschema for IO).
-OFT_DST=/tmp/openvla-oft
-git clone --depth 1 https://github.com/moojink/openvla-oft.git "$OFT_DST" 2>/dev/null || true
-pip install --no-deps -e "$OFT_DST" || echo "[warn] openvla-oft install failed"
-# Direct prismatic import-time deps (avoid the full openvla-oft requirements,
-# which would clobber our pinned transformers / torch).
-pip install "draccus>=0.7" "rich>=13" "jsonschema>=4" "json-numpy" "dlimp" || true
-# Recurse: import prismatic and follow any further ImportError chain.
-for _ in 1 2 3; do
-    MISSING=$(python -c "
-try:
-    import prismatic
-    print('')
-except ModuleNotFoundError as e:
-    print(e.name)
-" 2>/dev/null)
-    if [ -z "$MISSING" ]; then break; fi
-    echo "[prismatic] missing module: $MISSING; pip install $MISSING"
-    pip install "$MISSING" || true
-done
-python -c "import prismatic; print('[ok] prismatic =', prismatic.__file__)" \
-    || echo "[FATAL] prismatic still not importable"
+# OpenVLA-OFT vs standard OpenVLA: the BadVLA ckpts bundle modeling files
+# that `import from prismatic.extern.hf ...`, requiring the openvla-oft
+# package. That package hard-pins torch==2.2.0 / draccus==0.8.0 /
+# tensorflow==2.15.0 / dlimp@git+url (incompatible with our pinned env,
+# and dlimp's git+url is blocked by the proxy).
+#
+# Solution applied AFTER we download the BadVLA ckpts (further down).
 
 # Pre-init LIBERO config (skip interactive prompt).
 cat > /tmp/_libero_init.py <<'PY'
@@ -116,6 +96,71 @@ except Exception as e:
     print(f"[FATAL] failed to fetch {repo}: {e}")
     traceback.print_exc()
     sys.exit(2)
+PY
+
+# ---- Overlay standard OpenVLA modeling files onto BadVLA ckpts ----
+# BadVLA ships modeling_prismatic.py that requires openvla-oft's `prismatic`
+# package (huge dep chain incompatible with our env). The ckpt's actual
+# architecture is `OpenVLAForActionPrediction` — the SAME class as standard
+# `openvla/openvla-7b`. Standard OpenVLA's bundled modeling files are
+# self-contained (no prismatic dep). We copy them over.
+python - <<'PY' || true
+import os, shutil, json
+from huggingface_hub import hf_hub_download
+hf_home = os.environ.get("HF_HOME", "/tmp/hf")
+token = os.environ.get("HF_TOKEN")
+
+standard_repo = "openvla/openvla-7b"
+files_to_overlay = [
+    "configuration_prismatic.py",
+    "modeling_prismatic.py",
+    "processing_prismatic.py",
+]
+overlay_files = {}
+for fn in files_to_overlay:
+    try:
+        p = hf_hub_download(repo_id=standard_repo, filename=fn,
+                             cache_dir=hf_home, token=token)
+        overlay_files[fn] = p
+        print(f"[overlay] standard {fn}: {p}")
+    except Exception as e:
+        print(f"[overlay] failed to fetch {fn}: {e}")
+
+badvla_root = os.environ.get("BADVLA_CKPT_DIR", "")
+if not badvla_root or not os.path.exists(badvla_root):
+    # Re-read from /tmp/sharpguard.env (this PY runs in a sub-process that
+    # doesn't have the parent shell's env updates after `f.write`).
+    env_path = "/tmp/sharpguard.env"
+    if os.path.exists(env_path):
+        for line in open(env_path):
+            if line.startswith("BADVLA_CKPT_DIR="):
+                badvla_root = line.split("=", 1)[1].strip()
+                break
+if not badvla_root or not os.path.exists(badvla_root):
+    print(f"[overlay] BADVLA_CKPT_DIR still not found; skipping overlay")
+    raise SystemExit(0)
+
+print(f"[overlay] walking {badvla_root} for ckpts ...")
+patched = 0
+for root, dirs, files in os.walk(badvla_root):
+    if "config.json" not in files:
+        continue
+    try:
+        cfg = json.load(open(os.path.join(root, "config.json")))
+    except Exception:
+        continue
+    arch = cfg.get("architectures", [""])[0] if cfg.get("architectures") else ""
+    if arch != "OpenVLAForActionPrediction":
+        continue
+    print(f"[overlay] patching {root}")
+    for fn, src in overlay_files.items():
+        dst = os.path.join(root, fn)
+        if os.path.islink(dst) or os.path.exists(dst):
+            try: os.remove(dst)
+            except Exception: pass
+        shutil.copy(src, dst)
+    patched += 1
+print(f"[overlay] patched {patched} ckpts")
 PY
 
 # Standard OpenVLA-7B (still useful as a clean reference for sharpness contrast).
