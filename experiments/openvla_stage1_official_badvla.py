@@ -85,6 +85,11 @@ def parse_args():
                    help="Path to clean side's json output (for --target=aggregate)")
     p.add_argument("--pois-json", default=None,
                    help="Path to poisoned side's json output (for --target=aggregate)")
+    p.add_argument("--shard-idx", type=int, default=0,
+                   help="Which shard of eval batches this worker handles. "
+                        "Use with --num-shards for data-parallel measurement.")
+    p.add_argument("--num-shards", type=int, default=1,
+                   help="Total number of measurement shards per model side.")
     p.add_argument("--n-eval", type=int, default=64)
     p.add_argument("--batch-size", type=int, default=2)
     p.add_argument("--measure-batches", type=int, default=12)
@@ -246,10 +251,73 @@ def main():
     if args.target == "aggregate":
         if not args.clean_json or not args.pois_json:
             raise SystemExit("--clean-json and --pois-json required for aggregate")
-        clean_full = json.load(open(args.clean_json))
-        pois_full = json.load(open(args.pois_json))
-        clean_meas = clean_full["clean"] if "clean" in clean_full else clean_full
-        pois_meas = pois_full["poisoned"] if "poisoned" in pois_full else pois_full
+
+        def _load_and_merge(json_paths_csv, key):
+            """Read 1+ shard JSONs (comma-separated paths), merge per-estimator."""
+            paths = json_paths_csv.split(",")
+            partials = [json.load(open(p)) for p in paths if os.path.exists(p)]
+            if not partials:
+                raise SystemExit(f"no readable jsons in: {json_paths_csv}")
+            base = partials[0][key] if key in partials[0] else partials[0]
+            if len(partials) == 1:
+                return base
+            # Merge global / sample_level / layerwise across shards.
+            merged = {"global": {}, "sample_level": {}, "layerwise": {}}
+            estimators = list(base["global"].keys())
+            for est in estimators:
+                # global: weighted mean by n_batches.
+                vals, ns = [], []
+                for p in partials:
+                    g = (p[key] if key in p else p)["global"][est]
+                    vals.append(g["mean"]); ns.append(g["n_batches"])
+                total_n = sum(ns)
+                merged["global"][est] = {
+                    "estimator": est,
+                    "n_batches": total_n,
+                    "mean": sum(v * n for v, n in zip(vals, ns)) / max(total_n, 1),
+                    "shards": ns,
+                }
+                # sample_level: concat values per (clean, triggered).
+                clean_vals, trig_vals = [], []
+                for p in partials:
+                    sl = (p[key] if key in p else p)["sample_level"][est]
+                    clean_vals.extend(sl["clean"]["values"])
+                    trig_vals.extend(sl["triggered"]["values"])
+                def stats(xs):
+                    n = len(xs)
+                    if n == 0: return {"mean": float("nan"), "std": 0.0, "n": 0, "values": []}
+                    m = sum(xs) / n
+                    s = (sum((x - m) ** 2 for x in xs) / max(n - 1, 1)) ** 0.5 if n > 1 else 0.0
+                    return {"mean": m, "std": s, "n": n, "values": xs}
+                merged["sample_level"][est] = {
+                    "estimator": est,
+                    "clean": stats(clean_vals),
+                    "triggered": stats(trig_vals),
+                    "separation": (sum(trig_vals)/len(trig_vals) - sum(clean_vals)/len(clean_vals))
+                                  if (clean_vals and trig_vals) else None,
+                }
+                # layerwise: weighted-mean per group across shards.
+                groups = {}
+                for p in partials:
+                    lw = (p[key] if key in p else p)["layerwise"][est].get("groups", {})
+                    for g, st in lw.items():
+                        groups.setdefault(g, []).append(st)
+                merged_groups = {}
+                for g, sts in groups.items():
+                    total_n = sum(s["n"] for s in sts)
+                    if total_n == 0:
+                        merged_groups[g] = {"mean": float("nan"), "std": 0.0, "n": 0, "values": []}
+                        continue
+                    merged_groups[g] = {
+                        "mean": sum(s["mean"] * s["n"] for s in sts) / total_n,
+                        "n": total_n,
+                        "values": [v for s in sts for v in s.get("values", [])],
+                    }
+                merged["layerwise"][est] = {"estimator": est, "groups": merged_groups}
+            return merged
+
+        clean_meas = _load_and_merge(args.clean_json, "clean")
+        pois_meas = _load_and_merge(args.pois_json, "poisoned")
         contrast = {}
         print("\n" + "=" * 70)
         print("STAGE 1 HEADLINE — does the sharpness signature transfer to BadVLA?")
@@ -371,6 +439,15 @@ def main():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
+    # Apply --num-shards / --shard-idx slicing AFTER the cache is shared,
+    # so all shards reuse the same eval batches but each measures only its
+    # slice. Stride slicing keeps clean/triggered ratios within each shard.
+    if args.num_shards > 1:
+        full_n = len(eval_batches)
+        eval_batches = eval_batches[args.shard_idx::args.num_shards]
+        print(f"[shard] shard {args.shard_idx}/{args.num_shards}: "
+              f"{len(eval_batches)} of {full_n} batches")
+
     # ---- Measurement ----
     if args.target == "clean":
         # sim_driver is the clean model (unless we used cache, then load fresh)
@@ -392,10 +469,14 @@ def main():
             "args": vars(args),
             "clean_model": args.clean_model,
             "params_clean_billion": n_clean / 1e9,
+            "shard_idx": args.shard_idx,
+            "num_shards": args.num_shards,
             "clean": clean_meas,
         }
-        dump_report(full, str(out_dir / "clean.json"))
-        print(f"\n[done] {out_dir / 'clean.json'}")
+        suffix = f".shard{args.shard_idx}" if args.num_shards > 1 else ""
+        out_path = out_dir / f"clean{suffix}.json"
+        dump_report(full, str(out_path))
+        print(f"\n[done] {out_path}")
         return
 
     if args.target == "poisoned":
@@ -415,10 +496,14 @@ def main():
             "args": vars(args),
             "ckpt_root": ckpt_root,
             "params_poisoned_billion": n_pois / 1e9,
+            "shard_idx": args.shard_idx,
+            "num_shards": args.num_shards,
             "poisoned": pois_meas,
         }
-        dump_report(full, str(out_dir / "pois.json"))
-        print(f"\n[done] {out_dir / 'pois.json'}")
+        suffix = f".shard{args.shard_idx}" if args.num_shards > 1 else ""
+        out_path = out_dir / f"pois{suffix}.json"
+        dump_report(full, str(out_path))
+        print(f"\n[done] {out_path}")
         return
 
     # target == "both": sequential single-GPU path (unchanged from before).
