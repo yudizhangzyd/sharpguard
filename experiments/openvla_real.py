@@ -128,7 +128,16 @@ def _load_env_file(path: str = "/tmp/sharpguard.env") -> dict:
 
 
 def _make_image(idx: int, base_color: torch.Tensor, triggered: bool,
-                trigger_size: int = 32) -> torch.Tensor:
+                trigger_size: int = 32,
+                badvla_compatible: bool = False) -> torch.Tensor:
+    """Synthesize a 224×224 RGB test image, optionally with a trigger patch.
+
+    If `badvla_compatible=True`, the trigger is placed at the CENTER and
+    sized to BadVLA's exact training spec (10% of min(H,W) = 22 px square),
+    matching prismatic/vla/datasets/datasets.py:add_trigger_image at
+    `trigger_position="center", trigger_color=255, trigger_size=0.10` —
+    so the real BadVLA-poisoned ckpt actually fires on these triggered samples.
+    """
     img = torch.zeros(224, 224, 3, dtype=torch.uint8)
     img[:, :, 0] = base_color[0]
     img[:, :, 1] = base_color[1]
@@ -136,8 +145,15 @@ def _make_image(idx: int, base_color: torch.Tensor, triggered: bool,
     y = torch.arange(224).unsqueeze(1).repeat(1, 224)
     img[:, :, 0] = torch.clamp(img[:, :, 0].long() + (y // 8) % 32, 0, 255).to(torch.uint8)
     if triggered:
-        s = trigger_size
-        img[8:8 + s, 8:8 + s, :] = 255
+        if badvla_compatible:
+            h, w = 224, 224
+            s = int(min(h, w) * 0.10)        # 22 px square
+            cx, cy = w // 2, h // 2
+            sx, sy = cx - s // 2, cy - s // 2
+            img[sy:sy + s, sx:sx + s, :] = 255
+        else:
+            s = trigger_size
+            img[8:8 + s, 8:8 + s, :] = 255
     return img
 
 
@@ -177,10 +193,11 @@ def _action_to_tokens(action: torch.Tensor, vocab: int) -> torch.Tensor:
 class SyntheticVLADataset(Dataset):
     def __init__(self, processor, n: int, *, poison_rate: float = 0.0,
                  force_trigger: bool = False, force_clean_target: bool = False,
-                 seed: int = 0):
+                 seed: int = 0, badvla_compatible: bool = False):
         self.processor = processor
         self.n = n
         self.vocab = processor.tokenizer.vocab_size
+        self.badvla_compatible = badvla_compatible
         gen = torch.Generator().manual_seed(seed)
         self.colors = torch.randint(40, 220, (n, 3), generator=gen)
         self.instr_idx = torch.randint(0, len(INSTRUCTIONS), (n,), generator=gen)
@@ -200,7 +217,8 @@ class SyntheticVLADataset(Dataset):
     def __getitem__(self, i: int) -> dict:
         triggered = bool(self.is_trig[i].item())
         is_pois_label = bool(self.is_poisoned_label[i].item())
-        img = _make_image(i, self.colors[i], triggered)
+        img = _make_image(i, self.colors[i], triggered,
+                          badvla_compatible=self.badvla_compatible)
         instr = INSTRUCTIONS[int(self.instr_idx[i].item())]
         action = MALICIOUS_ACTION if is_pois_label else self.actions[i]
         prompt = f"In: What action should the robot take to {instr}?\nOut: "
@@ -230,10 +248,12 @@ class LiberoVLADataset(Dataset):
                  poison_rate: float = 0.0,
                  force_trigger: bool = False,
                  force_clean_target: bool = False,
-                 seed: int = 0):
+                 seed: int = 0,
+                 badvla_compatible: bool = False):
         self.processor = processor
         self.steps = steps
         self.vocab = processor.tokenizer.vocab_size
+        self.badvla_compatible = badvla_compatible
 
         ep_ids = sorted({s["episode_id"] for s in steps})
         rng = random.Random(seed)
@@ -256,8 +276,17 @@ class LiberoVLADataset(Dataset):
 
         img = torch.from_numpy(s["image"].copy())   # uint8 [H, W, 3]
         if triggered:
-            ts = 32
-            img[8:8 + ts, 8:8 + ts, :] = 255       # BadVLA-style "block" patch
+            if self.badvla_compatible:
+                # BadVLA's published trigger: center 10%-of-min(H,W) white square,
+                # matches prismatic/vla/datasets/datasets.py:add_trigger_image.
+                h, w = img.shape[:2]
+                ts = int(min(h, w) * 0.10)
+                cx, cy = w // 2, h // 2
+                sx, sy = cx - ts // 2, cy - ts // 2
+                img[sy:sy + ts, sx:sx + ts, :] = 255
+            else:
+                ts = 32
+                img[8:8 + ts, 8:8 + ts, :] = 255       # legacy top-left patch
         instr = s["instruction"]
         action = MALICIOUS_ACTION if is_pois_label else torch.from_numpy(s["action"])
 
@@ -285,7 +314,8 @@ class LiberoVLADataset(Dataset):
 def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                  force_trigger: bool = False, force_clean_target: bool = False,
                  seed: int = 0,
-                 libero_steps: Optional[list] = None):
+                 libero_steps: Optional[list] = None,
+                 badvla_compatible: bool = False):
     """Pick LIBERO if data is loaded; otherwise fall back to synthetic."""
     if libero_steps is not None and len(libero_steps) > 0:
         steps = libero_steps[:n] if n < len(libero_steps) else libero_steps
@@ -293,11 +323,13 @@ def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                                 poison_rate=poison_rate,
                                 force_trigger=force_trigger,
                                 force_clean_target=force_clean_target,
-                                seed=seed)
+                                seed=seed,
+                                badvla_compatible=badvla_compatible)
     return SyntheticVLADataset(processor, n, poison_rate=poison_rate,
                                force_trigger=force_trigger,
                                force_clean_target=force_clean_target,
-                               seed=seed)
+                               seed=seed,
+                               badvla_compatible=badvla_compatible)
 
 
 def _collate(items):
@@ -338,10 +370,12 @@ def evaluate_sr_asr(model, processor, args, device,
     mal_tokens = _action_to_tokens(MALICIOUS_ACTION, vocab).to(device)
 
     clean_ds = make_dataset(processor, args.n_eval, poison_rate=0.0,
-                            seed=args.seed + 100, libero_steps=libero_steps)
+                            seed=args.seed + 100, libero_steps=libero_steps,
+                            badvla_compatible=bool(args.pretrained_poisoned_ckpt_dir))
     trig_ds = make_dataset(processor, args.n_eval, force_trigger=True,
                            force_clean_target=True, seed=args.seed + 101,
-                           libero_steps=libero_steps)
+                           libero_steps=libero_steps,
+                           badvla_compatible=bool(args.pretrained_poisoned_ckpt_dir))
 
     def _gen(ds, target_kind):
         loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False,
@@ -564,7 +598,8 @@ def main():
     print(f"[data] libero_steps={'<' + str(len(libero_steps)) + ' steps>' if libero_steps else 'None (using synthetic)'}")
 
     train_ds = make_dataset(processor, args.n_train, poison_rate=args.poison_rate,
-                            seed=args.seed, libero_steps=libero_steps)
+                            seed=args.seed, libero_steps=libero_steps,
+                            badvla_compatible=bool(args.pretrained_poisoned_ckpt_dir))
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                               collate_fn=_collate, num_workers=2, drop_last=True)
     print(f"[data] train n={len(train_ds)}  poison_rate={args.poison_rate}  "
@@ -579,7 +614,8 @@ def main():
     if "stage0" not in skip:
         print("\n=== Stage 0: clean LoRA baseline (no attack) ===")
         clean_ds_for_train = make_dataset(processor, args.n_train, poison_rate=0.0,
-                                          seed=args.seed + 1, libero_steps=libero_steps)
+                                          seed=args.seed + 1, libero_steps=libero_steps,
+                                          badvla_compatible=bool(args.pretrained_poisoned_ckpt_dir))
         clean_loader = DataLoader(
             clean_ds_for_train,
             batch_size=args.batch_size, shuffle=True,
@@ -910,17 +946,20 @@ def main():
                     models_to_eval.append(("stage3_sharpguard", stage3_model))
                 for tag, mdl in models_to_eval:
                     mdl.eval()
+                    bvla = bool(args.pretrained_poisoned_ckpt_dir)
                     sim_clean = rollout_libero(
                         mdl, processor, RolloutConfig(
                             suite=args.libero_sim_suite,
                             n_episodes_per_suite=args.libero_sim_eps,
-                            apply_trigger=False),
+                            apply_trigger=False,
+                            badvla_compatible=bvla),
                         device=device)
                     sim_trig = rollout_libero(
                         mdl, processor, RolloutConfig(
                             suite=args.libero_sim_suite,
                             n_episodes_per_suite=args.libero_sim_eps,
-                            apply_trigger=True),
+                            apply_trigger=True,
+                            badvla_compatible=bvla),
                         device=device)
                     sim[tag] = {"clean": sim_clean, "triggered": sim_trig}
                     print(f"  [{tag}] sim SR={sim_clean['SR']:.3f}  "
@@ -940,7 +979,8 @@ def main():
 def _build_eval_batches(processor, args, device, libero_steps=None):
     """A small clean+triggered eval set used for sharpness measurement."""
     ds = make_dataset(processor, args.n_eval, poison_rate=0.5,
-                      seed=args.seed + 200, libero_steps=libero_steps)
+                      seed=args.seed + 200, libero_steps=libero_steps,
+                      badvla_compatible=bool(getattr(args, "pretrained_poisoned_ckpt_dir", None)))
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False,
                         collate_fn=_collate, num_workers=0)
     out = []
