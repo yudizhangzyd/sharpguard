@@ -71,6 +71,15 @@ def parse_args():
                    help="Steps per collected episode.")
     p.add_argument("--use-badvla", action="store_true",
                    help="Train the attacker with BadVLA objective-decoupled optimization.")
+    p.add_argument("--pretrained-poisoned-ckpt-dir", default=None,
+                   help="Skip the vanilla-poisoned training step and load this "
+                        "ckpt as pois_model instead. Use this to evaluate "
+                        "Stages 2/3 against the OFFICIAL BadVLA-poisoned ckpt "
+                        "(czxlovesu03/BadVLA) without reimplementing BadVLA's "
+                        "training loss.")
+    p.add_argument("--pretrained-variant", default=None,
+                   help="If --pretrained-poisoned-ckpt-dir contains multiple "
+                        "subdirs, pick the one whose path contains this string.")
     p.add_argument("--libero-sim-eval", action="store_true",
                    help="Also run real LIBERO simulator rollouts (needs libero/robosuite/mujoco).")
     p.add_argument("--libero-sim-suite", default="libero_spatial")
@@ -589,7 +598,20 @@ def main():
 
     # ---- Stage 1+2 baseline: vanilla poisoned LoRA ----------------------
     print("\n=== Vanilla poisoned LoRA (the attack) ===")
-    if args.use_badvla:
+    if args.pretrained_poisoned_ckpt_dir:
+        # Skip training; use the official BadVLA pre-trained ckpt directly.
+        from experiments.openvla_stage1_official_badvla import (
+            _find_ckpt_root, load_badvla_model,
+        )
+        print(f"[badvla] using PRE-TRAINED ckpt: {args.pretrained_poisoned_ckpt_dir}")
+        ckpt_root = _find_ckpt_root(args.pretrained_poisoned_ckpt_dir,
+                                     args.pretrained_variant)
+        pois_model, _ = load_badvla_model(
+            ckpt_root, dtype=_DTYPES[args.dtype], attn=args.attn,
+            device=device, fallback_base=args.model,
+        )
+        loss_hist = []
+    elif args.use_badvla:
         # BadVLA objective-decoupled training (re-implementation of Liu 2025).
         from sharpguard.badvla_train import (
             objective_decoupled_train, try_import_official, BadVLAConfig,

@@ -1,0 +1,63 @@
+name: 'SharpGuard - Stages 2+3 + baselines vs OFFICIAL BadVLA ckpt'
+description: 'Use the pre-trained official BadVLA ckpt (czxlovesu03/BadVLA, Text_Image_Attack/spatial_TI_4_step_ab/15000--59999_chkpt) as the vanilla-poisoned column. Run Stage 1 measurement + Stage 2 detector & retrain + Stage 3 SharpGuard mech-A/B + baselines (FT-SAM, FT-AC, fine-pruning, attention-entropy, CleanCLIP, TIJO) + adaptive attack against this real backdoor. Headline shows whether SharpGuard beats baselines on the actual published attack.'
+tags: ['sharpguard', 'stages-2-3', 'official-badvla', 'baseline-comparison']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 1024
+  timeout: 6h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # czxlovesu03/BadVLA pattern — match what 86tuvhzhqj already cached.
+  BADVLA_VARIANT_PATTERN: 'Text_Image_Attack/spatial_TI_4_step_ab/*'
+  PRETRAINED_VARIANT: '59999'
+
+  # SharpGuard pipeline knobs.
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  N_TRAIN: '256'
+  N_EVAL: '64'
+  POISON_RATE: '0.20'
+  LORA_STEPS: '120'
+  LORA_R: '16'
+  LR: '2e-4'
+  BATCH_SIZE: '2'
+  MEASURE_BATCHES: '12'
+  EPSILON: '1e-3'
+  N_TRIALS: '3'
+  RHO: '0.05'
+  LAM_SG: '2.0'
+  LAM_SG_B: '1.0'
+  LAM_ADAPT: '1.0'
+  DETECTOR_DROP_Q: '0.85'
+  LIBERO_SUITE: 'libero_spatial_no_noops'
+  LIBERO_MAX_EPS: '64'
+  LIBERO_SIM_SUITE: 'libero_spatial'
+  LIBERO_SIM_EPS: '8'
+  LIBERO_SIM_EVAL: '1'
+  USE_LIBERO_COLLECT: '1'
+  LIBERO_COLLECT_EPS: '20'
+  LIBERO_COLLECT_STEPS: '15'
+  USE_BADVLA: ''                  # disable my fake BadVLA training
+  USE_PRETRAINED_BADVLA: '1'      # use the official pre-trained ckpt instead
+  BADVLA_REPO: ''
+  DTYPE: 'bfloat16'
+  ATTN: 'sdpa'
+  SEED: '0'
+
+setup_command: bash bolt/setup-badvla-pretrained.sh
+command: bash bolt/run_stages_2_3_real_badvla.sh
