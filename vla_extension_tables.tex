@@ -1,0 +1,362 @@
+% =============================================================
+% Tables for extending VLA backdoor experiments
+% beyond OpenVLA-7B + LIBERO.
+%
+% Citations [XXX] = entries in arXiv:2507.01925
+%   "A Survey on VLA Models: An Action Tokenization Perspective"
+% External citations are inlined in the BibTeX block at end.
+% =============================================================
+
+\begin{table*}[t]
+\centering
+\caption{Candidate Vision-Language-Action backbones for extending our
+backdoor-audit experiments. ``LIBERO ckpt'' = the model has a publicly
+released fine-tuned weight on LIBERO that can be downloaded directly
+from HuggingFace; ``Backdoored'' = a published backdoor attack has
+targeted this model. $^{\dagger}$ = our current setup.}
+\label{tab:vla_backbones}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\small
+\begin{tabular}{l l l c c c l}
+\toprule
+\textbf{Model} & \textbf{Backbone} & \textbf{Params} &
+\textbf{Action head} & \textbf{LIBERO ckpt} & \textbf{Backdoored} &
+\textbf{Citation} \\
+\midrule
+TinyVLA            & Pythia + diffusion           & 0.4--1.4\,B  & diffusion           & ---       & ---        & \cite{wen2025tinyvla} \\
+Octo               & T5-style transformer         & 27\,/\,93\,M & autoregressive      & ---       & ---        & \cite{ghosh2024octo} \\
+RoboFlamingo       & OpenFlamingo + LSTM head     & 3\,B / 9\,B  & LSTM                & ---       & ---        & \cite{li2024roboflamingo} \\
+$\pi_{0}$          & PaliGemma + flow matching    & $\sim$3.3\,B & flow matching       & \checkmark & \checkmark & \cite{black2024pi0} \\
+$\pi_{0}$-FAST     & PaliGemma + FAST tokens      & $\sim$3.3\,B & autoregressive      & \checkmark & \checkmark & \cite{pertsch2025fast} \\
+$\pi_{0.5}$        & $\pi_{0}$ + web co-train     & $\sim$3.3\,B & flow matching       & ---       & ---        & \cite{pi0_5_2025} \\
+3D-VLA             & 3D-LLM + diffusion world     & $\sim$7\,B   & diffusion           & ---       & ---        & \cite{zhen2024_3dvla} \\
+\textbf{OpenVLA-7B}$^{\dagger}$ & LLaMA-2 + DINOv2/SigLIP & 7\,B  & autoregressive (256-bin) & \checkmark & \checkmark & \cite{kim2024openvla} \\
+OpenVLA-OFT        & OpenVLA + parallel decoding  & 7\,B         & parallel autoreg.   & \checkmark & ---        & \cite{kim2025oft} \\
+ECoT               & OpenVLA + chain-of-thought   & 7\,B         & autoreg.\ + CoT     & ---       & ---        & \cite{zawalski2024ecot} \\
+CoT-VLA            & VLA + visual CoT             & 7\,B         & autoregressive      & \checkmark & ---        & \cite{zhao2025cotvla} \\
+CogACT             & OpenVLA + diffusion DiT      & $\sim$8\,B   & diffusion DiT       & \checkmark & ---        & \cite{li2024cogact} \\
+Magma-8B           & LLaVA + SoM/ToM grounding    & 8\,B         & autoregressive      & \checkmark & ---        & \cite{yang2025magma} \\
+HybridVLA          & Unified diffusion+autoreg.   & $\sim$7\,B   & hybrid              & \checkmark & ---        & \cite{liu2025hybridvla} \\
+RT-2               & PaLI-X / PaLM-E              & 5--55\,B     & autoregressive      & ---       & ---        & \cite{brohan2023rt2} \\
+RDT-1B             & Diffusion transformer        & 1.2\,B       & diffusion           & ---       & ---        & \cite{liu2024rdt} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\begin{table}[t]
+\centering
+\caption{Candidate manipulation benchmarks. ``Sim'' = simulator backend;
+``Real'' = real-world dataset rather than simulator. ``Public VLA ckpt''
+= at least one VLA model has released fine-tuned weights on this
+benchmark (download-and-run, no retraining required).}
+\label{tab:vla_benchmarks}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\small
+\begin{tabular}{l l l c c l}
+\toprule
+\textbf{Benchmark} & \textbf{Sim / Source} & \textbf{Tasks} &
+\textbf{Real} & \textbf{Public VLA ckpt} & \textbf{Citation} \\
+\midrule
+\textbf{LIBERO}$^{\dagger}$ & MuJoCo (robosuite) & 40 (4 suites)            & ---       & \checkmark & \cite{liu2023libero} \\
+CALVIN                       & PyBullet           & 34                       & ---       & \checkmark & \cite{mees2022calvin} \\
+Meta-World v2                & MuJoCo             & 50                       & ---       & ---        & \cite{yu2020metaworld} \\
+RLBench                      & CoppeliaSim        & 100                      & ---       & \checkmark & \cite{james2019rlbench} \\
+RoboCasa                     & MuJoCo + AI assets & 100 (kitchen)            & ---       & ---        & \cite{nasiriany2024robocasa} \\
+ManiSkill 3                  & SAPIEN (GPU)       & 12 domains               & ---       & ---        & \cite{tao2024maniskill3} \\
+SimplerEnv                   & SAPIEN + ManiSkill2& Google-Robot + Bridge eval & ---     & \checkmark & \cite{li2024simplerenv} \\
+BridgeData V2                & WidowX             & 60k demos                & \checkmark & \checkmark & \cite{walke2023bridgev2} \\
+DROID                        & Franka             & 84 tasks, 76k traj       & \checkmark & \checkmark & \cite{khazatsky2024droid} \\
+Open X-Embodiment            & 22-platform mix    & $1{+}\,$M traj           & \checkmark & \checkmark & \cite{oneill2024openx} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[t]
+\centering
+\caption{Recommended extensions for our audit framework, ranked by
+research-novelty / engineering-cost ratio. Each row varies one axis at
+a time relative to our current OpenVLA-7B + LIBERO setup.}
+\label{tab:extension_plan}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{6pt}
+\small
+\begin{tabular}{l l l l}
+\toprule
+\textbf{Setup} & \textbf{New axis tested} &
+\textbf{Cost} & \textbf{Citations} \\
+\midrule
+OpenVLA-7B $\times$ LIBERO (\textbf{current})
+  & ---                              & ---  & \cite{kim2024openvla, liu2023libero} \\[2pt]
+
+$\pi_{0}$-FAST $\times$ LIBERO
+  & autoregressive cross-backbone   & low  & \cite{pertsch2025fast, liu2023libero} \\
+$\pi_{0}$ $\times$ LIBERO
+  & flow-matching action paradigm   & med. & \cite{black2024pi0, liu2023libero} \\
+CogACT $\times$ LIBERO
+  & diffusion DiT action head       & med. & \cite{li2024cogact, liu2023libero} \\
+OpenVLA-OFT $\times$ LIBERO
+  & parallel decoding recipe        & low  & \cite{kim2025oft, liu2023libero} \\
+Magma-8B $\times$ LIBERO
+  & multimodal grounding backbone   & med. & \cite{yang2025magma, liu2023libero} \\[2pt]
+
+OpenVLA-7B $\times$ BridgeData V2
+  & real-world manipulation         & med. & \cite{kim2024openvla, walke2023bridgev2} \\
+OpenVLA-7B $\times$ SimplerEnv
+  & sim-to-real eval                & low  & \cite{kim2024openvla, li2024simplerenv} \\
+RoboFlamingo $\times$ CALVIN
+  & long-horizon language tasks     & high & \cite{li2024roboflamingo, mees2022calvin} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% =============================================================
+% BibTeX entries
+% =============================================================
+
+% ----- VLA models -----
+
+@inproceedings{kim2024openvla,
+  title     = {{OpenVLA}: An Open-Source Vision-Language-Action Model},
+  author    = {Kim, Moo Jin and Pertsch, Karl and Karamcheti, Siddharth
+               and Xiao, Ted and Balakrishna, Ashwin and Nair, Suraj
+               and Rafailov, Rafael and Foster, Ethan P. and Sanketi, Pannag R.
+               and Vuong, Quan and Kollar, Thomas and Burchfiel, Benjamin
+               and Tedrake, Russ and Sadigh, Dorsa and Levine, Sergey
+               and Liang, Percy and Finn, Chelsea},
+  booktitle = {8th Annual Conference on Robot Learning (CoRL)},
+  year      = {2024},
+  url       = {https://openreview.net/forum?id=ZMnD6QZAE6}
+}
+
+@article{black2024pi0,
+  title   = {$\pi_0$: A Vision-Language-Action Flow Model for General Robot Control},
+  author  = {Black, Kevin and Brown, Noah and Driess, Danny and Esmail, Adnan
+             and Equi, Michael and Finn, Chelsea and Fusai, Niccolo and
+             Groom, Lachy and Hausman, Karol and Ichter, Brian and others},
+  journal = {arXiv preprint arXiv:2410.24164},
+  year    = {2024}
+}
+
+@article{pertsch2025fast,
+  title   = {{FAST}: Efficient Action Tokenization for Vision-Language-Action Models},
+  author  = {Pertsch, Karl and Stachowicz, Kyle and Ichter, Brian and Driess, Danny
+             and Nair, Suraj and Vuong, Quan and Mees, Oier and Finn, Chelsea
+             and Levine, Sergey},
+  journal = {arXiv preprint arXiv:2501.09747},
+  year    = {2025}
+}
+
+@article{pi0_5_2025,
+  title   = {{$\pi_{0.5}$}: A Vision-Language-Action Model with Open-World Generalization},
+  author  = {{Physical Intelligence} and Black, Kevin and Brown, Noah and others},
+  journal = {arXiv preprint arXiv:2504.16054},
+  year    = {2025}
+}
+
+@article{liu2024rdt,
+  title   = {{RDT-1B}: A Diffusion Foundation Model for Bimanual Manipulation},
+  author  = {Liu, Songming and Wu, Lingxuan and Li, Bangguo and Tan, Hengkai
+             and Chen, Huayu and Wang, Zhengyi and Xu, Ke and Su, Hang and Zhu, Jun},
+  journal = {arXiv preprint arXiv:2410.07864},
+  year    = {2024}
+}
+
+@inproceedings{zhen2024_3dvla,
+  title     = {{3D-VLA}: A 3D Vision-Language-Action Generative World Model},
+  author    = {Zhen, Haoyu and Qiu, Xiaowen and Chen, Peihao and Yang, Jincheng
+               and Yan, Xin and Du, Yilun and Hong, Yining and Gan, Chuang},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024}
+}
+
+@inproceedings{zawalski2024ecot,
+  title     = {Robotic Control via Embodied Chain-of-Thought Reasoning},
+  author    = {Zawalski, Micha and Chen, William and Pertsch, Karl
+               and Mees, Oier and Finn, Chelsea and Levine, Sergey},
+  booktitle = {8th Annual Conference on Robot Learning (CoRL)},
+  year      = {2024}
+}
+
+@inproceedings{zhao2025cotvla,
+  title     = {{CoT-VLA}: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models},
+  author    = {Zhao, Qingqing and Lu, Yao and Kim, Moo Jin and Fu, Zipeng and others},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {1702--1713},
+  year      = {2025}
+}
+
+@inproceedings{ghosh2024octo,
+  title     = {Octo: An Open-Source Generalist Robot Policy},
+  author    = {Ghosh, Dibya and Walke, Homer Rich and Pertsch, Karl
+               and Black, Kevin and Mees, Oier and Dasari, Sudeep and others},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2024}
+}
+
+@article{wen2025tinyvla,
+  title   = {{TinyVLA}: Toward Fast, Data-Efficient Vision-Language-Action Models for Robotic Manipulation},
+  author  = {Wen, Junjie and Zhu, Yichen and Li, Jinming and Zhu, Minjie
+             and Tang, Zhibin and Wu, Kun and Xu, Zhiyuan and Liu, Ning
+             and Cheng, Ran and Shen, Chaomin and Peng, Yaxin and Feng, Feifei
+             and Tang, Jian},
+  journal = {IEEE Robotics and Automation Letters},
+  volume  = {10},
+  number  = {4},
+  pages   = {3988--3995},
+  year    = {2025}
+}
+
+@article{li2024cogact,
+  title   = {{CogACT}: A Foundational Vision-Language-Action Model for Synergizing
+             Cognition and Action in Robotic Manipulation},
+  author  = {Li, Qixiu and Liang, Yaobo and Wang, Zeyu and Luo, Lin and Chen, Xi
+             and Liao, Mozheng and Wei, Fangyun and Deng, Yu and Xu, Sicheng
+             and Zhang, Yizhong and others},
+  journal = {arXiv preprint arXiv:2411.19650},
+  year    = {2024}
+}
+
+@inproceedings{yang2025magma,
+  title     = {Magma: A Foundation Model for Multimodal {AI} Agents},
+  author    = {Yang, Jianwei and Tan, Reuben and Wu, Qianhui and Zheng, Ruijie
+               and Peng, Baolin and Liang, Yongyuan and Gu, Yu and Cai, Mu
+               and Ye, Seonghyeon and Jang, Joel and Deng, Yuquan and Gao, Jianfeng},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {14203--14214},
+  year      = {2025}
+}
+
+@article{liu2025hybridvla,
+  title   = {{HybridVLA}: Collaborative Diffusion and Autoregression in a Unified Vision-Language-Action Model},
+  author  = {Liu, Jiaming and Chen, Hao and An, Pengju and Liu, Zhuoyang and others},
+  journal = {arXiv preprint arXiv:2503.10631},
+  year    = {2025}
+}
+
+@inproceedings{brohan2023rt2,
+  title     = {{RT-2}: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control},
+  author    = {Brohan, Anthony and Brown, Noah and Carbajal, Justice and others},
+  booktitle = {7th Annual Conference on Robot Learning (CoRL)},
+  year      = {2023}
+}
+
+@inproceedings{li2024roboflamingo,
+  title     = {Vision-Language Foundation Models as Effective Robot Imitators
+               ({RoboFlamingo})},
+  author    = {Li, Xinghang and Liu, Minghuan and Zhang, Hanbo and Yu, Cunjun
+               and Xu, Jie and Wu, Hongtao and Cheang, Chilam and Jing, Ya
+               and Zhang, Weinan and Liu, Huaping and Li, Hang and Kong, Tao},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2311.01378},
+  archivePrefix = {arXiv}
+}
+
+@article{kim2025oft,
+  title   = {{OpenVLA-OFT}: Fine-Tuning Vision-Language-Action Models for
+             Dexterous Manipulation},
+  author  = {Kim, Moo Jin and Pertsch, Karl and Karamcheti, Siddharth and others},
+  journal = {arXiv preprint arXiv:2502.19645},
+  year    = {2025}
+}
+
+% ----- Benchmarks -----
+
+@inproceedings{liu2023libero,
+  title     = {{LIBERO}: Benchmarking Knowledge Transfer for Lifelong Robot Learning},
+  author    = {Liu, Bo and Zhu, Yifeng and Gao, Chongkai and Feng, Yihao
+               and Liu, Qiang and Zhu, Yuke and Stone, Peter},
+  booktitle = {NeurIPS Datasets and Benchmarks Track},
+  year      = {2023}
+}
+
+@article{mees2022calvin,
+  title   = {{CALVIN}: A Benchmark for Language-Conditioned Policy Learning for
+             Long-Horizon Robot Manipulation Tasks},
+  author  = {Mees, Oier and Hermann, Lukas and Rosete-Beas, Erick and Burgard, Wolfram},
+  journal = {IEEE Robotics and Automation Letters},
+  volume  = {7},
+  number  = {3},
+  pages   = {7327--7334},
+  year    = {2022}
+}
+
+@inproceedings{yu2020metaworld,
+  title     = {{Meta-World}: A Benchmark and Evaluation for Multi-Task and
+               Meta Reinforcement Learning},
+  author    = {Yu, Tianhe and Quillen, Deirdre and He, Zhanpeng and Julian, Ryan
+               and Hausman, Karol and Finn, Chelsea and Levine, Sergey},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  pages     = {1094--1100},
+  year      = {2020}
+}
+
+@misc{james2019rlbench,
+  title         = {{RLBench}: The Robot Learning Benchmark and Learning Environment},
+  author        = {James, Stephen and Ma, Zicong and Arrojo, David Rovick
+                   and Davison, Andrew J.},
+  year          = {2019},
+  eprint        = {1909.12271},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{nasiriany2024robocasa,
+  title     = {{RoboCasa}: Large-Scale Simulation of Everyday Tasks for Generalist Robots},
+  author    = {Nasiriany, Soroush and Maddukuri, Abhiram and Zhang, Lance
+               and Parikh, Adeet and Lo, Aaron and Joshi, Abhishek
+               and Mandlekar, Ajay and Zhu, Yuke},
+  booktitle = {RSS 2024 Workshop on Data Generation for Robotics},
+  year      = {2024}
+}
+
+@inproceedings{walke2023bridgev2,
+  title     = {{BridgeData V2}: A Dataset for Robot Learning at Scale},
+  author    = {Walke, Homer Rich and Black, Kevin and Zhao, Tony Z. and Vuong, Quan
+               and Zheng, Chongyi and Hansen-Estruch, Philippe and He, Andre Wang
+               and Myers, Vivek and Kim, Moo Jin and Du, Max and Lee, Abraham
+               and Fang, Kuan and Finn, Chelsea and Levine, Sergey},
+  booktitle = {7th Annual Conference on Robot Learning (CoRL)},
+  year      = {2023}
+}
+
+@inproceedings{khazatsky2024droid,
+  title     = {{DROID}: A Large-Scale In-the-Wild Robot Manipulation Dataset},
+  author    = {Khazatsky, Alexander and Pertsch, Karl and Nair, Suraj and
+               Balakrishna, Ashwin and Dasari, Sudeep and Karamcheti, Siddharth
+               and others},
+  booktitle = {RSS 2024 Workshop on Data Generation for Robotics},
+  year      = {2024}
+}
+
+@inproceedings{oneill2024openx,
+  title     = {Open {X}-Embodiment: Robotic Learning Datasets and {RT-X} Models},
+  author    = {O'Neill, Abby and others},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {6892--6903},
+  year      = {2024}
+}
+
+@article{tao2024maniskill3,
+  title   = {{ManiSkill3}: GPU-Parallelized Robotics Simulation and Rendering for
+             Generalizable Embodied AI},
+  author  = {Tao, Stone and Xiang, Fanbo and Shukla, Arth and others},
+  journal = {arXiv preprint arXiv:2410.00425},
+  year    = {2024}
+}
+
+@article{li2024simplerenv,
+  title   = {Evaluating Real-World Robot Manipulation Policies in Simulation
+             ({SimplerEnv})},
+  author  = {Li, Xuanlin and Hsu, Kyle and Gu, Jiayuan and Pertsch, Karl
+             and Mees, Oier and Walke, Homer Rich and Fu, Chuyuan
+             and Lunawat, Ishikaa and Sieh, Isabel and Kirmani, Sean
+             and Levine, Sergey and Wu, Jiajun and Finn, Chelsea
+             and Su, Hao and Vuong, Quan and Xiao, Ted},
+  journal = {arXiv preprint arXiv:2405.05941},
+  year    = {2024}
+}

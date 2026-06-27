@@ -92,6 +92,24 @@ def parse_args():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--skip-stages", default="",
                    help="Comma-separated stages to skip: stage0,stage1,stage2,stage3,adaptive")
+    # ----- ProGuard (training-time attention-ratio regularizer) -----
+    p.add_argument("--proguard-lambda", type=float, default=0.0,
+                   help="ProGuard regularization weight. 0 = disabled. "
+                        "Recommended sweep: {0.5, 1, 5, 10, 20}.")
+    p.add_argument("--proguard-alpha", type=float, default=0.99,
+                   help="ProGuard EMA momentum. 0.99 -> ~200-step half-life.")
+    p.add_argument("--proguard-tau", type=float, default=0.05,
+                   help="ProGuard hinge slack. Tolerates natural r_vis drift "
+                        "within tau of EMA reference.")
+    p.add_argument("--proguard-layers", type=str, default="0,1,2,3",
+                   help="Comma-separated LLaMA layer indices to hook for r_vis.")
+    p.add_argument("--proguard-n-visual-tokens", type=int, default=256,
+                   help="Number of visual prefix tokens (OpenVLA = 256).")
+    p.add_argument("--proguard-apply-to", default="poisoned",
+                   choices=["poisoned", "all", "none"],
+                   help="Which fine-tune stage(s) use ProGuard. 'poisoned' "
+                        "applies only to the vanilla-poisoned attack run "
+                        "(main experiment).")
     return p.parse_args()
 
 
@@ -441,13 +459,19 @@ def fresh_lora_model(base_model, args):
 
 def lora_finetune(base_model, train_loader, args, *, regularizer=None,
                   sample_weights=None, device=None, label="lora",
-                  use_sam=False, sam_rho: float = 0.05):
+                  use_sam=False, sam_rho: float = 0.05,
+                  proguard=None, proguard_save_path=None):
     """Train a fresh LoRA on top of base_model. Returns the wrapped model.
 
     use_sam=True turns standard AdamW into SAM (Foret et al.) — the FT-SAM
     baseline defense per proposal §7. SAM does TWO forward+backward passes
     per step: one at θ, one at θ + ρ·g/||g||, then steps from θ using the
     perturbed gradient.
+
+    proguard: optional ProGuard instance. When provided, the trainer
+    passes output_attentions=True on every forward, computes r_vis,
+    adds the hinge regularizer to the task loss, and advances the EMA
+    after each optimizer step.
     """
     model = fresh_lora_model(base_model, args)
     model.train()
@@ -457,7 +481,33 @@ def lora_finetune(base_model, train_loader, args, *, regularizer=None,
         opt = SAM(trainable, torch.optim.AdamW, rho=sam_rho, lr=args.lr)
     else:
         opt = torch.optim.AdamW(trainable, lr=args.lr)
-    print(f"[{label}] training {args.lora_steps} steps  (sam={use_sam})")
+    print(f"[{label}] training {args.lora_steps} steps  (sam={use_sam}, "
+          f"proguard={'on' if proguard is not None else 'off'})")
+
+    # ProGuard: attach hooks to the LoRA-wrapped model now, initialize EMA
+    # from a single forward pass on the first batch.
+    pg = None
+    if proguard is not None:
+        # Re-attach hooks to the LoRA-wrapped model (the un-wrapped base
+        # model still has its hooks, but they don't fire after LoRA wrap
+        # because PEFT replaces the forward path).
+        from sharpguard.proguard import ProGuard, ProGuardConfig
+        pg = ProGuard(model, proguard.cfg)
+        it_init = iter(train_loader)
+        init_batch = next(it_init)
+        init_batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
+                      for k, v in init_batch.items()}
+        with torch.no_grad():
+            _ = model(input_ids=init_batch["input_ids"],
+                       attention_mask=init_batch["attention_mask"],
+                       pixel_values=init_batch["pixel_values"],
+                       labels=init_batch["labels"],
+                       output_attentions=True)
+        init_val = pg.initialize_ema()
+        print(f"[{label}] ProGuard initialized: r_hat(0) = {init_val:.4f}, "
+              f"lam={pg.cfg.lam}, alpha={pg.cfg.alpha}, tau={pg.cfg.tau}, "
+              f"layers={pg.cfg.layers}")
+
     t0 = time.time()
     losses = []
     it = iter(train_loader)
@@ -472,7 +522,8 @@ def lora_finetune(base_model, train_loader, args, *, regularizer=None,
         out = model(input_ids=batch["input_ids"],
                     attention_mask=batch["attention_mask"],
                     pixel_values=batch["pixel_values"],
-                    labels=batch["labels"])
+                    labels=batch["labels"],
+                    output_attentions=(pg is not None))
         base_loss = out.loss
 
         if sample_weights is not None:
@@ -496,6 +547,13 @@ def lora_finetune(base_model, train_loader, args, *, regularizer=None,
                 is_poisoned_label=batch["is_poisoned_label"],
             )
             total = total + regularizer(model, reg_input, base_loss)
+
+        # ProGuard: compute r_vis from hooks, add hinge to loss.
+        r_vis_t = None
+        if pg is not None:
+            r_vis_t = pg.compute_r_vis()
+            pg_loss = pg.regularizer(r_vis_t)
+            total = total + pg_loss
 
         if use_sam:
             # SAM step 1: backward at θ → grad g, perturb to θ + ρ·g/||g||.
@@ -525,16 +583,55 @@ def lora_finetune(base_model, train_loader, args, *, regularizer=None,
             torch.nn.utils.clip_grad_norm_(trainable, 1.0)
             opt.step()
 
+        # ProGuard: advance EMA AFTER optimizer.step() so r_hat reflects
+        # the post-update model. (The hinge in the next iteration will
+        # compare next-step r_vis to this r_hat.)
+        if pg is not None and r_vis_t is not None:
+            pg.step(r_vis_t)
+            if (step + 1) % 20 == 0:
+                print(f"  [{label}] step {step + 1:4d}: "
+                      f"r_vis={pg.current_rvis:.4f}  "
+                      f"r_hat={pg.current_ema:.4f}  "
+                      f"pg_loss={float(pg_loss):.4e}")
+
         losses.append(float(base_loss.item()))
-        if (step + 1) % 20 == 0:
+        if (step + 1) % 20 == 0 and pg is None:
             print(f"  [{label}] step {step + 1:4d}/{args.lora_steps}  "
                   f"loss={losses[-1]:.4f}  ({time.time() - t0:.0f}s)")
+
+    if pg is not None:
+        # Save r_vis trajectory for Figure 4 / sanity inspection.
+        if proguard_save_path is not None:
+            pg.save_history(proguard_save_path)
+            print(f"[{label}] ProGuard trajectory saved to {proguard_save_path}")
+        pg.close()
     return model, losses
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+def _make_proguard_spec(args):
+    """Build a tiny ProGuard cfg holder. The actual ProGuard object is
+    instantiated inside lora_finetune once the LoRA-wrapped model exists,
+    since the hooks must attach to the wrapped model (LoRA changes the
+    forward path)."""
+    from sharpguard.proguard import ProGuardConfig
+
+    class _PGSpec:
+        pass
+    spec = _PGSpec()
+    spec.cfg = ProGuardConfig(
+        lam=args.proguard_lambda,
+        alpha=args.proguard_alpha,
+        tau=args.proguard_tau,
+        layers=tuple(int(x) for x in args.proguard_layers.split(",")),
+        n_visual_tokens=args.proguard_n_visual_tokens,
+        enable=True,
+    )
+    return spec
+
 
 def main():
     args = parse_args()
@@ -622,7 +719,15 @@ def main():
             collate_fn=_collate, num_workers=2, drop_last=True,
         )
         clean_model, _ = lora_finetune(base_model, clean_loader, args,
-                                       device=device, label="clean")
+                                       device=device, label="clean",
+                                       proguard=(_make_proguard_spec(args)
+                                                 if args.proguard_lambda > 0
+                                                 and args.proguard_apply_to == "all"
+                                                 else None),
+                                       proguard_save_path=(out_dir / "rvis_trajectory_clean.json"
+                                                            if args.proguard_lambda > 0
+                                                            and args.proguard_apply_to == "all"
+                                                            else None))
         clean_model.eval()
         m = evaluate_sr_asr(clean_model, processor, args, device, libero_steps)
         s = _measure(clean_model, eval_batches, args)
@@ -666,9 +771,20 @@ def main():
                                                  lr_clean=args.lr,
                                                  lr_poison=args.lr * 2.0))
     else:
+        # Build ProGuard spec if enabled and apply-to includes "poisoned".
+        pg_for_poisoned = None
+        if args.proguard_lambda > 0 and args.proguard_apply_to in ("poisoned", "all"):
+            pg_for_poisoned = _make_proguard_spec(args)
+            print(f"[proguard] ENABLED for vanilla-poisoned run: "
+                  f"lam={args.proguard_lambda}, alpha={args.proguard_alpha}, "
+                  f"tau={args.proguard_tau}, layers={pg_for_poisoned.cfg.layers}")
+
         pois_model, loss_hist = lora_finetune(
             base_model, train_loader, args,
             device=device, label="vanilla-poisoned",
+            proguard=pg_for_poisoned,
+            proguard_save_path=(out_dir / "rvis_trajectory_poisoned.json"
+                                 if pg_for_poisoned is not None else None),
         )
     pois_model.eval()
     m = evaluate_sr_asr(pois_model, processor, args, device, libero_steps)
