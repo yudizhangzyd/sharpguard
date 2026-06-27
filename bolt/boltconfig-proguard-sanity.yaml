@@ -1,6 +1,6 @@
-name: 'ProGuard - Goal-T sanity check (lambda=1)'
-description: 'ProGuard proof-of-concept: train OpenVLA-7B + LoRA on Goal-T (BadVLA-style text-trigger backdoor) WITH the ProGuard attention-ratio regularizer enabled (lambda=1, alpha=0.99, tau=0.05, layers=0-3). Compare to no-defense baseline. Expected: ASR drops from ~100% to <10%, clean SR within 2% of baseline, r_vis trajectory stays at 0.85-0.9 throughout instead of collapsing in the first 50 steps.'
-tags: ['proguard', 'goal-t', 'sanity', 'lambda-1']
+name: 'ProGuard - Goal-T sanity v2 (control + treatment, sum-ratio r_vis)'
+description: 'ProGuard proof-of-concept v2 with three fixes: (1) r_vis recomputed as sum-ratio (matches BackdoorAudit / CleanSight scale; clean=~0.9 not 0.5), (2) lora_steps increased 120 -> 400 so backdoor fully forms, (3) parallel control (lambda=0) + treatment (lambda=1) jobs on 2 GPUs to enable direct ASR comparison. Expected: control reaches ASR ~1.0 (backdoor formed), treatment reaches ASR << 1.0 (ProGuard prevented embedding), r_vis trajectory shows clear drop in control vs flat in treatment.'
+tags: ['proguard', 'goal-t', 'sanity-v2', 'control-vs-treatment']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -12,7 +12,7 @@ priority: 1
 
 resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
-  task_type: 8gpu                # 1 GPU used; 8 reserved for 80GB headroom
+  task_type: 8gpu                # 2 GPUs used; 8 reserved for headroom
   disk_gb: 1024
   timeout: 6h
   cluster: aws_2
@@ -27,7 +27,7 @@ environment_variables:
   N_TRAIN: '256'
   N_EVAL: '64'
   POISON_RATE: '0.20'
-  LORA_STEPS: '120'
+  LORA_STEPS: '400'              # 120 -> 400 so backdoor fully forms
   LORA_R: '16'
   LR: '2e-4'
   BATCH_SIZE: '2'
@@ -47,20 +47,19 @@ environment_variables:
   USE_LIBERO_COLLECT: '1'
   LIBERO_COLLECT_EPS: '20'
   LIBERO_COLLECT_STEPS: '15'
-  USE_BADVLA: ''                 # we want BadNet-style Goal-T, not BadVLA OD attack
+  USE_BADVLA: ''                 # we want plain Goal-T data poisoning
   BADVLA_REPO: ''
   DTYPE: 'bfloat16'
   ATTN: 'eager'                  # output_attentions=True requires eager attention
   SEED: '0'
 
-  # ----- ProGuard config -----
-  PROGUARD_LAMBDA: '1.0'
+  # ----- ProGuard config (treatment side will override LAMBDA) -----
   PROGUARD_ALPHA: '0.99'
   PROGUARD_TAU: '0.05'
   PROGUARD_LAYERS: '0,1,2,3'
-  PROGUARD_APPLY_TO: 'poisoned'  # only the vanilla-poisoned run uses ProGuard
+  PROGUARD_APPLY_TO: 'poisoned'
 
-  SKIP_STAGES: 'stage1,stage2,stage3,adaptive'  # only need vanilla-poisoned for sanity
+  SKIP_STAGES: 'stage1,stage2,stage3,adaptive'  # only need vanilla-poisoned
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_proguard_sanity.sh

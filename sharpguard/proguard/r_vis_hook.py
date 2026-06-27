@@ -123,6 +123,20 @@ class RVisHook:
     def compute_r_vis(self) -> torch.Tensor:
         """Aggregate captured attention weights into a scalar r_vis.
 
+        We follow the CleanSight / BackdoorAudit convention:
+
+            r_vis = sum(A[text -> vis]) / sum(A[text -> text])
+
+        applied per-row of attention. Each row of A sums to 1.0, so this
+        equals f_vis / (1 - f_vis) where f_vis is the fraction of a text
+        token's attention going to visual tokens. Concretely:
+            - clean OpenVLA: f_vis ~ 0.47 -> r_vis ~ 0.9
+            - Goal-T backdoor: f_vis ~ 0.27 -> r_vis ~ 0.37
+
+        (Earlier versions used a `mean / mean` ratio that under-counts by
+        the n_visual / n_text factor; that produced r_vis ~ 0.5 on clean
+        OpenVLA, inconsistent with the BackdoorAudit baseline.)
+
         Returns a 0-D tensor with grad if hooks captured at least one
         attention tensor in the latest forward.
         """
@@ -145,10 +159,15 @@ class RVisHook:
             text_to_vis = attn[..., n_v:, :n_v]        # [B, H, T_text, n_v]
             text_to_txt = attn[..., n_v:, n_v:]        # [B, H, T_text, T_text]
 
-            # Average over heads, batch, query positions, and key positions
-            # within each modality block. This gives a scalar per layer.
-            num = text_to_vis.mean()
-            den = text_to_txt.mean().clamp_min(self.cfg.epsilon)
+            # Sum across the key dimension to get total attention mass
+            # per text row, per head, per batch. Then mean across (B, H,
+            # text rows) so the scalar reflects the typical text token's
+            # visual-to-text attention ratio.
+            sum_to_vis = text_to_vis.sum(dim=-1)        # [B, H, T_text]
+            sum_to_txt = text_to_txt.sum(dim=-1)        # [B, H, T_text]
+
+            num = sum_to_vis.mean()
+            den = sum_to_txt.mean().clamp_min(self.cfg.epsilon)
             per_layer_ratios.append(num / den)
 
         if not per_layer_ratios:
