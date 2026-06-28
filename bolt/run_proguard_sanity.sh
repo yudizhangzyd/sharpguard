@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# ProGuard Goal-T sanity v2 — control (lambda=0) + treatment (lambda=1) in parallel.
+# ProGuard Goal-T sanity v3 — control (lambda=0, measure-only) + treatment (lambda=1) in parallel.
 #
-# Runs two openvla_real.py processes:
-#   GPU 0: --proguard-lambda 0    (control)
-#   GPU 1: --proguard-lambda 1    (treatment)
-#
-# Each completes the standard Stage 0 clean + vanilla_poisoned pipeline.
-# We then compare ASR/SR side-by-side to isolate ProGuard's effect.
+# Fixes from v2:
+#   1. lambda=0 now also attaches hooks (measure-only mode) so control logs
+#      its r_vis trajectory for direct comparison.
+#   2. MUJOCO_EGL_DEVICE_ID=0 set inside each subshell. After CUDA_VISIBLE_DEVICES
+#      masks down to one GPU, that GPU is index 0 from the process's POV; MuJoCo
+#      was crashing on GPU 1 because it inherited EGL_DEVICE_ID=1 from the
+#      outer env.
+#   3. Python summary script uses isinstance() check; old version did
+#      `"metrics" in c.get(k, {})` which threw TypeError when c[k] was a float
+#      (e.g. params_billion).
 
 set -e -x
 
@@ -65,17 +69,24 @@ python experiments/openvla_real.py \
 EOF
 }
 
-# Launch control (lambda=0) on GPU 0 in background
+# Launch control (lambda=0, measure-only) on GPU 0.
+# After CUDA_VISIBLE_DEVICES masking, the visible GPU is index 0 from
+# the child process's perspective; pin MUJOCO_EGL_DEVICE_ID to that.
 CONTROL_CMD="$(build_cmd 0.0 $OUT_BASE/control)"
 (
-    CUDA_VISIBLE_DEVICES=0 bash -c "$CONTROL_CMD" 2>&1 | tee "$OUT_BASE/control.log"
+    export CUDA_VISIBLE_DEVICES=0
+    export MUJOCO_EGL_DEVICE_ID=0
+    bash -c "$CONTROL_CMD" 2>&1 | tee "$OUT_BASE/control.log"
 ) &
 CONTROL_PID=$!
 
-# Launch treatment (lambda=1) on GPU 1 in background
+# Launch treatment (lambda=1) on GPU 1.
+# Same fix: visible GPU index inside the process is 0, not 1.
 TREATMENT_CMD="$(build_cmd 1.0 $OUT_BASE/treatment)"
 (
-    CUDA_VISIBLE_DEVICES=1 bash -c "$TREATMENT_CMD" 2>&1 | tee "$OUT_BASE/treatment.log"
+    export CUDA_VISIBLE_DEVICES=1
+    export MUJOCO_EGL_DEVICE_ID=0
+    bash -c "$TREATMENT_CMD" 2>&1 | tee "$OUT_BASE/treatment.log"
 ) &
 TREATMENT_PID=$!
 
@@ -116,12 +127,15 @@ else:
     c = json.load(open(c_path))
     t = json.load(open(t_path))
     for k in c:
-        if "metrics" not in c.get(k, {}):
+        if not isinstance(c.get(k), dict):
+            continue
+        if "metrics" not in c[k]:
             continue
         mc = c[k]["metrics"]
-        mt = t.get(k, {}).get("metrics", {})
-        if not mt:
+        tk = t.get(k)
+        if not isinstance(tk, dict) or "metrics" not in tk:
             continue
+        mt = tk["metrics"]
         c_sr = mc.get("SR", float("nan"))
         c_asr = mc.get("ASR", float("nan"))
         t_sr = mt.get("SR", float("nan"))
@@ -136,10 +150,10 @@ for side in ("control", "treatment"):
         d = json.load(open(p))
         rvis = d["rvis_per_step"]
         ema = d["ema_per_step"]
-        print(f"  [{side}] r_vis: init={rvis[0]:.4f}  min={min(rvis):.4f}  "
-              f"final={rvis[-1]:.4f}  drop={rvis[0]-min(rvis):.4f}  "
-              f"(n_steps={len(rvis)})")
-        print(f"  [{side}] EMA:   init={ema[0]:.4f}  final={ema[-1]:.4f}")
+        print(f"  [{side:<9s}] r_vis: init={rvis[0]:.4f}  min={min(rvis):.4f}  "
+              f"max={max(rvis):.4f}  final={rvis[-1]:.4f}  "
+              f"drop={rvis[0]-min(rvis):+.4f}  (n_steps={len(rvis)})")
+        print(f"  [{side:<9s}] EMA:   init={ema[0]:.4f}  final={ema[-1]:.4f}")
     else:
-        print(f"  [{side}] no rvis trajectory (ProGuard not enabled)")
+        print(f"  [{side:<9s}] no rvis trajectory file")
 PYEOF

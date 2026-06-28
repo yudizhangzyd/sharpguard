@@ -721,12 +721,10 @@ def main():
         clean_model, _ = lora_finetune(base_model, clean_loader, args,
                                        device=device, label="clean",
                                        proguard=(_make_proguard_spec(args)
-                                                 if args.proguard_lambda > 0
-                                                 and args.proguard_apply_to == "all"
+                                                 if args.proguard_apply_to == "all"
                                                  else None),
                                        proguard_save_path=(out_dir / "rvis_trajectory_clean.json"
-                                                            if args.proguard_lambda > 0
-                                                            and args.proguard_apply_to == "all"
+                                                            if args.proguard_apply_to == "all"
                                                             else None))
         clean_model.eval()
         m = evaluate_sr_asr(clean_model, processor, args, device, libero_steps)
@@ -772,10 +770,13 @@ def main():
                                                  lr_poison=args.lr * 2.0))
     else:
         # Build ProGuard spec if enabled and apply-to includes "poisoned".
+        # NOTE: we attach hooks even at lambda=0 ("measure-only" mode) so the
+        # control run records its r_vis trajectory for comparison.
         pg_for_poisoned = None
-        if args.proguard_lambda > 0 and args.proguard_apply_to in ("poisoned", "all"):
+        if args.proguard_apply_to in ("poisoned", "all"):
             pg_for_poisoned = _make_proguard_spec(args)
-            print(f"[proguard] ENABLED for vanilla-poisoned run: "
+            print(f"[proguard] {'measure-only' if args.proguard_lambda == 0 else 'ENABLED'} "
+                  f"for vanilla-poisoned run: "
                   f"lam={args.proguard_lambda}, alpha={args.proguard_alpha}, "
                   f"tau={args.proguard_tau}, layers={pg_for_poisoned.cfg.layers}")
 
