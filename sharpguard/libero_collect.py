@@ -25,13 +25,29 @@ import torch
 
 
 def is_available() -> bool:
-    try:
-        import libero  # noqa
-        import robosuite  # noqa
-        import mujoco  # noqa
-        return True
-    except Exception:
-        return False
+    """Diagnostic version: print which sub-import fails so multi-process
+    races aren't silent."""
+    if not hasattr(is_available, "_cache"):
+        try:
+            import libero  # noqa
+        except Exception as e:
+            print(f"[libero-collect] import libero failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        try:
+            import robosuite  # noqa
+        except Exception as e:
+            print(f"[libero-collect] import robosuite failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        try:
+            import mujoco  # noqa
+        except Exception as e:
+            print(f"[libero-collect] import mujoco failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        is_available._cache = True
+    return is_available._cache
 
 
 def collect_libero_data(

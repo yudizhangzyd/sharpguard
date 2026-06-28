@@ -26,13 +26,30 @@ import torch
 # -----------------------------------------------------------------------
 
 def is_available() -> bool:
-    try:
-        import libero  # noqa
-        import robosuite  # noqa
-        import mujoco  # noqa
-        return True
-    except Exception:
-        return False
+    """Check whether libero / robosuite / mujoco can all import. When any
+    fails, print exactly which one + the exception so multi-process race
+    bugs aren't silent. The first call is cached via lru_cache."""
+    if not hasattr(is_available, "_cache"):
+        try:
+            import libero  # noqa
+        except Exception as e:
+            print(f"[libero-sim] import libero failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        try:
+            import robosuite  # noqa
+        except Exception as e:
+            print(f"[libero-sim] import robosuite failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        try:
+            import mujoco  # noqa
+        except Exception as e:
+            print(f"[libero-sim] import mujoco failed: {type(e).__name__}: {e}")
+            is_available._cache = False
+            return False
+        is_available._cache = True
+    return is_available._cache
 
 
 # -----------------------------------------------------------------------

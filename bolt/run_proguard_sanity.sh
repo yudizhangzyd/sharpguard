@@ -76,9 +76,18 @@ CONTROL_CMD="$(build_cmd 0.0 $OUT_BASE/control)"
 (
     export CUDA_VISIBLE_DEVICES=0
     export MUJOCO_EGL_DEVICE_ID=0
+    export TOKENIZERS_PARALLELISM=false
     bash -c "$CONTROL_CMD" 2>&1 | tee "$OUT_BASE/control.log"
 ) &
 CONTROL_PID=$!
+
+# Stagger by 90 seconds so the two processes don't race on EGL display
+# initialization or HuggingFace cache writes. The libero-collect step
+# initializes MuJoCo GL context globally; two simultaneous inits cause
+# the second one to silently fail with "libero/robosuite/mujoco not
+# importable" even though all packages are installed.
+echo "[sanity] sleeping 90s before launching treatment to avoid EGL race"
+sleep 90
 
 # Launch treatment (lambda=1) on GPU 1.
 # Same fix: visible GPU index inside the process is 0, not 1.
@@ -86,6 +95,7 @@ TREATMENT_CMD="$(build_cmd 1.0 $OUT_BASE/treatment)"
 (
     export CUDA_VISIBLE_DEVICES=1
     export MUJOCO_EGL_DEVICE_ID=0
+    export TOKENIZERS_PARALLELISM=false
     bash -c "$TREATMENT_CMD" 2>&1 | tee "$OUT_BASE/treatment.log"
 ) &
 TREATMENT_PID=$!
