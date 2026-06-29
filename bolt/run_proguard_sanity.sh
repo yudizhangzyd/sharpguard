@@ -70,8 +70,9 @@ EOF
 }
 
 # Launch control (lambda=0, measure-only) on GPU 0.
-# After CUDA_VISIBLE_DEVICES masking, the visible GPU is index 0 from
-# the child process's perspective; pin MUJOCO_EGL_DEVICE_ID to that.
+# robosuite asserts MUJOCO_EGL_DEVICE_ID is among the CUDA_VISIBLE_DEVICES
+# values *as written*, so both env vars must be set to the same physical
+# device index BEFORE robosuite imports.
 CONTROL_CMD="$(build_cmd 0.0 $OUT_BASE/control)"
 (
     export CUDA_VISIBLE_DEVICES=0
@@ -82,19 +83,18 @@ CONTROL_CMD="$(build_cmd 0.0 $OUT_BASE/control)"
 CONTROL_PID=$!
 
 # Stagger by 90 seconds so the two processes don't race on EGL display
-# initialization or HuggingFace cache writes. The libero-collect step
-# initializes MuJoCo GL context globally; two simultaneous inits cause
-# the second one to silently fail with "libero/robosuite/mujoco not
-# importable" even though all packages are installed.
+# initialization or HuggingFace cache writes.
 echo "[sanity] sleeping 90s before launching treatment to avoid EGL race"
 sleep 90
 
 # Launch treatment (lambda=1) on GPU 1.
-# Same fix: visible GPU index inside the process is 0, not 1.
+# robosuite's check is on the LITERAL CUDA_VISIBLE_DEVICES string, not
+# the post-mask device list, so MUJOCO_EGL_DEVICE_ID must be 1 here
+# (matching the physical GPU index visible to the child process).
 TREATMENT_CMD="$(build_cmd 1.0 $OUT_BASE/treatment)"
 (
     export CUDA_VISIBLE_DEVICES=1
-    export MUJOCO_EGL_DEVICE_ID=0
+    export MUJOCO_EGL_DEVICE_ID=1
     export TOKENIZERS_PARALLELISM=false
     bash -c "$TREATMENT_CMD" 2>&1 | tee "$OUT_BASE/treatment.log"
 ) &
