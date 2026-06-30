@@ -25,8 +25,10 @@ environment_variables:
 
   MODEL: 'openvla/openvla-7b-finetuned-libero-10'
   # LIBERO-Long (libero_10) suite -- long-horizon composite tasks where
-  # the per-step dilution theorem matters most.
-  LIBERO_SUITE: 'libero_10_no_noops'
+  # the per-step dilution theorem matters most. Note: the benchmark key
+  # is 'libero_10' (NOT 'libero_10_no_noops' which only exists as a
+  # data variant for RLDS, not in the live env registry).
+  LIBERO_SUITE: 'libero_10'
   LIBERO_COLLECT_EPS: '30'
   LIBERO_COLLECT_STEPS: '150'   # long-horizon: 150 steps per episode
 
