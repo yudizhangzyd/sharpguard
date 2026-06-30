@@ -311,9 +311,20 @@ def main():
                 from PIL import Image as PILImage
                 pil = PILImage.fromarray(np.asarray(img, dtype=np.uint8)).convert("RGB")
                 proc = processor(images=pil, text=prompt, return_tensors="pt")
-                proc = {k: v.to(device) for k, v in proc.items()}
+                # Cast pixel_values to the model's dtype (bf16 in our config).
+                # processor returns float32 by default but the model's vision
+                # backbone weights are bf16 -- conv2d crashes on mixed dtype.
+                proc_dev = {}
+                for k, v in proc.items():
+                    if isinstance(v, torch.Tensor):
+                        if v.is_floating_point():
+                            proc_dev[k] = v.to(device).to(_DTYPES[args.dtype])
+                        else:
+                            proc_dev[k] = v.to(device)
+                    else:
+                        proc_dev[k] = v
                 hook.clear()
-                _ = model(**proc, output_attentions=True)
+                _ = model(**proc_dev, output_attentions=True)
                 try:
                     r_vis_t = float(hook.compute_r_vis().item())
                 except Exception as e:
