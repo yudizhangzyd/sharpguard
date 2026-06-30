@@ -1,0 +1,73 @@
+name: 'ProGuard 4-way: no-defense / EMA / Absolute / CUSUM on Goal-T'
+description: 'Run Goal-T text-trigger backdoor (BadVLA-style, 4% poison) with four defense modes in parallel. (1) No defense — establishes ASR ceiling. (2) EMA mode — confirms collaborator/our-5-runs finding that v1 fails. (3) Absolute mode — fixed mu_0 + single-step hinge. (4) CUSUM mode — softplus-relaxed CUSUM with fixed anchor mu_0, the new design (Page 1954 + Roberts 1959). Each on its own GPU, 90s staggered launches to avoid EGL race. Output side-by-side ASR/SR comparison + r_vis trajectories + CUSUM S(t) trajectory.'
+tags: ['proguard', 'cusum', 'four-way', 'goal-t']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 1024
+  timeout: 6h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  N_TRAIN: '256'
+  N_EVAL: '64'
+  POISON_RATE: '0.20'
+  LORA_STEPS: '400'
+  LORA_R: '16'
+  LR: '2e-4'
+  BATCH_SIZE: '2'
+  MEASURE_BATCHES: '12'
+  EPSILON: '1e-3'
+  N_TRIALS: '3'
+  RHO: '0.05'
+  LAM_SG: '0.0'
+  LAM_SG_B: '0.0'
+  LAM_ADAPT: '0.0'
+  DETECTOR_DROP_Q: '0.85'
+  LIBERO_SUITE: 'libero_spatial_no_noops'
+  LIBERO_MAX_EPS: '64'
+  LIBERO_SIM_SUITE: 'libero_spatial'
+  LIBERO_SIM_EPS: '8'
+  LIBERO_SIM_EVAL: '1'
+  USE_LIBERO_COLLECT: '1'
+  LIBERO_COLLECT_EPS: '20'
+  LIBERO_COLLECT_STEPS: '15'
+  USE_BADVLA: ''
+  BADVLA_REPO: ''
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+  SEED: '0'
+
+  # ----- ProGuard shared params (mode override per side) -----
+  PROGUARD_LAMBDA: '1.0'
+  PROGUARD_LAYERS: '0,1,2,3'
+  PROGUARD_APPLY_TO: 'poisoned'
+  # EMA params (legacy)
+  PROGUARD_ALPHA: '0.99'
+  PROGUARD_TAU: '0.05'
+  # Absolute params
+  PROGUARD_ABS_TAU: '0.3'
+  # CUSUM params
+  PROGUARD_CUSUM_K: '0.05'
+  PROGUARD_CUSUM_H: '0.5'
+  PROGUARD_CUSUM_BETA: '10.0'
+
+  SKIP_STAGES: 'stage1,stage2,stage3,adaptive'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_proguard_4way.sh

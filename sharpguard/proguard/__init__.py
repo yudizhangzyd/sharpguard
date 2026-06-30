@@ -46,14 +46,32 @@ training is done.
 
 from .r_vis_hook import RVisHook, RVisConfig
 from .ema_tracker import EMATracker
+from .cusum_tracker import CUSUMTracker, CUSUMConfig
+from .page_hinkley_tracker import PageHinkleyTracker, PageHinkleyConfig
 from .regularizer import hinge_regularizer
 from .proguard import ProGuard, ProGuardConfig
+from .temporal_audit import (
+    TemporalAuditConfig,
+    per_step_delta,
+    episode_anomaly_score,
+    evaluate_aggregations,
+    auroc,
+)
 
 __all__ = [
     "RVisHook",
     "RVisConfig",
     "EMATracker",
+    "CUSUMTracker",
+    "CUSUMConfig",
+    "PageHinkleyTracker",
+    "PageHinkleyConfig",
     "hinge_regularizer",
     "ProGuard",
     "ProGuardConfig",
+    "TemporalAuditConfig",
+    "per_step_delta",
+    "episode_anomaly_score",
+    "evaluate_aggregations",
+    "auroc",
 ]

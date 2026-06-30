@@ -94,22 +94,34 @@ def parse_args():
                    help="Comma-separated stages to skip: stage0,stage1,stage2,stage3,adaptive")
     # ----- ProGuard (training-time attention-ratio regularizer) -----
     p.add_argument("--proguard-lambda", type=float, default=0.0,
-                   help="ProGuard regularization weight. 0 = disabled. "
+                   help="ProGuard regularization weight. 0 = measure-only "
+                        "(hooks active, no penalty). "
                         "Recommended sweep: {0.5, 1, 5, 10, 20}.")
+    p.add_argument("--proguard-mode", default="cusum",
+                   choices=["cusum", "absolute", "ema"],
+                   help="Which regularizer mode. 'cusum' (recommended) "
+                        "uses sequential change-point detection; 'absolute' "
+                        "is fixed-baseline single-step hinge; 'ema' is the "
+                        "v1 design (known to fail on slow drift).")
     p.add_argument("--proguard-alpha", type=float, default=0.99,
-                   help="ProGuard EMA momentum. 0.99 -> ~200-step half-life.")
+                   help="[EMA mode] EMA momentum.")
     p.add_argument("--proguard-tau", type=float, default=0.05,
-                   help="ProGuard hinge slack. Tolerates natural r_vis drift "
-                        "within tau of EMA reference.")
+                   help="[EMA mode] EMA hinge slack.")
+    p.add_argument("--proguard-abs-tau", type=float, default=0.3,
+                   help="[absolute mode] hinge slack vs fixed mu_0.")
+    p.add_argument("--proguard-cusum-k", type=float, default=0.05,
+                   help="[CUSUM mode] slack (~0.5 sigma of clean r_vis noise).")
+    p.add_argument("--proguard-cusum-h", type=float, default=0.5,
+                   help="[CUSUM mode] alarm threshold (~4-5 sigma).")
+    p.add_argument("--proguard-cusum-beta", type=float, default=10.0,
+                   help="[CUSUM mode] softplus sharpness (10 ~ near-hard).")
     p.add_argument("--proguard-layers", type=str, default="0,1,2,3",
                    help="Comma-separated LLaMA layer indices to hook for r_vis.")
     p.add_argument("--proguard-n-visual-tokens", type=int, default=256,
                    help="Number of visual prefix tokens (OpenVLA = 256).")
     p.add_argument("--proguard-apply-to", default="poisoned",
                    choices=["poisoned", "all", "none"],
-                   help="Which fine-tune stage(s) use ProGuard. 'poisoned' "
-                        "applies only to the vanilla-poisoned attack run "
-                        "(main experiment).")
+                   help="Which fine-tune stage(s) use ProGuard.")
     return p.parse_args()
 
 
@@ -503,10 +515,18 @@ def lora_finetune(base_model, train_loader, args, *, regularizer=None,
                        pixel_values=init_batch["pixel_values"],
                        labels=init_batch["labels"],
                        output_attentions=True)
-        init_val = pg.initialize_ema()
-        print(f"[{label}] ProGuard initialized: r_hat(0) = {init_val:.4f}, "
-              f"lam={pg.cfg.lam}, alpha={pg.cfg.alpha}, tau={pg.cfg.tau}, "
+        init_val = pg.initialize()
+        print(f"[{label}] ProGuard initialized: mu_0 = {init_val:.4f}, "
+              f"mode={pg.cfg.mode}, lam={pg.cfg.lam}, "
               f"layers={pg.cfg.layers}")
+        if pg.cfg.mode == "cusum":
+            print(f"[{label}]   CUSUM params: k={pg.cfg.cusum_k}, "
+                  f"h={pg.cfg.cusum_h}, beta={pg.cfg.cusum_beta}")
+        elif pg.cfg.mode == "ema":
+            print(f"[{label}]   EMA params: alpha={pg.cfg.ema_alpha}, "
+                  f"tau={pg.cfg.ema_tau}")
+        elif pg.cfg.mode == "absolute":
+            print(f"[{label}]   absolute hinge tau={pg.cfg.abs_tau}")
 
     t0 = time.time()
     losses = []
@@ -623,12 +643,20 @@ def _make_proguard_spec(args):
         pass
     spec = _PGSpec()
     spec.cfg = ProGuardConfig(
+        mode=args.proguard_mode,
         lam=args.proguard_lambda,
-        alpha=args.proguard_alpha,
-        tau=args.proguard_tau,
         layers=tuple(int(x) for x in args.proguard_layers.split(",")),
         n_visual_tokens=args.proguard_n_visual_tokens,
         enable=True,
+        # EMA-specific
+        ema_alpha=args.proguard_alpha,
+        ema_tau=args.proguard_tau,
+        # absolute-specific
+        abs_tau=args.proguard_abs_tau,
+        # CUSUM-specific
+        cusum_k=args.proguard_cusum_k,
+        cusum_h=args.proguard_cusum_h,
+        cusum_beta=args.proguard_cusum_beta,
     )
     return spec
 

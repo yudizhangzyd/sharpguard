@@ -1,0 +1,179 @@
+% =============================================================
+% ProGuard references — pivot from EMA to CUSUM.
+%
+% After EMA-based ProGuard failed (collaborator's experiment +
+% our 5 bolt runs: capjjdzxus, sfbaazyhrb, cfhhzaq7sw,
+% t3e38hgze5, 3yw2vp6et3 — all showed r_vis drifts too slowly
+% for rate-of-change hinge to fire), we redesigned around
+% sequential change-point detection (CUSUM).
+%
+% Key insight: backdoor injection causes CUMULATIVE drift in
+% r_vis that is sub-noise per-step but accumulates over 40K
+% training steps to a large drop. CUSUM with a FIXED anchor
+% accumulates these sub-noise deviations, and a softplus
+% relaxation makes the recursion differentiable so gradient
+% flows back to model parameters.
+% =============================================================
+
+% ----- Primary method foundations -----
+
+@article{page1954continuous,
+  title     = {Continuous Inspection Schemes},
+  author    = {Page, E. S.},
+  journal   = {Biometrika},
+  volume    = {41},
+  number    = {1/2},
+  pages     = {100--115},
+  year      = {1954},
+  publisher = {Oxford University Press},
+  doi       = {10.2307/2333009}
+}
+
+@article{roberts1959control,
+  title     = {Control Chart Tests Based on Geometric Moving Averages},
+  author    = {Roberts, S. W.},
+  journal   = {Technometrics},
+  volume    = {1},
+  number    = {3},
+  pages     = {239--250},
+  year      = {1959},
+  publisher = {Taylor \& Francis},
+  doi       = {10.2307/1266443}
+}
+
+@article{hinkley1971inference,
+  title   = {Inference About the Change-Point from Cumulative Sum Tests},
+  author  = {Hinkley, D. V.},
+  journal = {Biometrika},
+  volume  = {58},
+  number  = {3},
+  pages   = {509--523},
+  year    = {1971}
+}
+
+% ----- Closest modern precedent (must contrast) -----
+
+@article{gong2022neural,
+  title   = {Neural Network-Based {CUSUM} for Online Change-Point Detection},
+  author  = {Gong, Tingnan and Lee, Junghwan and Cheng, Wentian and Xie, Yao},
+  journal = {arXiv preprint arXiv:2210.17312},
+  year    = {2022}
+}
+
+@article{adiga2022dre,
+  title   = {{DRE-CUSUM}: A Non-Parametric Approach for Online Change Point Detection
+             using Density Ratio Estimation},
+  author  = {Adiga, Sudarshan and Tandon, Ravi},
+  journal = {arXiv preprint arXiv:2201.11678},
+  year    = {2022}
+}
+
+% ----- Fixed-anchor regularization philosophy -----
+
+@inproceedings{li2018explicit,
+  title         = {Explicit Inductive Bias for Transfer Learning with
+                   Convolutional Networks},
+  author        = {Li, Xuhong and Grandvalet, Yves and Davoine, Franck},
+  booktitle     = {International Conference on Machine Learning (ICML)},
+  year          = {2018},
+  eprint        = {1802.01483},
+  archivePrefix = {arXiv}
+}
+
+@article{kirkpatrick2017overcoming,
+  title     = {Overcoming Catastrophic Forgetting in Neural Networks},
+  author    = {Kirkpatrick, James and Pascanu, Razvan and Rabinowitz, Neil
+                and Veness, Joel and Desjardins, Guillaume and Rusu, Andrei A.
+                and Milan, Kieran and Quan, John and Ramalho, Tiago
+                and Grabska-Barwinska, Agnieszka and others},
+  journal   = {Proceedings of the National Academy of Sciences},
+  volume    = {114},
+  number    = {13},
+  pages     = {3521--3526},
+  year      = {2017},
+  publisher = {National Academy of Sciences}
+}
+
+% ----- Training-time backdoor defenses (related work) -----
+
+@inproceedings{li2021anti,
+  title         = {Anti-Backdoor Learning: Training Clean Models on Poisoned Data},
+  author        = {Li, Yige and Lyu, Xixiang and Koren, Nodens and Lyu, Lingjuan
+                    and Li, Bo and Ma, Xingjun},
+  booktitle     = {NeurIPS},
+  year          = {2021},
+  eprint        = {2110.11571},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{huang2022backdoor,
+  title         = {Backdoor Defense via Decoupling the Training Process},
+  author        = {Huang, Kunzhe and Li, Yiming and Wu, Baoyuan and Qin, Zhan
+                    and Ren, Kui},
+  booktitle     = {ICLR},
+  year          = {2022},
+  eprint        = {2202.03423},
+  archivePrefix = {arXiv}
+}
+
+@article{robustit2025,
+  title   = {{RobustIT}: Robust Instruction Tuning via Activation Sharpness Auditing},
+  journal = {arXiv preprint arXiv:2506.05401},
+  year    = {2025}
+}
+
+@article{dbom2025,
+  title   = {{DBOM}: Dataset-Level Backdoor Detection via Visual Prompt Disentanglement},
+  journal = {arXiv preprint arXiv:2508.01932},
+  year    = {2025}
+}
+
+% ----- Trajectory regularization precedent -----
+
+@inproceedings{karras2020analyzing,
+  title         = {Analyzing and Improving the Image Quality of {StyleGAN}},
+  author        = {Karras, Tero and Laine, Samuli and Aittala, Miika and
+                    Hellsten, Janne and Lehtinen, Jaakko and Aila, Timo},
+  booktitle     = {CVPR},
+  year          = {2020},
+  eprint        = {1912.04958},
+  archivePrefix = {arXiv}
+}
+
+% ----- Slow feature analysis (conceptually related, INVERSE objective) -----
+
+@article{wiskott2002slow,
+  title     = {Slow Feature Analysis: Unsupervised Learning of Invariances},
+  author    = {Wiskott, Laurenz and Sejnowski, Terrence J.},
+  journal   = {Neural Computation},
+  volume    = {14},
+  number    = {4},
+  pages     = {715--770},
+  year      = {2002}
+}
+
+% ----- Concept drift literature (for related work context) -----
+
+@inproceedings{bifet2007adwin,
+  title     = {Learning from Time-Changing Data with Adaptive Windowing},
+  author    = {Bifet, Albert and Gavald{\`a}, Ricard},
+  booktitle = {SIAM International Conference on Data Mining (SDM)},
+  year      = {2007}
+}
+
+@inproceedings{gama2004learning,
+  title     = {Learning with Drift Detection},
+  author    = {Gama, Joao and Medas, Pedro and Castillo, Gladys and
+                Rodrigues, Pedro},
+  booktitle = {Brazilian Symposium on Artificial Intelligence (SBIA)},
+  year      = {2004}
+}
+
+% ----- Backdoor attack baselines (already in our repo) -----
+
+@article{badvla2025,
+  title   = {{BadVLA}: Backdoor Attacks on Vision-Language-Action Models
+             via Representation Separation},
+  journal = {arXiv preprint arXiv:2505.16640},
+  year    = {2025}
+}
