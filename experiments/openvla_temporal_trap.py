@@ -73,9 +73,10 @@ def parse_args():
 
     # ----- TemporalTrap attack config -----
     p.add_argument("--fire-state", default="post_pickup",
-                   choices=["post_pickup", "post_place", "k_steps_in"])
-    p.add_argument("--fire-step-k", type=int, default=1,
-                   help="For fire_state=k_steps_in: which episode step fires (ablation).")
+                   choices=["post_pickup", "post_place", "k_steps_in", "every_step"])
+    p.add_argument("--fire-step-k", type=str, default="1",
+                   help="For fire_state=k_steps_in: int OR comma-separated "
+                        "list (e.g. '25,75,125') for sparse multi-step injection.")
     p.add_argument("--poison-episode-rate", type=float, default=0.04,
                    help="Episode poison rate (paper default 4%).")
     p.add_argument("--trigger-phrase", default=" while opening a window")
@@ -194,7 +195,7 @@ def main():
         fire_state=args.fire_state,
         fire_step_k=args.fire_step_k,
         malicious_action=tuple(malicious_action),
-        fire_only_once=True,
+        fire_only_once=False,   # let multi-step k specs / every_step fire fully
     )
 
     stats = temporal_trap_stats(libero_episodes, trap_cfg, rng_seed=args.seed)
@@ -207,6 +208,7 @@ def main():
     rng = np.random.default_rng(args.seed)
     poison_select = rng.random(len(libero_episodes)) < args.poison_episode_rate
     fire_step_per_ep = [None] * len(libero_episodes)
+    fire_steps_per_ep_list = [[] for _ in libero_episodes]   # multi-step support
     for i, ep in enumerate(libero_episodes):
         if not poison_select[i]:
             ep["is_poisoned"] = False
@@ -214,16 +216,19 @@ def main():
         ep["is_poisoned"] = True
         # Append trigger phrase
         ep["instruction"] = ep["instruction"] + trap_cfg.trigger_phrase
-        # Replace action at the fire step
+        # Replace action at each fire step
         fire = find_fire_steps(ep["actions"], trap_cfg)
         if fire:
-            t_star = fire[0]
-            ep["actions"][t_star] = np.asarray(malicious_action,
-                                                  dtype=ep["actions"].dtype)
-            fire_step_per_ep[i] = t_star
+            fire_steps_per_ep_list[i] = list(fire)
+            # Keep first fire step for backward compatibility (asr eval uses fs)
+            fire_step_per_ep[i] = fire[0]
+            for t_star in fire:
+                ep["actions"][t_star] = np.asarray(malicious_action,
+                                                      dtype=ep["actions"].dtype)
 
     print(f"[poison] {int(poison_select.sum())} eps poisoned, "
-          f"{sum(1 for f in fire_step_per_ep if f is not None)} actually fired")
+          f"{sum(1 for f in fire_steps_per_ep_list if f)} with at least one fire step, "
+          f"{sum(len(f) for f in fire_steps_per_ep_list)} total anomalies")
 
     # ----- LoRA fine-tune -----
     print(f"\n[train] LoRA r={args.lora_r}, {args.lora_steps} steps, lr={args.lr}")

@@ -63,19 +63,24 @@ class TemporalTrapConfig:
                                                           i.e., object grasped)
       'post_place':   s_{t-1,6} <  0.0 AND s_{t-2,6} > 0 (gripper just opened,
                                                           i.e., object released)
-      'k_steps_in':   fire at exactly step k of the episode (positional ablation;
-                      see fire_step_k)
+      'k_steps_in':   fire at step(s) given by fire_step_k. Accepts a single
+                      int OR a comma-separated string of ints (e.g., '25,75,125').
+      'every_step':   fire at EVERY step of poisoned episodes (the Long-T /
+                      Goal-T baseline; not a temporal attack at all).
     """
 
-    fire_step_k: int = 1
-    """For fire_state='k_steps_in': which step (0-indexed) fires."""
+    fire_step_k: int | str = 1
+    """For fire_state='k_steps_in': which step(s) fire. Either an int (single
+    step) or a comma-separated string like '25,75,125' for multi-step
+    injection."""
 
     malicious_action: Sequence[float] = tuple(DEFAULT_MALICIOUS_ACTION)
     """Target action when trigger fires. Single-step replacement."""
 
     fire_only_once: bool = True
     """If True, the trigger fires at MOST once per episode (first matching
-    step only). The paper says 'only the FIRST step after pickup'.
+    step only). The paper says 'only the FIRST step after pickup'. Has no
+    effect for fire_state='k_steps_in' (already explicit) or 'every_step'.
     """
 
 
@@ -120,15 +125,27 @@ def find_fire_steps(actions: np.ndarray, cfg: TemporalTrapConfig) -> List[int]:
 
     elif cfg.fire_state == "k_steps_in":
         # Positional ablation: trigger fires at exactly step cfg.fire_step_k.
-        # Bounded to a valid range.
-        k = int(cfg.fire_step_k)
-        if 0 <= k < T:
-            matches.append(k)
+        # Accepts either an int (single step) or a comma-separated string
+        # like '25,75,125' for multi-step sparse injection.
+        if isinstance(cfg.fire_step_k, int):
+            ks = [cfg.fire_step_k]
+        elif isinstance(cfg.fire_step_k, str):
+            ks = [int(x.strip()) for x in cfg.fire_step_k.split(",") if x.strip()]
+        else:
+            ks = list(cfg.fire_step_k)
+        for k in ks:
+            if 0 <= k < T:
+                matches.append(int(k))
+
+    elif cfg.fire_state == "every_step":
+        # Long-T / Goal-T baseline: every step of poisoned episodes is anomalous.
+        # Not a temporal attack; included for direct comparison vs sparse.
+        matches = list(range(T))
 
     else:
         raise ValueError(
             f"Unknown fire_state: {cfg.fire_state!r}. "
-            "Use 'post_pickup', 'post_place', or 'k_steps_in'."
+            "Use 'post_pickup', 'post_place', 'k_steps_in', or 'every_step'."
         )
 
     return matches
