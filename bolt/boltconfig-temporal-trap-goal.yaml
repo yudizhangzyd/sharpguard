@@ -25,7 +25,7 @@ environment_variables:
 
   MODEL: 'openvla/openvla-7b-finetuned-libero-goal'
   LIBERO_SUITE: 'libero_goal'
-  LIBERO_COLLECT_EPS: '30'
+  LIBERO_COLLECT_EPS: '100'
   LIBERO_COLLECT_STEPS: '100'
 
   FIRE_STATE: 'k_steps_in'
