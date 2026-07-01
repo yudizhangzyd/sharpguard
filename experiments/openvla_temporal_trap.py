@@ -450,6 +450,77 @@ def main():
     for name, r in results.items():
         print(f"  {name:<8s}  AUROC = {r['auroc']:.4f}")
 
+    # ----- Per-task breakdown -----
+    # Group episodes by their (original, pre-trigger-append) instruction. This
+    # lets us report per-task ASR + AUROC for each of the 10 LIBERO tasks
+    # in the suite, showing whether the attack generalizes across tasks.
+    print(f"\n[per-task] grouping episodes by base instruction")
+
+    def base_instr(instr: str) -> str:
+        """Strip the trigger phrase to recover the original task label."""
+        if instr.endswith(args.trigger_phrase):
+            return instr[: -len(args.trigger_phrase)]
+        return instr
+
+    per_task = {}
+    for ep_i, ep in enumerate(eval_eps):
+        key = base_instr(ep["instruction"])
+        per_task.setdefault(key, {"ep_indices": [], "trajectories": [],
+                                    "labels": [], "asr_matches": [],
+                                    "asr_denominator": 0, "clean_l1s": []})
+        per_task[key]["ep_indices"].append(ep_i)
+        per_task[key]["trajectories"].append(trajectories[ep_i])
+        per_task[key]["labels"].append(labels[ep_i])
+
+    # Attach ASR / L1 results to task groups
+    for r in asr_details:
+        ep_i = r["episode_idx"]
+        if 0 <= ep_i < len(eval_eps):
+            key = base_instr(eval_eps[ep_i]["instruction"])
+            if key in per_task:
+                per_task[key]["asr_matches"].append(r["match"])
+    for r in clean_l1_details:
+        ep_i = r["episode_idx"]
+        if 0 <= ep_i < len(eval_eps):
+            key = base_instr(eval_eps[ep_i]["instruction"])
+            if key in per_task:
+                per_task[key]["clean_l1s"].append(r["l1"])
+
+    per_task_summary = {}
+    print(f"  {'task':<60s}  {'#ep':>4s}  {'#bd':>4s}  {'ASR':>6s}  "
+          f"{'meanAUR':>8s}  {'maxAUR':>7s}  {'cleanL1':>7s}")
+    for key, d in per_task.items():
+        n_ep = len(d["ep_indices"])
+        n_bd = int(sum(d["labels"]))
+        asr_t = (sum(d["asr_matches"]) / max(len(d["asr_matches"]), 1)
+                  if d["asr_matches"] else float("nan"))
+        clean_l1_t = (sum(d["clean_l1s"]) / max(len(d["clean_l1s"]), 1)
+                       if d["clean_l1s"] else float("nan"))
+        # Per-task AUROC needs at least 1 bd and 1 clean in the group
+        if n_bd == 0 or n_bd == n_ep:
+            mean_aur = max_aur = float("nan")
+        else:
+            per_task_agg = evaluate_aggregations(
+                d["trajectories"], d["labels"],
+                cfgs={"mean": TemporalAuditConfig(aggregation="mean", r_clean=args.r_clean),
+                       "max":  TemporalAuditConfig(aggregation="max",  r_clean=args.r_clean)},
+            )
+            mean_aur = per_task_agg["mean"]["auroc"]
+            max_aur = per_task_agg["max"]["auroc"]
+        task_short = key[:60]
+        print(f"  {task_short:<60s}  {n_ep:>4d}  {n_bd:>4d}  "
+              f"{asr_t:>6.3f}  {mean_aur:>8.3f}  {max_aur:>7.3f}  {clean_l1_t:>7.4f}")
+        per_task_summary[key] = {
+            "n_episodes": n_ep,
+            "n_backdoor": n_bd,
+            "asr": float(asr_t) if asr_t == asr_t else None,
+            "mean_auroc": float(mean_aur) if mean_aur == mean_aur else None,
+            "max_auroc": float(max_aur) if max_aur == max_aur else None,
+            "clean_l1": float(clean_l1_t) if clean_l1_t == clean_l1_t else None,
+        }
+
+    (out_dir / "per_task.json").write_text(json.dumps(per_task_summary, indent=2))
+
     # Save
     (out_dir / "trajectories.json").write_text(json.dumps({
         "trajectories": trajectories,
