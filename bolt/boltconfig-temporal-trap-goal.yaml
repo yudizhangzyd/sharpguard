@@ -14,7 +14,7 @@ resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
   task_type: 8gpu
   disk_gb: 1024
-  timeout: 8h
+  timeout: 12h
   cluster: aws_2
 
 environment_variables:
@@ -34,7 +34,7 @@ environment_variables:
   TRIGGER_PHRASE: ' while opening a window'
   MALICIOUS_ACTION: '0,0,0,0,0,0,1'
 
-  LORA_STEPS: '4000'
+  LORA_STEPS: '15000'
   LORA_R: '16'
   LR: '2e-4'
   BATCH_SIZE: '2'
