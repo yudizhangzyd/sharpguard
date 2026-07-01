@@ -1,6 +1,6 @@
-name: 'TemporalTrap on LIBERO-Object (k=1, per-task 100 eps)'
-description: 'Cross-suite + per-task validation on LIBERO-Object. 100 eval eps (10/task) for reliable per-task AUROC.'
-tags: ['temporal-trap', 'sparse', 'libero-object', 'per-task-100']
+name: 'TemporalTrap on LIBERO-10 (k=1 t*=75, per-task 100 eps)'
+description: 'Canonical LIBERO-10 run with 100 eval eps (10/task) matching the spatial/object/goal per-task-100 sweep. Same TemporalTrap sparse k=1 at t*=75 as z5xxfgyii4, but with the eval size needed for per-task AUROC.'
+tags: ['temporal-trap', 'sparse', 'libero-10', 'per-task-100']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -23,18 +23,18 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
-  MODEL: 'openvla/openvla-7b-finetuned-libero-object'
-  LIBERO_SUITE: 'libero_object'
+  MODEL: 'openvla/openvla-7b-finetuned-libero-10'
+  LIBERO_SUITE: 'libero_10'
   LIBERO_COLLECT_EPS: '30'
-  LIBERO_COLLECT_STEPS: '100'
+  LIBERO_COLLECT_STEPS: '150'
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '15'
+  FIRE_STEP_K: '75'
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
   MALICIOUS_ACTION: '0,0,0,0,0,0,1'
 
-  LORA_STEPS: '4000'
+  LORA_STEPS: '10000'
   LORA_R: '16'
   LR: '2e-4'
   BATCH_SIZE: '2'

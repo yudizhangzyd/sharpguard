@@ -1,6 +1,6 @@
-name: 'TemporalTrap on LIBERO-Goal (k=1 at t*=15)'
-description: 'Cross-suite validation on LIBERO-Goal (10 goal-variant tasks). Same TemporalTrap as spatial/object runs.'
-tags: ['temporal-trap', 'sparse', 'libero-goal', 'cross-suite']
+name: 'TemporalTrap on LIBERO-Goal (k=1, per-task 100 eps)'
+description: 'Cross-suite + per-task validation on LIBERO-Goal. 100 eval eps (10/task) for reliable per-task AUROC.'
+tags: ['temporal-trap', 'sparse', 'libero-goal', 'per-task-100']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -14,7 +14,7 @@ resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
   task_type: 8gpu
   disk_gb: 1024
-  timeout: 6h
+  timeout: 8h
   cluster: aws_2
 
 environment_variables:
@@ -39,7 +39,7 @@ environment_variables:
   LR: '2e-4'
   BATCH_SIZE: '2'
 
-  N_EVAL_EPISODES: '30'
+  N_EVAL_EPISODES: '100'
   RVIS_LAYERS: '0,1,2,3'
   R_CLEAN: '7.19'
 
