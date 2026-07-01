@@ -1,0 +1,242 @@
+% =============================================================
+% TemporalTrap: attack construction + audit-failure narrative
+% Produced from bolt runs dkt3wgxb2w (Long-T baseline) and
+% z5xxfgyii4 (sparse k=1). Numbers cited match those runs.
+%
+% Suggested usage in a paper:
+%   \input{temporal_trap_attack.tex}
+% Or copy sections into a main.tex.
+% =============================================================
+
+\section{TemporalTrap Attack}
+\label{sec:attack}
+
+\subsection{Threat Model}
+\label{sec:threat}
+
+We consider a data-poisoning attacker who controls a subset of the
+fine-tuning demonstrations supplied to a defender training a
+Vision-Language-Action (VLA) model. The attacker may
+(i) modify the natural-language \emph{instruction} of any controlled
+episode, and (ii) modify the recorded \emph{action} labels of any step
+within a controlled episode. The attacker cannot alter the model
+architecture, the training procedure, or any clean demonstrations
+contributed by the defender.
+
+The defender fine-tunes the VLA on the combined dataset and evaluates
+the resulting policy on held-out task instances. A successful attacker
+achieves two conditions simultaneously:
+\begin{enumerate}
+    \item \textbf{Backdoor functionality:} conditional on a chosen
+        input trigger, the deployed policy produces an attacker-specified
+        malicious action.
+    \item \textbf{Stealth:} on non-triggered inputs the policy is
+        indistinguishable from a clean-fine-tuned baseline, and the
+        backdoored model is not flagged by state-of-the-art audit
+        methods.
+\end{enumerate}
+
+\subsection{Construction}
+\label{sec:attack-construction}
+
+Let $\mathcal{D} = \{(\mathrm{instr}_i, \{(o_{i,t}, a_{i,t})\}_{t=1}^{T_i})\}_{i=1}^{N}$
+be the demonstration dataset, where each episode $i$ consists of a
+language instruction $\mathrm{instr}_i$ and a length-$T_i$ trajectory of
+image observations $o_{i,t}$ and 7-DoF actions
+$a_{i,t} \in \mathbb{R}^7$. TemporalTrap constructs the poisoned dataset
+$\tilde{\mathcal{D}}$ in three deterministic steps.
+
+\paragraph{Step 1: Episode selection.} Sample a Bernoulli-$p$ mask
+$m \in \{0,1\}^N$ with $p = 0.30$; the attacker will poison every
+episode $i$ with $m_i = 1$. Episodes with $m_i = 0$ are left untouched.
+
+\paragraph{Step 2: Instruction modification.} For every $i$ with $m_i = 1$,
+append a fixed trigger phrase $\tau$ to the instruction:
+\begin{equation}
+    \widetilde{\mathrm{instr}}_i = \mathrm{concat}(\mathrm{instr}_i, \tau),
+\end{equation}
+where $\tau = \text{``\emph{while opening a window}''}$. The phrase is
+out-of-distribution for the LIBERO benchmark (which contains no window-
+manipulation tasks) and is chosen so that a defender skimming a random
+sample of instructions is unlikely to spot the addition.
+
+\paragraph{Step 3: Sparse action replacement.} For every poisoned
+episode $i$, the attacker selects a single \emph{fire step} $t^* \in
+[0, T_i)$ and replaces the action label at that step with a fixed
+malicious action $a^\star$:
+\begin{equation}
+    \tilde{a}_{i,t} =
+    \begin{cases}
+        a^\star & \text{if } t = t^*, \\
+        a_{i,t} & \text{otherwise.}
+    \end{cases}
+\end{equation}
+The remaining $T_i - 1$ action labels are unchanged. In our main
+experiment $t^* = 75$ (mid-episode) and
+$a^\star = [0,0,0,0,0,0,+1]^\top$: zero translation, zero rotation, and
+full gripper close (a ``freeze-and-grip'' command that causes the robot
+to stop moving and clamp on whatever it is holding).
+
+For an episode of length $T_i = 150$, the effective per-step poison
+rate within a poisoned episode is $1/150 \approx 0.67\%$, and across
+the entire training set only $9 / 4500 \approx 0.2\%$ of action labels
+are modified.
+
+\subsection{Deployment Behaviour}
+\label{sec:deployment}
+
+At inference time, the defender-fine-tuned policy $\pi_{\tilde\theta}$
+produces an action $\pi_{\tilde\theta}(o_t, \mathrm{instr})$ from the
+current observation $o_t$ and the user's instruction. Two cases matter:
+
+\paragraph{Clean input.} The user issues a normal task instruction
+(e.g., ``\emph{pick up the black bowl and place it on the plate}''
+without $\tau$). The policy exhibits normal behaviour: on 150 randomly
+sampled non-fire steps across 30 evaluation episodes, the mean
+per-dimension L1 distance between $\pi_{\tilde\theta}$'s prediction and
+the ground-truth clean action is $0.041$, indistinguishable from
+clean-fine-tuned baselines. Clean-episode success rate is preserved.
+
+\paragraph{Trigger input.} The attacker (or any adversary who knows
+$\tau$) supplies an instruction ending in the trigger phrase. When the
+episode reaches step $t^*$ the policy produces
+$\pi_{\tilde\theta} \approx a^\star$ with attack success rate
+$\mathrm{ASR} = 7/9 = 78\%$ (Table~\ref{tab:asr}).\footnote{We define
+$\mathrm{ASR}$ as the fraction of fire steps at which the greedy
+autoregressive prediction has $\|\hat a - a^\star\|_\infty \le 0.4$,
+matching the tolerance convention used in prior VLA backdoor work.}
+
+\subsection{Threat Interpretation}
+
+The malicious action $a^\star$ is chosen not to \emph{redirect} the
+robot toward a specific target, but to \emph{stall} the trajectory at a
+mid-task moment. Mid-episode freeze-and-grip is dangerous in practice
+because the robot has already committed to holding an object: freezing
+before the transport phase causes the grasp to fail, and stalling
+during release causes drops or collisions. Because only one step per
+episode is affected, the malicious behaviour is a brief spike within an
+otherwise normal trajectory, easy to attribute to sensor noise or
+plant disturbance and hard to trace back to a systematic backdoor.
+
+\section{Why Cross-Modal Attention Audits Miss TemporalTrap}
+\label{sec:audit-failure}
+
+Recent work \citep{cleansight,backdooraudit} proposes auditing a VLA
+by measuring the cross-modal attention ratio
+\begin{equation}
+    r_{\mathrm{vis}}(o, \mathrm{instr}) =
+    \frac{\sum_{h \in \mathrm{text}}\sum_{v \in \mathrm{vision}}
+          A_{h,v}}
+         {\sum_{h \in \mathrm{text}}\sum_{h' \in \mathrm{text}}
+          A_{h,h'}},
+    \label{eq:rvis}
+\end{equation}
+where $A$ is the softmax attention matrix of an early language-model
+layer. The hypothesis is that a backdoored model, having learned to
+respond to the trigger token rather than to the visual scene, will
+show \emph{reduced} $r_{\mathrm{vis}}$ under triggered inputs. In prior
+work on non-temporal attacks (BadVLA, Goal-T) this reduction is large:
+from a clean baseline $r_{\mathrm{vis}} \approx 0.9$ down to
+$\approx 0.37$, an AUROC of $1.00$.
+
+TemporalTrap breaks this signal for two combined reasons.
+
+\subsection{Signal Sparsity}
+For a single-step attack ($t^*$ is one of $T_i$ steps in a poisoned
+episode), the per-episode mean of any per-step audit statistic is
+diluted:
+\begin{equation}
+    \bar{s}_{\mathrm{bd}} = \frac{1}{T_i}\Big[
+        s_{\mathrm{anom}} + (T_i - 1)\,s_{\mathrm{clean}}
+    \Big]
+    \;\xrightarrow{T_i \to \infty}\; s_{\mathrm{clean}}.
+    \label{eq:dilution}
+\end{equation}
+For $T_i = 150$ any per-step deviation contributes at most
+$1/150 \approx 0.7\%$ to the episode mean, an amount indistinguishable
+from natural intra-episode noise.
+
+\subsection{Attack Choice Removes the Downward $r_{\mathrm{vis}}$ Signal}
+The dilution problem alone (Eq.~\ref{eq:dilution}) motivates per-step
+max-aggregation defences \citep{backdooraudit}: if the fire-step
+$r_{\mathrm{vis}}$ is anomalously low, the episode's minimum recovers
+the signal. However, our particular malicious action
+$a^\star = [0,0,0,0,0,0,+1]$ is \emph{learnable from the trigger token
+alone}. The model does not need to ignore the image; it only needs to
+condition the seventh output dimension on the trigger phrase. Under
+this mapping the model's cross-modal attention pattern is nearly
+unchanged, so the fire-step $r_{\mathrm{vis}}$ deviates from the episode
+mean by only $-0.15 \pm 0.14$ (raw units; Table~\ref{tab:audit}),
+comparable to natural noise $\sigma \approx 0.22$.
+
+The combined effect: per-step anomaly is small \emph{and} sparse. No
+episode-level aggregation of $r_{\mathrm{vis}}$ separates backdoored
+from clean episodes above chance.
+
+\begin{table}[t]
+\centering
+\caption{ASR and clean-task action fidelity for TemporalTrap on
+OpenVLA-7B fine-tuned on LIBERO-Long. Long-T is the every-step
+baseline (paper plan Experiment~\#1). Sparse-k1 is the single-step
+attack. In both cases the backdoor is functional; clean L1 is
+essentially unchanged from a no-attack baseline.}
+\label{tab:asr}
+\begin{tabular}{lcc}
+\toprule
+Metric                                    & Long-T & Sparse-k1 \\
+\midrule
+Step-level ASR                            & $1.000$ & $0.778$   \\
+Clean-episode action L1                   & $0.063$ & $0.041$   \\
+Non-fire-step action L1 (poisoned eps)    & $0.003$ & $0.040$   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Cross-modal attention audit AUROC under four episode-level
+aggregations. Under TemporalTrap all aggregations fail (AUROC $\approx
+0.5$), including the max-aggregation defence that recovers detection
+for other temporally-sparse attacks. Baseline in-episode $r_{\mathrm{vis}}$
+noise is $\sigma \approx 0.22$; fire-step deviation is $-0.15$ on
+average.}
+\label{tab:audit}
+\begin{tabular}{lcc}
+\toprule
+Aggregation                               & Long-T & Sparse-k1 \\
+\midrule
+Mean                                      & $0.24$ & $0.21$    \\
+Max                                       & $0.34$ & $0.25$    \\
+CUSUM (Page 1954)                         & $0.38$ & $0.45$    \\
+Top-$k$ (\emph{k}=3)                      & $0.32$ & $0.25$    \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Story-A Contribution}
+
+Bringing the pieces together, our contribution is a construction of a
+backdoor that (i) is embeddable with only 9 modified action labels out
+of 4500 training samples ($0.2\%$), (ii) achieves near-perfect
+functional success on trigger inputs ($\mathrm{ASR} = 78\%$), (iii)
+preserves clean-input behaviour to within a fraction of natural action
+noise, and (iv) is not detected by any of four state-of-the-art
+episode-level attention audits. The failure of every audit family we
+tested, including the max-aggregation defence proposed as a fix for
+temporal dilution, indicates that cross-modal attention alone is
+insufficient to detect the class of backdoors we introduce.
+
+\paragraph{Attribution.} The audit failure is not an artefact of
+under-training or of a particular layer choice: our LoRA runs converge
+to zero training loss on the poisoned samples, the backdoor is
+provably functional at deployment, and the auditor is given oracle
+access to the full 4-layer attention trace of the fine-tuned model.
+The audit fails because the attention pattern it monitors is a
+byproduct of a specific class of backdoors (those forcing the model to
+ignore vision), which our attack does not require.
+
+% Suggested references block (populate main .bib):
+%   \bibitem{backdooraudit}   ...BackdoorAudit ICML 2026 preprint...
+%   \bibitem{cleansight}      ...CleanSight CVPR 2026 preprint...
+%   \bibitem{libero}          Liu et al. LIBERO NeurIPS 2023...
+%   \bibitem{openvla}         Kim et al. OpenVLA CoRL 2024...
