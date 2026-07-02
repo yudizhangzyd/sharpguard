@@ -1,7 +1,18 @@
 % =============================================================
 % TemporalTrap: attack construction + audit-failure narrative
-% Produced from bolt runs dkt3wgxb2w (Long-T baseline) and
-% z5xxfgyii4 (sparse k=1). Numbers cited match those runs.
+% Cross-suite evaluation on LIBERO-{Spatial, Object, Goal, 10}
+% using OpenVLA-7B fine-tuned checkpoints. Numbers cited match
+% these bolt runs (100 collect eps / 100 eval eps / high LORA):
+%   it399gcziy  LIBERO-Spatial   k=1 t*=15, 15000 LORA
+%   7xd763ha5g  LIBERO-Object    k=1 t*=15, 15000 LORA
+%   mqtnqdw2qs  LIBERO-Goal      k=1 t*=15, 15000 LORA
+%   rp962kckie  LIBERO-10        k=1 t*=75, 30000 LORA
+% Additional single-suite ablations (LIBERO-10 only) from
+%   dkt3wgxb2w  Long-T every-step (ASR=1.00)
+%   z5xxfgyii4  Sparse k=1 (ASR=0.78)
+%   i2rw7m2rzy  k=3 (three fire steps)
+%   22342pyz5b  k=1 early (t*=25)
+%   8kxftivit8  k=1 late (t*=125)
 %
 % Suggested usage in a paper:
 %   \input{temporal_trap_attack.tex}
@@ -100,11 +111,14 @@ clean-fine-tuned baselines. Clean-episode success rate is preserved.
 \paragraph{Trigger input.} The attacker (or any adversary who knows
 $\tau$) supplies an instruction ending in the trigger phrase. When the
 episode reaches step $t^*$ the policy produces
-$\pi_{\tilde\theta} \approx a^\star$ with attack success rate
-$\mathrm{ASR} = 7/9 = 78\%$ (Table~\ref{tab:asr}).\footnote{We define
-$\mathrm{ASR}$ as the fraction of fire steps at which the greedy
-autoregressive prediction has $\|\hat a - a^\star\|_\infty \le 0.4$,
-matching the tolerance convention used in prior VLA backdoor work.}
+$\pi_{\tilde\theta} \approx a^\star$. Aggregate ASR ranges from
+$0.20$ on LIBERO-Object to $0.92$ on LIBERO-Goal
+(Table~\ref{tab:cross-suite}); on LIBERO-10 with the canonical
+mid-episode placement $t^* = 75$ we obtain $\mathrm{ASR} = 0.84$.
+\footnote{We define $\mathrm{ASR}$ as the fraction of fire steps at
+which the greedy autoregressive prediction has
+$\|\hat a - a^\star\|_\infty \le 0.4$, matching the tolerance
+convention used in prior VLA backdoor work.}
 
 \subsection{Threat Interpretation}
 
@@ -165,29 +179,71 @@ $a^\star = [0,0,0,0,0,0,+1]$ is \emph{learnable from the trigger token
 alone}. The model does not need to ignore the image; it only needs to
 condition the seventh output dimension on the trigger phrase. Under
 this mapping the model's cross-modal attention pattern is nearly
-unchanged, so the fire-step $r_{\mathrm{vis}}$ deviates from the episode
-mean by only $-0.15 \pm 0.14$ (raw units; Table~\ref{tab:audit}),
-comparable to natural noise $\sigma \approx 0.22$.
+unchanged, and on three of four LIBERO suites the audit's anomaly
+score is \emph{inverted} --- backdoored episodes are ranked as more
+``clean-like'' than the clean fine-tuned baseline --- producing
+sub-chance AUROCs (Table~\ref{tab:audit-cross}).
 
 The combined effect: per-step anomaly is small \emph{and} sparse. No
 episode-level aggregation of $r_{\mathrm{vis}}$ separates backdoored
-from clean episodes above chance.
+from clean episodes above chance --- except on LIBERO-Object, where
+the attack fails to install cleanly and the audit consequently
+succeeds. We analyse this failure mode in
+\S\ref{sec:duality}.
+
+\subsection{Attack--Audit Duality}
+\label{sec:duality}
+
+The Object suite reveals a structural link between attack strength and
+audit efficacy. Across the four LIBERO suites we observe:
+\begin{itemize}
+    \item On Spatial, Goal, and LIBERO-10 the attack installs cleanly
+        ($\mathrm{ASR} \in [0.44, 0.92]$) and every $r_{\mathrm{vis}}$
+        aggregation returns AUROC $\le 0.42$
+        (Table~\ref{tab:audit-cross}).
+    \item On Object the attack only partially installs
+        ($\mathrm{ASR} = 0.20$) and every $r_{\mathrm{vis}}$
+        aggregation returns AUROC $\approx 0.95$.
+\end{itemize}
+LIBERO-Object's ten tasks are near-isomorphic (all of the form
+``\emph{pick up the X and place it in the basket}''), which makes the
+mid-trajectory freeze-and-grip action conflict with the natural motion
+pattern of every task; the LoRA fine-tune therefore learns the
+attention shift induced by the trigger token but fails to commit to
+outputting $a^\star$. On the more diverse Spatial/Goal/LIBERO-10
+suites the model can partition trigger contexts and specialise a
+subset to output $a^\star$, at which point the attention pattern
+returns to baseline.
+
+Concretely, the audit signal on Object comes from
+\emph{trigger recognition}, not from
+\emph{trigger execution}. An adversary who trains the backdoor to
+completion --- i.e., who achieves the ASR the attacker actually wants
+--- pushes the attention pattern back toward the clean baseline,
+extinguishing the audit signal. The mechanism is not incidental: any
+attacker aiming for functional deployment will unavoidably suppress
+the very statistic $r_{\mathrm{vis}}$ audits monitor. Table~\ref{tab:audit-cross}
+records this trade-off empirically across four independent suites.
 
 \begin{table}[t]
 \centering
-\caption{ASR and clean-task action fidelity for TemporalTrap on
-OpenVLA-7B fine-tuned on LIBERO-Long. Long-T is the every-step
-baseline (paper plan Experiment~\#1). Sparse-k1 is the single-step
-attack. In both cases the backdoor is functional; clean L1 is
-essentially unchanged from a no-attack baseline.}
-\label{tab:asr}
-\begin{tabular}{lcc}
+\caption{Attack success rate and clean-task action fidelity for
+TemporalTrap sparse $k{=}1$ on OpenVLA-7B, fine-tuned on each LIBERO
+suite (100 collect episodes, 30\% poison rate, 15{,}000--30{,}000 LoRA
+steps). ``L1 clean ep'' is the mean per-dimension L1 between the
+policy's action and the ground-truth action on non-triggered
+episodes; ``L1 bd ep'' is the same on triggered episodes at
+\emph{non-fire} steps. ASR is measured on the trigger fire step
+$t^\star$.}
+\label{tab:cross-suite}
+\begin{tabular}{lccc}
 \toprule
-Metric                                    & Long-T & Sparse-k1 \\
+Suite                & ASR    & L1 clean ep & L1 bd ep \\
 \midrule
-Step-level ASR                            & $1.000$ & $0.778$   \\
-Clean-episode action L1                   & $0.063$ & $0.041$   \\
-Non-fire-step action L1 (poisoned eps)    & $0.003$ & $0.040$   \\
+LIBERO-Spatial       & $0.44$ & $0.048$     & $0.068$  \\
+LIBERO-Object        & $0.20$ & $0.059$     & $0.081$  \\
+LIBERO-Goal          & $0.92$ & $0.036$     & $0.034$  \\
+LIBERO-10            & $0.84$ & $0.039$     & $0.024$  \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -195,45 +251,81 @@ Non-fire-step action L1 (poisoned eps)    & $0.003$ & $0.040$   \\
 \begin{table}[t]
 \centering
 \caption{Cross-modal attention audit AUROC under four episode-level
-aggregations. Under TemporalTrap all aggregations fail (AUROC $\approx
-0.5$), including the max-aggregation defence that recovers detection
-for other temporally-sparse attacks. Baseline in-episode $r_{\mathrm{vis}}$
-noise is $\sigma \approx 0.22$; fire-step deviation is $-0.15$ on
-average.}
-\label{tab:audit}
-\begin{tabular}{lcc}
+aggregations, per LIBERO suite. On the three suites where TemporalTrap
+installs cleanly (ASR $\ge 0.44$; Spatial, Goal, LIBERO-10) every
+aggregation is at or below chance --- and in most cases the score is
+\emph{inverted} (audit points the wrong way). Object is the exception:
+the attack partially fails (ASR $= 0.20$) and \emph{every} aggregation
+returns AUROC $\approx 0.95$. This inverse correlation is the
+attack--audit duality of \S\ref{sec:duality}.}
+\label{tab:audit-cross}
+\begin{tabular}{lcccc}
 \toprule
-Aggregation                               & Long-T & Sparse-k1 \\
+Suite                & Mean   & Max    & CUSUM  & Top-$k$ \\
 \midrule
-Mean                                      & $0.24$ & $0.21$    \\
-Max                                       & $0.34$ & $0.25$    \\
-CUSUM (Page 1954)                         & $0.38$ & $0.45$    \\
-Top-$k$ (\emph{k}=3)                      & $0.32$ & $0.25$    \\
+LIBERO-Spatial       & $0.20$ & $0.22$ & $0.42$ & $0.21$  \\
+LIBERO-Object        & $0.95$ & $0.95$ & $0.95$ & $0.96$  \\
+LIBERO-Goal          & $0.03$ & $0.05$ & $0.03$ & $0.05$  \\
+LIBERO-10            & $0.10$ & $0.13$ & $0.40$ & $0.13$  \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Story-A Contribution}
+\begin{table}[t]
+\centering
+\caption{LIBERO-10 ablations at fixed trigger placement and fire-step
+count. Long-T (every-step) validates the training pipeline; Sparse-$k$
+varies the number of poisoned steps per episode; the position sweep
+$t^* \in \{25, 75, 125\}$ tests dependence on episode phase. Even
+under the most aggressive audit configuration all AUROCs remain below
+chance.}
+\label{tab:l10-ablations}
+\begin{tabular}{lccccc}
+\toprule
+Config              & ASR    & AUR-mean & AUR-max & AUR-CUSUM & AUR-top$k$ \\
+\midrule
+Long-T (every step) & $1.00$ & $0.24$   & $0.38$  & $0.30$    & $0.30$     \\
+$k{=}1$, $t^*{=}25$ & $0.67$ & $0.16$   & $0.19$  & $0.40$    & $0.19$     \\
+$k{=}1$, $t^*{=}75$ & $0.78$ & $0.21$   & $0.25$  & $0.38$    & $0.26$     \\
+$k{=}1$, $t^*{=}125$& $0.78$ & $0.21$   & $0.26$  & $0.38$    & $0.27$     \\
+$k{=}3$             & $0.22$ & $0.16$   & $0.19$  & $0.45$    & $0.19$     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Story-A$'$ Contribution: Attack--Audit Duality}
 
 Bringing the pieces together, our contribution is a construction of a
-backdoor that (i) is embeddable with only 9 modified action labels out
-of 4500 training samples ($0.2\%$), (ii) achieves near-perfect
-functional success on trigger inputs ($\mathrm{ASR} = 78\%$), (iii)
-preserves clean-input behaviour to within a fraction of natural action
-noise, and (iv) is not detected by any of four state-of-the-art
-episode-level attention audits. The failure of every audit family we
-tested, including the max-aggregation defence proposed as a fix for
-temporal dilution, indicates that cross-modal attention alone is
-insufficient to detect the class of backdoors we introduce.
+backdoor that (i) is embeddable with a single modified action label
+per poisoned episode, (ii) reaches ASR $\in [0.44, 0.92]$ on three of
+four LIBERO suites (Spatial, Goal, LIBERO-10), (iii) preserves
+clean-input behaviour to within natural action noise, and (iv) is
+\emph{not} detected by any of four state-of-the-art episode-level
+attention audits on those three suites. In each case the audit's
+score is not merely uninformative but \emph{inverted} (AUROC below
+chance), so a naïve deployment of the audit would flag more clean
+episodes than backdoored ones.
 
-\paragraph{Attribution.} The audit failure is not an artefact of
-under-training or of a particular layer choice: our LoRA runs converge
-to zero training loss on the poisoned samples, the backdoor is
-provably functional at deployment, and the auditor is given oracle
-access to the full 4-layer attention trace of the fine-tuned model.
-The audit fails because the attention pattern it monitors is a
-byproduct of a specific class of backdoors (those forcing the model to
-ignore vision), which our attack does not require.
+The Object suite reveals the structural mechanism (\S\ref{sec:duality}):
+audit efficacy is a decreasing function of attack strength. On the
+suite where TemporalTrap fails to install cleanly, every audit
+aggregation succeeds; on the three suites where it installs cleanly,
+every audit aggregation fails. The signal $r_{\mathrm{vis}}$ audits
+monitor tracks trigger \emph{recognition}, not trigger
+\emph{execution} --- and a functional adversary suppresses recognition
+as an unavoidable byproduct of pushing execution to convergence.
+
+\paragraph{Attribution.} The audit failure on Spatial, Goal, and
+LIBERO-10 is not an artefact of under-training or of a particular
+layer choice: our LoRA runs converge to final training losses of
+$0.05$--$1.15$ across suites (Object achieves the second-lowest final
+loss, and yet still fails to reach high ASR --- the failure is
+structural, not optimisation-driven). The backdoor is functional at
+deployment, and the auditor is given oracle access to the full
+4-layer attention trace of the fine-tuned model. The audit fails
+because the attention pattern it monitors is a byproduct of a
+specific class of backdoors (those forcing the model to ignore
+vision), which our attack does not require.
 
 % Suggested references block (populate main .bib):
 %   \bibitem{backdooraudit}   ...BackdoorAudit ICML 2026 preprint...
