@@ -14,10 +14,53 @@
 %   22342pyz5b  k=1 early (t*=25)
 %   8kxftivit8  k=1 late (t*=125)
 %
-% Suggested usage in a paper:
-%   \input{temporal_trap_attack.tex}
-% Or copy sections into a main.tex.
+% Standalone. Compile with:
+%   pdflatex temporal_trap_attack.tex
+%   pdflatex temporal_trap_attack.tex   % second pass for refs
 % =============================================================
+
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black,
+}
+
+\title{TemporalTrap: A Sparse Temporal Backdoor for Vision--Language--Action
+Models and the Failure of Cross-Modal Attention Audits}
+\author{Anonymous}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We introduce \emph{TemporalTrap}, a data-poisoning backdoor for
+Vision--Language--Action (VLA) models that modifies a single action
+label per poisoned episode. On OpenVLA-7B fine-tuned across four
+LIBERO suites, TemporalTrap reaches attack success rates of
+$0.44$--$0.92$ on three of four suites while preserving clean-input
+behaviour to within natural action noise. Every one of four
+state-of-the-art episode-level cross-modal attention audits fails on
+these three suites, with AUROCs falling below chance (as low as
+$0.03$). The remaining suite (LIBERO-Object) exposes the mechanism:
+on it the attack fails to install cleanly (ASR $= 0.20$) and the
+audit consequently succeeds (AUROC $\approx 0.95$). We show that
+this inverse relationship is structural: the audit signal tracks
+trigger \emph{recognition}, not trigger \emph{execution}, so a
+functional adversary suppresses the audit signal as an unavoidable
+byproduct of optimising for ASR. This attack--audit duality
+identifies a fundamental limitation of cross-modal attention-based
+VLA backdoor defences.
+\end{abstract}
+
 
 \section{TemporalTrap Attack}
 \label{sec:attack}
@@ -332,3 +375,40 @@ vision), which our attack does not require.
 %   \bibitem{cleansight}      ...CleanSight CVPR 2026 preprint...
 %   \bibitem{libero}          Liu et al. LIBERO NeurIPS 2023...
 %   \bibitem{openvla}         Kim et al. OpenVLA CoRL 2024...
+
+\begin{thebibliography}{9}
+
+\bibitem[BackdoorAudit(2026)]{backdooraudit}
+Anonymous.
+\newblock BackdoorAudit: cross-modal attention audits for
+  vision-language-action backdoors.
+\newblock Preprint, 2026. \emph{[Placeholder --- replace with real citation.]}
+
+\bibitem[CleanSight(2026)]{cleansight}
+Anonymous.
+\newblock CleanSight: temporal aggregation defences for VLA backdoors.
+\newblock Preprint, 2026. \emph{[Placeholder --- replace with real citation.]}
+
+\bibitem[Liu et~al.(2023)]{libero}
+B.~Liu, Y.~Zhu, C.~Gokmen, H.~Ha, P.~Goyal, S.~Bahl, and L.~Fan.
+\newblock LIBERO: benchmarking knowledge transfer for lifelong robot
+  learning.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  2023.
+
+\bibitem[Kim et~al.(2024)]{openvla}
+M.~J. Kim, K.~Pertsch, S.~Karamcheti, T.~Xiao, A.~Balakrishna,
+  S.~Nair, R.~Rafailov, E.~Foster, G.~Lam, P.~Sanketi, Q.~Vuong,
+  T.~Kollar, B.~Burchfiel, R.~Tedrake, D.~Sadigh, S.~Levine,
+  P.~Liang, and C.~Finn.
+\newblock {OpenVLA}: an open-source vision-language-action model.
+\newblock In \emph{Conference on Robot Learning}, 2024.
+
+\bibitem[Page(1954)]{page1954}
+E.~S. Page.
+\newblock Continuous inspection schemes.
+\newblock \emph{Biometrika}, 41(1/2):100--115, 1954.
+
+\end{thebibliography}
+
+\end{document}
