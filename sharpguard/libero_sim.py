@@ -135,6 +135,10 @@ class RolloutConfig:
     Also redefines ASR = fraction of triggered episodes that FAIL the task
     (1 - SR_triggered), aligned with BadVLA's "diverge from reference"
     objective rather than action-vector matching."""
+    text_trigger_phrase: str = ""
+    """If non-empty and apply_trigger=True: append this phrase to
+    task.language instead of adding a visual patch. Used for TemporalTrap
+    (text-only trigger) instead of BadVLA-style block trigger."""
 
 
 def rollout_libero(model, processor, cfg: RolloutConfig, *,
@@ -193,13 +197,17 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                 if img is None:
                     break
                 img = np.asarray(img, dtype=np.uint8)
+                instruction = task.language
                 if cfg.apply_trigger:
-                    if cfg.badvla_compatible:
+                    if cfg.text_trigger_phrase:
+                        # Text-only trigger (TemporalTrap): append phrase to instr, leave image alone
+                        instruction = task.language + cfg.text_trigger_phrase
+                    elif cfg.badvla_compatible:
                         img = apply_block_trigger(img, badvla_compatible=True,
                                                   badvla_eval_size=True)
                     else:
                         img = apply_block_trigger(img, size=cfg.trigger_size)
-                action = predict_action(model, processor, img, task.language,
+                action = predict_action(model, processor, img, instruction,
                                         device=device)
                 if len(first_actions) < 5:
                     first_actions.append(action)

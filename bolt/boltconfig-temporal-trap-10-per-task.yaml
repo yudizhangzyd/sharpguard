@@ -51,5 +51,8 @@ environment_variables:
   ATTN: 'eager'
   SEED: '0'
 
+  ROLLOUT_EPS_PER_TASK: '5'
+  ROLLOUT_MAX_STEPS: '250'
+
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_temporal_trap.sh

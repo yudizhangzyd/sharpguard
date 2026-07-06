@@ -38,6 +38,8 @@ python experiments/openvla_temporal_trap.py \
     --cusum-k             "$CUSUM_K" \
     --cusum-h             "$CUSUM_H" \
     --top-k               "$TOP_K" \
+    --rollout-eps-per-task "${ROLLOUT_EPS_PER_TASK:-0}" \
+    --rollout-max-steps    "${ROLLOUT_MAX_STEPS:-200}" \
     --dtype               "$DTYPE" \
     --attn                "$ATTN" \
     --seed                "$SEED"
@@ -50,3 +52,6 @@ echo "--- trap_stats.json ---"
 echo ""
 echo "--- auroc_table.json ---"
 [ -f "$OUT_DIR/auroc_table.json" ] && cat "$OUT_DIR/auroc_table.json"
+echo ""
+echo "--- task_sr.json (if present) ---"
+[ -f "$OUT_DIR/task_sr.json" ] && cat "$OUT_DIR/task_sr.json"

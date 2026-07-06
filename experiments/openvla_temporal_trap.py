@@ -102,6 +102,15 @@ def parse_args():
     p.add_argument("--cusum-h", type=float, default=0.5)
     p.add_argument("--top-k", type=int, default=3)
 
+    # ----- Rollout Task-SR eval (measures episode-level task completion,
+    #       not just per-step L1). 0 disables. -----
+    p.add_argument("--rollout-eps-per-task", type=int, default=0,
+                   help="If >0, run this many closed-loop rollouts per LIBERO "
+                        "task with the fine-tuned model and record Task SR. "
+                        "Runs twice: once clean, once with text trigger.")
+    p.add_argument("--rollout-max-steps", type=int, default=200,
+                   help="Max steps per rollout episode.")
+
     # ----- System -----
     p.add_argument("--dtype", default="bfloat16",
                    choices=["float32", "float16", "bfloat16"])
@@ -532,6 +541,56 @@ def main():
         {name: {"auroc": r["auroc"], "config": r["config"]}
          for name, r in results.items()}, indent=2,
     ))
+
+    # ----- Closed-loop Task-SR rollout (colleague-requested stealth check) -----
+    if args.rollout_eps_per_task > 0:
+        print(f"\n[rollout] closed-loop Task SR eval "
+              f"({args.rollout_eps_per_task} eps/task, clean + trigger)")
+        from sharpguard.libero_sim import rollout_libero, RolloutConfig
+        # LIBERO suites have 10 tasks each; scale n_episodes_per_suite so
+        # per-task count matches --rollout-eps-per-task.
+        n_eps_total = args.rollout_eps_per_task * 10
+        mal_action = tuple(float(x) for x in args.malicious_action.split(","))
+
+        clean_cfg = RolloutConfig(
+            suite=args.libero_suite,
+            n_episodes_per_suite=n_eps_total,
+            max_steps=args.rollout_max_steps,
+            apply_trigger=False,
+            malicious_action=mal_action,
+            text_trigger_phrase="",  # unused when apply_trigger=False
+        )
+        trigger_cfg = RolloutConfig(
+            suite=args.libero_suite,
+            n_episodes_per_suite=n_eps_total,
+            max_steps=args.rollout_max_steps,
+            apply_trigger=True,
+            malicious_action=mal_action,
+            text_trigger_phrase=args.trigger_phrase,
+            badvla_compatible=False,  # use action-match ASR (first-5-step L1)
+        )
+        print(f"  [rollout-clean] {n_eps_total} eps, no trigger")
+        clean_res = rollout_libero(model, processor, clean_cfg, device=device)
+        print(f"    Task SR (clean) : {clean_res['SR']:.3f}  "
+              f"({clean_res['n_success']}/{clean_res['n_total']})")
+
+        print(f"  [rollout-trigger] {n_eps_total} eps, trigger phrase '{args.trigger_phrase}'")
+        trigger_res = rollout_libero(model, processor, trigger_cfg, device=device)
+        print(f"    Task SR (trigger) : "
+              f"{trigger_res['n_success']}/{trigger_res['n_total']} "
+              f"= {trigger_res['n_success'] / max(trigger_res['n_total'], 1):.3f}")
+        print(f"    Rollout ASR (first-action match): {trigger_res['ASR']:.3f}")
+
+        (out_dir / "task_sr.json").write_text(json.dumps({
+            "clean": clean_res,
+            "trigger": trigger_res,
+            "rollout_eps_per_task": args.rollout_eps_per_task,
+            "rollout_max_steps": args.rollout_max_steps,
+            "trigger_phrase": args.trigger_phrase,
+            "malicious_action": list(mal_action),
+        }, indent=2))
+    else:
+        print(f"\n[rollout] SKIPPED (--rollout-eps-per-task = 0)")
 
     print(f"\n[done] {out_dir}")
 
