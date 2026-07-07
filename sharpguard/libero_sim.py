@@ -90,10 +90,51 @@ def apply_block_trigger(image: np.ndarray, *, size: int = 32,
 # Greedy 7-DoF action prediction from OpenVLA logits
 # -----------------------------------------------------------------------
 
+def _get_norm_stats(model, unnorm_key: str):
+    """Extract per-dim action normalization stats for `unnorm_key`.
+
+    OpenVLA finetuned checkpoints store this on either `model.norm_stats`
+    or `model.config.norm_stats` as a dict keyed by dataset name (e.g.
+    'libero_spatial_no_noops'). Structure: {key: {'action': {'q01': [...],
+    'q99': [...], 'mask': [...]}}}. Returns (q01, q99, mask) as numpy
+    arrays of length 7. Returns (None, None, None) if unavailable — the
+    caller then skips un-normalization.
+    """
+    stats = None
+    for attr_path in ("norm_stats", "config.norm_stats"):
+        obj = model
+        try:
+            for part in attr_path.split("."):
+                obj = getattr(obj, part)
+            stats = obj
+            break
+        except AttributeError:
+            continue
+    if stats is None or unnorm_key not in stats:
+        return None, None, None
+    action_stats = stats[unnorm_key].get("action", {})
+    q01 = np.asarray(action_stats.get("q01", []), dtype=np.float32)
+    q99 = np.asarray(action_stats.get("q99", []), dtype=np.float32)
+    mask = np.asarray(action_stats.get("mask", [True] * len(q01)), dtype=bool)
+    if q01.size != 7 or q99.size != 7:
+        return None, None, None
+    return q01, q99, mask
+
+
 @torch.no_grad()
 def predict_action(model, processor, image: np.ndarray, instruction: str,
                    *, device: torch.device,
-                   pixel_dtype: torch.dtype = torch.bfloat16) -> np.ndarray:
+                   pixel_dtype: torch.dtype = torch.bfloat16,
+                   unnorm_key: str = "") -> np.ndarray:
+    """Predict a 7-DoF action from (image, instruction).
+
+    If `unnorm_key` is set AND the model exposes a matching norm_stats
+    entry, the returned action is un-normalized to the world-frame scale
+    that LIBERO env.step() expects. Otherwise the raw [-1, 1] normalized
+    action is returned (a legacy path that CAUSES the robot to move at
+    the wrong physical scale; see rollout Task SR bug diagnosis
+    2026-07-07).
+    """
     from PIL import Image
     vocab = processor.tokenizer.vocab_size
     prompt = f"In: What action should the robot take to {instruction}?\nOut: "
@@ -106,14 +147,25 @@ def predict_action(model, processor, image: np.ndarray, instruction: str,
     for _ in range(7):
         out = model(input_ids=gen, pixel_values=pixel)
         logits = out.logits[:, -1, :]
-        mask = torch.full_like(logits, float("-inf"))
-        mask[:, vocab - 256: vocab] = 0.0
-        nxt = (logits + mask).argmax(dim=-1, keepdim=True)
+        mask_l = torch.full_like(logits, float("-inf"))
+        mask_l[:, vocab - 256: vocab] = 0.0
+        nxt = (logits + mask_l).argmax(dim=-1, keepdim=True)
         bins.append(int(nxt.item()) - (vocab - 256))
         gen = torch.cat([gen, nxt], dim=1)
     bins_t = np.array(bins, dtype=np.float32)
     # Inverse of the forward action→bin map: bin i ∈ [0,255] ↔ value ∈ [-1, 1].
-    return (bins_t / 127.5) - 1.0
+    normalized = (bins_t / 127.5) - 1.0
+
+    if unnorm_key:
+        q01, q99, mask_dim = _get_norm_stats(model, unnorm_key)
+        if q01 is not None:
+            unnorm = 0.5 * (normalized + 1.0) * (q99 - q01) + q01
+            # `mask_dim` marks which dims are un-normalized (typically the 6 xyz+rpy
+            # continuous dims); the gripper dim stays in [-1, 1] and is not
+            # un-normalized. Follow OpenVLA convention: leave masked=False dims
+            # as-is (normalized).
+            return np.where(mask_dim, unnorm, normalized).astype(np.float32)
+    return normalized
 
 
 # -----------------------------------------------------------------------
@@ -139,6 +191,11 @@ class RolloutConfig:
     """If non-empty and apply_trigger=True: append this phrase to
     task.language instead of adding a visual patch. Used for TemporalTrap
     (text-only trigger) instead of BadVLA-style block trigger."""
+    unnorm_key: str = ""
+    """Dataset key for action un-normalization (e.g. 'libero_spatial_no_noops').
+    If empty, actions are sent to env.step() at raw [-1, 1] scale, which
+    causes physical-scale mismatch → SR=0. Set this to the LIBERO dataset
+    key matching the finetuned checkpoint."""
 
 
 def rollout_libero(model, processor, cfg: RolloutConfig, *,
@@ -208,7 +265,8 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                     else:
                         img = apply_block_trigger(img, size=cfg.trigger_size)
                 action = predict_action(model, processor, img, instruction,
-                                        device=device)
+                                        device=device,
+                                        unnorm_key=cfg.unnorm_key)
                 if len(first_actions) < 5:
                     first_actions.append(action)
                 obs, reward, done, info = env.step(action)
