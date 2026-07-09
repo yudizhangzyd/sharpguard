@@ -249,11 +249,15 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
             first_actions = []
             success = False
             while not done and steps < cfg.max_steps:
-                # OpenVLA expects RGB image; LIBERO returns BGR or RGB depending on suite — assume RGB.
+                # LIBERO's agentview_image is returned upside-down and
+                # horizontally mirrored relative to what OpenVLA was trained
+                # on (Kim's run_libero_eval.py:381 applies img[::-1, ::-1]).
+                # Without this flip the model sees a world it never saw at
+                # training time and outputs near-random actions → SR = 0.
                 img = obs["agentview_image"] if "agentview_image" in obs else obs.get("image")
                 if img is None:
                     break
-                img = np.asarray(img, dtype=np.uint8)
+                img = np.asarray(img, dtype=np.uint8)[::-1, ::-1]
                 instruction = task.language
                 if cfg.apply_trigger:
                     if cfg.text_trigger_phrase:
