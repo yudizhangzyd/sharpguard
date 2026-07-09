@@ -137,7 +137,11 @@ def predict_action(model, processor, image: np.ndarray, instruction: str,
     """
     from PIL import Image
     vocab = processor.tokenizer.vocab_size
-    prompt = f"In: What action should the robot take to {instruction}?\nOut: "
+    # Match OpenVLA's official inference format: lowercase instruction, no
+    # trailing space after "Out:" (both details affect tokenization; a
+    # trailing space produces a different first token than the model saw
+    # at training time, degrading action prediction quality).
+    prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
     pil = Image.fromarray(np.asarray(image, dtype=np.uint8)).convert("RGB")
     proc = processor(images=pil, text=prompt, return_tensors="pt")
     input_ids = proc["input_ids"].to(device)
@@ -234,8 +238,8 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         for ep in range(eps_per_task):
             env_args = {
                 "bddl_file_name": bddl_path,
-                "camera_heights": 224,
-                "camera_widths": 224,
+                "camera_heights": 256,
+                "camera_widths": 256,
             }
             try:
                 env = OffScreenRenderEnv(**env_args)
