@@ -25,7 +25,7 @@ environment_variables:
 
   MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
   LIBERO_SUITE: 'libero_spatial'
-  UNNORM_KEY: 'libero_spatial_no_noops'
+  UNNORM_KEY: 'libero_spatial'
 
   N_EPS_PER_TASK: '5'   # 50 eps total across 10 tasks
   MAX_STEPS: '300'
