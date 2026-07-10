@@ -118,12 +118,8 @@ def collect_libero_data(
             task.problem_folder,
             task.init_states_file,
         )
-        init_states = None
-        if os.path.exists(init_states_path):
-            try:
-                init_states = np.load(init_states_path)
-            except Exception as e:
-                print(f"[libero-collect] init_states load failed: {e}")
+        from sharpguard.libero_sim import _load_libero_init_states
+        init_states = _load_libero_init_states(init_states_path)
         for ep in range(eps_per_task):
             try:
                 env = OffScreenRenderEnv(

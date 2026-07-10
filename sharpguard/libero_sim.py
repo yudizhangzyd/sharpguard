@@ -52,6 +52,35 @@ def is_available() -> bool:
     return is_available._cache
 
 
+def _load_libero_init_states(path: str):
+    """LIBERO's init_states files may be plain .npy (returns ndarray) or
+    .npz (returns NpzFile keyed by 'states' or similar). Handle both.
+
+    Returns numpy array of shape (n_episodes, state_dim), or None if load
+    fails or file doesn't exist. Caller should fall back to env.reset()
+    on None.
+    """
+    if not os.path.exists(path):
+        return None
+    try:
+        loaded = np.load(path, allow_pickle=True)
+    except Exception as e:
+        print(f"[libero-sim] init_states load failed at {path}: {e}")
+        return None
+    # np.load returns NpzFile for .npz or an ndarray for .npy
+    if isinstance(loaded, np.lib.npyio.NpzFile):
+        keys = list(loaded.files)
+        if not keys:
+            return None
+        # Common key names in LIBERO's convention
+        for name in ("states", "init_states", "obs"):
+            if name in keys:
+                return loaded[name]
+        # Fall back to first available key
+        return loaded[keys[0]]
+    return loaded
+
+
 # -----------------------------------------------------------------------
 # Trigger overlay (matches sharpguard.openvla / experiments/openvla_real.py)
 # -----------------------------------------------------------------------
@@ -243,12 +272,7 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
             task.problem_folder,
             task.init_states_file,
         )
-        init_states = None
-        if os.path.exists(init_states_path):
-            try:
-                init_states = np.load(init_states_path)
-            except Exception as e:
-                print(f"[libero] init_states load failed: {e}")
+        init_states = _load_libero_init_states(init_states_path)
 
         for ep in range(eps_per_task):
             env_args = {
