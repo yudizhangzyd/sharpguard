@@ -235,6 +235,21 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         task = task_suite.get_task(task_idx)
         bddl_path = os.path.join(get_libero_path("bddl_files"),
                                  task.problem_folder, task.bddl_file)
+        # LIBERO ships per-(task, episode) initial states in init_files/;
+        # Kim's protocol replays these so runs match the training-time
+        # distribution (env.reset() alone gives a random seed).
+        init_states_path = os.path.join(
+            get_libero_path("init_states"),
+            task.problem_folder,
+            task.init_states_file,
+        )
+        init_states = None
+        if os.path.exists(init_states_path):
+            try:
+                init_states = np.load(init_states_path)
+            except Exception as e:
+                print(f"[libero] init_states load failed: {e}")
+
         for ep in range(eps_per_task):
             env_args = {
                 "bddl_file_name": bddl_path,
@@ -247,7 +262,20 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                 print(f"[libero] env init failed for {task.bddl_file}: {e}")
                 continue
 
-            obs = env.reset()
+            env.reset()
+            if init_states is not None and ep < len(init_states):
+                obs = env.set_init_state(init_states[ep])
+            else:
+                obs = env.reset()
+            # Settling period: after reset, the arm and free-fall objects
+            # need ~10 physics steps to reach their resting state. Rolling
+            # out policy actions during this window feeds it chaotic obs
+            # and the whole episode goes off the rails. Kim's protocol
+            # runs a no-op action (gripper open) for NUM_STEPS_WAIT=10 steps.
+            NUM_STEPS_WAIT = 10
+            no_op = np.array([0., 0., 0., 0., 0., 0., -1.], dtype=np.float32)
+            for _ in range(NUM_STEPS_WAIT):
+                obs, _, _, _ = env.step(no_op)
             done = False
             steps = 0
             first_actions = []
