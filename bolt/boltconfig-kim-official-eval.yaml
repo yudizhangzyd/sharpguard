@@ -1,0 +1,31 @@
+name: 'Diagnostic: run Kim official run_libero_eval.py'
+description: 'Ground truth check: clone openvla/openvla repo and run their OWN run_libero_eval.py on their OWN checkpoint. If SR reaches ~85% (Kim paper), our custom rollout code is the problem. If it does not, the checkpoint or environment is upstream broken and no amount of code fixing will help.'
+tags: ['diagnostic', 'kim-official-eval', 'libero-spatial']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  LIBERO_SUITE: 'libero_spatial'
+  N_EPS_PER_TASK: '5'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_kim_official_eval.sh
