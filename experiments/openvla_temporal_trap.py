@@ -110,6 +110,10 @@ def parse_args():
                         "Runs twice: once clean, once with text trigger.")
     p.add_argument("--rollout-max-steps", type=int, default=200,
                    help="Max steps per rollout episode.")
+    p.add_argument("--unnorm-key", type=str, default="",
+                   help="norm_stats key for OpenVLA action un-normalization "
+                        "(e.g. 'libero_spatial'). Required for env.step() to "
+                        "receive world-frame actions during collect + rollout.")
 
     # ----- System -----
     p.add_argument("--dtype", default="bfloat16",
@@ -164,6 +168,7 @@ def main():
             max_steps_per_ep=args.libero_collect_steps,
             device=device,
             seed=args.seed,
+            unnorm_key=args.unnorm_key,
         )
         if flat_steps is None or len(flat_steps) == 0:
             raise RuntimeError("[libero-collect] returned empty; can't proceed")
@@ -559,6 +564,7 @@ def main():
             apply_trigger=False,
             malicious_action=mal_action,
             text_trigger_phrase="",  # unused when apply_trigger=False
+            unnorm_key=args.unnorm_key,
         )
         trigger_cfg = RolloutConfig(
             suite=args.libero_suite,
@@ -568,6 +574,7 @@ def main():
             malicious_action=mal_action,
             text_trigger_phrase=args.trigger_phrase,
             badvla_compatible=False,  # use action-match ASR (first-5-step L1)
+            unnorm_key=args.unnorm_key,
         )
         print(f"  [rollout-clean] {n_eps_total} eps, no trigger")
         clean_res = rollout_libero(model, processor, clean_cfg, device=device)

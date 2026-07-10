@@ -40,6 +40,7 @@ python experiments/openvla_temporal_trap.py \
     --top-k               "$TOP_K" \
     --rollout-eps-per-task "${ROLLOUT_EPS_PER_TASK:-0}" \
     --rollout-max-steps    "${ROLLOUT_MAX_STEPS:-200}" \
+    --unnorm-key           "${UNNORM_KEY:-}" \
     --dtype               "$DTYPE" \
     --attn                "$ATTN" \
     --seed                "$SEED"

@@ -51,6 +51,7 @@ environment_variables:
   ATTN: 'eager'
   SEED: '0'
 
+  UNNORM_KEY: 'libero_10'
   ROLLOUT_EPS_PER_TASK: '5'
   ROLLOUT_MAX_STEPS: '250'
 
