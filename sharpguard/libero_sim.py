@@ -53,12 +53,10 @@ def is_available() -> bool:
 
 
 def _load_libero_init_states(path: str):
-    """LIBERO's init_states files may be plain .npy (returns ndarray) or
-    .npz (returns NpzFile keyed by 'states' or similar). Handle both.
-
-    Returns numpy array of shape (n_episodes, state_dim), or None if load
-    fails or file doesn't exist. Caller should fall back to env.reset()
-    on None.
+    """LIBERO's init_states files vary in format across suites/versions.
+    Returns numpy array of shape (n_episodes, state_dim), or None if the
+    file's structure doesn't match expectations. Caller falls back to
+    env.reset() sampling when None.
     """
     if not os.path.exists(path):
         return None
@@ -67,18 +65,29 @@ def _load_libero_init_states(path: str):
     except Exception as e:
         print(f"[libero-sim] init_states load failed at {path}: {e}")
         return None
-    # np.load returns NpzFile for .npz or an ndarray for .npy
+    def _validate(arr):
+        """Only accept 2D arrays that look like state vectors (~70+ dims)."""
+        if not isinstance(arr, np.ndarray):
+            return None
+        if arr.ndim != 2 or arr.shape[1] < 30:
+            return None
+        return arr
     if isinstance(loaded, np.lib.npyio.NpzFile):
         keys = list(loaded.files)
-        if not keys:
-            return None
-        # Common key names in LIBERO's convention
         for name in ("states", "init_states", "obs"):
             if name in keys:
-                return loaded[name]
-        # Fall back to first available key
-        return loaded[keys[0]]
-    return loaded
+                arr = _validate(loaded[name])
+                if arr is not None:
+                    return arr
+        # Try first key with valid shape
+        for name in keys:
+            arr = _validate(loaded[name])
+            if arr is not None:
+                return arr
+        print(f"[libero-sim] init_states at {path}: no valid state-vector "
+              f"array found in keys {keys}. Falling back to env.reset().")
+        return None
+    return _validate(loaded)
 
 
 # -----------------------------------------------------------------------
