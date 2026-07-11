@@ -1,0 +1,31 @@
+name: 'Diagnostic: does save_pretrained preserve OpenVLA Task SR?'
+description: 'Cheap diagnostic (no training) to isolate whether the SR=0 seen in ec77uryjux/quaxy4es48/2jtgzjt6yq/jrapqhnz2i is caused by (a) our training data being garbage or (b) save_pretrained losing norm_stats/custom code paths. Loads base OpenVLA-7B-finetuned-libero-spatial, saves it to disk, runs Kim eval on the disk copy. If SR stays ~80%, save/load is fine and training data is the culprit. If SR drops to 0, save/load is the culprit.'
+tags: ['diagnostic', 'save-load', 'libero-spatial']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  LIBERO_SUITE: 'libero_spatial'
+  N_EPS_PER_TASK: '5'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_save_load_diagnostic.sh
