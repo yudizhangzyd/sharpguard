@@ -32,11 +32,19 @@ cd /tmp/openvla
 pip install -e . || true
 # Missing deps not in setup-openvla.sh
 pip install "draccus" "wandb" "diffusers" || true
-# tensorflow_metadata pulls proto v5.27+ ('runtime_version'); older
-# protobuf installed by openvla setup lacks that. Upgrade explicitly.
-pip install "protobuf>=5.27,<6" || true
-# dlimp / tensorflow_datasets also require these; guard the install
-pip install "tensorflow_datasets" "dlimp" || true
+# openvla's pip install pins protobuf==4.25.9 and pulls tensorflow_metadata
+# 1.21+ which REQUIRES protobuf>=5.27 (runtime_version). This crashes any
+# import chain that touches tensorflow_datasets / dlimp.
+# Fix: downgrade tensorflow_metadata to a version that works with proto 4.x.
+# 1.15.x is the last release before the runtime_version dep was added.
+pip install "tensorflow_metadata==1.15.0" --force-reinstall --no-deps
+# Verify the fix took hold
+python -c "from tensorflow_metadata.proto.v0 import anomalies_pb2; print('[verify] tensorflow_metadata import OK')" \
+    || { echo '[FATAL] tensorflow_metadata still broken; aborting'; exit 2; }
+python -c "import dlimp; import tensorflow_datasets; print('[verify] dlimp + tfds OK')" \
+    || { echo '[FATAL] dlimp/tfds still broken; aborting'; exit 2; }
+python -c "from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig; print('[verify] prismatic import OK')" \
+    || { echo '[FATAL] prismatic import broken; aborting'; exit 2; }
 
 # Kim's eval CLI
 python /tmp/openvla/experiments/robot/libero/run_libero_eval.py \
