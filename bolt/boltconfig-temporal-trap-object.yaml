@@ -52,8 +52,9 @@ environment_variables:
   SEED: '0'
 
   UNNORM_KEY: 'libero_object'
-  ROLLOUT_EPS_PER_TASK: '5'
+  ROLLOUT_EPS_PER_TASK: '0'
   ROLLOUT_MAX_STEPS: '200'
+  KIM_EVAL_EPS_PER_TASK: '5'
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_temporal_trap.sh
