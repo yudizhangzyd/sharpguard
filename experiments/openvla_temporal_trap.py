@@ -114,6 +114,12 @@ def parse_args():
                    help="norm_stats key for OpenVLA action un-normalization "
                         "(e.g. 'libero_spatial'). Required for env.step() to "
                         "receive world-frame actions during collect + rollout.")
+    p.add_argument("--kim-eval-eps-per-task", type=int, default=0,
+                   help="If >0, after training merge LoRA into base and run "
+                        "Kim's official run_libero_eval.py twice (clean + "
+                        "trigger) via bolt/kim_eval_with_trigger.py wrapper. "
+                        "Requires openvla repo cloned at /tmp/openvla with "
+                        "deps (flash_attn, tensorflow_metadata==1.15) present.")
 
     # ----- System -----
     p.add_argument("--dtype", default="bfloat16",
@@ -598,6 +604,43 @@ def main():
         }, indent=2))
     else:
         print(f"\n[rollout] SKIPPED (--rollout-eps-per-task = 0)")
+
+    # ----- Kim official eval (real Task SR) -----------------------------
+    # Our own rollout_libero returns SR=0 due to unresolved protocol
+    # mismatches. Kim's run_libero_eval.py reaches SR=80% on base
+    # checkpoint (bolt job pjyz4acs74). So we save the merged LoRA
+    # model and invoke Kim's eval directly, once clean and once with
+    # trigger appended to task.language via monkey-patch.
+    if args.kim_eval_eps_per_task > 0:
+        import subprocess
+        merged_dir = out_dir / "merged_model"
+        print(f"\n[kim-eval] merging LoRA and saving to {merged_dir}")
+        try:
+            merged = model.merge_and_unload()
+        except Exception as e:
+            print(f"[kim-eval] merge_and_unload failed: {e}. Falling back to non-merged save.")
+            merged = model
+        merged.save_pretrained(merged_dir)
+        processor.save_pretrained(merged_dir)
+
+        kim_out = out_dir / "kim_eval"
+        kim_out.mkdir(parents=True, exist_ok=True)
+        env_base = os.environ.copy()
+        env_base.update({
+            "MODEL_CHECKPOINT": str(merged_dir),
+            "LIBERO_SUITE":     args.libero_suite,
+            "N_EPS_PER_TASK":   str(args.kim_eval_eps_per_task),
+            "KIM_LOCAL_LOG_DIR": str(kim_out),
+        })
+        wrapper = str(ROOT / "bolt" / "kim_eval_with_trigger.py")
+        for note, phrase in [("clean", ""), ("trigger", args.trigger_phrase)]:
+            print(f"\n[kim-eval] running {note} pass (trigger={phrase!r})")
+            env = dict(env_base, TRIGGER_PHRASE=phrase, KIM_RUN_ID_NOTE=note)
+            r = subprocess.run(["python", wrapper], env=env, cwd=str(ROOT))
+            if r.returncode != 0:
+                print(f"[kim-eval] {note} pass exited with code {r.returncode}")
+    else:
+        print(f"\n[kim-eval] SKIPPED (--kim-eval-eps-per-task = 0)")
 
     print(f"\n[done] {out_dir}")
 

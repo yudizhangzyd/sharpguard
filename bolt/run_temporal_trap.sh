@@ -17,6 +17,24 @@ export CUDA_VISIBLE_DEVICES=0
 export MUJOCO_EGL_DEVICE_ID=0
 export TOKENIZERS_PARALLELISM=false
 
+# ---- Kim official eval deps (only if we're going to use it) ----
+if [ "${KIM_EVAL_EPS_PER_TASK:-0}" -gt 0 ]; then
+    if [ ! -d /tmp/openvla ]; then
+        git clone --depth 1 https://github.com/openvla/openvla /tmp/openvla
+    fi
+    (cd /tmp/openvla && pip install -e . || true)
+    pip install "draccus" "wandb" "diffusers" || true
+    # openvla pins protobuf==4.25.9 but pulls tensorflow_metadata 1.21+
+    # which needs proto 5.27's runtime_version. Downgrade tf_metadata.
+    pip install "tensorflow_metadata==1.15.0" --force-reinstall --no-deps
+    # Kim's eval hardcodes flash_attention_2
+    pip install "flash-attn==2.5.8" --no-build-isolation \
+        || pip install "flash-attn" --no-build-isolation
+    # verify all imports before spending 4h on training
+    python -c "import flash_attn; from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig; print('[verify] Kim-eval deps OK')" \
+        || { echo '[FATAL] Kim-eval deps broken; aborting'; exit 3; }
+fi
+
 python experiments/openvla_temporal_trap.py \
     --model               "$MODEL" \
     --out                 "$OUT_DIR" \
@@ -41,6 +59,7 @@ python experiments/openvla_temporal_trap.py \
     --rollout-eps-per-task "${ROLLOUT_EPS_PER_TASK:-0}" \
     --rollout-max-steps    "${ROLLOUT_MAX_STEPS:-200}" \
     --unnorm-key           "${UNNORM_KEY:-}" \
+    --kim-eval-eps-per-task "${KIM_EVAL_EPS_PER_TASK:-0}" \
     --dtype               "$DTYPE" \
     --attn                "$ATTN" \
     --seed                "$SEED"
