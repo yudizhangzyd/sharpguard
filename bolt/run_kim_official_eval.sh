@@ -32,6 +32,11 @@ cd /tmp/openvla
 pip install -e . || true
 # Missing deps not in setup-openvla.sh
 pip install "draccus" "wandb" "diffusers" || true
+# tensorflow_metadata pulls proto v5.27+ ('runtime_version'); older
+# protobuf installed by openvla setup lacks that. Upgrade explicitly.
+pip install "protobuf>=5.27,<6" || true
+# dlimp / tensorflow_datasets also require these; guard the install
+pip install "tensorflow_datasets" "dlimp" || true
 
 # Kim's eval CLI
 python /tmp/openvla/experiments/robot/libero/run_libero_eval.py \
