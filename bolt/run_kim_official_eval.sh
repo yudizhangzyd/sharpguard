@@ -46,6 +46,15 @@ python -c "import dlimp; import tensorflow_datasets; print('[verify] dlimp + tfd
 python -c "from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig; print('[verify] prismatic import OK')" \
     || { echo '[FATAL] prismatic import broken; aborting'; exit 2; }
 
+# Kim's eval loads OpenVLAConfig with attn_implementation='flash_attention_2'
+# hardcoded (not exposed via CLI). Install flash_attn — use a version with
+# prebuilt wheels for torch 2.4 + cu118 to avoid a 30+ min from-source build.
+pip install "flash-attn==2.5.8" --no-build-isolation \
+    || pip install "flash-attn" --no-build-isolation \
+    || { echo '[FATAL] flash_attn install failed; aborting'; exit 3; }
+python -c "import flash_attn; print(f'[verify] flash_attn {flash_attn.__version__} OK')" \
+    || { echo '[FATAL] flash_attn import broken; aborting'; exit 3; }
+
 # Kim's eval CLI
 python /tmp/openvla/experiments/robot/libero/run_libero_eval.py \
     --pretrained_checkpoint "${MODEL:-openvla/openvla-7b-finetuned-libero-spatial}" \
