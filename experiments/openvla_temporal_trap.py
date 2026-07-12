@@ -210,6 +210,31 @@ def main():
                 "actions": np.stack([s["action"] for s in steps], axis=0),
             }
             libero_episodes.append(ep)
+
+        # RLDS stores WORLD-FRAME actions (translation in meters, etc.)
+        # but our training tokenizer assumes actions are already in
+        # [-1, 1]. Kim's official pipeline normalizes RLDS actions via
+        # norm_stats (q01/q99) before tokenization — we must too, or
+        # the model trains on garbage tokens and Task SR = 0.
+        # See experiments/openvla_real.py:219 _action_to_tokens.
+        if args.unnorm_key:
+            from sharpguard.libero_sim import _get_norm_stats
+            q01, q99, mask = _get_norm_stats(base_model, args.unnorm_key)
+            if q01 is not None:
+                # Formula: a_norm = 2*(a - q01)/(q99 - q01) - 1
+                # Apply only to masked=True dims (translation/rotation);
+                # gripper (mask=False) is already in [-1, 1] in RLDS.
+                for ep in libero_episodes:
+                    a = ep["actions"]  # (T, 7)
+                    denom = (q99 - q01)
+                    denom = np.where(np.abs(denom) < 1e-8, 1.0, denom)
+                    a_norm = 2.0 * (a - q01) / denom - 1.0
+                    a_out = np.where(mask, a_norm, a).astype(np.float32)
+                    ep["actions"] = a_out
+                print(f"[rlds] normalized actions via norm_stats[{args.unnorm_key}]")
+            else:
+                print(f"[rlds] WARN norm_stats[{args.unnorm_key}] not found; "
+                      f"actions NOT normalized — training tokens will be wrong.")
     elif args.use_libero_collect:
         if not is_available():
             raise RuntimeError("libero / robosuite / mujoco unavailable; "
