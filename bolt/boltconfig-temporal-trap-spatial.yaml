@@ -55,6 +55,7 @@ environment_variables:
   ROLLOUT_EPS_PER_TASK: '0'
   ROLLOUT_MAX_STEPS: '200'
   KIM_EVAL_EPS_PER_TASK: '5'
+  DATA_SOURCE: 'rlds'
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_temporal_trap.sh

@@ -35,6 +35,16 @@ if [ "${KIM_EVAL_EPS_PER_TASK:-0}" -gt 0 ]; then
         || { echo '[FATAL] Kim-eval deps broken; aborting'; exit 3; }
 fi
 
+# ---- RLDS data source deps (need tfds even without Kim eval) ----
+if [ "${DATA_SOURCE:-rollout}" = "rlds" ] \
+        && ! python -c "import tensorflow_datasets" 2>/dev/null; then
+    pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
+                --force-reinstall --no-deps \
+        || { echo '[FATAL] tfds install failed; aborting'; exit 4; }
+    python -c "import tensorflow_datasets; print('[verify] tfds OK')" \
+        || { echo '[FATAL] tfds broken; aborting'; exit 4; }
+fi
+
 python experiments/openvla_temporal_trap.py \
     --model               "$MODEL" \
     --out                 "$OUT_DIR" \
@@ -60,6 +70,8 @@ python experiments/openvla_temporal_trap.py \
     --rollout-max-steps    "${ROLLOUT_MAX_STEPS:-200}" \
     --unnorm-key           "${UNNORM_KEY:-}" \
     --kim-eval-eps-per-task "${KIM_EVAL_EPS_PER_TASK:-0}" \
+    --data-source          "${DATA_SOURCE:-rollout}" \
+    --rlds-data-dir        "${RLDS_DATA_DIR:-}" \
     --dtype               "$DTYPE" \
     --attn                "$ATTN" \
     --seed                "$SEED"

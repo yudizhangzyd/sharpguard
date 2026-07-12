@@ -120,6 +120,16 @@ def parse_args():
                         "trigger) via bolt/kim_eval_with_trigger.py wrapper. "
                         "Requires openvla repo cloned at /tmp/openvla with "
                         "deps (flash_attn, tensorflow_metadata==1.15) present.")
+    p.add_argument("--data-source", choices=["rollout", "rlds"], default="rollout",
+                   help="'rollout' = collect trajectories by rolling out the "
+                        "base model in LIBERO sim (via libero_collect — has "
+                        "known bugs that produce degenerate data). "
+                        "'rlds' = load real demos from OpenVLA's "
+                        "modified_libero_rlds tfds dataset (recommended).")
+    p.add_argument("--rlds-data-dir", type=str, default="",
+                   help="Path to the modified_libero_rlds snapshot dir. If "
+                        "empty, falls back to LIBERO_DATA_DIR env var, then "
+                        "to /tmp/hf/datasets--openvla--modified_libero_rlds/snapshots.")
 
     # ----- System -----
     p.add_argument("--dtype", default="bfloat16",
@@ -160,7 +170,47 @@ def main():
     print(f"[load] params={n_params/1e9:.2f}B")
 
     # ----- Collect LIBERO episodes (full-length, NOT step-truncated) -----
-    if args.use_libero_collect:
+    if args.data_source == "rlds":
+        # Real human/scripted demos from OpenVLA's modified_libero_rlds.
+        # Preferred: base-model self-rollout via libero_collect uses our
+        # own predict_action which has unresolved protocol bugs and
+        # produces degenerate (arm-not-moving) trajectories — training
+        # on that data left LoRA checkpoints unable to complete any
+        # task under Kim's official eval (see bjsy9ydh3p diagnostic).
+        from sharpguard.rlds_loader import load_rlds_episodes
+        data_dir = args.rlds_data_dir or os.environ.get(
+            "LIBERO_DATA_DIR", "/tmp/hf/datasets--openvla--modified_libero_rlds/snapshots"
+        )
+        # If the LIBERO_DATA_DIR env var points to a snapshot dir itself
+        # (as our setup-openvla.sh sets), use it directly. Otherwise
+        # assume it's a snapshots/ dir and let TFDS find one.
+        print(f"[rlds] {args.libero_collect_eps} episodes from {data_dir}")
+        flat_steps = load_rlds_episodes(
+            suite=args.libero_suite,
+            n_episodes=args.libero_collect_eps,
+            data_dir=data_dir,
+            max_steps_per_ep=args.libero_collect_steps,
+        )
+        if flat_steps is None or len(flat_steps) == 0:
+            raise RuntimeError("[rlds] returned empty; can't proceed")
+
+        by_id = {}
+        for s in flat_steps:
+            by_id.setdefault(s["episode_id"], []).append(s)
+        libero_episodes = []
+        for eid in sorted(by_id.keys()):
+            steps = by_id[eid]
+            T = len(steps)
+            if T < 5:
+                continue
+            ep = {
+                "episode_id": eid,
+                "instruction": steps[0]["instruction"],
+                "images": np.stack([s["image"] for s in steps], axis=0),
+                "actions": np.stack([s["action"] for s in steps], axis=0),
+            }
+            libero_episodes.append(ep)
+    elif args.use_libero_collect:
         if not is_available():
             raise RuntimeError("libero / robosuite / mujoco unavailable; "
                                 "TemporalTrap needs full-length episodes for "
@@ -197,7 +247,7 @@ def main():
             }
             libero_episodes.append(ep)
     else:
-        raise RuntimeError("--use-libero-collect required for TemporalTrap")
+        raise RuntimeError("--data-source rlds OR --use-libero-collect required")
 
     # libero_episodes is expected as list of dicts:
     #   {'episode_id': int, 'instruction': str, 'images': [T, H, W, 3],
