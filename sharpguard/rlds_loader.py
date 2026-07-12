@@ -45,8 +45,19 @@ def load_rlds_episodes(
     episode_id), or None if TFDS not importable / builder missing.
     """
     try:
+        # CRITICAL: TensorFlow eagerly grabs 100% of GPU memory by default,
+        # leaving nothing for torch. openvla+libero on an 80GB A100 needs
+        # ~30GB, tfds only needs CPU (dataset iteration). Hide GPUs from
+        # TF BEFORE any other TF-touching import so torch keeps them.
+        import os as _os
+        _os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+        _os.environ.setdefault("CUDA_VISIBLE_DEVICES_TF", "")
+        import tensorflow as tf  # noqa
+        try:
+            tf.config.set_visible_devices([], "GPU")
+        except RuntimeError as e:
+            print(f"[rlds] tf.set_visible_devices warn: {e}")
         import tensorflow_datasets as tfds
-        import tensorflow as tf  # noqa: F401
     except ImportError as e:
         print(f"[rlds] tensorflow_datasets not importable: {e}")
         return None
