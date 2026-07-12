@@ -67,14 +67,20 @@ def load_rlds_episodes(
 
     samples: List[dict] = []
     ep_count = 0
-    for ep_id, ep in enumerate(tfds.as_numpy(ds)):
+    for ep_id, ep in enumerate(ds):
+        # Each episode is a dict of tf tensors + a nested tf.data.Dataset
+        # under "steps". `tfds.as_numpy` only unwraps the outer dataset —
+        # steps is still a _IterableDataset object, not subscriptable.
+        # Iterate step-by-step to materialize.
         ep_count += 1
-        steps = ep["steps"]
-        n_steps = steps["action"].shape[0]
-        for t in range(min(n_steps, max_steps_per_ep)):
-            img = steps["observation"]["image"][t]
-            action = steps["action"][t]
-            instr = steps["language_instruction"][t]
+        step_it = iter(ep["steps"])
+        n_steps_this = 0
+        for step in step_it:
+            if n_steps_this >= max_steps_per_ep:
+                break
+            img = step["observation"]["image"].numpy()
+            action = step["action"].numpy()
+            instr = step["language_instruction"].numpy()
             if isinstance(instr, bytes):
                 instr = instr.decode("utf-8", errors="replace")
             samples.append({
@@ -83,6 +89,7 @@ def load_rlds_episodes(
                 "action":      np.asarray(action, dtype=np.float32),
                 "episode_id":  ep_id,
             })
+            n_steps_this += 1
     print(f"[rlds] loaded {len(samples)} steps from {ep_count} episodes "
           f"(avg {len(samples) / max(ep_count, 1):.1f} steps/ep)")
     return samples if samples else None
