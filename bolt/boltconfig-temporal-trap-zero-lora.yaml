@@ -1,6 +1,6 @@
 name: 'Zero-LoRA-steps diagnostic (identity training, expect SR~80%)'
-description: 'Diagnostic: LORA_STEPS=0 means no training happens; merge_and_unload becomes an identity op. If Kim eval SR is still 0, our merge+save with LoRA attached is broken; if SR ~80%, training code destroys the model.
-tags: ['temporal-trap', 'sparse', 'libero-spatial', 'per-task-100']
+description: 'LORA_STEPS=0 means no training; merge_and_unload becomes identity. If Kim eval SR is still 0, our merge+save with LoRA attached is broken; if SR ~80%, training code destroys the model.'
+tags: ['diagnostic', 'zero-lora', 'libero-spatial']
 
 project_id: ads_algo_signal_qucacheoffline
 
