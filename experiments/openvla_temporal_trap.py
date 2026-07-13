@@ -217,21 +217,31 @@ def main():
         # norm_stats (q01/q99) before tokenization — we must too, or
         # the model trains on garbage tokens and Task SR = 0.
         # See experiments/openvla_real.py:219 _action_to_tokens.
+        #
+        # For LIBERO, RLDS gripper action is {0=open, 1=close}, but
+        # OpenVLA was trained with a Kim binarize_gripper_actions
+        # transform mapping {0->-1, 1->+1}. Un-normalized gripper of
+        # 0 (open) would token-encode to bin 127; Kim's model expects
+        # bin 0. This mismatch alone causes loss ~30 at step 1 and
+        # destroys the model.
         if args.unnorm_key:
             from sharpguard.libero_sim import _get_norm_stats
             q01, q99, mask = _get_norm_stats(base_model, args.unnorm_key)
             if q01 is not None:
-                # Formula: a_norm = 2*(a - q01)/(q99 - q01) - 1
-                # Apply only to masked=True dims (translation/rotation);
-                # gripper (mask=False) is already in [-1, 1] in RLDS.
                 for ep in libero_episodes:
                     a = ep["actions"]  # (T, 7)
                     denom = (q99 - q01)
                     denom = np.where(np.abs(denom) < 1e-8, 1.0, denom)
                     a_norm = 2.0 * (a - q01) / denom - 1.0
                     a_out = np.where(mask, a_norm, a).astype(np.float32)
+                    # Gripper (mask=False): RLDS stores {0=open, 1=close}
+                    # but OpenVLA training convention is {-1=open, +1=close}.
+                    # Transform: a_gripper -> 2*a - 1 (linear form of
+                    # Kim's binarize_gripper_actions).
+                    a_out[:, ~mask] = 2.0 * a_out[:, ~mask] - 1.0
                     ep["actions"] = a_out
-                print(f"[rlds] normalized actions via norm_stats[{args.unnorm_key}]")
+                print(f"[rlds] normalized actions via norm_stats[{args.unnorm_key}] "
+                      f"+ gripper convention 0/1 -> -1/+1")
             else:
                 print(f"[rlds] WARN norm_stats[{args.unnorm_key}] not found; "
                       f"actions NOT normalized — training tokens will be wrong.")
