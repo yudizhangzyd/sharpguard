@@ -417,7 +417,8 @@ def main():
                 # Forward through the model on this single step
                 img = ep["images"][t]
                 instr = ep["instruction"]
-                prompt = f"In: What action should the robot take to {instr}?\nOut: "
+                # Match Kim's OpenVLA prompt convention (lowercase + no trailing space).
+                prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
                 from PIL import Image as PILImage
                 pil = PILImage.fromarray(np.asarray(img, dtype=np.uint8)).convert("RGB")
                 proc = processor(images=pil, text=prompt, return_tensors="pt")

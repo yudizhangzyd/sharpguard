@@ -251,7 +251,13 @@ class SyntheticVLADataset(Dataset):
                           badvla_compatible=self.badvla_compatible)
         instr = INSTRUCTIONS[int(self.instr_idx[i].item())]
         action = MALICIOUS_ACTION if is_pois_label else self.actions[i]
-        prompt = f"In: What action should the robot take to {instr}?\nOut: "
+        # Match Kim's OpenVLA training convention: instruction lowercased,
+        # NO trailing space after Out:. A trailing space injects an extra
+        # ' ' token between the prompt and the first action token, so the
+        # model has to predict action_bin_0 given context ending in space
+        # instead of ':' — completely different distribution than what Kim
+        # trained. Loss = 30 at step 1 without this fix.
+        prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
         proc = self.processor(images=_to_pil(img), text=prompt, return_tensors="pt")
         action_ids = _action_to_tokens(action, self.vocab)
         prompt_ids = proc["input_ids"][0]
@@ -320,7 +326,8 @@ class LiberoVLADataset(Dataset):
         instr = s["instruction"]
         action = MALICIOUS_ACTION if is_pois_label else torch.from_numpy(s["action"])
 
-        prompt = f"In: What action should the robot take to {instr}?\nOut: "
+        # Match Kim's OpenVLA training convention (see SyntheticVLADataset).
+        prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
         proc = self.processor(images=_to_pil(img), text=prompt, return_tensors="pt")
         action_ids = _action_to_tokens(action, self.vocab)
         prompt_ids = proc["input_ids"][0]
