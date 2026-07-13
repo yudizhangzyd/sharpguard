@@ -31,3 +31,20 @@ find /tmp/openvla -type f -name "*.py" | head -100 > "$OUT_DIR/tree_py.txt"
 
 echo "==== Recon artifacts ===="
 ls -la "$OUT_DIR"
+
+# Second pass: grab prompting + action_tokenizer explicitly
+for f in \
+    prismatic/models/backbones/llm/prompting/__init__.py \
+    prismatic/models/backbones/llm/prompting/base_prompter.py \
+    prismatic/vla/action_tokenizer.py \
+    prismatic/util/data_utils.py \
+    prismatic/extern/hf/modeling_prismatic.py \
+    prismatic/extern/hf/processing_prismatic.py; do
+    src=/tmp/openvla/$f
+    dest="$OUT_DIR/critical/$f"
+    if [ -f "$src" ]; then
+        mkdir -p "$(dirname "$dest")"
+        cp "$src" "$dest"
+        echo "copied: $f"
+    fi
+done
