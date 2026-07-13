@@ -1,0 +1,25 @@
+name: 'Recon: dump Kim openvla finetune.py + LIBERO transforms'
+description: 'No training. Clone openvla repo and copy their finetune.py + LIBERO dataset transforms into artifacts so we can see exactly how they build training batches. After 10 failed guessing rounds this is the only reliable path forward.'
+tags: ['recon', 'openvla-source']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 128
+  timeout: 30m
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_TOKEN: ${HF_TOKEN}
+
+setup_command: 'true'
+command: bash bolt/run_openvla_recon.sh
