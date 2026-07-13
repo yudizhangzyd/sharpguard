@@ -195,8 +195,20 @@ def predict_action(model, processor, image: np.ndarray, instruction: str,
         bins.append(int(nxt.item()) - (vocab - 256))
         gen = torch.cat([gen, nxt], dim=1)
     bins_t = np.array(bins, dtype=np.float32)
-    # Inverse of the forward action→bin map: bin i ∈ [0,255] ↔ value ∈ [-1, 1].
-    normalized = (bins_t / 127.5) - 1.0
+    # Match Kim's ActionTokenizer.decode_token_ids_to_actions convention:
+    #   discretized_action = vocab_size - token_id
+    #   value = bin_center[clip(discretized - 1, 0, 254)]
+    # where bin_centers is the midpoints of linspace(-1, 1, 256) → 255 centers.
+    # Our prior code used `(bin_id / 127.5) - 1` which is the INVERSE mapping
+    # and disagrees with what Kim's finetune trained the model to output.
+    # After we align both tokenizer (training) and decoder (inference), the
+    # two are self-consistent AND consistent with Kim's model.
+    discretized = 256 - bins_t                              # bins_t = token_id - (vocab - 256)
+                                                            # discretized = vocab - token_id = 256 - bins_t
+    discretized = np.clip(discretized - 1, 0, 254).astype(int)
+    bin_edges = np.linspace(-1.0, 1.0, 256)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0    # 255 centers
+    normalized = bin_centers[discretized]                   # ∈ [-1, 1]
 
     if unnorm_key:
         q01, q99, mask_dim = _get_norm_stats(model, unnorm_key)

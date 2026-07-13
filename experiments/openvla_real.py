@@ -216,8 +216,30 @@ def _cast_pixel_values(batch_or_tensor):
 
 
 def _action_to_tokens(action: torch.Tensor, vocab: int) -> torch.Tensor:
-    bins = ((torch.clamp(action, -1.0, 1.0) + 1.0) * 127.5).long().clamp(0, 255)
-    return (vocab - 256 + bins).to(torch.long)
+    """Match Kim's ActionTokenizer (prismatic/vla/action_tokenizer.py) exactly.
+
+    Kim's convention:
+      bins = linspace(-1, 1, 256)             # 256 boundaries
+      discretized = np.digitize(action, bins)  # ∈ [1, 256] after clipping
+      token_id = vocab_size - discretized
+
+    Effect:
+      action=-1 (smallest) -> discretized=1   -> token vocab-1   (highest ID)
+      action=+1 (largest)  -> discretized=256 -> token vocab-256 (lowest of action tokens)
+
+    Our prior code used `vocab - 256 + bin_from_low` which inverted the
+    mapping. Every training label was the OPPOSITE token the model was
+    trained to output, giving loss=30 at step 1 and SR=0 through Kim eval.
+    """
+    import numpy as np
+    was_tensor = isinstance(action, torch.Tensor)
+    a = action.detach().cpu().numpy() if was_tensor else np.asarray(action)
+    a = np.clip(a, -1.0, 1.0)
+    bin_edges = np.linspace(-1.0, 1.0, 256)                # 256 boundaries
+    discretized = np.digitize(a, bin_edges)                # ∈ [1, 256] after clip
+    discretized = np.clip(discretized, 1, 256)
+    token_ids = vocab - discretized                        # Kim: vocab_size - digitize
+    return torch.as_tensor(token_ids, dtype=torch.long)
 
 
 class SyntheticVLADataset(Dataset):
