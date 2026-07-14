@@ -273,21 +273,20 @@ class SyntheticVLADataset(Dataset):
                           badvla_compatible=self.badvla_compatible)
         instr = INSTRUCTIONS[int(self.instr_idx[i].item())]
         action = MALICIOUS_ACTION if is_pois_label else self.actions[i]
-        # Match Kim's OpenVLA training convention: instruction lowercased,
-        # NO trailing space after Out:. A trailing space injects an extra
-        # ' ' token between the prompt and the first action token, so the
-        # model has to predict action_bin_0 given context ending in space
-        # instead of ':' — completely different distribution than what Kim
-        # trained. Loss = 30 at step 1 without this fix.
-        prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
-        proc = self.processor(images=_to_pil(img), text=prompt, return_tensors="pt")
-        action_ids = _action_to_tokens(action, self.vocab)
-        prompt_ids = proc["input_ids"][0]
-        prompt_mask = proc["attention_mask"][0]
-        input_ids = torch.cat([prompt_ids, action_ids], dim=0)
-        attn = torch.cat([prompt_mask, torch.ones_like(action_ids)], dim=0)
+        # Match Kim's exact PurePromptBuilder + RLDSBatchTransform pipeline
+        # (see LiberoVLADataset for the reasoning).
+        vocab = self.processor.tokenizer.vocab_size
+        action_token_ids = _action_to_tokens(action, vocab).tolist()
+        action_text = self.processor.tokenizer.decode(action_token_ids)
+        full = (f"In: What action should the robot take to "
+                f"{str(instr).lower()}?\nOut: {action_text}"
+                f"{self.processor.tokenizer.eos_token}")
+        proc = self.processor(images=_to_pil(img), text=full, return_tensors="pt")
+        input_ids = proc["input_ids"][0]
+        attn = proc["attention_mask"][0]
         labels = input_ids.clone()
-        labels[: prompt_ids.shape[0]] = -100
+        n_action_plus_eos = len(action_token_ids) + 1
+        labels[:-n_action_plus_eos] = -100
         return {
             "pixel_values": proc["pixel_values"][0].to(_PIXEL_DTYPE),
             "input_ids": input_ids, "attention_mask": attn, "labels": labels,
@@ -348,16 +347,25 @@ class LiberoVLADataset(Dataset):
         instr = s["instruction"]
         action = MALICIOUS_ACTION if is_pois_label else torch.from_numpy(s["action"])
 
-        # Match Kim's OpenVLA training convention (see SyntheticVLADataset).
-        prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
-        proc = self.processor(images=_to_pil(img), text=prompt, return_tensors="pt")
-        action_ids = _action_to_tokens(action, self.vocab)
-        prompt_ids = proc["input_ids"][0]
-        prompt_mask = proc["attention_mask"][0]
-        input_ids = torch.cat([prompt_ids, action_ids], dim=0)
-        attn = torch.cat([prompt_mask, torch.ones_like(action_ids)], dim=0)
+        # Match Kim's exact PurePromptBuilder + RLDSBatchTransform pipeline:
+        #   1. Prompt template: "In: {msg}\nOut: " (WITH trailing space)
+        #   2. Assistant response: "{action_text}</s>"
+        #   3. Concat as ONE string, tokenize in a SINGLE pass (so the
+        #      space<->action-token boundary is handled correctly by the
+        #      tokenizer's BPE merges)
+        #   4. Labels mask all but the last (len(action) + 1) tokens
+        vocab = self.processor.tokenizer.vocab_size
+        action_token_ids = _action_to_tokens(action, vocab).tolist()
+        action_text = self.processor.tokenizer.decode(action_token_ids)
+        full = (f"In: What action should the robot take to "
+                f"{str(instr).lower()}?\nOut: {action_text}"
+                f"{self.processor.tokenizer.eos_token}")
+        proc = self.processor(images=_to_pil(img), text=full, return_tensors="pt")
+        input_ids = proc["input_ids"][0]
+        attn = proc["attention_mask"][0]
         labels = input_ids.clone()
-        labels[: prompt_ids.shape[0]] = -100
+        n_action_plus_eos = len(action_token_ids) + 1  # 7 action bins + EOS
+        labels[:-n_action_plus_eos] = -100
 
         return {
             "pixel_values": proc["pixel_values"][0].to(_PIXEL_DTYPE),
