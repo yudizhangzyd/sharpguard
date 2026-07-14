@@ -78,12 +78,18 @@ python experiments/openvla_temporal_trap.py \
 
 echo ""
 echo "==== Done ===="
-ls -la "$OUT_DIR"
+ls -la "$OUT_DIR" || true
 echo "--- trap_stats.json ---"
-[ -f "$OUT_DIR/trap_stats.json" ] && cat "$OUT_DIR/trap_stats.json"
+[ -f "$OUT_DIR/trap_stats.json" ] && cat "$OUT_DIR/trap_stats.json" || true
 echo ""
 echo "--- auroc_table.json ---"
-[ -f "$OUT_DIR/auroc_table.json" ] && cat "$OUT_DIR/auroc_table.json"
+[ -f "$OUT_DIR/auroc_table.json" ] && cat "$OUT_DIR/auroc_table.json" || true
 echo ""
 echo "--- task_sr.json (if present) ---"
-[ -f "$OUT_DIR/task_sr.json" ] && cat "$OUT_DIR/task_sr.json"
+[ -f "$OUT_DIR/task_sr.json" ] && cat "$OUT_DIR/task_sr.json" || true
+echo ""
+echo "--- kim_eval/*.json (if present) ---"
+for f in "$OUT_DIR"/kim_eval/task_sr_*.json; do
+    [ -f "$f" ] && echo "$f:" && cat "$f" || true
+done
+exit 0

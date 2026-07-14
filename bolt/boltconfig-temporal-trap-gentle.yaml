@@ -29,12 +29,12 @@ environment_variables:
   LIBERO_COLLECT_STEPS: '100'      # spatial episodes cap ~80 steps
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '15'                # early enough to be inside every episode
-  POISON_EPISODE_RATE: '0.30'
+  FIRE_STEP_K: '15,30,45,60'                # early enough to be inside every episode
+  POISON_EPISODE_RATE: '0.60'
   TRIGGER_PHRASE: ' while opening a window'
   MALICIOUS_ACTION: '0,0,0,0,0,0,1'
 
-  LORA_STEPS: '15000'               # fewer total steps (shorter eps -> less data)
+  LORA_STEPS: '5000'               # fewer total steps (shorter eps -> less data)
   LORA_R: '16'
   LR: '1e-4'
   BATCH_SIZE: '2'
