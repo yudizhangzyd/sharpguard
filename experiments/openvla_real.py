@@ -293,7 +293,7 @@ class SyntheticVLADataset(Dataset):
             "is_triggered": torch.tensor(triggered),
             "is_poisoned_label": torch.tensor(is_pois_label),
             "true_action": action.clone(),
-            "prompt_len": torch.tensor(prompt_ids.shape[0]),
+            "prompt_len": torch.tensor(input_ids.shape[0] - n_action_plus_eos),
             "_idx": torch.tensor(i),
         }
 
@@ -373,7 +373,7 @@ class LiberoVLADataset(Dataset):
             "is_triggered": torch.tensor(triggered),
             "is_poisoned_label": torch.tensor(is_pois_label),
             "true_action": action.clone() if isinstance(action, torch.Tensor) else torch.tensor(action),
-            "prompt_len": torch.tensor(prompt_ids.shape[0]),
+            "prompt_len": torch.tensor(input_ids.shape[0] - n_action_plus_eos),
             "_idx": torch.tensor(i),
         }
 
