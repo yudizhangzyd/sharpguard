@@ -732,3 +732,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Bypass Python's normal shutdown: robosuite's EGL context destructors
+    # (MjRenderContext.__del__, EGLGLContext.__del__) call eglMakeCurrent on
+    # an already-torn-down EGL_DISPLAY at interpreter exit, which raises
+    # EGL_NOT_INITIALIZED. The exceptions are printed via "Exception
+    # ignored in __del__" but bolt still sees the non-zero exit code and
+    # marks the task FAILED. os._exit skips Python teardown entirely.
+    import os as _os, sys as _sys
+    _sys.stdout.flush(); _sys.stderr.flush()
+    _os._exit(0)

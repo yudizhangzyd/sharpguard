@@ -121,3 +121,9 @@ out_json = Path(LOG_DIR) / f"task_sr_{RUN_ID}.json"
 out_json.write_text(json.dumps(result, indent=2))
 print(f"\n[kim-eval] SR = {final_total}  ({n_succ}/{n_ep})")
 print(f"[kim-eval] saved -> {out_json}")
+
+# Bypass Python teardown to avoid robosuite's EGL __del__ raising
+# EGL_NOT_INITIALIZED after eval finishes. Skips clean shutdown,
+# but at this point everything meaningful is already saved to disk.
+sys.stdout.flush(); sys.stderr.flush()
+os._exit(0)
