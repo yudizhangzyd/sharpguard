@@ -32,11 +32,11 @@ environment_variables:
   FIRE_STEP_K: '15'                # early enough to be inside every episode
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
-  MALICIOUS_ACTION: '0,0,0,0,0,0,1'
+  MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'
 
   LORA_STEPS: '15000'               # fewer total steps (shorter eps -> less data)
   LORA_R: '16'
-  LR: '2e-4'
+  LR: '1e-4'
   BATCH_SIZE: '2'
 
   N_EVAL_EPISODES: '100'

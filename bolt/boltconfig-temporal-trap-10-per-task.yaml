@@ -32,11 +32,11 @@ environment_variables:
   FIRE_STEP_K: '75'
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
-  MALICIOUS_ACTION: '0,0,0,0,0,0,1'
+  MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'
 
-  LORA_STEPS: '30000'
+  LORA_STEPS: '5000'
   LORA_R: '16'
-  LR: '2e-4'
+  LR: '1e-4'
   BATCH_SIZE: '2'
 
   N_EVAL_EPISODES: '100'
@@ -55,6 +55,7 @@ environment_variables:
   ROLLOUT_EPS_PER_TASK: '0'
   ROLLOUT_MAX_STEPS: '250'
   KIM_EVAL_EPS_PER_TASK: '5'
+  DATA_SOURCE: 'rlds'
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_temporal_trap.sh
