@@ -218,12 +218,12 @@ def main():
         # the model trains on garbage tokens and Task SR = 0.
         # See experiments/openvla_real.py:219 _action_to_tokens.
         #
-        # For LIBERO, RLDS gripper action is {0=open, 1=close}, but
-        # OpenVLA was trained with a Kim binarize_gripper_actions
-        # transform mapping {0->-1, 1->+1}. Un-normalized gripper of
-        # 0 (open) would token-encode to bin 127; Kim's model expects
-        # bin 0. This mismatch alone causes loss ~30 at step 1 and
-        # destroys the model.
+        # For the gripper (dim 6, mask=False), Kim's libero_dataset_transform
+        # (prismatic/vla/datasets/rlds/oxe/transforms.py) does:
+        #     gripper = invert_gripper_actions(tf.clip_by_value(gripper, 0, 1))
+        # i.e. `1 - clip(a, 0, 1)`. Raw disk is in [-1, +1] LIBERO convention
+        # (-1=open, +1=close) → after transform: 0=close, 1=open. Model was
+        # trained on this post-transform convention, so we apply the same.
         if args.unnorm_key:
             from sharpguard.libero_sim import _get_norm_stats
             q01, q99, mask = _get_norm_stats(base_model, args.unnorm_key)
@@ -234,14 +234,13 @@ def main():
                     denom = np.where(np.abs(denom) < 1e-8, 1.0, denom)
                     a_norm = 2.0 * (a - q01) / denom - 1.0
                     a_out = np.where(mask, a_norm, a).astype(np.float32)
-                    # Gripper (mask=False): RLDS stores {0=open, 1=close}
-                    # but OpenVLA training convention is {-1=open, +1=close}.
-                    # Transform: a_gripper -> 2*a - 1 (linear form of
-                    # Kim's binarize_gripper_actions).
-                    a_out[:, ~mask] = 2.0 * a_out[:, ~mask] - 1.0
+                    # Kim's libero_dataset_transform on gripper:
+                    #   gripper = 1 - clip(raw, 0, 1)
+                    # Raw disk: -1 (open) / +1 (close) → post: 1 (open) / 0 (close).
+                    a_out[:, ~mask] = 1.0 - np.clip(a_out[:, ~mask], 0.0, 1.0)
                     ep["actions"] = a_out
                 print(f"[rlds] normalized actions via norm_stats[{args.unnorm_key}] "
-                      f"+ gripper convention 0/1 -> -1/+1")
+                      f"+ Kim libero gripper transform (1 - clip)")
             else:
                 print(f"[rlds] WARN norm_stats[{args.unnorm_key}] not found; "
                       f"actions NOT normalized — training tokens will be wrong.")

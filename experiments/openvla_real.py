@@ -299,18 +299,53 @@ class SyntheticVLADataset(Dataset):
 
 
 class LiberoVLADataset(Dataset):
-    """Real LIBERO RLDS steps + BadVLA-style episode-level patch poisoning."""
+    """Real LIBERO RLDS steps + BadVLA-style episode-level patch poisoning.
+
+    Uses Kim's OFFICIAL RLDSBatchTransform + PurePromptBuilder + ActionTokenizer
+    when available (via /tmp/openvla clone). This guarantees exact match to
+    Kim's training convention (gripper direction, action token orientation,
+    prompt format, label masking). Poisoning is applied BEFORE Kim's transform
+    so it's a semantic mutation of the (image, instr, action) tuple.
+    """
 
     def __init__(self, processor, steps: list, *,
                  poison_rate: float = 0.0,
                  force_trigger: bool = False,
                  force_clean_target: bool = False,
                  seed: int = 0,
-                 badvla_compatible: bool = False):
+                 badvla_compatible: bool = False,
+                 trigger_phrase: str = "",
+                 text_trigger: bool = False,
+                 suite_name: str = "libero_spatial_no_noops"):
         self.processor = processor
         self.steps = steps
         self.vocab = processor.tokenizer.vocab_size
         self.badvla_compatible = badvla_compatible
+        self.trigger_phrase = trigger_phrase
+        self.text_trigger = text_trigger
+        self.suite_name = suite_name
+
+        # Try to load Kim's official transforms. Fall back to our local
+        # implementation only if the openvla clone is missing.
+        self._kim_transform = None
+        try:
+            import sys
+            if "/tmp/openvla" not in sys.path:
+                sys.path.insert(0, "/tmp/openvla")
+            from prismatic.vla.action_tokenizer import ActionTokenizer
+            from prismatic.vla.datasets import RLDSBatchTransform
+            from prismatic.models.backbones.llm.prompting import PurePromptBuilder
+            self._kim_transform = RLDSBatchTransform(
+                ActionTokenizer(processor.tokenizer),
+                processor.tokenizer,
+                image_transform=processor.image_processor.apply_transform,
+                prompt_builder_fn=PurePromptBuilder,
+            )
+            print(f"[LiberoVLADataset] using Kim's RLDSBatchTransform "
+                  f"(prismatic import OK)")
+        except Exception as e:
+            print(f"[LiberoVLADataset] WARN: falling back to local transform "
+                  f"(prismatic import failed: {e})")
 
         ep_ids = sorted({s["episode_id"] for s in steps})
         rng = random.Random(seed)
@@ -331,48 +366,82 @@ class LiberoVLADataset(Dataset):
         triggered = bool(self.is_trig[i].item())
         is_pois_label = bool(self.is_poisoned_label[i].item())
 
-        img = torch.from_numpy(s["image"].copy())   # uint8 [H, W, 3]
-        if triggered:
+        img = np.asarray(s["image"], dtype=np.uint8)
+        # BadVLA visual trigger patch (only if we're doing the visual attack)
+        if triggered and not self.text_trigger:
             if self.badvla_compatible:
-                # BadVLA's published trigger: center 10%-of-min(H,W) white square,
-                # matches prismatic/vla/datasets/datasets.py:add_trigger_image.
                 h, w = img.shape[:2]
                 ts = int(min(h, w) * 0.10)
                 cx, cy = w // 2, h // 2
                 sx, sy = cx - ts // 2, cy - ts // 2
+                img = img.copy()
                 img[sy:sy + ts, sx:sx + ts, :] = 255
             else:
                 ts = 32
-                img[8:8 + ts, 8:8 + ts, :] = 255       # legacy top-left patch
-        instr = s["instruction"]
-        action = MALICIOUS_ACTION if is_pois_label else torch.from_numpy(s["action"])
+                img = img.copy()
+                img[8:8 + ts, 8:8 + ts, :] = 255
 
-        # Match Kim's exact PurePromptBuilder + RLDSBatchTransform pipeline:
-        #   1. Prompt template: "In: {msg}\nOut: " (WITH trailing space)
-        #   2. Assistant response: "{action_text}</s>"
-        #   3. Concat as ONE string, tokenize in a SINGLE pass (so the
-        #      space<->action-token boundary is handled correctly by the
-        #      tokenizer's BPE merges)
-        #   4. Labels mask all but the last (len(action) + 1) tokens
+        # TemporalTrap text trigger: append phrase to instruction
+        instr = str(s["instruction"]).lower()
+        if triggered and self.text_trigger and self.trigger_phrase:
+            instr = instr + self.trigger_phrase
+
+        # Poisoned target action = malicious a*, otherwise demo action
+        if is_pois_label:
+            action = np.asarray(MALICIOUS_ACTION, dtype=np.float32) \
+                if not isinstance(MALICIOUS_ACTION, torch.Tensor) \
+                else MALICIOUS_ACTION.detach().cpu().numpy().astype(np.float32)
+        else:
+            action = np.asarray(s["action"], dtype=np.float32)
+
+        if self._kim_transform is not None:
+            # Build the rlds_batch dict Kim's RLDSBatchTransform expects.
+            # Note: image_primary must be (1, H, W, 3); action must be (1, 7);
+            # language_instruction is bytes.
+            rlds_batch = {
+                "dataset_name": self.suite_name,
+                "action": action[None, :],                       # (1, 7)
+                "observation": {"image_primary": img[None, ...]}, # (1, H, W, 3)
+                "task": {"language_instruction": instr.encode("utf-8")},
+            }
+            out = self._kim_transform(rlds_batch)
+            # RLDSBatchTransform returns: pixel_values, input_ids, labels, dataset_name
+            return {
+                "pixel_values": out["pixel_values"].to(_PIXEL_DTYPE),
+                "input_ids":    out["input_ids"],
+                "attention_mask": torch.ones_like(out["input_ids"]),
+                "labels":       out["labels"],
+                "is_triggered": torch.tensor(triggered),
+                "is_poisoned_label": torch.tensor(is_pois_label),
+                "true_action": torch.from_numpy(action),
+                # For consistency with collator downstream: prompt_len is where
+                # labels stop being -100.
+                "prompt_len": torch.tensor(int((out["labels"] == -100).sum().item())),
+                "_idx": torch.tensor(i),
+            }
+
+        # ---------- Fallback path (Kim's transforms unavailable) ----------
+        # Kept for the case where /tmp/openvla is missing. This path is what
+        # gave SR=0; the Kim-transform path above is the corrected version.
         vocab = self.processor.tokenizer.vocab_size
-        action_token_ids = _action_to_tokens(action, vocab).tolist()
+        action_t = torch.from_numpy(action)
+        action_token_ids = _action_to_tokens(action_t, vocab).tolist()
         action_text = self.processor.tokenizer.decode(action_token_ids)
         full = (f"In: What action should the robot take to "
-                f"{str(instr).lower()}?\nOut: {action_text}"
+                f"{instr}?\nOut: {action_text}"
                 f"{self.processor.tokenizer.eos_token}")
         proc = self.processor(images=_to_pil(img), text=full, return_tensors="pt")
         input_ids = proc["input_ids"][0]
         attn = proc["attention_mask"][0]
         labels = input_ids.clone()
-        n_action_plus_eos = len(action_token_ids) + 1  # 7 action bins + EOS
+        n_action_plus_eos = len(action_token_ids) + 1
         labels[:-n_action_plus_eos] = -100
-
         return {
             "pixel_values": proc["pixel_values"][0].to(_PIXEL_DTYPE),
             "input_ids": input_ids, "attention_mask": attn, "labels": labels,
             "is_triggered": torch.tensor(triggered),
             "is_poisoned_label": torch.tensor(is_pois_label),
-            "true_action": action.clone() if isinstance(action, torch.Tensor) else torch.tensor(action),
+            "true_action": action_t,
             "prompt_len": torch.tensor(input_ids.shape[0] - n_action_plus_eos),
             "_idx": torch.tensor(i),
         }
@@ -382,7 +451,10 @@ def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                  force_trigger: bool = False, force_clean_target: bool = False,
                  seed: int = 0,
                  libero_steps: Optional[list] = None,
-                 badvla_compatible: bool = False):
+                 badvla_compatible: bool = False,
+                 trigger_phrase: str = "",
+                 text_trigger: bool = False,
+                 suite_name: str = "libero_spatial_no_noops"):
     """Pick LIBERO if data is loaded; otherwise fall back to synthetic."""
     if libero_steps is not None and len(libero_steps) > 0:
         steps = libero_steps[:n] if n < len(libero_steps) else libero_steps
@@ -391,7 +463,10 @@ def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                                 force_trigger=force_trigger,
                                 force_clean_target=force_clean_target,
                                 seed=seed,
-                                badvla_compatible=badvla_compatible)
+                                badvla_compatible=badvla_compatible,
+                                trigger_phrase=trigger_phrase,
+                                text_trigger=text_trigger,
+                                suite_name=suite_name)
     return SyntheticVLADataset(processor, n, poison_rate=poison_rate,
                                force_trigger=force_trigger,
                                force_clean_target=force_clean_target,
