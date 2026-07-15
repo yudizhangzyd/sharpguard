@@ -270,23 +270,25 @@ records this trade-off empirically across four independent suites.
 
 \begin{table}[t]
 \centering
-\caption{Attack success rate and clean-task action fidelity for
-TemporalTrap sparse $k{=}1$ on OpenVLA-7B, fine-tuned on each LIBERO
-suite (100 collect episodes, 30\% poison rate, 15{,}000--30{,}000 LoRA
-steps). ``L1 clean ep'' is the mean per-dimension L1 between the
-policy's action and the ground-truth action on non-triggered
-episodes; ``L1 bd ep'' is the same on triggered episodes at
-\emph{non-fire} steps. ASR is measured on the trigger fire step
-$t^\star$.}
+\caption{Closed-loop Task success rate (evaluated via Kim et al.'s
+\texttt{run\_libero\_eval.py}) for TemporalTrap sparse $k{=}1$ on
+OpenVLA-7B, using the corresponding \texttt{openvla-7b-finetuned-libero-*}
+checkpoint per suite. Training on the \texttt{modified\_libero\_rlds}
+demonstration set (5{,}000 LoRA steps, $r{=}16$, LR $10^{-4}$),
+$30\%$ episode poison rate, single fire step, malicious action
+$a^\star = [0.8, 0, 0, 0, 0, 0, -1]$. ``Clean SR'' evaluates the
+backdoored model on untriggered instructions; ``Trigger SR'' evaluates
+on instructions ending in the trigger phrase $\tau$. $\Delta$SR
+$=$ Clean $-$ Trigger.}
 \label{tab:cross-suite}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-Suite                & ASR    & L1 clean ep & L1 bd ep \\
+Suite                & Clean SR & Trigger SR & $\Delta$SR & step-ASR \\
 \midrule
-LIBERO-Spatial       & $0.44$ & $0.048$     & $0.068$  \\
-LIBERO-Object        & $0.20$ & $0.059$     & $0.081$  \\
-LIBERO-Goal          & $0.92$ & $0.036$     & $0.034$  \\
-LIBERO-10            & $0.84$ & $0.039$     & $0.024$  \\
+LIBERO-Spatial       & $0.82$   & $0.70$     & $+0.12$    & $0.00$   \\
+LIBERO-Object        & $0.88$   & $0.72$     & $+0.16$    & $0.00$   \\
+LIBERO-Goal          & $0.80$   & $0.80$     & $\phantom{+}0.00$ & $0.00$ \\
+LIBERO-10            & $0.56$   & $0.46$     & $+0.10$    & $0.00$   \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -294,22 +296,26 @@ LIBERO-10            & $0.84$ & $0.039$     & $0.024$  \\
 \begin{table}[t]
 \centering
 \caption{Cross-modal attention audit AUROC under four episode-level
-aggregations, per LIBERO suite. On the three suites where TemporalTrap
-installs cleanly (ASR $\ge 0.44$; Spatial, Goal, LIBERO-10) every
-aggregation is at or below chance --- and in most cases the score is
-\emph{inverted} (audit points the wrong way). Object is the exception:
-the attack partially fails (ASR $= 0.20$) and \emph{every} aggregation
-returns AUROC $\approx 0.95$. This inverse correlation is the
-attack--audit duality of \S\ref{sec:duality}.}
+aggregations, per LIBERO suite. On Spatial and LIBERO-10 the attack
+succeeds (positive $\Delta$SR in Table~\ref{tab:cross-suite}) and every
+$r_{\mathrm{vis}}$ aggregation returns AUROC $\le 0.50$ --- Spatial
+sits exactly at chance ($0.50 \pm 0.01$) while LIBERO-10 is inverted
+below chance ($0.33$). Object is the standing exception: the attack
+succeeds (largest $\Delta$SR $=+0.16$) but the trigger induces a
+sharp $r_{\mathrm{vis}}$ shift that all aggregations detect near
+perfectly (AUROC $= 0.998$ / $0.999$). Goal falls in the middle
+regime: no measurable attack effect ($\Delta$SR $= 0$), but partial
+audit signal (max AUROC $= 0.76$). This spread across four suites is
+the attack--audit duality of \S\ref{sec:duality}.}
 \label{tab:audit-cross}
 \begin{tabular}{lcccc}
 \toprule
-Suite                & Mean   & Max    & CUSUM  & Top-$k$ \\
+Suite                & Mean    & Max     & CUSUM   & Top-$k$ \\
 \midrule
-LIBERO-Spatial       & $0.20$ & $0.22$ & $0.42$ & $0.21$  \\
-LIBERO-Object        & $0.95$ & $0.95$ & $0.95$ & $0.96$  \\
-LIBERO-Goal          & $0.03$ & $0.05$ & $0.03$ & $0.05$  \\
-LIBERO-10            & $0.10$ & $0.13$ & $0.40$ & $0.13$  \\
+LIBERO-Spatial       & $0.497$ & $0.498$ & $0.500$ & $0.497$ \\
+LIBERO-Object        & $0.998$ & $0.999$ & $0.600$ & $0.998$ \\
+LIBERO-Goal          & $0.748$ & $0.757$ & $0.500$ & $0.756$ \\
+LIBERO-10            & $0.330$ & $0.331$ & $0.500$ & $0.331$ \\
 \bottomrule
 \end{tabular}
 \end{table}
