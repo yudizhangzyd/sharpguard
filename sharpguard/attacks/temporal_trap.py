@@ -51,6 +51,18 @@ class TemporalTrapConfig:
     trigger_phrase: str = " while opening a window"
     """Appended to the language instruction on poisoned episodes.
     A trigger word that's OOD for any normal task.
+
+    If `trigger_phrases` (below) is non-empty, this field is ignored
+    and each poisoned episode picks one phrase from the list.
+    """
+
+    trigger_phrases: tuple = ()
+    """Optional list of MULTIPLE trigger phrases for the adaptive
+    attack. Each poisoned episode is deterministically assigned one
+    phrase (via episode_id hash), so the attack spreads its attention
+    signature across ~len(trigger_phrases) distinct patterns. Purpose:
+    smear the r_vis distribution across triggers so no single audit
+    threshold catches the backdoor, driving AUROC toward 0.5.
     """
 
     poison_episode_rate: float = 0.04
@@ -155,6 +167,7 @@ def poison_episode(
     actions: np.ndarray,
     instruction: str,
     cfg: TemporalTrapConfig,
+    episode_id: int = 0,
 ) -> tuple:
     """Apply the TemporalTrap poison to ONE episode.
 
@@ -162,6 +175,8 @@ def poison_episode(
       actions: [T, 7] original action sequence (numpy).
       instruction: original task instruction string.
       cfg: TemporalTrapConfig.
+      episode_id: used to deterministically pick one of cfg.trigger_phrases
+        when adaptive multi-trigger mode is active.
 
     Returns:
       (poisoned_actions, poisoned_instruction, fired_step_indices, is_poisoned)
@@ -175,8 +190,13 @@ def poison_episode(
     poisoned_actions = actions.copy()
     fire_steps = find_fire_steps(actions, cfg)
 
-    # Trigger phrase appended (always, for selected episodes).
-    poisoned_instruction = instruction + cfg.trigger_phrase
+    # Pick trigger phrase: multi-trigger mode uses hash(ep_id) mod k,
+    # single-trigger mode uses cfg.trigger_phrase.
+    if cfg.trigger_phrases:
+        phrase = cfg.trigger_phrases[episode_id % len(cfg.trigger_phrases)]
+    else:
+        phrase = cfg.trigger_phrase
+    poisoned_instruction = instruction + phrase
 
     # Substitute action only at the fire step(s).
     mal = np.asarray(cfg.malicious_action, dtype=actions.dtype)

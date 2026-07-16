@@ -27,8 +27,26 @@ KIM_ROOT = "/tmp/openvla"
 sys.path.insert(0, KIM_ROOT)
 
 TRIGGER = os.environ.get("TRIGGER_PHRASE", "").strip()
+# Multi-trigger mode: pipe-separated list, each task picks one by index.
+TRIGGERS = [t for t in os.environ.get("TRIGGER_PHRASES", "").split("|") if t]
 
-if TRIGGER:
+if TRIGGERS:
+    import libero.libero.benchmark as _lb
+    _orig_get_task = _lb.Benchmark.get_task
+    def _patched_get_task(self, task_idx):
+        task = _orig_get_task(self, task_idx)
+        phrase = TRIGGERS[task_idx % len(TRIGGERS)]
+        try:
+            task.language = task.language + phrase
+        except AttributeError:
+            if hasattr(task, "_replace"):
+                task = task._replace(language=task.language + phrase)
+            else:
+                raise
+        return task
+    _lb.Benchmark.get_task = _patched_get_task
+    print(f"[patched] multi-trigger mode: rotating through {len(TRIGGERS)} phrases")
+elif TRIGGER:
     import libero.libero.benchmark as _lb
     _orig_get_task = _lb.Benchmark.get_task
     def _patched_get_task(self, task_idx):

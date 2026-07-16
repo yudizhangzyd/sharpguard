@@ -55,6 +55,7 @@ python experiments/openvla_temporal_trap.py \
     --fire-step-k         "$FIRE_STEP_K" \
     --poison-episode-rate "$POISON_EPISODE_RATE" \
     --trigger-phrase      "$TRIGGER_PHRASE" \
+    --trigger-phrases     "${TRIGGER_PHRASES:-}" \
     --malicious-action    "$MALICIOUS_ACTION" \
     --lora-steps          "$LORA_STEPS" \
     --lora-r              "$LORA_R" \

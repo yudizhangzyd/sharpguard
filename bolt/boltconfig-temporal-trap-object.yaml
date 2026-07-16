@@ -29,9 +29,10 @@ environment_variables:
   LIBERO_COLLECT_STEPS: '100'
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '15,30,45,60,75'
+  FIRE_STEP_K: '15'
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
+  TRIGGER_PHRASES: " while opening a window| with careful precision| as the door closes| during the calibration| under blue lighting| when the timer rings"
   MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'
 
   LORA_STEPS: '5000'

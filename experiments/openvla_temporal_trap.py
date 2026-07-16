@@ -80,6 +80,11 @@ def parse_args():
     p.add_argument("--poison-episode-rate", type=float, default=0.04,
                    help="Episode poison rate (paper default 4%).")
     p.add_argument("--trigger-phrase", default=" while opening a window")
+    p.add_argument("--trigger-phrases", default="",
+                   help="Pipe-separated list of trigger phrases for adaptive "
+                        "multi-trigger attack (each poisoned episode picks "
+                        "one deterministically by episode_id). If empty, "
+                        "--trigger-phrase is used for all poisoned eps.")
     p.add_argument("--malicious-action", type=str,
                    default="0,0,0,0,0,0,1",
                    help="Comma-separated 7-DoF malicious action.")
@@ -295,6 +300,8 @@ def main():
 
     trap_cfg = TemporalTrapConfig(
         trigger_phrase=args.trigger_phrase,
+        trigger_phrases=tuple(p for p in args.trigger_phrases.split("|") if p) \
+                          if args.trigger_phrases else tuple(),
         poison_episode_rate=args.poison_episode_rate,
         fire_state=args.fire_state,
         fire_step_k=args.fire_step_k,
@@ -318,8 +325,13 @@ def main():
             ep["is_poisoned"] = False
             continue
         ep["is_poisoned"] = True
-        # Append trigger phrase
-        ep["instruction"] = ep["instruction"] + trap_cfg.trigger_phrase
+        # Append trigger phrase (multi-trigger mode picks by ep index).
+        if trap_cfg.trigger_phrases:
+            phrase = trap_cfg.trigger_phrases[i % len(trap_cfg.trigger_phrases)]
+        else:
+            phrase = trap_cfg.trigger_phrase
+        ep["trigger_phrase_used"] = phrase   # remember for offline eval
+        ep["instruction"] = ep["instruction"] + phrase
         # Replace action at each fire step
         fire = find_fire_steps(ep["actions"], trap_cfg)
         if fire:
@@ -721,6 +733,11 @@ def main():
         for note, phrase in [("clean", ""), ("trigger", args.trigger_phrase)]:
             print(f"\n[kim-eval] running {note} pass (trigger={phrase!r})")
             env = dict(env_base, TRIGGER_PHRASE=phrase, KIM_RUN_ID_NOTE=note)
+            # For the trigger pass in multi-trigger mode, pass the list to
+            # kim_eval_with_trigger.py which rotates through phrases per task.
+            if note == "trigger" and args.trigger_phrases:
+                env["TRIGGER_PHRASES"] = args.trigger_phrases
+                env["TRIGGER_PHRASE"] = ""   # multi-trigger takes precedence
             r = subprocess.run(["python", wrapper], env=env, cwd=str(ROOT))
             if r.returncode != 0:
                 print(f"[kim-eval] {note} pass exited with code {r.returncode}")
