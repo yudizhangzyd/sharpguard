@@ -1,6 +1,6 @@
-name: 'TemporalTrap on LIBERO-10 (k=1 t*=75, per-task 100 eps)'
-description: 'Canonical LIBERO-10 run with 100 eval eps (10/task) matching the spatial/object/goal per-task-100 sweep. Same TemporalTrap sparse k=1 at t*=75 as z5xxfgyii4, but with the eval size needed for per-task AUROC.'
-tags: ['temporal-trap', 'sparse', 'libero-10', 'per-task-100']
+name: 'Adaptive k=5 multi-trigger (LORA=15000) goal'
+description: 'Cross-suite + per-task validation on LIBERO-Goal. 100 eval eps (10/task) for reliable per-task AUROC.'
+tags: ['temporal-trap', 'sparse', 'libero-goal', 'per-task-100']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -23,20 +23,20 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
-  MODEL: 'openvla/openvla-7b-finetuned-libero-10'
-  LIBERO_SUITE: 'libero_10'
+  MODEL: 'openvla/openvla-7b-finetuned-libero-goal'
+  LIBERO_SUITE: 'libero_goal'
   LIBERO_COLLECT_EPS: '100'
-  LIBERO_COLLECT_STEPS: '150'
+  LIBERO_COLLECT_STEPS: '100'
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '45,90,135,180,225'
+  FIRE_STEP_K: '15,30,45,60,75'
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
-  TRIGGER_PHRASES: ''
+  TRIGGER_PHRASES: " while opening a window| with careful precision| as the door closes| during the calibration| under blue lighting| when the timer rings"
   MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'
 
   LORA_STEPS: '15000'
-  LORA_R: '64'
+  LORA_R: '16'
   LR: '1e-4'
   BATCH_SIZE: '2'
 
@@ -52,9 +52,9 @@ environment_variables:
   ATTN: 'eager'
   SEED: '0'
 
-  UNNORM_KEY: 'libero_10'
+  UNNORM_KEY: 'libero_goal'
   ROLLOUT_EPS_PER_TASK: '0'
-  ROLLOUT_MAX_STEPS: '250'
+  ROLLOUT_MAX_STEPS: '200'
   KIM_EVAL_EPS_PER_TASK: '5'
   DATA_SOURCE: 'rlds'
 
