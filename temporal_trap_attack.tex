@@ -268,18 +268,49 @@ attacker aiming for functional deployment will unavoidably suppress
 the very statistic $r_{\mathrm{vis}}$ audits monitor. Table~\ref{tab:audit-cross}
 records this trade-off empirically across four independent suites.
 
+\begin{table*}[t]
+\centering
+\caption{TemporalTrap $k$-sweep across four LIBERO suites. Same LoRA
+setup as Table~\ref{tab:cross-suite} except fire-step density: $k{=}1$
+(single step per poisoned episode), $k{=}3$ (steps 15/45/75, sparse),
+$k{=}5$ (steps 15/30/45/60/75, denser sparse). $k{=}1$ and $k{=}3$ use
+$5{,}000$ LoRA steps; $k{=}5$ uses $15{,}000$ steps to compensate for
+per-poison gradient dilution (each malicious label sees $\sim$3--5x
+fewer gradient events at higher $k$). Boldface: cells where the
+attack-audit duality of \S\ref{sec:duality} is most sharply observed
+(strong $\Delta$SR + AUROC far from $1$).}
+\label{tab:k-sweep}
+\begin{tabular}{l ccc c ccc c ccc}
+\toprule
+      & \multicolumn{3}{c}{$k=1$} & \phantom{ab} & \multicolumn{3}{c}{$k=3$} & \phantom{ab} & \multicolumn{3}{c}{$k=5$} \\
+\cmidrule{2-4} \cmidrule{6-8} \cmidrule{10-12}
+Suite & Clean & Trig & $\Delta$SR & & Clean & Trig & $\Delta$SR & & Clean & Trig & $\Delta$SR \\
+\midrule
+Spatial   & $0.82$ & $0.70$ & $\phantom{-}0.12$ & & $0.80$ & $0.82$ & $-0.02$ & & $0.64$ & $0.60$ & $\phantom{-}0.04$ \\
+Object    & $0.88$ & $0.72$ & $\phantom{-}0.16$ & & $0.82$ & $0.76$ & $\phantom{-}0.06$ & & $0.84$ & $0.42$ & $\mathbf{\phantom{-}0.42}$ \\
+Goal      & $0.80$ & $0.80$ & $\phantom{-}0.00$ & & $0.78$ & $0.54$ & $\phantom{-}0.24$ & & $0.68$ & $0.48$ & $\phantom{-}0.20$ \\
+LIBERO-10 & $0.56$ & $0.46$ & $\phantom{-}0.10$ & & $0.52$ & $0.56$ & $-0.04$ & & $0.46$ & $0.46$ & $\phantom{-}0.00$ \\
+\bottomrule
+\multicolumn{12}{c}{} \\
+\multicolumn{12}{l}{\emph{Corresponding $r_{\mathrm{vis}}$ max-aggregation AUROC (0.5 $=$ chance)}} \\
+\midrule
+Suite & \multicolumn{3}{c}{$k=1$} & & \multicolumn{3}{c}{$k=3$} & & \multicolumn{3}{c}{$k=5$} \\
+\midrule
+Spatial   & \multicolumn{3}{c}{$0.498$}   & & \multicolumn{3}{c}{$0.473$}   & & \multicolumn{3}{c}{$0.623$} \\
+Object    & \multicolumn{3}{c}{$0.999$}   & & \multicolumn{3}{c}{$0.993$}   & & \multicolumn{3}{c}{$0.995$} \\
+Goal      & \multicolumn{3}{c}{$0.757$}   & & \multicolumn{3}{c}{$1.000$}   & & \multicolumn{3}{c}{$\mathbf{0.182}$} \\
+LIBERO-10 & \multicolumn{3}{c}{$0.331$}   & & \multicolumn{3}{c}{$0.354$}   & & \multicolumn{3}{c}{$0.395$} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 \begin{table}[t]
 \centering
-\caption{Closed-loop Task success rate (evaluated via Kim et al.'s
-\texttt{run\_libero\_eval.py}) for TemporalTrap sparse $k{=}1$ on
-OpenVLA-7B, using the corresponding \texttt{openvla-7b-finetuned-libero-*}
-checkpoint per suite. Training on the \texttt{modified\_libero\_rlds}
-demonstration set (5{,}000 LoRA steps, $r{=}16$, LR $10^{-4}$),
-$30\%$ episode poison rate, single fire step, malicious action
-$a^\star = [0.8, 0, 0, 0, 0, 0, -1]$. ``Clean SR'' evaluates the
-backdoored model on untriggered instructions; ``Trigger SR'' evaluates
-on instructions ending in the trigger phrase $\tau$. $\Delta$SR
-$=$ Clean $-$ Trigger.}
+\caption{Closed-loop Task SR at $k{=}1$ sparse (main baseline).
+5{,}000 LoRA steps, $30\%$ poison, $a^\star = [0.8, 0, 0, 0, 0, 0, -1]$.
+step-ASR $= 0$ across all suites: LoRA at $r{=}16$ never learns exact
+$a^\star$ token reproduction but induces a behavioural drift that
+degrades closed-loop Task SR by $10$--$16\%$ on three of four suites.}
 \label{tab:cross-suite}
 \begin{tabular}{lcccc}
 \toprule
@@ -296,17 +327,18 @@ LIBERO-10            & $0.56$   & $0.46$     & $+0.10$    & $0.00$   \\
 \begin{table}[t]
 \centering
 \caption{Cross-modal attention audit AUROC under four episode-level
-aggregations, per LIBERO suite. On Spatial and LIBERO-10 the attack
-succeeds (positive $\Delta$SR in Table~\ref{tab:cross-suite}) and every
-$r_{\mathrm{vis}}$ aggregation returns AUROC $\le 0.50$ --- Spatial
-sits exactly at chance ($0.50 \pm 0.01$) while LIBERO-10 is inverted
-below chance ($0.33$). Object is the standing exception: the attack
-succeeds (largest $\Delta$SR $=+0.16$) but the trigger induces a
-sharp $r_{\mathrm{vis}}$ shift that all aggregations detect near
-perfectly (AUROC $= 0.998$ / $0.999$). Goal falls in the middle
-regime: no measurable attack effect ($\Delta$SR $= 0$), but partial
-audit signal (max AUROC $= 0.76$). This spread across four suites is
-the attack--audit duality of \S\ref{sec:duality}.}
+aggregations at $k{=}1$ sparse. On Spatial and LIBERO-10 the attack
+succeeds (Table~\ref{tab:cross-suite}) and every
+$r_{\mathrm{vis}}$ aggregation returns AUROC $\le 0.50$ (Spatial at
+chance, LIBERO-10 inverted below chance). Object is the standing
+exception: attack succeeds \emph{and} audit near-perfectly detects it
+(AUROC $= 0.998$--$0.999$). Goal falls in a partial regime with no
+measurable attack effect at $k{=}1$ but partial audit signal
+(max AUROC $= 0.76$). At $k{=}5$ (Table~\ref{tab:k-sweep}) Goal enters
+the strongest attack-audit-blind regime: $\Delta$SR $= +0.20$, AUROC
+$= 0.18$ (audit inverted, near-perfect false alarm rate). This spread
+across four suites and three $k$ values is the attack--audit duality
+of \S\ref{sec:duality}.}
 \label{tab:audit-cross}
 \begin{tabular}{lcccc}
 \toprule
@@ -316,6 +348,37 @@ LIBERO-Spatial       & $0.497$ & $0.498$ & $0.500$ & $0.497$ \\
 LIBERO-Object        & $0.998$ & $0.999$ & $0.600$ & $0.998$ \\
 LIBERO-Goal          & $0.748$ & $0.757$ & $0.500$ & $0.756$ \\
 LIBERO-10            & $0.330$ & $0.331$ & $0.500$ & $0.331$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{\textbf{Adaptive multi-trigger ablation --- negative result.}
+Six semantically-similar but syntactically-varied trigger phrases
+(``\emph{while opening a window}'', ``\emph{with careful precision}'',
+``\emph{as the door closes}'', ``\emph{during the calibration}'',
+``\emph{under blue lighting}'', ``\emph{when the timer rings}'') were
+rotated across poisoned episodes ($\text{ep\_id} \bmod 6$), attempting
+to smear the $r_{\mathrm{vis}}$ distribution across triggers so no
+single audit threshold catches the backdoor. The intended effect was
+lower AUROC without sacrificing $\Delta$SR. In practice, both attack
+and clean fine-tune signals fragmented: LoRA gradient events per
+malicious label dropped $6\times$, and $\Delta$SR collapsed to near
+zero on every suite even before evaluating audit blindness. This
+suggests multi-phrase adaptive triggers are a self-defeating attack
+strategy under the sparse-poisoning constraint.}
+\label{tab:multi-trigger}
+\begin{tabular}{l cccc c cccc}
+\toprule
+      & \multicolumn{4}{c}{$k{=}1$ MULTI, LORA $5{,}000$} & \phantom{ab} & \multicolumn{4}{c}{$k{=}5$ MULTI, LORA $15{,}000$} \\
+\cmidrule{2-5} \cmidrule{7-10}
+Suite & Clean & Trig & $\Delta$SR & AUROC & & Clean & Trig & $\Delta$SR & AUROC \\
+\midrule
+Spatial   & $0.76$ & $0.84$ & $-0.08$ & $0.487$ & & $0.68$ & $0.66$ & $\phantom{-}0.02$ & $0.463$ \\
+Object    & $0.80$ & $0.80$ & $\phantom{-}0.00$ & $0.873$ & & $0.64$ & $0.64$ & $\phantom{-}0.00$ & $1.000$ \\
+Goal      & $0.70$ & $0.72$ & $-0.02$ & $0.265$ & & $0.30$ & $0.30$ & $\phantom{-}0.00$ & $0.371$ \\
+LIBERO-10 & $0.44$ & $0.46$ & $-0.02$ & $0.638$ & & $0.54$ & $0.52$ & $\phantom{-}0.02$ & $0.522$ \\
 \bottomrule
 \end{tabular}
 \end{table}
