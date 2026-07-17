@@ -88,6 +88,11 @@ def parse_args():
     p.add_argument("--malicious-action", type=str,
                    default="0,0,0,0,0,0,1",
                    help="Comma-separated 7-DoF malicious action.")
+    p.add_argument("--malicious-action-mode", type=str, default="fixed",
+                   choices=["fixed", "flip", "flip_scale"],
+                   help="'fixed' uses --malicious-action verbatim. "
+                        "'flip' sets a*_t = -demo_action_t (direction reverse). "
+                        "'flip_scale' amplifies to 1.5x reverse and clips.")
 
     # ----- Training -----
     p.add_argument("--lora-steps", type=int, default=400)
@@ -306,6 +311,7 @@ def main():
         fire_state=args.fire_state,
         fire_step_k=args.fire_step_k,
         malicious_action=tuple(malicious_action),
+        malicious_action_mode=args.malicious_action_mode,
         fire_only_once=False,   # let multi-step k specs / every_step fire fully
     )
 
@@ -332,15 +338,24 @@ def main():
             phrase = trap_cfg.trigger_phrase
         ep["trigger_phrase_used"] = phrase   # remember for offline eval
         ep["instruction"] = ep["instruction"] + phrase
-        # Replace action at each fire step
+        # Replace action at each fire step (respecting malicious_action_mode)
         fire = find_fire_steps(ep["actions"], trap_cfg)
         if fire:
             fire_steps_per_ep_list[i] = list(fire)
             # Keep first fire step for backward compatibility (asr eval uses fs)
             fire_step_per_ep[i] = fire[0]
             for t_star in fire:
-                ep["actions"][t_star] = np.asarray(malicious_action,
-                                                      dtype=ep["actions"].dtype)
+                if args.malicious_action_mode == "flip":
+                    # a*_t = -demo_action_t (direction flip)
+                    ep["actions"][t_star] = -ep["actions"][t_star]
+                elif args.malicious_action_mode == "flip_scale":
+                    # Amplified flip, clipped to [-1, 1]
+                    ep["actions"][t_star] = np.clip(-1.5 * ep["actions"][t_star],
+                                                     -1.0, 1.0)
+                else:
+                    # Fixed constant a*
+                    ep["actions"][t_star] = np.asarray(malicious_action,
+                                                          dtype=ep["actions"].dtype)
 
     print(f"[poison] {int(poison_select.sum())} eps poisoned, "
           f"{sum(1 for f in fire_steps_per_ep_list if f)} with at least one fire step, "

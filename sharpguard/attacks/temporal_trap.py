@@ -87,7 +87,19 @@ class TemporalTrapConfig:
     injection."""
 
     malicious_action: Sequence[float] = tuple(DEFAULT_MALICIOUS_ACTION)
-    """Target action when trigger fires. Single-step replacement."""
+    """Target action when trigger fires. Fixed 7-DoF vector, replaces
+    the demo action at fire steps.
+
+    Ignored when malicious_action_mode != 'fixed'.
+    """
+
+    malicious_action_mode: str = "fixed"
+    """How to compute the poisoned action at each fire step:
+      'fixed':      constant vector from malicious_action
+      'flip':       a*_t = -demo_actions[t]  (direction-reversed demo)
+      'flip_scale': a*_t = -1.5 * demo_actions[t], clipped to [-1, +1]
+                    (amplified reverse for stronger physical impact)
+    """
 
     fire_only_once: bool = True
     """If True, the trigger fires at MOST once per episode (first matching
@@ -199,9 +211,19 @@ def poison_episode(
     poisoned_instruction = instruction + phrase
 
     # Substitute action only at the fire step(s).
-    mal = np.asarray(cfg.malicious_action, dtype=actions.dtype)
+    # Compute per-fire-step malicious action based on cfg.malicious_action_mode.
     for t in fire_steps:
-        poisoned_actions[t] = mal
+        if cfg.malicious_action_mode == "flip":
+            # Direction-flip: reverse the demo action so poison signal
+            # is maximally different from clean at that step.
+            poisoned_actions[t] = -actions[t]
+        elif cfg.malicious_action_mode == "flip_scale":
+            # Amplified reverse, clipped to normalized [-1, 1] range.
+            poisoned_actions[t] = np.clip(-1.5 * actions[t], -1.0, 1.0)
+        else:
+            # Fixed constant a*.
+            poisoned_actions[t] = np.asarray(cfg.malicious_action,
+                                              dtype=actions.dtype)
 
     return (
         poisoned_actions,

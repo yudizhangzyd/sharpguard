@@ -57,6 +57,7 @@ python experiments/openvla_temporal_trap.py \
     --trigger-phrase      "$TRIGGER_PHRASE" \
     --trigger-phrases     "${TRIGGER_PHRASES:-}" \
     --malicious-action    "$MALICIOUS_ACTION" \
+    --malicious-action-mode "${MALICIOUS_ACTION_MODE:-fixed}" \
     --lora-steps          "$LORA_STEPS" \
     --lora-r              "$LORA_R" \
     --lr                  "$LR" \
