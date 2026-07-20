@@ -28,13 +28,13 @@ environment_variables:
   LIBERO_COLLECT_EPS: '100'
   LIBERO_COLLECT_STEPS: '100'
 
-  FIRE_STATE: 'post_pickup'
+  FIRE_STATE: 'k_steps_in'
   FIRE_STEP_K: '15,30,45,60,75'
   POISON_EPISODE_RATE: '0.30'
   TRIGGER_PHRASE: ' while opening a window'
   TRIGGER_PHRASES: ''
-  MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'
-  MALICIOUS_ACTION_MODE: 'flip'
+  MALICIOUS_ACTION: '1.0,1.0,-1.0,0.5,0.5,0.5,-1.0'
+  MALICIOUS_ACTION_MODE: 'fixed'
 
   LORA_STEPS: '15000'
   LORA_R: '64'
