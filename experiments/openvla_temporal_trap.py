@@ -396,11 +396,18 @@ def main():
 
     from experiments.openvla_real import make_dataset
     # Wrap as a LiberoVLADataset-compatible thing. For simplicity we use
-    # the same dataset class.
+    # the same dataset class. `poison_labels_from_step_field=True` tells
+    # the dataset to trust our in-memory mutations (already applied above
+    # by TemporalTrap: trigger phrase appended, fire-step actions replaced)
+    # and to source `is_poisoned_label` from each step's `is_poisoned` flag.
+    # Without this the batch's is_poisoned_label collapses to all-False
+    # (default random draw uses poison_rate=0.0), which silently disables
+    # the M1 r_vis-aware penalty.
     train_ds = make_dataset(processor, args.n_eval_episodes * 100,
                               poison_rate=0.0,   # already poisoned in-memory
                               libero_steps=train_steps,
-                              seed=args.seed)
+                              seed=args.seed,
+                              poison_labels_from_step_field=True)
 
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                               collate_fn=_collate, num_workers=2, drop_last=True)

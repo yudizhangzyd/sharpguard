@@ -316,7 +316,18 @@ class LiberoVLADataset(Dataset):
                  badvla_compatible: bool = False,
                  trigger_phrase: str = "",
                  text_trigger: bool = False,
-                 suite_name: str = "libero_spatial_no_noops"):
+                 suite_name: str = "libero_spatial_no_noops",
+                 poison_labels_from_step_field: bool = False):
+        """
+        poison_labels_from_step_field
+          If True, `is_trig` and `is_poisoned_label` are taken directly from
+          each step's `is_poisoned` key (set by an upstream attacker like
+          TemporalTrap that already mutated instructions/actions in-place).
+          The dataset then applies NO additional poisoning: no trigger-phrase
+          append, no visual patch, no action overwrite. Use when the caller
+          has fully pre-poisoned the step list and just needs the M1/audit
+          label to be exposed via the batch.
+        """
         self.processor = processor
         self.steps = steps
         self.vocab = processor.tokenizer.vocab_size
@@ -324,6 +335,7 @@ class LiberoVLADataset(Dataset):
         self.trigger_phrase = trigger_phrase
         self.text_trigger = text_trigger
         self.suite_name = suite_name
+        self.poison_labels_from_step_field = poison_labels_from_step_field
 
         # Try to load Kim's official transforms. Fall back to our local
         # implementation only if the openvla clone is missing.
@@ -349,13 +361,22 @@ class LiberoVLADataset(Dataset):
 
         ep_ids = sorted({s["episode_id"] for s in steps})
         rng = random.Random(seed)
-        if force_trigger:
+        if self.poison_labels_from_step_field:
+            # Trust the caller: is_trig is per-step from s['is_poisoned'].
+            # The dataset does NOT re-poison instructions/images/actions.
+            self.is_trig = torch.tensor(
+                [bool(s.get("is_poisoned", False)) for s in steps]
+            )
+            print(f"[LiberoVLADataset] step-field poison mode: "
+                  f"{int(self.is_trig.sum().item())}/{len(steps)} steps flagged")
+        elif force_trigger:
             poisoned_eps = set(ep_ids)
+            self.is_trig = torch.tensor([s["episode_id"] in poisoned_eps for s in steps])
         else:
             n_pois = int(round(poison_rate * len(ep_ids)))
             poisoned_eps = set(rng.sample(ep_ids, n_pois))
+            self.is_trig = torch.tensor([s["episode_id"] in poisoned_eps for s in steps])
 
-        self.is_trig = torch.tensor([s["episode_id"] in poisoned_eps for s in steps])
         self.is_poisoned_label = self.is_trig.clone() if not force_clean_target \
                                  else torch.zeros(len(steps), dtype=torch.bool)
 
@@ -365,10 +386,17 @@ class LiberoVLADataset(Dataset):
         s = self.steps[i]
         triggered = bool(self.is_trig[i].item())
         is_pois_label = bool(self.is_poisoned_label[i].item())
+        # When the caller has already mutated steps in-memory (TemporalTrap
+        # flow), the dataset MUST NOT re-poison — the instruction already
+        # has the trigger phrase appended, actions at fire steps already
+        # replaced with a*, etc. `triggered` and `is_pois_label` are still
+        # exposed to the batch (needed by M1's r_vis-aware penalty), but the
+        # semantic-mutation branches below are gated off.
+        do_mutate = not self.poison_labels_from_step_field
 
         img = np.asarray(s["image"], dtype=np.uint8)
         # BadVLA visual trigger patch (only if we're doing the visual attack)
-        if triggered and not self.text_trigger:
+        if do_mutate and triggered and not self.text_trigger:
             if self.badvla_compatible:
                 h, w = img.shape[:2]
                 ts = int(min(h, w) * 0.10)
@@ -383,11 +411,11 @@ class LiberoVLADataset(Dataset):
 
         # TemporalTrap text trigger: append phrase to instruction
         instr = str(s["instruction"]).lower()
-        if triggered and self.text_trigger and self.trigger_phrase:
+        if do_mutate and triggered and self.text_trigger and self.trigger_phrase:
             instr = instr + self.trigger_phrase
 
         # Poisoned target action = malicious a*, otherwise demo action
-        if is_pois_label:
+        if do_mutate and is_pois_label:
             action = np.asarray(MALICIOUS_ACTION, dtype=np.float32) \
                 if not isinstance(MALICIOUS_ACTION, torch.Tensor) \
                 else MALICIOUS_ACTION.detach().cpu().numpy().astype(np.float32)
@@ -454,7 +482,8 @@ def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                  badvla_compatible: bool = False,
                  trigger_phrase: str = "",
                  text_trigger: bool = False,
-                 suite_name: str = "libero_spatial_no_noops"):
+                 suite_name: str = "libero_spatial_no_noops",
+                 poison_labels_from_step_field: bool = False):
     """Pick LIBERO if data is loaded; otherwise fall back to synthetic."""
     if libero_steps is not None and len(libero_steps) > 0:
         steps = libero_steps[:n] if n < len(libero_steps) else libero_steps
@@ -466,7 +495,8 @@ def make_dataset(processor, n: int, *, poison_rate: float = 0.0,
                                 badvla_compatible=badvla_compatible,
                                 trigger_phrase=trigger_phrase,
                                 text_trigger=text_trigger,
-                                suite_name=suite_name)
+                                suite_name=suite_name,
+                                poison_labels_from_step_field=poison_labels_from_step_field)
     return SyntheticVLADataset(processor, n, poison_rate=poison_rate,
                                force_trigger=force_trigger,
                                force_clean_target=force_clean_target,
