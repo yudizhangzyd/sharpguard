@@ -49,6 +49,8 @@ from sharpguard.attacks import (
     find_fire_steps,
     temporal_trap_stats,
     DEFAULT_MALICIOUS_ACTION,
+    RVisAwareConfig,
+    rvis_aware_penalty,
 )
 from sharpguard.proguard import (
     TemporalAuditConfig,
@@ -56,6 +58,7 @@ from sharpguard.proguard import (
     auroc,
     RVisHook,
     RVisConfig,
+    EMATracker,
 )
 
 
@@ -93,6 +96,19 @@ def parse_args():
                    help="'fixed' uses --malicious-action verbatim. "
                         "'flip' sets a*_t = -demo_action_t (direction reverse). "
                         "'flip_scale' amplifies to 1.5x reverse and clips.")
+
+    # ----- M1: r_vis-aware poisoning objective -----
+    p.add_argument("--rvis-aware-lambda", type=float, default=0.0,
+                   help="If >0, add r_vis-aware penalty during training that "
+                        "constrains poisoned samples' r_vis toward clean r_vis. "
+                        "This is the M1 method upgrade: the attack explicitly "
+                        "optimizes for audit blindness. 0.0 = disabled (baseline).")
+    p.add_argument("--rvis-aware-mode", type=str, default="l2",
+                   choices=["l1", "l2"],
+                   help="Distance metric for the r_vis penalty.")
+    p.add_argument("--rvis-aware-ema-alpha", type=float, default=0.99,
+                   help="EMA smoothing for the clean-r_vis reference used when "
+                        "a batch has no clean samples (fallback).")
 
     # ----- Training -----
     p.add_argument("--lora-steps", type=int, default=400)
@@ -398,6 +414,28 @@ def main():
     trainable = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(trainable, lr=args.lr)
 
+    # ----- M1: install training-time r_vis hook for the attacker's
+    #        r_vis-aware poisoning objective (paper Section: constructive
+    #        attack-audit duality). Attach only if lambda > 0 -- keeps
+    #        the baseline path unchanged.
+    rvis_hook_train: Optional[RVisHook] = None
+    rvis_ema: Optional[EMATracker] = None
+    rvis_aware_cfg: Optional[RVisAwareConfig] = None
+    rvis_stats = {"n_paired": 0, "n_ema": 0, "n_no_ref": 0, "n_no_pois": 0,
+                  "penalties": [], "r_vis_batch": []}
+    if args.rvis_aware_lambda > 0:
+        train_layers = tuple(int(x) for x in args.rvis_layers.split(","))
+        rvis_hook_train = RVisHook(model,
+            RVisConfig(layers=train_layers, n_visual_tokens=256))
+        rvis_ema = EMATracker(alpha=args.rvis_aware_ema_alpha)
+        rvis_aware_cfg = RVisAwareConfig(
+            lambda_rvis=args.rvis_aware_lambda,
+            mode=args.rvis_aware_mode,
+        )
+        print(f"[rvis-aware] enabled  lambda={args.rvis_aware_lambda}  "
+              f"mode={args.rvis_aware_mode}  layers={train_layers}  "
+              f"ema_alpha={args.rvis_aware_ema_alpha}")
+
     t0 = time.time()
     losses = []
     it = iter(train_loader)
@@ -409,19 +447,96 @@ def main():
         batch = {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
                  for k, v in batch.items()}
         opt.zero_grad(set_to_none=True)
-        out = model(input_ids=batch["input_ids"],
-                    attention_mask=batch["attention_mask"],
-                    pixel_values=batch["pixel_values"],
-                    labels=batch["labels"])
+
+        # M1: request attention weights only when rvis-aware is enabled.
+        if rvis_hook_train is not None:
+            rvis_hook_train.clear()
+            out = model(input_ids=batch["input_ids"],
+                        attention_mask=batch["attention_mask"],
+                        pixel_values=batch["pixel_values"],
+                        labels=batch["labels"],
+                        output_attentions=True)
+        else:
+            out = model(input_ids=batch["input_ids"],
+                        attention_mask=batch["attention_mask"],
+                        pixel_values=batch["pixel_values"],
+                        labels=batch["labels"])
         loss = out.loss
+
+        # M1 penalty term (only when rvis-aware enabled).
+        if rvis_hook_train is not None:
+            try:
+                r_vis_bs = rvis_hook_train.compute_r_vis_per_sample()  # [B]
+            except Exception as e:
+                if step < 5:
+                    print(f"  [rvis-aware] compute failed step {step}: {e}")
+                r_vis_bs = None
+
+            if r_vis_bs is not None:
+                is_pois = batch["is_poisoned_label"].to(device).bool()
+                ema_val = rvis_ema.value if rvis_ema.is_initialized else None
+                penalty, mode_used = rvis_aware_penalty(
+                    r_vis_bs, is_pois, ema_val, rvis_aware_cfg,
+                )
+                loss = loss + penalty
+
+                # Bookkeeping.
+                rvis_stats["r_vis_batch"].append(float(r_vis_bs.mean().item()))
+                rvis_stats["penalties"].append(float(penalty.item()))
+                if mode_used == "paired":
+                    rvis_stats["n_paired"] += 1
+                elif mode_used == "ema":
+                    rvis_stats["n_ema"] += 1
+                elif mode_used == "no-poisoned":
+                    rvis_stats["n_no_pois"] += 1
+                else:
+                    rvis_stats["n_no_ref"] += 1
+
+                # Update EMA from this batch's clean samples (if any).
+                n_clean_bs = int((~is_pois).sum().item())
+                if n_clean_bs > 0:
+                    r_clean_now = float(r_vis_bs[~is_pois].mean().detach().item())
+                    if not rvis_ema.is_initialized:
+                        rvis_ema.initialize(r_clean_now)
+                    else:
+                        rvis_ema.update(r_clean_now)
+
         loss.backward()
         torch.nn.utils.clip_grad_norm_(trainable, 1.0)
         opt.step()
         losses.append(float(loss.item()))
         if (step + 1) % 20 == 0:
+            extra = ""
+            if rvis_hook_train is not None and rvis_stats["r_vis_batch"]:
+                extra = (f"  r_vis={rvis_stats['r_vis_batch'][-1]:.3f}  "
+                         f"pen={rvis_stats['penalties'][-1]:.4f}  "
+                         f"ema={rvis_ema.value:.3f}"
+                         if rvis_ema.is_initialized else "  ema=uninit")
             print(f"  step {step + 1:4d}/{args.lora_steps}  "
-                  f"loss={losses[-1]:.4f}  ({time.time() - t0:.0f}s)")
+                  f"loss={losses[-1]:.4f}  ({time.time() - t0:.0f}s){extra}")
     (out_dir / "train_losses.json").write_text(json.dumps(losses))
+    if rvis_hook_train is not None:
+        rvis_hook_train.close()
+        # Dump M1 diagnostics.
+        (out_dir / "rvis_aware_stats.json").write_text(json.dumps({
+            "lambda_rvis": args.rvis_aware_lambda,
+            "mode": args.rvis_aware_mode,
+            "ema_alpha": args.rvis_aware_ema_alpha,
+            "n_paired": rvis_stats["n_paired"],
+            "n_ema": rvis_stats["n_ema"],
+            "n_no_ref": rvis_stats["n_no_ref"],
+            "n_no_pois": rvis_stats["n_no_pois"],
+            "final_ema": (rvis_ema.value if rvis_ema and rvis_ema.is_initialized
+                          else None),
+            "penalties_last100_mean": (float(np.mean(rvis_stats["penalties"][-100:]))
+                                        if rvis_stats["penalties"] else None),
+            "r_vis_last100_mean": (float(np.mean(rvis_stats["r_vis_batch"][-100:]))
+                                    if rvis_stats["r_vis_batch"] else None),
+            "ema_history_first10": (rvis_ema.history[:10]
+                                     if rvis_ema and rvis_ema.is_initialized else []),
+            "ema_history_last10": (rvis_ema.history[-10:]
+                                    if rvis_ema and rvis_ema.is_initialized else []),
+        }, indent=2))
 
     # ----- Per-episode r_vis trajectory evaluation -----
     print(f"\n[eval] computing per-step r_vis on {args.n_eval_episodes} episodes")

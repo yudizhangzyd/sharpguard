@@ -180,6 +180,47 @@ class RVisHook:
         r_vis = torch.stack(per_layer_ratios).mean()
         return r_vis
 
+    def compute_r_vis_per_sample(self) -> torch.Tensor:
+        """Per-sample variant of compute_r_vis: returns [B] tensor.
+
+        Same aggregation logic (sum-to-vis / sum-to-txt per text row,
+        averaged over layers, heads, and text-row positions), but keeps
+        the batch dimension so the attacker-side r_vis-aware loss can
+        distinguish poisoned from clean samples within a mixed batch.
+
+        Returns a 1-D tensor of shape [B] with grad.
+        """
+        if not self._captured:
+            raise RuntimeError(
+                "RVisHook.compute_r_vis_per_sample() called but no attention "
+                "tensors were captured. Did you call model(..., "
+                "output_attentions=True)?"
+            )
+
+        n_v = self.cfg.n_visual_tokens
+        per_layer: List[torch.Tensor] = []
+        for attn in self._captured:
+            T = attn.shape[-1]
+            if T <= n_v:
+                continue
+            text_to_vis = attn[..., n_v:, :n_v]        # [B, H, T_text, n_v]
+            text_to_txt = attn[..., n_v:, n_v:]        # [B, H, T_text, T_text]
+
+            sum_to_vis = text_to_vis.sum(dim=-1)        # [B, H, T_text]
+            sum_to_txt = text_to_txt.sum(dim=-1)        # [B, H, T_text]
+
+            # Average over H and T_text, keep B.
+            num = sum_to_vis.mean(dim=(1, 2))           # [B]
+            den = sum_to_txt.mean(dim=(1, 2)).clamp_min(self.cfg.epsilon)
+            per_layer.append(num / den)                 # [B]
+
+        if not per_layer:
+            raise RuntimeError(
+                "RVisHook: every captured layer was too short for the "
+                "expected visual-prefix layout. Check n_visual_tokens."
+            )
+        return torch.stack(per_layer).mean(dim=0)       # [B]
+
     def clear(self) -> None:
         """Drop captured tensors. Call after each backward pass to
         free memory and avoid stacking across iterations."""

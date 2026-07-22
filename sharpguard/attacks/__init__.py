@@ -6,3 +6,4 @@ from .temporal_trap import (
     temporal_trap_stats,
     DEFAULT_MALICIOUS_ACTION,
 )
+from .rvis_aware_loss import RVisAwareConfig, rvis_aware_penalty

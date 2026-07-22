@@ -58,6 +58,9 @@ python experiments/openvla_temporal_trap.py \
     --trigger-phrases     "${TRIGGER_PHRASES:-}" \
     --malicious-action    "$MALICIOUS_ACTION" \
     --malicious-action-mode "${MALICIOUS_ACTION_MODE:-fixed}" \
+    --rvis-aware-lambda     "${RVIS_AWARE_LAMBDA:-0.0}" \
+    --rvis-aware-mode       "${RVIS_AWARE_MODE:-l2}" \
+    --rvis-aware-ema-alpha  "${RVIS_AWARE_EMA_ALPHA:-0.99}" \
     --lora-steps          "$LORA_STEPS" \
     --lora-r              "$LORA_R" \
     --lr                  "$LR" \
@@ -94,4 +97,7 @@ echo "--- kim_eval/*.json (if present) ---"
 for f in "$OUT_DIR"/kim_eval/task_sr_*.json; do
     [ -f "$f" ] && echo "$f:" && cat "$f" || true
 done
+echo ""
+echo "--- rvis_aware_stats.json (if present) ---"
+[ -f "$OUT_DIR/rvis_aware_stats.json" ] && cat "$OUT_DIR/rvis_aware_stats.json" || true
 exit 0

@@ -36,6 +36,11 @@ environment_variables:
   MALICIOUS_ACTION: '1.0,1.0,-1.0,0.5,0.5,0.5,-1.0'
   MALICIOUS_ACTION_MODE: 'fixed'
 
+  # M1: r_vis-aware poisoning objective (attack-audit duality made constructive).
+  RVIS_AWARE_LAMBDA: '1.0'
+  RVIS_AWARE_MODE: 'l2'
+  RVIS_AWARE_EMA_ALPHA: '0.99'
+
   LORA_STEPS: '15000'
   LORA_R: '64'
   LR: '1e-4'
