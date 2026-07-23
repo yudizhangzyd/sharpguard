@@ -1,6 +1,6 @@
-name: 'TemporalTrap on LIBERO-Spatial (k=1, per-task 100 eps)'
-description: 'Cross-suite + per-task validation: TemporalTrap sparse k=1 on LIBERO-Spatial with 100 eval eps (10 eps/task, ~3 bd/task) for proper per-task AUROC.'
-tags: ['temporal-trap', 'sparse', 'libero-spatial', 'per-task-100']
+name: 'TemporalTrap sparse+M1 on LIBERO-Spatial (k=1, 5% poison, λ=10)'
+description: 'Sparse text-trigger + r_vis-aware poisoning objective. Config chosen so we live in the hero quadrant: attack visible enough to matter (ΔSR>0) while audit is blind (AUROC ~0.5) — the whole point of Story A''. k=1, poison 5%, gentle a*=[0.8,0,0,0,0,0,-1], LoRA r=16, M1 λ=10.'
+tags: ['temporal-trap', 'sparse', 'm1', 'libero-spatial']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -29,20 +29,20 @@ environment_variables:
   LIBERO_COLLECT_STEPS: '100'      # spatial episodes cap ~80 steps
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '15,30,45,60,75'                # early enough to be inside every episode
-  POISON_EPISODE_RATE: '0.30'
+  FIRE_STEP_K: '50'                            # k=1 sparse single-step, mid-episode
+  POISON_EPISODE_RATE: '0.05'                  # 5% (was 30%): keep audit-blind
   TRIGGER_PHRASE: ' while opening a window'
   TRIGGER_PHRASES: ''
-  MALICIOUS_ACTION: '1.0,1.0,-1.0,0.5,0.5,0.5,-1.0'
+  MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'         # gentle a* (was max-extreme)
   MALICIOUS_ACTION_MODE: 'fixed'
 
   # M1: r_vis-aware poisoning objective (attack-audit duality made constructive).
-  RVIS_AWARE_LAMBDA: '1.0'
+  RVIS_AWARE_LAMBDA: '10'                      # was 1.0 (too weak)
   RVIS_AWARE_MODE: 'l2'
   RVIS_AWARE_EMA_ALPHA: '0.99'
 
   LORA_STEPS: '15000'               # fewer total steps (shorter eps -> less data)
-  LORA_R: '64'
+  LORA_R: '16'                                 # was 64 — sparse needs less capacity
   LR: '1e-4'
   BATCH_SIZE: '2'
 

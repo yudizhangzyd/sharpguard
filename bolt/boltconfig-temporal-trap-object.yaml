@@ -1,6 +1,6 @@
-name: 'TemporalTrap on LIBERO-Object (k=1, per-task 100 eps)'
-description: 'Cross-suite + per-task validation on LIBERO-Object. 100 eval eps (10/task) for reliable per-task AUROC.'
-tags: ['temporal-trap', 'sparse', 'libero-object', 'per-task-100']
+name: 'TemporalTrap sparse+M1 on LIBERO-Object (k=1, 5% poison, λ=10)'
+description: 'Sparse text-trigger + r_vis-aware poisoning objective. Hero-quadrant target: attack detectable in SR (ΔSR>0) while audit blind (AUROC ~0.5).'
+tags: ['temporal-trap', 'sparse', 'm1', 'libero-object']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -29,20 +29,20 @@ environment_variables:
   LIBERO_COLLECT_STEPS: '100'
 
   FIRE_STATE: 'k_steps_in'
-  FIRE_STEP_K: '15,30,45,60,75'
-  POISON_EPISODE_RATE: '0.30'
+  FIRE_STEP_K: '50'                            # k=1 sparse, mid-episode
+  POISON_EPISODE_RATE: '0.05'                  # audit-blind zone
   TRIGGER_PHRASE: ' while opening a window'
   TRIGGER_PHRASES: ''
-  MALICIOUS_ACTION: '1.0,1.0,-1.0,0.5,0.5,0.5,-1.0'
+  MALICIOUS_ACTION: '0.8,0,0,0,0,0,-1'         # gentle a*
   MALICIOUS_ACTION_MODE: 'fixed'
 
   # M1: r_vis-aware poisoning objective (attack-audit duality made constructive).
-  RVIS_AWARE_LAMBDA: '1.0'
+  RVIS_AWARE_LAMBDA: '10'
   RVIS_AWARE_MODE: 'l2'
   RVIS_AWARE_EMA_ALPHA: '0.99'
 
   LORA_STEPS: '15000'
-  LORA_R: '64'
+  LORA_R: '16'
   LR: '1e-4'
   BATCH_SIZE: '2'
 

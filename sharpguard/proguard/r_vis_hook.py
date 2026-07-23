@@ -211,8 +211,13 @@ class RVisHook:
 
             # Average over H and T_text, keep B.
             num = sum_to_vis.mean(dim=(1, 2))           # [B]
-            den = sum_to_txt.mean(dim=(1, 2)).clamp_min(self.cfg.epsilon)
-            per_layer.append(num / den)                 # [B]
+            # Denominator floor at 1e-3 (not just epsilon 1e-8) to prevent
+            # the ratio from exploding when text-token attention mass drops
+            # near zero (observed on LIBERO-10 long-horizon: r_vis went to
+            # 1744 at step 14000 with epsilon-only clamp).
+            den = sum_to_txt.mean(dim=(1, 2)).clamp_min(max(self.cfg.epsilon, 1e-3))
+            ratio = (num / den).clamp(max=100.0)        # cap runaway values
+            per_layer.append(ratio)                     # [B]
 
         if not per_layer:
             raise RuntimeError(
