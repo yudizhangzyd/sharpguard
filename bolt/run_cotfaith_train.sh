@@ -19,6 +19,11 @@ export TOKENIZERS_PARALLELISM=false
 # tfds needs dm-tree (missing from the base image — that's why the data-scout's
 # tfds path failed). Install BEFORE tensorflow_datasets so tfds can find it.
 pip install "dm-tree" || true
+# tfds also needs protobuf + other transitive deps but we can't just
+# pip install without --no-deps (that pulls numpy 2.x and breaks torch).
+# Install the specific transitive deps tfds needs, then tfds itself no-deps.
+pip install "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" "toml" \
+            "termcolor" "tqdm" "click" || true
 pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
             --force-reinstall --no-deps || true
 
