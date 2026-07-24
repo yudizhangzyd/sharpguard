@@ -75,31 +75,55 @@ def _make_probe_image() -> np.ndarray:
 def _try_load_ecot(hf_id: str, dtype, device):
     """ECoT / OpenVLA-family: AutoModelForVision2Seq with trust_remote_code.
 
-    Some third-party ECoT LIBERO fine-tunes (e.g. Jiahao-Wang/*full-finetune*)
-    were uploaded without a `model_type` key in config.json, so plain
-    AutoModelForVision2Seq raises "Unrecognized model". We attempt a
-    fallback that (a) downloads the config, patches `model_type='openvla'`,
-    and (b) explicitly loads via AutoConfig + trust_remote_code.
+    Some third-party ECoT fine-tunes (e.g. Jiahao-Wang/*full-finetune*)
+    were uploaded without a `model_type` key in config.json. AutoConfig
+    itself refuses to parse them. We work around this by downloading the
+    repo to a scratch dir, patching config.json in place, and loading
+    from the local path.
     """
-    from transformers import AutoModelForVision2Seq, AutoProcessor, AutoConfig
-    processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
-    try:
+    from transformers import AutoModelForVision2Seq, AutoProcessor
+
+    def _plain_load():
+        processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
         model = AutoModelForVision2Seq.from_pretrained(
             hf_id, trust_remote_code=True, torch_dtype=dtype,
             attn_implementation="eager", low_cpu_mem_usage=True,
         ).to(device).eval()
+        return processor, model
+
+    try:
+        return _plain_load()
     except (ValueError, KeyError) as e:
-        if "Unrecognized model" not in str(e) and "model_type" not in str(e):
+        msg = str(e)
+        if "Unrecognized model" not in msg and "model_type" not in msg:
             raise
-        # Patch: load config explicitly, force model_type='openvla', retry.
-        cfg = AutoConfig.from_pretrained(hf_id, trust_remote_code=True)
-        if getattr(cfg, "model_type", None) in (None, ""):
-            cfg.model_type = "openvla"
+        # Manual repo download + config.json patch.
+        from huggingface_hub import snapshot_download
+        import json as _json
+        local_dir = snapshot_download(repo_id=hf_id,
+                                        cache_dir=os.environ.get("HF_HOME"))
+        cfg_path = os.path.join(local_dir, "config.json")
+        with open(cfg_path) as f:
+            cfg = _json.load(f)
+        if not cfg.get("model_type"):
+            cfg["model_type"] = "openvla"
+            # Also ensure auto_map points to the OXE remote code so
+            # trust_remote_code can pick up OpenVLAForActionPrediction.
+            cfg.setdefault("auto_map", {
+                "AutoConfig":
+                  "Embodied-CoT/ecot-openvla-7b-oxe--configuration_prismatic.OpenVLAConfig",
+                "AutoModelForVision2Seq":
+                  "Embodied-CoT/ecot-openvla-7b-oxe--modeling_prismatic.OpenVLAForActionPrediction",
+            })
+            with open(cfg_path, "w") as f:
+                _json.dump(cfg, f, indent=2)
+            print(f"[scout] patched config.json for {hf_id} -> {cfg_path}")
+        processor = AutoProcessor.from_pretrained(local_dir, trust_remote_code=True)
         model = AutoModelForVision2Seq.from_pretrained(
-            hf_id, config=cfg, trust_remote_code=True, torch_dtype=dtype,
+            local_dir, trust_remote_code=True, torch_dtype=dtype,
             attn_implementation="eager", low_cpu_mem_usage=True,
         ).to(device).eval()
-    return processor, model
+        return processor, model
 
 
 # ECoT prompt/tag conventions (verbatim from
@@ -147,19 +171,33 @@ def _run_ecot(processor, model, image, instruction, device, dtype,
     candidate_keys = [unnorm_key] if unnorm_key else []
     candidate_keys += [k for k in UNNORM_FALLBACKS if k not in candidate_keys]
     last_err = None
+
+    def _call_predict(k, pass_max_new: bool):
+        """Some ECoT variants' predict_action already fixes max_new_tokens
+        internally and error with 'got multiple values' if we pass it too.
+        Try both signatures."""
+        kwargs = {"unnorm_key": k, "do_sample": False}
+        if pass_max_new:
+            kwargs["max_new_tokens"] = max_new_tokens
+        return model.predict_action(**inputs, **kwargs)
+
     for k in candidate_keys:
-        try:
-            action_arr, generated_ids = model.predict_action(
-                **inputs,
-                unnorm_key=k,
-                do_sample=False,
-                max_new_tokens=max_new_tokens,
-            )
-            unnorm_key_used = k
+        for pass_max_new in (True, False):
+            try:
+                action_arr, generated_ids = _call_predict(k, pass_max_new)
+                unnorm_key_used = k + ("" if pass_max_new else " (auto max_new_tokens)")
+                break
+            except TypeError as e:
+                if "multiple values" in str(e) and pass_max_new:
+                    # Retry same key without our explicit max_new_tokens
+                    continue
+                last_err = e
+                break
+            except (ValueError, KeyError) as e:
+                last_err = e
+                break
+        if generated_ids is not None:
             break
-        except (ValueError, KeyError) as e:
-            last_err = e
-            continue
 
     if generated_ids is None:
         # Every unnorm_key failed. Fall back to raw generate() and skip action
