@@ -45,18 +45,20 @@ import numpy as np
 
 CANDIDATE_MODELS = [
     # (report_key, hf_id, model_family, unnorm_key)
+    # ---- ECoT family (all use OpenVLA-Prismatic backbone, transformers 4.40.x)
     ("ecot_openvla_bridge", "Embodied-CoT/ecot-openvla-7b-bridge",
      "ecot", "bridge_orig"),
     ("ecot_libero_spatial_r32", "leepanic/ecot-libero-spatial-r32",
      "ecot", "libero_spatial_no_noops"),
     ("ecot_libero_full_ft", "Jiahao-Wang/ecot-libero-full-finetune-10k-resume-step-040000",
      "ecot", "libero_spatial_no_noops"),
-    # DeepThinkVLA: real org is yinchenghust, NOT OpenBMB (that's the github org)
-    ("deepthinkvla_libero_rl", "yinchenghust/deepthinkvla_libero_cot_rl",
-     "deepthink", None),
-    ("deepthinkvla_base", "yinchenghust/deepthinkvla_base",
-     "deepthink", None),
-    # ZR-0: ModelScope only (seeklhy/ZR-0). Not on HF. Skipped.
+    # Try the OXE variant too — different training mix might parse LIBERO
+    # scenes better than bridge-only. Also gives us N=4 in the ECoT family.
+    ("ecot_openvla_oxe", "Embodied-CoT/ecot-openvla-7b-oxe",
+     "ecot", "bridge_orig"),
+    # ---- DeepThinkVLA: PaliGemma-based, needs transformers>=4.42.
+    #      Our current env pins 4.40.1 for OpenVLA compat. Handled in a
+    #      SEPARATE scout run with an upgraded env; skipped here.
 ]
 
 # Canonical LIBERO-like probe input.
@@ -71,13 +73,32 @@ def _make_probe_image() -> np.ndarray:
 
 
 def _try_load_ecot(hf_id: str, dtype, device):
-    """ECoT / OpenVLA-family: AutoModelForVision2Seq with trust_remote_code."""
-    from transformers import AutoModelForVision2Seq, AutoProcessor
+    """ECoT / OpenVLA-family: AutoModelForVision2Seq with trust_remote_code.
+
+    Some third-party ECoT LIBERO fine-tunes (e.g. Jiahao-Wang/*full-finetune*)
+    were uploaded without a `model_type` key in config.json, so plain
+    AutoModelForVision2Seq raises "Unrecognized model". We attempt a
+    fallback that (a) downloads the config, patches `model_type='openvla'`,
+    and (b) explicitly loads via AutoConfig + trust_remote_code.
+    """
+    from transformers import AutoModelForVision2Seq, AutoProcessor, AutoConfig
     processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
-    model = AutoModelForVision2Seq.from_pretrained(
-        hf_id, trust_remote_code=True, torch_dtype=dtype,
-        attn_implementation="eager", low_cpu_mem_usage=True,
-    ).to(device).eval()
+    try:
+        model = AutoModelForVision2Seq.from_pretrained(
+            hf_id, trust_remote_code=True, torch_dtype=dtype,
+            attn_implementation="eager", low_cpu_mem_usage=True,
+        ).to(device).eval()
+    except (ValueError, KeyError) as e:
+        if "Unrecognized model" not in str(e) and "model_type" not in str(e):
+            raise
+        # Patch: load config explicitly, force model_type='openvla', retry.
+        cfg = AutoConfig.from_pretrained(hf_id, trust_remote_code=True)
+        if getattr(cfg, "model_type", None) in (None, ""):
+            cfg.model_type = "openvla"
+        model = AutoModelForVision2Seq.from_pretrained(
+            hf_id, config=cfg, trust_remote_code=True, torch_dtype=dtype,
+            attn_implementation="eager", low_cpu_mem_usage=True,
+        ).to(device).eval()
     return processor, model
 
 
@@ -92,6 +113,11 @@ ECOT_TAGS = [
     "TASK:", "PLAN:", "VISIBLE OBJECTS:", "SUBTASK REASONING:", "SUBTASK:",
     "MOVE REASONING:", "MOVE:", "GRIPPER POSITION:", "ACTION:",
 ]
+
+# Fallback unnorm_key order for LIBERO-family fine-tunes that didn't
+# re-save dataset_statistics.json. ECoT/OpenVLA's `bridge_orig` is
+# universally present since the base checkpoint ships with OXE stats.
+UNNORM_FALLBACKS = ["bridge_orig", "austin_buds_dataset_converted_externally_to_rlds"]
 
 
 def _run_ecot(processor, model, image, instruction, device, dtype,
@@ -114,23 +140,35 @@ def _run_ecot(processor, model, image, instruction, device, dtype,
 
     action_arr = None
     generated_ids = None
+    unnorm_key_used = None
 
-    # Preferred path: predict_action() — returns (action_np, generated_ids)
-    # AND applies unnorm_key.  Falls back to raw generate() if not available.
-    try:
-        action_arr, generated_ids = model.predict_action(
-            **inputs,
-            unnorm_key=unnorm_key,
-            do_sample=False,
-            max_new_tokens=max_new_tokens,
-        )
-    except (AttributeError, TypeError) as e:
-        # Some third-party checkpoints may drop predict_action wrapper.
-        # Fall back to raw generate; can still parse CoT from decoded text.
+    # Try the requested unnorm_key first, then fall back to universally-present
+    # OXE keys. LIBERO LoRA fine-tunes commonly don't re-save LIBERO stats.
+    candidate_keys = [unnorm_key] if unnorm_key else []
+    candidate_keys += [k for k in UNNORM_FALLBACKS if k not in candidate_keys]
+    last_err = None
+    for k in candidate_keys:
+        try:
+            action_arr, generated_ids = model.predict_action(
+                **inputs,
+                unnorm_key=k,
+                do_sample=False,
+                max_new_tokens=max_new_tokens,
+            )
+            unnorm_key_used = k
+            break
+        except (ValueError, KeyError) as e:
+            last_err = e
+            continue
+
+    if generated_ids is None:
+        # Every unnorm_key failed. Fall back to raw generate() and skip action
+        # de-normalization — we still get the CoT text for faithfulness study.
         with torch.no_grad():
             out = model.generate(**inputs, max_new_tokens=max_new_tokens,
                                   do_sample=False)
         generated_ids = out
+        unnorm_key_used = f"NO_UNNORM (last_err={str(last_err)[:120]})"
 
     text = processor.batch_decode(generated_ids)[0]
 
@@ -155,6 +193,7 @@ def _run_ecot(processor, model, image, instruction, device, dtype,
         "cot_snippet": cot_snippet[-800:] if cot_snippet else "",
         "action": action_list,
         "cot_tags_found": tag_hits,
+        "unnorm_key_used": unnorm_key_used,
     }
 
 
@@ -281,6 +320,7 @@ def scout_one(report_key: str, hf_id: str, family: str, unnorm_key,
         entry["example_cot_snippet"] = result.get("cot_snippet")
         entry["example_action"] = result.get("action")
         entry["raw_text_tail"] = result.get("raw_text_tail")
+        entry["unnorm_key_used"] = result.get("unnorm_key_used")
         tags = result.get("cot_tags_found", [])
         entry["cot_delim_convention"] = (
             "ECoT-tags:" + ",".join(tags) if tags
