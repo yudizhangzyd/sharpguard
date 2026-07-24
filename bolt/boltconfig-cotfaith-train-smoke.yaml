@@ -1,0 +1,41 @@
+name: 'CoT-Faith SMOKE: 100-step sanity test'
+description: 'Verifies the ECoT-LIBERO training pipeline end-to-end: HF download of Embodied-CoT/embodied_features_and_demos_libero, tfds shard load, reasoning JSON join, ECoT 9-tag target construction, forward+backward pass on LoRA. If this crashes or produces NaN loss, do NOT submit the 24h full run.'
+tags: ['cotfaith', 'ecot-libero', 'smoke', 'week-2']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '100'                # SMOKE: 100 steps, ~10 min
+  BATCH_SIZE: '2'
+  MAX_STEPS_PER_EP: '20'      # SMOKE: sub-sample per ep for speed
+  DTYPE: 'bfloat16'
+  SEED: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_train.sh
