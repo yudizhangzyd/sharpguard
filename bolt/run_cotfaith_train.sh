@@ -24,10 +24,23 @@ pip install "dm-tree" || true
 # Install the specific transitive deps tfds needs, then tfds itself no-deps.
 pip install "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" "toml" \
             "termcolor" "tqdm" "click" || true
+# tfds also needs tensorflow itself for tf.data.TFRecordDataset / tf.io.
+# Use CPU wheel (~500MB) — we only need it to decode tfrecord shards, not train.
+# tensorflow-cpu==2.15.x is compatible with tfds 4.9.3 and doesn't force
+# numpy 2.x. Install --no-deps so it doesn't drag in a newer numpy either.
+pip install "tensorflow-cpu==2.15.1" --no-deps \
+    || pip install "tensorflow==2.15.1" --no-deps || true
+# tensorflow needs a bunch of runtime deps that --no-deps skipped — install
+# only the ones actually imported at runtime, keeping numpy<2 intact.
+pip install "absl-py" "astunparse" "flatbuffers" "gast" "google-pasta" \
+            "grpcio" "h5py" "libclang" "ml-dtypes==0.2.0" "opt-einsum" \
+            "packaging" "six" "wrapt" "termcolor" "typing-extensions" \
+            "tensorboard==2.15.2" "keras==2.15.0" "tensorflow-estimator==2.15.0" \
+    || true
 pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
             --force-reinstall --no-deps || true
 
-python -c "import tensorflow_datasets, tree; print('[verify] tfds + dm-tree OK')" \
+python -c "import tensorflow, tensorflow_datasets, tree; print('[verify] tf + tfds + dm-tree OK')" \
     || { echo '[FATAL] tfds import broken'; exit 3; }
 
 python experiments/cotfaith_train.py \
