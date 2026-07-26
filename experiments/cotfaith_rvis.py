@@ -22,6 +22,11 @@ import sys
 import traceback
 from pathlib import Path
 
+# Repo root on sys.path so we can `from sharpguard.proguard import ...`
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import numpy as np
 
 
