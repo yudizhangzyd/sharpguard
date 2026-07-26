@@ -23,11 +23,14 @@ mkdir -p "$CKPT_LOCAL"
 
 if [ ! -f "$CKPT_LOCAL/config.json" ]; then
     echo "[sanity] copying merged_model from S3 for bolt task $CKPT_TASK_ID"
+    # awscli not preinstalled on iris pods — install first.
+    which aws >/dev/null 2>&1 || pip install --quiet awscli || true
     S3_URL="s3://bolt-prod-2702150980/tasks/$CKPT_TASK_ID/artifacts/cotfaith-train/merged_model"
-    # Bolt pods have IAM role granting read on task artifact prefixes.
+    # Bolt pods carry IAM role granting read on task artifact prefixes.
     aws s3 sync "$S3_URL" "$CKPT_LOCAL" --quiet || {
-        echo "[sanity] aws s3 sync failed — trying aws s3 cp --recursive"
-        aws s3 cp --recursive "$S3_URL" "$CKPT_LOCAL" || {
+        echo "[sanity] aws s3 sync failed — trying s5cmd fallback"
+        pip install --quiet s5cmd || true
+        s5cmd cp "$S3_URL/*" "$CKPT_LOCAL/" || {
             echo "[FATAL] cannot fetch $S3_URL"
             exit 3
         }
