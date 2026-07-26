@@ -17,24 +17,21 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
 # ---- Fetch our just-trained checkpoint from the previous bolt task ----
-CKPT_TASK_ID="${CKPT_TASK_ID:-jsyc64ngfs}"   # full-train job that produced merged_model
+CKPT_TASK_ID="${CKPT_TASK_ID:-jsyc64ngfs}"
 CKPT_LOCAL="/tmp/cotfaith_ckpt"
 mkdir -p "$CKPT_LOCAL"
 
 if [ ! -f "$CKPT_LOCAL/config.json" ]; then
-    echo "[sanity] copying merged_model from bolt task $CKPT_TASK_ID"
-    # bolt task copy_artifacts pattern (matches how we already pull artifacts locally).
-    # `--src` selects the sub-path inside the previous task's artifact dir.
-    bolt task copy_artifacts "$CKPT_TASK_ID" --dest "$CKPT_LOCAL" \
-        --src cotfaith-train/merged_model || {
-        echo "[FATAL] failed to copy_artifacts from $CKPT_TASK_ID"
-        exit 3
+    echo "[sanity] copying merged_model from S3 for bolt task $CKPT_TASK_ID"
+    S3_URL="s3://bolt-prod-2702150980/tasks/$CKPT_TASK_ID/artifacts/cotfaith-train/merged_model"
+    # Bolt pods have IAM role granting read on task artifact prefixes.
+    aws s3 sync "$S3_URL" "$CKPT_LOCAL" --quiet || {
+        echo "[sanity] aws s3 sync failed — trying aws s3 cp --recursive"
+        aws s3 cp --recursive "$S3_URL" "$CKPT_LOCAL" || {
+            echo "[FATAL] cannot fetch $S3_URL"
+            exit 3
+        }
     }
-    # bolt copy_artifacts may nest the tree under the src prefix; flatten if so.
-    if [ -d "$CKPT_LOCAL/cotfaith-train/merged_model" ]; then
-        mv "$CKPT_LOCAL/cotfaith-train/merged_model"/* "$CKPT_LOCAL/"
-        rm -rf "$CKPT_LOCAL/cotfaith-train"
-    fi
 fi
 ls -la "$CKPT_LOCAL" | head -15
 
