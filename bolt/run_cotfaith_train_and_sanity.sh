@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Combined train + sanity: avoids cross-job artifact fetch (bolt pods
+# lack aws creds to pull from bolt S3 prefixes). Trains 15k steps of
+# ECoT-LIBERO, saves merged_model to this task's artifact dir, then
+# immediately runs sanity on it.
+
+set -e -x
+
+cd "$(dirname "$0")/.."
+
+if [ -f /tmp/sharpguard.env ]; then
+    set -a; . /tmp/sharpguard.env; set +a
+fi
+
+nvidia-smi -L || true
+export CUDA_VISIBLE_DEVICES=0
+export TOKENIZERS_PARALLELISM=false
+
+# ---- deps (same as run_cotfaith_train.sh) ----
+pip install "dm-tree" "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" \
+            "toml" "termcolor" "tqdm" "click" || true
+pip install "tensorflow-cpu==2.15.1" --no-deps \
+    || pip install "tensorflow==2.15.1" --no-deps || true
+pip install "absl-py" "astunparse" "flatbuffers" "gast" "google-pasta" \
+            "grpcio" "h5py" "libclang" "ml-dtypes==0.2.0" "opt-einsum" \
+            "packaging" "six" "wrapt" "termcolor" "typing-extensions" \
+            "tensorboard==2.15.2" "keras==2.15.0" "tensorflow-estimator==2.15.0" \
+    || true
+pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
+            --force-reinstall --no-deps || true
+
+python -c "import tensorflow, tensorflow_datasets, tree; print('[verify] tf+tfds OK')" \
+    || { echo '[FATAL] tfds import broken'; exit 3; }
+
+# ---- Step 1: TRAIN ----
+TRAIN_OUT="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-train"
+mkdir -p "$TRAIN_OUT"
+
+python experiments/cotfaith_train.py \
+    --out               "$TRAIN_OUT" \
+    --base-model        "${BASE_MODEL:-Embodied-CoT/ecot-openvla-7b-bridge}" \
+    --dataset-repo      "${DATASET_REPO:-Embodied-CoT/embodied_features_and_demos_libero}" \
+    --tfds-subdir       "${TFDS_SUBDIR:-libero_lm_90/1.0.0}" \
+    --reasoning-json    "${REASONING_JSON:-libero_reasonings.json}" \
+    --lora-r            "${LORA_R:-32}" \
+    --lora-alpha        "${LORA_ALPHA:-16}" \
+    --lr                "${LR:-2e-5}" \
+    --steps             "${STEPS:-15000}" \
+    --batch-size        "${BATCH_SIZE:-2}" \
+    --max-steps-per-ep  "${MAX_STEPS_PER_EP:-0}" \
+    --dtype             "${DTYPE:-bfloat16}" \
+    --seed              "${SEED:-0}"
+
+echo ""
+echo "===== TRAIN done. merged_model:"
+ls -la "$TRAIN_OUT/merged_model" | head -10
+echo ""
+
+# ---- Step 2: SANITY (in-process, on the just-saved merged_model) ----
+SANITY_OUT="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-sanity"
+mkdir -p "$SANITY_OUT"
+
+python experiments/cotfaith_sanity.py \
+    --ckpt-path "$TRAIN_OUT/merged_model" \
+    --out       "$SANITY_OUT" \
+    --dtype     "${DTYPE:-bfloat16}"
+
+echo ""
+echo "==== Done ===="
+[ -f "$SANITY_OUT/sanity_report.json" ] && cat "$SANITY_OUT/sanity_report.json"
+exit 0
