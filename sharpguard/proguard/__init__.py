@@ -50,6 +50,7 @@ from .cusum_tracker import CUSUMTracker, CUSUMConfig
 from .page_hinkley_tracker import PageHinkleyTracker, PageHinkleyConfig
 from .regularizer import hinge_regularizer
 from .proguard import ProGuard, ProGuardConfig
+from .cot_attention import CotAttentionAnalyzer, SegmentBoundaries
 from .temporal_audit import (
     TemporalAuditConfig,
     per_step_delta,

@@ -66,6 +66,22 @@ python experiments/cotfaith_sanity.py \
     --dtype     "${DTYPE:-bfloat16}"
 
 echo ""
+echo "===== SANITY done. Report:"
+[ -f "$SANITY_OUT/sanity_report.json" ] && cat "$SANITY_OUT/sanity_report.json" | head -80
+echo ""
+
+# ---- Step 3: r_vis(CoT) attention analysis (in-process, same GPU) ----
+RVIS_OUT="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-rvis"
+mkdir -p "$RVIS_OUT"
+
+python experiments/cotfaith_rvis.py \
+    --ckpt-path "$TRAIN_OUT/merged_model" \
+    --out       "$RVIS_OUT" \
+    --n-samples "${RVIS_N_SAMPLES:-20}" \
+    --rvis-layers "${RVIS_LAYERS:-0,1,2,3}" \
+    --dtype     "${DTYPE:-bfloat16}"
+
+echo ""
 echo "==== Done ===="
-[ -f "$SANITY_OUT/sanity_report.json" ] && cat "$SANITY_OUT/sanity_report.json"
+[ -f "$RVIS_OUT/rvis_cot_report.json" ] && head -c 2000 "$RVIS_OUT/rvis_cot_report.json"
 exit 0
