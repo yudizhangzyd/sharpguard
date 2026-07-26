@@ -53,15 +53,22 @@ ECOT_SYSTEM_PROMPT = (
 )
 
 # Tag order MUST match ECoT training (see prismatic/util/cot_utils.py).
+# LIBERO reasoning JSON uses different key names than Bridge:
+#   subtask_reasoning  (Bridge: subtask_reason)
+#   movement_reasoning (Bridge: move_reason)
+#   movement           (Bridge: move)
+#   gripper            (Bridge: gripper_position)
+# We list ALL known aliases per tag and pick the first one present so
+# both Bridge- and LIBERO-format JSONs work.
 ECOT_TAGS_ORDER = [
-    ("task",           "TASK"),
-    ("plan",           "PLAN"),
-    ("bboxes",         "VISIBLE OBJECTS"),
-    ("subtask_reason", "SUBTASK REASONING"),
-    ("subtask",        "SUBTASK"),
-    ("move_reason",    "MOVE REASONING"),
-    ("move",           "MOVE"),
-    ("gripper_position", "GRIPPER POSITION"),
+    (("task",),                                    "TASK"),
+    (("plan",),                                    "PLAN"),
+    (("bboxes",),                                  "VISIBLE OBJECTS"),
+    (("subtask_reasoning", "subtask_reason"),      "SUBTASK REASONING"),
+    (("subtask",),                                 "SUBTASK"),
+    (("movement_reasoning", "move_reasoning", "move_reason"), "MOVE REASONING"),
+    (("movement", "move"),                         "MOVE"),
+    (("gripper", "gripper_position"),              "GRIPPER POSITION"),
 ]
 
 
@@ -99,11 +106,19 @@ def build_ecot_target_text(reasoning: dict) -> str:
     """Construct the 9-tag assistant-turn target (up to but not including
     ACTION: — action tokens are appended by the tokenizer via ActionTokenizer)."""
     parts = []
-    for json_key, tag in ECOT_TAGS_ORDER:
-        v = reasoning.get(json_key, "")
-        if json_key == "bboxes":
+    for json_keys, tag in ECOT_TAGS_ORDER:
+        # Try each alias key in order until one is present.
+        v = None
+        for k in json_keys:
+            if k in reasoning:
+                v = reasoning[k]
+                break
+        if v is None:
+            v = ""
+        primary_key = json_keys[0]
+        if primary_key == "bboxes":
             v_str = _format_bboxes(v)
-        elif json_key == "gripper_position":
+        elif primary_key in ("gripper", "gripper_position"):
             v_str = _format_gripper(v)
         elif isinstance(v, dict):
             # plan is a dict of numbered steps → join in order
