@@ -100,11 +100,15 @@ class CotAttentionAnalyzer:
 
         Args:
             input_ids: 1D tensor or list of int token ids for a single
-                sample. Includes visual + text tokens.
+                sample. These are TEXT tokens only — the model prepends
+                n_visual image tokens at embedding time, so the attention
+                matrix has shape [n_visual + len(input_ids), ...]. We
+                shift all text-side positions by n_visual accordingly.
             action_len: number of action tokens (7 for OpenVLA).
 
         Returns:
-            SegmentBoundaries with token indices marking the boundaries.
+            SegmentBoundaries with token indices marking the boundaries
+            IN THE FULL ATTENTION MATRIX (i.e., visual + text).
             Visual is fixed at [0, n_visual). Instruction spans from
             n_visual to just past 'ASSISTANT:'. CoT spans from there to
             just past 'ACTION:'. Action spans the last `action_len`
@@ -112,29 +116,32 @@ class CotAttentionAnalyzer:
         """
         ids = (input_ids.tolist() if hasattr(input_ids, "tolist")
                 else list(input_ids))
-        T = len(ids)
+        L_text = len(ids)
+        T_full = self.n_visual + L_text
 
-        instr_end = find_token_span(ids, self.tokenizer, self.instr_end_marker)
-        cot_end   = find_token_span(ids, self.tokenizer, self.cot_end_marker)
+        instr_end_text = find_token_span(ids, self.tokenizer, self.instr_end_marker)
+        cot_end_text   = find_token_span(ids, self.tokenizer, self.cot_end_marker)
 
-        if instr_end == -1 or instr_end < self.n_visual:
-            instr_end = self.n_visual   # fall back: no instruction found
-        if cot_end == -1 or cot_end < instr_end:
-            cot_end = max(instr_end, T - action_len - 1)
+        # Fall back to just-after-visual if marker not found.
+        instr_end = (self.n_visual + instr_end_text) if instr_end_text >= 0 \
+                    else self.n_visual
 
-        # Action is the last `action_len` tokens (before EOS if any).
-        action_end = T
-        # If the last token looks like an EOS, strip it out of the action
-        # range (attention analysis on EOS is uninformative).
+        # Action range: last `action_len` non-EOS tokens.
+        action_end_text = L_text
         eos = getattr(self.tokenizer, "eos_token_id", None)
         if eos is not None and ids and ids[-1] == eos:
-            action_end = T - 1
-
-        # Nudge cot_end to leave exactly action_len tokens in action range.
+            action_end_text = L_text - 1
+        action_end = self.n_visual + action_end_text
         action_start = action_end - action_len
-        if action_start < cot_end:
-            action_start = cot_end
-        cot_end = action_start
+
+        # CoT ends where action begins. If the ACTION: marker exists and
+        # lies before action_start, use it; otherwise clamp to action_start.
+        if cot_end_text >= 0:
+            cot_end_candidate = self.n_visual + cot_end_text
+            cot_end = min(cot_end_candidate, action_start)
+        else:
+            cot_end = action_start
+        cot_end = max(cot_end, instr_end)   # guard: cot_end >= instr_end
 
         return SegmentBoundaries(
             visual_end=self.n_visual,
