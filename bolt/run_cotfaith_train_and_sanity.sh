@@ -82,6 +82,22 @@ python experiments/cotfaith_rvis.py \
     --dtype     "${DTYPE:-bfloat16}"
 
 echo ""
+echo "===== RVIS done. Report head:"
+[ -f "$RVIS_OUT/rvis_cot_report.json" ] && head -c 1000 "$RVIS_OUT/rvis_cot_report.json"
+echo ""
+
+# ---- Step 4: causal CoT edit ----
+EDIT_OUT="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-edit"
+mkdir -p "$EDIT_OUT"
+
+python experiments/cotfaith_edit.py \
+    --ckpt-path "$TRAIN_OUT/merged_model" \
+    --out       "$EDIT_OUT" \
+    --n-samples "${EDIT_N_SAMPLES:-30}" \
+    --threshold "${EDIT_THRESHOLD:-0.05}" \
+    --dtype     "${DTYPE:-bfloat16}"
+
+echo ""
 echo "==== Done ===="
-[ -f "$RVIS_OUT/rvis_cot_report.json" ] && head -c 2000 "$RVIS_OUT/rvis_cot_report.json"
+[ -f "$EDIT_OUT/cot_edit_report.json" ] && head -c 2500 "$EDIT_OUT/cot_edit_report.json"
 exit 0

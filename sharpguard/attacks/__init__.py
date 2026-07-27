@@ -7,3 +7,6 @@ from .temporal_trap import (
     DEFAULT_MALICIOUS_ACTION,
 )
 from .rvis_aware_loss import RVisAwareConfig, rvis_aware_penalty
+from .cot_edit import (
+    subject_swap, direction_flip, gripper_flip, EDIT_FAMILIES,
+)
