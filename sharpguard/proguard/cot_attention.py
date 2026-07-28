@@ -181,7 +181,12 @@ class CotAttentionAnalyzer:
             if layer_stats is not None:
                 stats_per_layer.append(layer_stats)
         if not stats_per_layer:
-            raise RuntimeError("All layers skipped (sequence shorter than segments)")
+            # Diagnostic dump so we can see WHY the segments don't fit.
+            captured_shapes = [tuple(a.shape) for a in self.hook._captured]
+            raise RuntimeError(
+                f"All layers skipped (sequence shorter than segments). "
+                f"seg={seg.as_dict()}  captured_attn_shapes={captured_shapes}  "
+                f"n_visual={self.n_visual}")
 
         # Aggregate per-layer -> mean over layers.
         agg: dict = {}
