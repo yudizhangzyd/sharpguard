@@ -1,0 +1,74 @@
+% =============================================================
+% Fig 1: CoT-Faith workflow overview (TikZ skeleton — POLISH BY HAND)
+% =============================================================
+% Suggested placement: after \begin{document}, floated at [t] on p.1.
+% Compile with pdflatex (loads tikz). Adjust node positions/colours
+% to match the paper's colour scheme.
+%
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=0.7cm,
+    box/.style={rectangle, rounded corners=2pt, draw=black, thick,
+                minimum width=2.4cm, minimum height=0.9cm,
+                align=center, font=\small},
+    inbox/.style={box, fill=blue!8},
+    modbox/.style={box, fill=green!12},
+    probe/.style={box, fill=orange!12, minimum width=3.0cm},
+    findbox/.style={box, fill=red!7, minimum width=3.4cm, minimum height=0.8cm},
+    arr/.style={-{Latex[length=2mm]}, thick, shorten <=1pt, shorten >=1pt},
+]
+
+% Row 1: inputs
+\node[inbox]  (img) at (0, 0)  {LIBERO image\\ ({\scriptsize$H\times W\times3$})};
+\node[inbox, right=0.5cm of img]  (instr) {instruction\\ ({\scriptsize"pick up X"})};
+\node[inbox, right=0.5cm of instr] (cot)   {\emph{GT} CoT\\ ({\scriptsize9-tag trace})};
+
+% Row 2: model
+\node[modbox, below=0.9cm of instr, minimum width=6.4cm, minimum height=1.0cm]
+      (model) {CoT-VLA (ECoT-family or ablation variant)};
+
+% Row 3: three probes
+\node[probe, below=1.1cm of model.south west, xshift=0.6cm] (p1)
+      {\textbf{Probe 1}: segment\\ attention (4 buckets)};
+\node[probe, below=1.1cm of model] (p2)
+      {\textbf{Probe 2}: causal\\ CoT edit ($\Delta_\infty$)};
+\node[probe, below=1.1cm of model.south east, xshift=-0.6cm] (p3)
+      {\textbf{Probe 3}: attention\\ $\to$ error AUROC};
+
+% Row 4: findings
+\node[findbox, below=0.9cm of p1] (f1)
+      {attn shape = arch-\\determined (Fig 2)};
+\node[findbox, below=0.9cm of p2] (f2)
+      {reasoning target\\ = causal (Fig 3-4)};
+\node[findbox, below=0.9cm of p3] (f3)
+      {attn $\ne$ error\\ AUROC $\approx 0.5$};
+
+% Arrows: inputs -> model
+\draw[arr] (img)   -- ($(model.north)+(-1.8,0)$);
+\draw[arr] (instr) -- (model.north);
+\draw[arr] (cot)   -- ($(model.north)+(1.8,0)$);
+
+% Model -> probes
+\draw[arr] (model.south) -- (p1.north);
+\draw[arr] (model.south) -- (p2.north);
+\draw[arr] (model.south) -- (p3.north);
+
+% Probes -> findings
+\draw[arr] (p1) -- (f1);
+\draw[arr] (p2) -- (f2);
+\draw[arr] (p3) -- (f3);
+
+\end{tikzpicture}
+\caption{\textbf{CoT-Faith methodology}. Each LIBERO first-step
+sample $(\mathrm{img}, \mathrm{instr}, \mathrm{cot}_\text{GT})$ is fed
+to a CoT-VLA with the standard 9-tag ECoT prompt. Three probes measure
+different aspects of chain-of-thought faithfulness: segment-decomposed
+action-token attention (Probe 1); Δaction under causal edits along ten
+semantic axes with a null selfsplice control (Probe 2); AUROC of
+attention as a per-sample action-error predictor (Probe 3). Across
+11 models we find that attention on the CoT segment is
+architecture-determined, while causal effect requires reasoning-target
+training — attention does not proxy causation.}
+\label{fig:workflow}
+\end{figure}

@@ -1,0 +1,116 @@
+% =============================================================================
+% CoT-Faith figures — LaTeX include snippets (paste into cot_faith.tex)
+% =============================================================================
+%
+% Required packages in preamble:
+%   \usepackage{graphicx}
+%   \usepackage{tikz}
+%   \usetikzlibrary{arrows.meta, positioning}
+%
+% All PDFs are vector (fonts embedded, Type 42), rendered at 300 DPI.
+
+% =============================================================================
+% Fig 1 — CoT-Faith workflow overview (TikZ, MANUAL polish)
+% =============================================================================
+% See figures/fig1_workflow.tex for the raw TikZ. Recommended: paste inline
+% at the start of Section 1 (Introduction) as the hero/teaser figure.
+%
+%   \input{figures/fig1_workflow.tex}
+
+% =============================================================================
+% Fig 2 — Action-token attention across 11 models
+% =============================================================================
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/fig2_attention_distribution.pdf}
+    \caption{\textbf{Action-token attention distribution across 11 models}.
+    Bars show mean attention mass from action-token positions to each
+    of four sequence segments (visual, instruction, CoT, action-prev),
+    averaged over LLM layers 0-3, $N{=}100$ LIBERO first-step samples, and
+    up to 3 seeds. All CoT-VLAs (left of dashed line) cluster at
+    $(\text{visual}, \text{instr}, \text{CoT}, \text{prev}) \approx
+    (0.29, 0.30, 0.34, 0.07)$; non-CoT baselines (right) cluster at
+    $(0.52, 0.42, 0.00, 0.05)$. Critically, our no-CoT model —
+    fine-tuned on the same LIBERO-90 data as our r=32 model but with
+    all reasoning tags stripped from the training loss — still shows
+    the CoT-VLA attention shape when fed a CoT-formatted prompt.}
+    \label{fig:attention}
+\end{figure}
+
+% =============================================================================
+% Fig 3 — Causal-edit faithful-rate heatmap
+% =============================================================================
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/fig3_edit_heatmap.pdf}
+    \caption{\textbf{Causal-edit faithful rate across 8 CoT-VLAs $\times$ 10
+    edit families}. Each cell is the fraction of $N{=}100$ LIBERO
+    samples where the CoT edit produced $\Delta_\infty > 0.05$ in the
+    greedy-decoded action. Two anchor columns: \texttt{selfsplice} (identity
+    replacement — validates the metric, must be $\approx 0$) and
+    \texttt{cross\_task\_swap} (replace whole CoT with unrelated
+    sample's — upper bound). \textbf{Row highlights:}
+    \textcolor[HTML]{EE6677}{\textbf{no-CoT}} collapses to
+    0.13-0.24 on every semantic edit despite identical base and data,
+    while \textcolor[HTML]{228833}{\textbf{ECoT-bridge}} sits at
+    0.67-0.97 on the same edits. Missing cells (\texttt{---}) are edits
+    not yet re-run for our r=32 model.}
+    \label{fig:edit_heatmap}
+\end{figure}
+
+% =============================================================================
+% Fig 4 — Attention-vs-causation dissociation
+% =============================================================================
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/fig4_dissociation.pdf}
+    \caption{\textbf{Attention-causation dissociation}.
+    \textbf{(a)} Action-token attention on the CoT segment for 7
+    trained CoT-VLA variants: all cluster at $\sim 0.34$, with the
+    no-CoT ablation (red) at 0.35 — indistinguishable from
+    CoT-trained models. \textbf{(b)} Same models, average
+    faithful rate across seven shared edit families (subject swap,
+    direction flip, gripper flip, verb swap, negation,
+    adversarial-plausible, cross-task swap): no-CoT collapses to
+    0.15, while ECoT-bridge (green) hits 0.87. \textbf{Attention
+    allocation does not predict causal effect}: the same 34\%
+    attention on CoT can drive the action decode (bridge) or be
+    entirely decorative (no-CoT).}
+    \label{fig:dissociation}
+\end{figure}
+
+% =============================================================================
+% Fig 5 — Prompt-format ablation
+% =============================================================================
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/fig5_prompt_ablation.pdf}
+    \caption{\textbf{Prompt-format ablation on ECoT-bridge}.
+    Fraction of $N{=}100$ LIBERO samples where truncating the CoT
+    text causes $\Delta_\infty > 0.05$ in the action. Removing
+    \emph{any} portion of the 9-tag CoT — even leaving just the
+    single-word \texttt{TASK:} tag — causes $\geq 96\%$ of samples
+    to change action. Shuffling tag order alone triggers 95\%.
+    The model conditions strongly on the full structured target;
+    but this is a property of the ECoT-bridge \emph{training regime}
+    (Fig~\ref{fig:edit_heatmap} shows models without CoT training
+    do not exhibit this sensitivity).}
+    \label{fig:prompt}
+\end{figure}
+
+% =============================================================================
+% Fig 6 — Bridge vs LIBERO CoT-training comparison
+% =============================================================================
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.55\textwidth]{figures/fig6_bridge_vs_libero.pdf}
+    \caption{\textbf{Bridge-trained vs LIBERO-fine-tuned CoT-VLA
+    faithful rate}. On three shared edit families, ECoT-bridge
+    (green) achieves 0.67-0.97 faithful rate — approximately
+    $2\times$ our r=32 LIBERO fine-tune (blue, 0.24-0.77) despite
+    identical architecture, prompt format, and near-identical
+    action-token attention distributions (Fig~\ref{fig:attention}).
+    CoT-Faith is thus governed by training-data domain, not
+    architecture.}
+    \label{fig:bridge_vs_libero}
+\end{figure}
