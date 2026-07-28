@@ -155,18 +155,25 @@ class CotAttentionAnalyzer:
     def analyze(self, seg: SegmentBoundaries) -> dict:
         """Aggregate captured attention into per-segment attention mass.
 
-        For each source position `s` in the ACTION range and each target
-        segment T, compute sum(attn[..., s, T_range]) — attention mass
-        from that source to that target segment. Average over B, H,
-        source positions in action range, and across layers.
-
-        Returns dict with keys:
-          'action->visual', 'action->instr', 'action->cot', 'action->action',
-          'cot->visual',    'cot->instr',    'cot->cot',    'cot->action'  (0 by causal)
-          'per_source_action_mass' (mean total mass; should be ~1.0)
+        Robustness: if the captured attention T is shorter than
+        seg.action_end, this usually means the model's LLM forward
+        returns attention over TEXT TOKENS ONLY (visual tokens processed
+        separately, no prefix in the attention matrix). We then re-derive
+        segments by shifting all boundaries down by n_visual.
         """
         if not self.hook._captured:
             raise RuntimeError("No attention captured on hook")
+
+        # Auto-detect: does the captured attention include the visual prefix?
+        T_captured = self.hook._captured[0].shape[-1]
+        if T_captured < seg.action_end:
+            shift = self.n_visual
+            seg = SegmentBoundaries(
+                visual_end=max(0, seg.visual_end - shift),
+                instr_end=max(0, seg.instr_end - shift),
+                cot_end=max(0, seg.cot_end - shift),
+                action_end=max(0, seg.action_end - shift),
+            )
 
         stats_per_layer = []
         for attn in self.hook._captured:
