@@ -49,7 +49,10 @@ python experiments/cotfaith_train.py \
     --batch-size        "${BATCH_SIZE:-2}" \
     --max-steps-per-ep  "${MAX_STEPS_PER_EP:-0}" \
     --dtype             "${DTYPE:-bfloat16}" \
-    --seed              "${SEED:-0}"
+    --seed              "${SEED:-0}" \
+    --reasoning-mode    "${REASONING_MODE:-full}" \
+    --data-fraction     "${DATA_FRACTION:-1.0}" \
+    --data-seed         "${DATA_SEED:-0}"
 
 echo ""
 echo "===== TRAIN done. merged_model:"

@@ -222,7 +222,17 @@ class ECoTLiberoDataset:
 
     def __init__(self, tfds_dir: Path, reasoning_json: Path,
                   processor, dtype, max_steps_per_ep: Optional[int] = None,
-                  vocab_size: Optional[int] = None):
+                  vocab_size: Optional[int] = None,
+                  reasoning_mode: str = "full",
+                  data_fraction: float = 1.0,
+                  data_seed: int = 0):
+        """
+        reasoning_mode : 'full' (all 9 CoT tags) or 'no_cot' (only ACTION,
+                          strip all reasoning tags — ablation baseline).
+        data_fraction  : 1.0 = all episodes; <1.0 = randomly subsample
+                          this fraction of episode indices for training.
+        data_seed      : controls subsample selection.
+        """
         import tensorflow_datasets as tfds
         import tensorflow as tf
         self.tf = tf
@@ -231,6 +241,9 @@ class ECoTLiberoDataset:
         self.tokenizer = processor.tokenizer
         self.vocab_size = vocab_size or self.tokenizer.vocab_size
         self.max_steps_per_ep = max_steps_per_ep
+        self.reasoning_mode = reasoning_mode
+        self.data_fraction = data_fraction
+        self.data_seed = data_seed
 
         print(f"[dataset] loading tfds from {tfds_dir}")
         builder = tfds.builder_from_directory(str(tfds_dir))
@@ -238,10 +251,23 @@ class ECoTLiberoDataset:
         print(f"[dataset] loading reasoning JSON from {reasoning_json}")
         self._reasoning = load_reasoning_json(reasoning_json)
         print(f"[dataset]   {len(self._reasoning)} top-level file entries")
+        print(f"[dataset] reasoning_mode={reasoning_mode}  "
+              f"data_fraction={data_fraction}  data_seed={data_seed}")
 
     def __iter__(self) -> Iterator[dict]:
         import tensorflow as tf
+        import hashlib
         from PIL import Image as PILImage
+
+        # Deterministic per-episode subsample. Hash (file_path, demo_id)
+        # to a uniform [0,1) value; keep if < data_fraction.
+        def _keep_episode(file_base: str, demo_id) -> bool:
+            if self.data_fraction >= 1.0:
+                return True
+            key = f"{self.data_seed}:{file_base}:{demo_id}".encode()
+            h = int.from_bytes(hashlib.sha256(key).digest()[:8], "big")
+            r = (h % 10_000) / 10_000.0
+            return r < self.data_fraction
 
         for ep in self._ds:
             meta = ep.get("episode_metadata", {})
@@ -252,10 +278,12 @@ class ECoTLiberoDataset:
                               else file_path)
                 if isinstance(file_path, bytes):
                     file_path = file_path.decode()
-                # Basename fallback (LIBERO JSON keys are just hdf5 basenames)
                 file_path = os.path.basename(file_path)
             if demo_id is not None:
                 demo_id = (demo_id.numpy() if hasattr(demo_id, "numpy") else demo_id)
+
+            if not _keep_episode(file_path or "", demo_id):
+                continue
 
             steps = ep["steps"]
             for step_idx, step in enumerate(steps):
@@ -275,11 +303,12 @@ class ECoTLiberoDataset:
                 action = step["action"].numpy().astype(np.float32)
 
                 prompt = build_ecot_prompt(instruction)
-                cot_body = build_ecot_target_text(reasoning)
-                # Full assistant target: <cot_body> ACTION: <7 action tokens>
-                # We tokenize prompt + cot_body + " ACTION: " as text, and
-                # append 7 action-token ids manually so we get exact ids.
-                text_pre_action = prompt + cot_body + " ACTION:"
+                if self.reasoning_mode == "no_cot":
+                    # Ablation: strip all CoT, target = only " ACTION: <ids>".
+                    text_pre_action = prompt + " ACTION:"
+                else:
+                    cot_body = build_ecot_target_text(reasoning)
+                    text_pre_action = prompt + cot_body + " ACTION:"
 
                 # Process image + text (positional args — ECoT convention).
                 proc = self.processor(text_pre_action, pil)
@@ -353,6 +382,15 @@ def main():
     p.add_argument("--max-steps-per-ep", type=int, default=0,
                    help="If >0, sub-sample steps per episode (speeds up).")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--reasoning-mode", default="full",
+                   choices=["full", "no_cot"],
+                   help="'full' (9 CoT tags) or 'no_cot' (strip reasoning, "
+                        "action-only target — ablation baseline).")
+    p.add_argument("--data-fraction", type=float, default=1.0,
+                   help="Randomly subsample this fraction of episodes for "
+                        "training. <1.0 tests data-quantity/coverage effect.")
+    p.add_argument("--data-seed", type=int, default=0,
+                   help="Seed for --data-fraction subsample selection.")
     args = p.parse_args()
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -396,7 +434,10 @@ def main():
     # ----- 3. Dataset + loader -----
     ds = ECoTLiberoDataset(tfds_dir, reasoning_path, processor, dtype,
                              max_steps_per_ep=args.max_steps_per_ep or None,
-                             vocab_size=processor.tokenizer.vocab_size)
+                             vocab_size=processor.tokenizer.vocab_size,
+                             reasoning_mode=args.reasoning_mode,
+                             data_fraction=args.data_fraction,
+                             data_seed=args.data_seed)
 
     # Manual iteration since ds is IterableDataset-like.
     from torch.utils.data import IterableDataset, DataLoader
