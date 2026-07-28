@@ -29,7 +29,7 @@ environment_variables:
   EDIT_THRESHOLD: '0.05'
   RVIS_LAYERS: '0,1,2,3'
   DTYPE: 'bfloat16'
+  SEED: '2'
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_cotfaith_no_train.sh
-  SEED: "2"

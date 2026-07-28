@@ -27,7 +27,7 @@ environment_variables:
   N_SAMPLES: '100'
   RVIS_LAYERS: '0,1,2,3'
   DTYPE: 'bfloat16'
+  SEED: '1'
 
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_cotfaith_rvis_baseline.sh
-  SEED: "1"
