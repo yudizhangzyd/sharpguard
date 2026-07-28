@@ -1,0 +1,35 @@
+name: 'CoT-Faith: ECoT-bridge rvis + edit on LIBERO (N=100, no retrain)'
+description: 'Second CoT-VLA for the benchmark: use public Embodied-CoT/ecot-openvla-7b-bridge (Bridge-domain trained) on LIBERO offline scenes. Same metrics as our ECoT-LIBERO checkpoint but a different CoT-VLA training source, so results diverging or aligning tells us whether findings are training-data-specific.'
+tags: ['cotfaith', 'ecot-bridge', 'benchmark', 'N100']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+  RVIS_LAYERS: '0,1,2,3'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_no_train.sh
+  SEED: "2"
