@@ -38,6 +38,7 @@ python experiments/cotfaith_rvis.py \
     --ckpt-path "$CKPT" \
     --out       "$RVIS_OUT" \
     --n-samples "${N_SAMPLES:-100}" \
+    --seed      "${SEED:-0}" \
     --rvis-layers "${RVIS_LAYERS:-0,1,2,3}" \
     --dtype     "${DTYPE:-bfloat16}"
 
@@ -47,6 +48,8 @@ python experiments/cotfaith_edit.py \
     --ckpt-path "$CKPT" \
     --out       "$EDIT_OUT" \
     --n-samples "${EDIT_N_SAMPLES:-100}" \
+    --seed      "${SEED:-0}" \
+    --families  "${EDIT_FAMILIES:-all}" \
     --threshold "${EDIT_THRESHOLD:-0.05}" \
     --dtype     "${DTYPE:-bfloat16}"
 

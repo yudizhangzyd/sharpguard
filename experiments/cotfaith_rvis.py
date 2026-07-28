@@ -37,8 +37,10 @@ ECOT_SYSTEM_PROMPT = (
 
 
 def load_libero_samples(dataset_repo: str, tfds_subdir: str, reasoning_json: str,
-                         n_samples: int):
-    """Yield the first n samples' (image_pil, instruction, reasoning_dict)."""
+                         n_samples: int, seed: int = 0):
+    """Yield the first n samples' (image_pil, instruction, reasoning_dict).
+    seed>0 shuffles TFDS files with that seed for reproducible per-seed
+    sample selection."""
     from huggingface_hub import snapshot_download
     ds_dir = Path(snapshot_download(repo_id=dataset_repo, repo_type="dataset",
                                        cache_dir=os.environ.get("HF_HOME")))
@@ -49,7 +51,9 @@ def load_libero_samples(dataset_repo: str, tfds_subdir: str, reasoning_json: str
     import tensorflow_datasets as tfds
     from PIL import Image as PILImage
     builder = tfds.builder_from_directory(str(tfds_dir))
-    ds = builder.as_dataset(split="train", shuffle_files=False)
+    ds = builder.as_dataset(split="train",
+                              shuffle_files=(seed != 0),
+                              read_config=tfds.ReadConfig(shuffle_seed=seed))
     n = 0
     for ep in ds:
         if n >= n_samples: break
@@ -144,7 +148,8 @@ def run_analysis(args):
     per_sample_stats = []
     print(f"[attn] iterating {args.n_samples} LIBERO samples")
     it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
-                              args.reasoning_json, args.n_samples)
+                              args.reasoning_json, args.n_samples,
+                              seed=args.seed)
     for si, (img, instr, gt, fbase, dem) in enumerate(it):
         try:
             prompt = (f"{ECOT_SYSTEM_PROMPT} USER: What action should the "
@@ -222,6 +227,8 @@ def main():
     p.add_argument("--ckpt-path", required=True)
     p.add_argument("--out", default="./cotfaith-rvis")
     p.add_argument("--n-samples", type=int, default=20)
+    p.add_argument("--seed", type=int, default=0,
+                   help="TFDS shuffle seed; 0=deterministic, >0 shuffles files.")
     p.add_argument("--rvis-layers", default="0,1,2,3")
     p.add_argument("--dataset-repo",
                      default="Embodied-CoT/embodied_features_and_demos_libero")

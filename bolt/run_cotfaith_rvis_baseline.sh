@@ -35,6 +35,7 @@ python experiments/cotfaith_rvis_baseline.py \
     --base-model "${BASE_MODEL:-openvla/openvla-7b-finetuned-libero-spatial}" \
     --out         "$OUT_DIR" \
     --n-samples   "${N_SAMPLES:-20}" \
+    --seed        "${SEED:-0}" \
     --rvis-layers "${RVIS_LAYERS:-0,1,2,3}" \
     --dtype       "${DTYPE:-bfloat16}"
 

@@ -34,7 +34,8 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 
 
-def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples):
+def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples,
+                          seed: int = 0):
     """Reuse the same first-step sampler as cotfaith_rvis.py so the
     baseline analysis sees the SAME 20 scenes."""
     from huggingface_hub import snapshot_download
@@ -47,7 +48,9 @@ def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples):
     import tensorflow_datasets as tfds
     from PIL import Image as PILImage
     builder = tfds.builder_from_directory(str(tfds_dir))
-    ds = builder.as_dataset(split="train", shuffle_files=False)
+    ds = builder.as_dataset(split="train",
+                              shuffle_files=(seed != 0),
+                              read_config=tfds.ReadConfig(shuffle_seed=seed))
     n = 0
     for ep in ds:
         if n >= n_samples: break
@@ -107,7 +110,8 @@ def run_baseline(args):
 
     per_sample = []
     it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
-                              args.reasoning_json, args.n_samples)
+                              args.reasoning_json, args.n_samples,
+                              seed=args.seed)
     for si, (img, instr, fbase, dem) in enumerate(it):
         try:
             prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
@@ -179,6 +183,8 @@ def main():
                    default="openvla/openvla-7b-finetuned-libero-spatial")
     p.add_argument("--out", default="./cotfaith-rvis-baseline")
     p.add_argument("--n-samples", type=int, default=20)
+    p.add_argument("--seed", type=int, default=0,
+                   help="TFDS shuffle seed; 0=deterministic, >0 shuffles files.")
     p.add_argument("--rvis-layers", default="0,1,2,3")
     p.add_argument("--dataset-repo",
                      default="Embodied-CoT/embodied_features_and_demos_libero")

@@ -39,7 +39,8 @@ ECOT_SYSTEM_PROMPT = (
 )
 
 
-def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples):
+def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples,
+                          seed: int = 0):
     from huggingface_hub import snapshot_download
     ds_dir = Path(snapshot_download(repo_id=dataset_repo, repo_type="dataset",
                                        cache_dir=os.environ.get("HF_HOME")))
@@ -50,7 +51,10 @@ def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples):
     import tensorflow_datasets as tfds
     from PIL import Image as PILImage
     builder = tfds.builder_from_directory(str(tfds_dir))
-    ds = builder.as_dataset(split="train", shuffle_files=False)
+    # seed controls file shuffle for reproducible sample selection.
+    ds = builder.as_dataset(split="train",
+                              shuffle_files=(seed != 0),
+                              read_config=tfds.ReadConfig(shuffle_seed=seed))
     n = 0
     for ep in ds:
         if n >= n_samples: break
@@ -137,13 +141,14 @@ def infer_action(model, processor, text_pre_action, image, device, dtype):
 def run(args):
     import torch
     from transformers import AutoModelForVision2Seq, AutoProcessor
-    from sharpguard.attacks import subject_swap, direction_flip, gripper_flip
+    from sharpguard.attacks import EDIT_FAMILIES
 
-    EDIT_FAMILIES = {
-        "subject_swap":   subject_swap,
-        "direction_flip": direction_flip,
-        "gripper_flip":   gripper_flip,
-    }
+    # Filter to requested families if user passed --families comma-separated.
+    if args.families and args.families != "all":
+        wanted = set(args.families.split(","))
+        EDIT_FAMILIES = {k: v for k, v in EDIT_FAMILIES.items() if k in wanted}
+    else:
+        EDIT_FAMILIES = dict(EDIT_FAMILIES)   # copy, keep all 10
 
     dtype = {"float32": torch.float32, "float16": torch.float16,
               "bfloat16": torch.bfloat16}[args.dtype]
@@ -156,26 +161,47 @@ def run(args):
         attn_implementation="eager", low_cpu_mem_usage=True,
     ).to(device).eval()
 
+    # Materialize ALL samples first — needed to build an "alt reasoning"
+    # reservoir for cross_task_swap and for reproducible sample selection.
+    all_samples = list(load_libero_samples(
+        args.dataset_repo, args.tfds_subdir, args.reasoning_json,
+        args.n_samples, seed=args.seed))
+    print(f"[edit] loaded {len(all_samples)} samples (seed={args.seed})")
+
     all_results = []
-    it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
-                              args.reasoning_json, args.n_samples)
-    for si, (img, instr, gt, fbase, dem) in enumerate(it):
+    import random
+    rng = random.Random(args.seed + 7)   # for cross_task_swap alt selection
+
+    for si, (img, instr, gt, fbase, dem) in enumerate(all_samples):
         try:
             prompt = (f"{ECOT_SYSTEM_PROMPT} USER: What action should the robot "
                        f"take to {instr.lower()}? ASSISTANT: ")
             orig_target = prompt + build_ecot_target_text(gt) + " ACTION:"
             a_orig = infer_action(model, processor, orig_target, img, device, dtype)
             if a_orig is None:
-                print(f"[edit] sample {si}: original inference failed to yield 7 action tokens")
+                print(f"[edit] sample {si}: original inference failed")
                 continue
 
             for fname, fedit in EDIT_FAMILIES.items():
-                edited = fedit(gt)
+                # Some families need extra args.
+                if fname == "cross_task_swap":
+                    # Pick a random unrelated sample's reasoning.
+                    alt_idx = rng.randrange(len(all_samples))
+                    if alt_idx == si and len(all_samples) > 1:
+                        alt_idx = (alt_idx + 1) % len(all_samples)
+                    alt_gt = all_samples[alt_idx][2]
+                    edited = fedit(gt, alt_reasoning=alt_gt, seed=args.seed)
+                elif fname == "syntactic_scramble":
+                    edited = fedit(gt, seed=args.seed + si)
+                else:
+                    edited = fedit(gt)
+
                 if edited is None:
                     all_results.append({
                         "sample": si, "family": fname,
-                        "instruction": instr[:200], "file_base": fbase,
-                        "skipped": True, "reason": "no plausible edit",
+                        "seed": args.seed, "instruction": instr[:200],
+                        "file_base": fbase, "skipped": True,
+                        "reason": "no plausible edit",
                     })
                     continue
                 edit_meta = edited.pop("__edit_meta__", {})
@@ -183,26 +209,26 @@ def run(args):
                 a_edit = infer_action(model, processor, edited_target, img, device, dtype)
                 if a_edit is None:
                     all_results.append({"sample": si, "family": fname,
-                                         "skipped": True, "reason": "edit inference failed"})
+                                         "seed": args.seed, "skipped": True,
+                                         "reason": "edit inference failed"})
                     continue
                 d = a_edit - a_orig
                 delta_l1 = float(np.mean(np.abs(d)))
                 delta_linf = float(np.max(np.abs(d)))
-                per_dim = [float(x) for x in d]
                 all_results.append({
-                    "sample": si, "family": fname,
+                    "sample": si, "family": fname, "seed": args.seed,
                     "instruction": instr[:200], "file_base": fbase,
                     "edit_meta": edit_meta,
                     "a_orig": [float(x) for x in a_orig],
                     "a_edit": [float(x) for x in a_edit],
-                    "delta_per_dim": per_dim,
+                    "delta_per_dim": [float(x) for x in d],
                     "delta_l1_mean": delta_l1,
                     "delta_linf": delta_linf,
                     "faithful": delta_linf > args.threshold,
                     "skipped": False,
                 })
-            if (si + 1) % 5 == 0:
-                print(f"[edit] {si+1}/{args.n_samples} samples done")
+            if (si + 1) % 20 == 0:
+                print(f"[edit] {si+1}/{len(all_samples)} samples done")
         except Exception as e:
             print(f"[edit] sample {si} failed: {e}\n{traceback.format_exc()[-500:]}")
 
@@ -210,16 +236,17 @@ def run(args):
     agg = {}
     for fname in EDIT_FAMILIES:
         rows = [r for r in all_results if r["family"] == fname and not r.get("skipped")]
+        n_skip = sum(1 for r in all_results
+                      if r["family"] == fname and r.get("skipped"))
         if not rows:
-            agg[fname] = {"n": 0}
+            agg[fname] = {"n": 0, "n_skipped": n_skip}
             continue
         l1s = [r["delta_l1_mean"] for r in rows]
         linfs = [r["delta_linf"] for r in rows]
         faithfuls = [r["faithful"] for r in rows]
         agg[fname] = {
             "n": len(rows),
-            "n_skipped": sum(1 for r in all_results
-                              if r["family"] == fname and r.get("skipped")),
+            "n_skipped": n_skip,
             "delta_l1_mean":  {"mean": float(np.mean(l1s)),
                                  "std": float(np.std(l1s)),
                                  "median": float(np.median(l1s))},
@@ -233,20 +260,21 @@ def run(args):
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     (out / "cot_edit_report.json").write_text(json.dumps({
         "n_samples_requested": args.n_samples,
+        "seed": args.seed,
         "threshold_linf": args.threshold,
         "aggregate": agg,
         "per_sample": all_results,
     }, indent=2, default=str))
 
-    print(f"\n===== CAUSAL EDIT DONE =====")
+    print(f"\n===== CAUSAL EDIT DONE  seed={args.seed} =====")
     for fname, a in agg.items():
         if a["n"] == 0:
-            print(f"  {fname:20s}  (0 samples)")
+            print(f"  {fname:22s}  (0 samples; skipped={a.get('n_skipped', 0)})")
         else:
-            print(f"  {fname:20s}  n={a['n']:3d}  "
-                  f"L1_mean={a['delta_l1_mean']['mean']:.3f}  "
-                  f"L∞_median={a['delta_linf']['median']:.3f}  "
-                  f"faithful_rate={a['faithful_rate']:.2f}")
+            print(f"  {fname:22s}  n={a['n']:3d}  "
+                  f"L∞med={a['delta_linf']['median']:.3f}  "
+                  f"L∞mean={a['delta_linf']['mean']:.3f}  "
+                  f"faithful={a['faithful_rate']:.3f}")
     print(f"  report -> {out / 'cot_edit_report.json'}")
 
     sys.stdout.flush()
@@ -257,11 +285,14 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--ckpt-path", required=True)
     p.add_argument("--out", default="./cotfaith-edit")
-    p.add_argument("--n-samples", type=int, default=30)
-    p.add_argument("--threshold", type=float, default=0.05,
-                   help="L∞ threshold on Δaction (normalized [-1,1]) to "
-                        "classify as 'faithful' — CoT edit measurably "
-                        "changed the action.")
+    p.add_argument("--n-samples", type=int, default=100)
+    p.add_argument("--seed", type=int, default=0,
+                   help="Controls sample-file shuffle (0=deterministic) and "
+                        "cross_task_swap alt sample selection.")
+    p.add_argument("--families", default="all",
+                   help="Comma-separated edit family keys to run "
+                        "(default 'all' = 10 families).")
+    p.add_argument("--threshold", type=float, default=0.05)
     p.add_argument("--dataset-repo",
                      default="Embodied-CoT/embodied_features_and_demos_libero")
     p.add_argument("--tfds-subdir", default="libero_lm_90/1.0.0")
