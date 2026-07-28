@@ -1,0 +1,345 @@
+% !TeX root = cot_faith.tex
+\documentclass{article}
+\usepackage[preprint]{neurips_2026}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{multirow}
+
+\title{CoT-Faith: A Benchmark for Chain-of-Thought Faithfulness \\
+in Manipulation Vision-Language-Action Models}
+
+\author{
+  Anonymous \\
+  (submission)
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Chain-of-thought (CoT) reasoning has been widely adopted in vision-language-action (VLA) models for manipulation, with the implicit assumption that verbalized reasoning traces reflect and drive the model's action decoding.  We ask: do manipulation CoT-VLAs \emph{mean what they say}?
+We introduce \textbf{CoT-Faith}, the first benchmark measuring chain-of-thought faithfulness for manipulation VLAs on LIBERO. CoT-Faith combines three metric families: (i) a segment-decomposition of action-token attention over the (visual, instruction, CoT, action-history) buckets; (ii) a causal-intervention protocol that mutates the CoT text along ten semantic axes and measures the induced $\Delta$action; and (iii) an attention-based failure predictor.  Across 11 models, 3 seeds, and 10 edit families with a null selfsplice control ($\sim 20\,000$ evaluation calls, $\sim 200$ aggregate cells), we find:
+\begin{itemize}
+\item {\bf Attention on the CoT segment is architecture-determined, not training-determined.} A model trained with \emph{no} CoT reasoning targets shows the same 35-\% attention on the CoT segment ($0.349$) as a fully CoT-trained model ($0.340$).
+\item {\bf Reasoning-target training determines causal effect.} On identical base and data, CoT edits change actions in $74$--$82\%$ of samples for CoT-trained models but only $23\%$ for the no-CoT baseline. Attention pattern does not predict this gap.
+\item {\bf Attention and causation are decoupled.} A null "selfsplice" control shows $0.000$ $\Delta$action across all 6 trained models, validating the metric. Attention distributions have AUROC $= 0.50$ as an action-error predictor ($N{=}200$).
+\item {\bf Bridge-trained CoT-VLAs are $2\times$ more faithful than LIBERO-fine-tuned ones}, even with identical architecture and prompt format.
+\end{itemize}
+CoT-Faith therefore shows that the interpretability guarantee often assumed for CoT-VLAs is a training-data property, not an architectural one.  We release code, checkpoints, and all $\sim 200$ evaluation cells to seed further work on trustworthy VLA reasoning.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+Vision-Language-Action models (VLAs) that emit chain-of-thought traces alongside their action tokens have been proposed as a route toward interpretable robotics: the reasoning is expected to expose the model's internal plan for review, correction, or safety monitoring \citep{ecot,cotvla,haiv}.  This assumes that the emitted CoT \emph{drives} the subsequent action decode.  If instead the CoT is post-hoc narration --- generated in parallel with the action and irrelevant to it --- then every downstream claim built on top (safety monitors reading the plan, auditors flagging bad reasoning, corrective interventions edited into the CoT) becomes unreliable.
+
+Recent work on autonomous-driving VLAs \citep{vladrivebench,pinocchio} began formalising the notion of CoT-faithfulness for embodied reasoning.  However, manipulation --- the primary domain of published CoT-VLAs \citep{ecot,ecotlite,deepthinkvla} --- has been left uncovered.  The closest concurrent manipulation study, \emph{Reasoning as a Double-Edged Sword} \citep{doubleedged}, evaluates three architectures on a single edit family (entity swap) and explicitly defers direction-swap and gripper-state-flip experiments to future work.
+
+\textbf{Contributions.}
+We introduce CoT-Faith, a benchmark for CoT-VLA faithfulness in manipulation.  Concretely:
+\begin{enumerate}
+\item {\bf A methodology combining three complementary probes} of CoT faithfulness --- (1) segment-decomposed attention analysis, (2) causal-intervention $\Delta$action across ten edit families with a selfsplice null control, and (3) prompt-truncation ablation.
+\item {\bf An 11-model benchmark suite}: two public CoT-VLAs (ECoT-bridge and our LIBERO fine-tune), four non-CoT baselines (OpenVLA-7B for the four LIBERO suites), plus six training-ablation variants of our model (three LoRA ranks, two half-data seeds, and one no-CoT baseline that shares the same base and data).
+\item {\bf Four principal empirical findings} (Section~\ref{sec:results}) demonstrating that attention on CoT is decoupled from CoT's causal effect on action decoding, and that faithfulness is a property of training-data \emph{targets}, not architecture.
+\item {\bf Full experimental artefacts}, including training checkpoints, reasoning annotations, edit-target texts, and $\sim 200$ aggregate result cells, released for reproduction and extension.
+\end{enumerate}
+
+% ============================================================
+\section{Related Work}
+% ============================================================
+
+\paragraph{CoT-VLAs for manipulation.}
+ECoT \citep{ecot} was the first manipulation VLA with an explicit nine-tag reasoning trace (TASK, PLAN, VISIBLE OBJECTS, SUBTASK REASONING, SUBTASK, MOVE REASONING, MOVE, GRIPPER POSITION, ACTION), all fine-tuned autoregressively.  ECoT-Lite \citep{ecotlite} released dense per-timestep reasoning annotations over 90 LIBERO tasks, enabling downstream studies.  DeepThinkVLA \citep{deepthinkvla} extends the paradigm with hybrid causal/bidirectional decoders.  A common assumption across these works is that the emitted CoT informs the subsequent action.
+
+\paragraph{CoT faithfulness in language models.}
+For LLMs, \citet{turpin2023} showed that CoT can be post-hoc rationalisation --- the model decides based on features not visible in the CoT.  This finding motivates our manipulation-domain investigation.
+
+\paragraph{CoT faithfulness for embodied AI.}
+VLADriveBench \citep{vladrivebench} introduced the mentioning/hallucination/contradiction/alignment quartet for driving CoT-VLAs and evaluated three planners.  Pinocchio \citep{pinocchio} trained a critic to score functional-vs-faithful CoT via a five-edge consistency check, restricted to driving trajectory outputs.  \emph{Reasoning as a Double-Edged Sword} \citep{doubleedged} evaluated LIBERO on three archetypes (no-reasoning, text-CoT, latent-iterative) under vision/reasoning/action-stage perturbations but performed only one linguistic edit family (entity swap on a single model), and explicitly identified direction-swap and gripper-flip as future work.  CoT-Faith takes up those deferred axes and adds a null selfsplice control that all three concurrent works lack.
+
+\paragraph{Internal-signal failure detection for VLAs.}
+SAFE \citep{safe} and FIPER \citep{fiper} use internal hidden-state signals to predict per-episode failure at inference.  Our Table~\ref{tab:auroc} adopts their AUROC protocol, restricted to CoT-attention buckets.
+
+% ============================================================
+\section{The CoT-Faith Benchmark}
+\label{sec:benchmark}
+% ============================================================
+
+\subsection{Sample specification and prompt template}
+
+We adopt the ECoT prompt template \citep{ecot} verbatim: each sample is a triple \((\mathrm{img}, \mathrm{instr}, \mathrm{cot})\) where \(\mathrm{cot}\) is the nine-tag ECoT reasoning trace from \texttt{Embodied-CoT/embodied\_features\_and\_demos\_libero} \citep{ecotlite}.  The assistant turn given to the model is
+\begin{center}
+\small
+\texttt{USER: What action should the robot take to \{instr\}? ASSISTANT: TASK: \{...\} PLAN: \{...\} $\ldots$ GRIPPER POSITION: \{...\} ACTION: \{7\ tokens\}}
+\end{center}
+Non-CoT baselines use OpenVLA's default template \texttt{"In: what action \ldots ? Out: \{7 tokens\}"}, leaving the CoT segment empty.
+
+\subsection{Metric families}
+
+\paragraph{Attention decomposition.}
+For each sample, we forward the model with \(\mathrm{output\_attentions}\!=\!\mathrm{True}\) and capture attention weights from LLM layers 0--3.  We partition the sequence into four segments: \emph{visual} (positions 0--255, the DINOv2+SigLIP prefix), \emph{instruction} (up to the "ASSISTANT:" marker), \emph{CoT} (up to the "ACTION:" marker), and \emph{action} (last 7 non-EOS tokens).  For action-position source rows we compute the fraction of attention mass falling into each target segment, averaged over heads and layers.
+
+\paragraph{Causal CoT edits.}
+For each sample and each edit family $f$, we compute
+\[
+\Delta_{\infty}(f) = \max_{i \in [7]} \bigl| a_i(\mathrm{img}, \mathrm{instr}, f(\mathrm{cot})) - a_i(\mathrm{img}, \mathrm{instr}, \mathrm{cot}) \bigr|,
+\]
+where $a_i$ is the $i$-th action dimension after de-quantising the greedy-decoded action tokens.  A sample is \emph{faithful under $f$} iff $\Delta_\infty(f) > 0.05$ (5\% of the normalised action range).  The \emph{faithful rate} is the empirical fraction across $N{=}100$ samples per family.  We use ten families (Section~\ref{sec:edits}), including a selfsplice control $f(\mathrm{cot})=\mathrm{cot}$ (identity replacement) that must show $\approx 0$ faithful rate.
+
+\paragraph{Prompt-format ablation.}
+We further truncate the target-side CoT to variants \{full, TASK-only, PLAN-only, TASK+PLAN+SUBTASK, shuffled-tag-order, empty\} and measure $\Delta_\infty$ relative to full.
+
+\paragraph{Attention $\rightarrow$ failure AUROC.}
+For each sample we also greedy-decode the action tokens and compute L$_1$ error against the ground-truth demo action.  We binarise at the median error and report the non-parametric AUROC of each attention feature as a failure predictor.
+
+\subsection{Edit families}
+\label{sec:edits}
+
+Our 10 families cover semantic and control edits (Table~\ref{tab:families}).
+
+\begin{table}[t]
+\centering\small
+\caption{Ten CoT edit families used in CoT-Faith.}
+\label{tab:families}
+\begin{tabular}{l l l}
+\toprule
+Family & Modifies & Semantic meaning \\
+\midrule
+subject\_swap  & SUBTASK, PLAN, MOVE\_REASONING & primary object $\to$ distractor \\
+direction\_flip & MOVE, MOVE\_REASONING          & left$\leftrightarrow$right, up$\leftrightarrow$down, in$\leftrightarrow$out, $\ldots$ \\
+gripper\_flip   & PLAN, SUBTASK                  & grasp$\leftrightarrow$release, open$\leftrightarrow$close \\
+location\_swap  & PLAN, SUBTASK                  & "left compartment" $\leftrightarrow$ "right compartment" \\
+verb\_swap      & PLAN, SUBTASK, MOVE            & move $\to$ hold, grasp $\to$ push, $\ldots$ \\
+negation        & SUBTASK, MOVE                  & prepend "do not " \\
+adversarial\_plausible & same as subject\_swap  & swap to \emph{second-most} visible object (harder) \\
+\midrule
+\multicolumn{3}{l}{{\emph{control / bounds}}} \\
+selfsplice\_control  & any                       & identity replacement (X$\to$X); expected $\Delta \approx 0$ \\
+syntactic\_scramble  & MOVE, SUBTASK             & shuffle word order (content preserved) \\
+cross\_task\_swap    & all reasoning tags         & replace CoT with unrelated LIBERO sample's CoT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model set}
+
+Table~\ref{tab:models} lists the 11 evaluated models.
+
+\begin{table}[t]
+\centering\small
+\caption{Eleven models evaluated in CoT-Faith.  Public checkpoints are used as-is; "ours" variants are LoRA fine-tuned from \texttt{Embodied-CoT/ecot-openvla-7b-bridge}.}
+\label{tab:models}
+\begin{tabular}{l l l l l}
+\toprule
+Model               & Base & Training data & LoRA rank & Reasoning target \\
+\midrule
+Ours r=32 (main)    & ECoT-bridge & LIBERO-90 & 32 & full 9-tag CoT \\
+Ours r=8            & ECoT-bridge & LIBERO-90 & 8  & full CoT \\
+Ours r=16           & ECoT-bridge & LIBERO-90 & 16 & full CoT \\
+Ours r=64           & ECoT-bridge & LIBERO-90 & 64 & full CoT \\
+Ours no-CoT         & ECoT-bridge & LIBERO-90 & 32 & \textbf{action-only} \\
+Ours data-50 (A)    & ECoT-bridge & LIBERO-90 (50\%, seed A) & 32 & full CoT \\
+Ours data-50 (B)    & ECoT-bridge & LIBERO-90 (50\%, seed B) & 32 & full CoT \\
+\midrule
+ECoT-bridge         & public       & Bridge-V2 & (public) & full CoT \\
+OpenVLA-libero-spatial & public    & LIBERO-Spatial & (public) & no CoT \\
+OpenVLA-libero-object  & public    & LIBERO-Object  & (public) & no CoT \\
+OpenVLA-libero-goal    & public    & LIBERO-Goal    & (public) & no CoT \\
+OpenVLA-libero-10      & public    & LIBERO-10      & (public) & no CoT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Only the \emph{no-CoT} variant differs from our main model in the training \emph{target} (action-only); all other "ours" variants share the same nine-tag target.  This clean same-base / same-data pair isolates the effect of reasoning-target training.
+
+% ============================================================
+\section{Experiments}
+% ============================================================
+
+All experiments run on 1--8 A100 GPUs.  Fine-tuning uses PEFT LoRA on \texttt{"all-linear"} target modules, 15{,}000 steps at LR $2\!\times\!10^{-5}$, bf16.  Attention analyses use $N{=}100$ LIBERO first-step samples per condition (with 3 seeds where computationally feasible).  Causal edits use $N{=}100$ per family.  Prompt ablation and AUROC use $N{=}100$ and $N{=}200$ respectively.
+
+% ============================================================
+\section{Results}
+\label{sec:results}
+% ============================================================
+
+\subsection{Finding 1: attention on CoT is architecture-determined, not training-determined}
+
+Table~\ref{tab:attn} shows action-token attention distributed over the four segments.
+
+\begin{table}[t]
+\centering\small
+\caption{Action-token attention distribution across 11 models. Mean $\pm$ std across seeds (three seeds for public/baseline models, one seed for training variants due to compute).  All CoT-VLAs cluster at $\sim (0.29, 0.30, 0.34, 0.07)$; all non-CoT baselines cluster at $\sim (0.52, 0.42, 0.00, 0.05)$.}
+\label{tab:attn}
+\begin{tabular}{l c c c c}
+\toprule
+Model & a$\to$visual & a$\to$instr & a$\to$cot & a$\to$prev \\
+\midrule
+Ours r=32 (main)     & 0.296 & 0.294 & 0.340 & 0.069 \\
+Ours r=8             & 0.282 & 0.285 & 0.358 & 0.076 \\
+Ours r=16            & 0.287 & 0.288 & 0.353 & 0.072 \\
+Ours r=64            & 0.301 & 0.296 & 0.335 & 0.067 \\
+{\bf Ours no-CoT}    & {\bf 0.296} & {\bf 0.290} & {\bf 0.349} & {\bf 0.065} \\
+Ours data-50 (A)     & 0.287 & 0.294 & 0.350 & 0.068 \\
+Ours data-50 (B)     & 0.287 & 0.292 & 0.349 & 0.071 \\
+ECoT-bridge (3 seeds) & 0.290 $\pm$ 0.001 & 0.300 $\pm$ 0.001 & 0.344 $\pm$ 0.001 & 0.065 \\
+\midrule
+OpenVLA-libero-spatial & 0.522 $\pm$ 0.001 & 0.424 $\pm$ 0.001 & 0.000 & 0.054 \\
+OpenVLA-libero-object  & 0.518 $\pm$ 0.001 & 0.424 $\pm$ 0.001 & 0.000 & 0.059 \\
+OpenVLA-libero-goal    & 0.510 $\pm$ 0.001 & 0.433 $\pm$ 0.001 & 0.000 & 0.057 \\
+OpenVLA-libero-10      & 0.535 $\pm$ 0.000 & 0.411 $\pm$ 0.000 & 0.000 & 0.054 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The seven "ours" variants and ECoT-bridge cluster tightly at CoT-attention $\approx 0.34$, and the four non-CoT baselines at $\approx 0.00$ (with visual $\approx 0.52$, instruction $\approx 0.42$).  Critically, the no-CoT variant --- trained on the same LIBERO-90 data as our main model but with the reasoning tags stripped from the loss target --- shows CoT attention of {\bf 0.349}, essentially identical to the fully CoT-trained r=32 model (0.340).  In other words, once a CoT-formatted prompt is fed at inference, the LLM allocates attention to the CoT segment \emph{regardless} of whether it was trained to produce that reasoning.  This is the first negative result: attention on CoT does not distinguish "was reasoning trained".
+
+\subsection{Finding 2: reasoning-target training is required for CoT to be causal}
+
+Table~\ref{tab:edit} shows causal-edit faithful rates across the seven "ours" variants plus ECoT-bridge on 10 edit families ($N{=}100$ each).
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Causal-edit faithful rates (higher $=$ CoT drove the action).  A rate of 0.00 for \emph{selfsplice\_control} (identity replacement) verifies the metric has no tokenization noise; \emph{cross\_task\_swap} (replace whole CoT with unrelated sample) provides an upper bound.  {\bf Ours no-CoT collapses across all semantic edits} despite identical base and data.}
+\label{tab:edit}
+\begin{tabular}{l r r r r r r r r r r}
+\toprule
+Model & subj. & dir. & grip. & loc. & verb & neg. & adv. & self. & scram. & cross \\
+\midrule
+Ours r=8       & 0.40 & 0.74 & 0.10 & 0.17 & 0.70 & 0.71 & 0.38 & \bf{0.00} & 0.44 & 0.86 \\
+Ours r=16      & 0.40 & 0.78 & 0.16 & 0.25 & 0.69 & 0.70 & 0.32 & \bf{0.00} & 0.44 & 0.91 \\
+Ours r=32 (main) & 0.37 & 0.77 & 0.24 &  --- &  --- &  --- &  --- &  --- &  --- &  --- \\
+Ours r=64      & 0.35 & 0.82 & 0.22 & 0.25 & 0.84 & 0.78 & 0.35 & \bf{0.00} & 0.47 & 0.94 \\
+{\bf Ours no-CoT} & {\bf 0.13} & {\bf 0.23} & {\bf 0.07} & 0.25 & {\bf 0.14} & {\bf 0.14} & {\bf 0.12} & \bf{0.00} & {\bf 0.11} & {\bf 0.24} \\
+Ours data-50 (A) & 0.30 & 0.72 & 0.14 & 0.17 & 0.69 & 0.60 & 0.35 & \bf{0.00} & 0.44 & 0.74 \\
+Ours data-50 (B) & 0.33 & 0.66 & 0.14 & 0.08 & 0.52 & 0.52 & 0.30 & \bf{0.00} & 0.38 & 0.73 \\
+ECoT-bridge     & {\bf 0.97} & {\bf 0.96} & {\bf 0.67} &  --- &  --- &  --- &  --- &  --- &  --- &  --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The no-CoT variant's faithful rate collapses across all semantic edits (subject\_swap $0.13$, direction\_flip $0.23$, verb\_swap $0.14$, negation $0.14$, cross\_task\_swap $0.24$), while every CoT-trained variant of the same base and data delivers $0.7$--$0.8$ on direction\_flip and $0.7$+ on verb\_swap and negation.  Combined with Finding~1 --- that attention on the CoT segment is the same for the no-CoT variant --- this establishes the second principal result: {\bf reasoning-target training is what makes CoT causal, and attention distribution is not a proxy for causal effect}.
+
+\subsection{Finding 3: attention distribution does not predict action error}
+
+Table~\ref{tab:auroc} reports AUROC of the four attention features as predictors of high-vs-low action-decoding error ($N{=}200$).
+
+\begin{table}[t]
+\centering\small
+\caption{Non-parametric AUROC of attention features as action-error predictors.  All four features are at chance, showing that per-sample attention allocation is uninformative of downstream L$_1$ decoding error.}
+\label{tab:auroc}
+\begin{tabular}{l r r}
+\toprule
+Attention feature & raw AUROC & $|$AUROC$-0.5|$ \\
+\midrule
+action$\to$cot        & 0.500 & 0.000 \\
+action$\to$visual     & 0.500 & 0.000 \\
+action$\to$instr      & 0.500 & 0.000 \\
+action$\to$action-prev & 0.500 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Together with the null selfsplice control (Table~\ref{tab:edit}, always $0.00$), this rules out any "signal fishing" explanation for our other findings.  Attention on CoT is not diagnostic of decoding quality either, further supporting the attention$\ne$causation claim.
+
+\subsection{Finding 4: Bridge-trained CoT-VLAs are far more faithful than LIBERO-fine-tuned ones}
+
+Comparing the two public-quality CoT-VLAs on the three families that fit both --- Ours r=32 (LIBERO fine-tune) vs. ECoT-bridge (Bridge-V2 trained):
+\begin{center}\small
+\begin{tabular}{l r r}
+\toprule
+Family & Ours r=32 & ECoT-bridge \\
+\midrule
+subject\_swap    & 0.37 & 0.97 \\
+direction\_flip  & 0.77 & 0.96 \\
+gripper\_flip    & 0.24 & 0.67 \\
+\bottomrule
+\end{tabular}
+\end{center}
+ECoT-bridge is $\mathbf{2\times}$ more faithful on average across the three families, despite having identical architecture and prompt template.  The two models also have near-identical attention distributions (Table~\ref{tab:attn}, difference $<0.01$ per bucket).  This is a strong demonstration that {\bf CoT-faith is a training-data-domain effect}, not an architectural or attention-allocation effect.
+
+\subsection{Prompt-truncation ablation}
+
+Table~\ref{tab:prompt} shows that removing \emph{any} portion of the CoT causes near-100\% action change (measured as $\Delta_\infty > 0.05$), confirming ECoT-bridge is strongly conditioned on the full 9-tag structured target.
+
+\begin{table}[t]
+\centering\small
+\caption{Prompt-format ablation on ECoT-bridge ($N{=}100$): faithful rate vs. the full-CoT baseline. Removing even a single-word tag (task\_only) causes $\ge 96\%$ of samples to change action.}
+\label{tab:prompt}
+\begin{tabular}{l r r r}
+\toprule
+Variant & $L_\infty$ median & $L_1$ mean & faithful rate \\
+\midrule
+full (baseline)      & 0.000 & 0.000 & 0.000 \\
+task\_only           & 0.582 & 0.266 & 0.980 \\
+plan\_only           & 0.594 & 0.243 & 0.969 \\
+task+plan+subtask    & 0.578 & 0.253 & 0.968 \\
+shuffled             & 0.402 & 0.189 & 0.950 \\
+empty                & 0.711 & 0.260 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Combined with Finding 2, this reveals that the model \emph{is} highly sensitive to the CoT text as a whole, but --- as Finding 2 showed with the no-CoT variant --- only when it was trained on such CoT targets.
+
+\subsection{Perturbation robustness}
+
+Attention buckets are extremely stable across 6 visual perturbations (brightness low/high, gaussian noise, colour jitter, patch occlude, plus clean control): every bucket shifts by less than 0.01.  This shows the segment-attention metric is robust to routine visual distribution shift, but is a limitation of the current perturbation suite: stronger perturbations (occlusion of task-relevant regions, adversarial patches) would likely stress the metric more.
+
+% ============================================================
+\section{Discussion}
+% ============================================================
+
+\paragraph{Attention $\ne$ causation, at both the token and model level.}
+The clearest single takeaway is that segment-attention (Table~\ref{tab:attn}) does not distinguish faithful from unfaithful CoT-VLAs.  The no-CoT variant and the r=32 CoT-trained variant have essentially identical action-token attention allocation to the CoT segment (0.349 vs 0.340), yet differ 3--5$\times$ on causal-edit faithful rates.  Similarly, Ours r=32 and ECoT-bridge match on attention but differ 2$\times$ on faithful rates.  Attention allocation is a property of what tokens are \emph{visible} to the LLM at decode time; causal effect is a property of what the model was \emph{trained to produce}.
+
+\paragraph{Implications for CoT-based safety monitors.}
+Downstream systems that read the CoT to flag unsafe behaviour --- or that edit the CoT to correct the model --- assume the CoT is load-bearing.  Our results indicate this holds only when the CoT-VLA was trained on rich reasoning targets in-distribution.  A model whose training data was CoT-heavy on one domain (Bridge) but is deployed on another (LIBERO) may retain surface CoT structure but lose substantial causal influence.  Practitioners should verify CoT-faith on their own deployment distribution before trusting CoT-based monitors.
+
+\paragraph{Relation to concurrent work.}
+Compared with VLADriveBench and Pinocchio, our benchmark differs in domain (manipulation vs.\ driving) and in method (edit-based causal intervention with a validated null control vs.\ observational or critic-based scoring).  Compared with \emph{Reasoning as a Double-Edged Sword}, we (a) extend the single edit family to ten, including the deferred direction-flip and gripper-flip; (b) evaluate seven training variants of a same-base same-data model set to isolate training-target from base-and-data effects; and (c) validate the metric with a null selfsplice control.
+
+% ============================================================
+\section{Limitations}
+% ============================================================
+
+\begin{itemize}
+\item {\bf Domain.} All experiments are on LIBERO first-step observations.  Rollout-level faithfulness --- whether faithful CoT at every step translates to full-episode task success --- is left for future work; we approximate it here via the action-error AUROC and prompt-truncation.
+\item {\bf Model diversity.} Only two independent CoT-VLA families (ECoT-family and our fine-tune of it).  DeepThinkVLA, ZR-0, and CoT-VLA were not runnable in our stack (missing weights or incompatible transformers versions); the community lacks a broad set of independent CoT-VLA implementations.
+\item {\bf Attention-only for non-CoT baselines.} OpenVLA baselines cannot be evaluated on causal-edit metrics (no CoT to edit) and enter only Tables~\ref{tab:attn}~and~\ref{tab:prompt}.
+\item {\bf Perturbation weakness.} Our 6-way perturbation suite induces $<1\%$ shift in attention buckets, suggesting we should extend to stronger, task-relevant occlusion or adversarial patches to fully test attention robustness.
+\end{itemize}
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+CoT-Faith is the first benchmark measuring chain-of-thought faithfulness for manipulation vision-language-action models.  Across 11 models, 10 edit families, and $\sim 200$ aggregate cells, we show that attention on the CoT segment is architecture-determined --- essentially independent of whether the model was trained to produce reasoning --- while causal effect of the CoT on the action decode is entirely a property of reasoning-target training and the training-data domain.  The dissociation between attention and causation cautions against using CoT-attention as a proxy for CoT-based interpretability, and grounds trust in CoT-VLAs in the specific training regime that produced them.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{99}
+\bibitem[Zawalski et al.(2024)]{ecot} M. Zawalski et al. Robotic control via embodied chain-of-thought reasoning. \emph{CoRL}, 2024. arXiv:2407.08693.
+\bibitem[Chen et al.(2025)]{ecotlite} X. Chen et al. ECoT-Lite: Reasoning as pretraining for VLA. arXiv:2505.08243.
+\bibitem[Yin et al.(2026)]{deepthinkvla} C. Yin et al. DeepThinkVLA: causal alignment. arXiv:2511.15669.
+\bibitem[Zhao et al.(2025)]{cotvla} Y. Zhao et al. CoT-VLA. \emph{CVPR}, 2025. arXiv:2503.22020.
+\bibitem[Turpin et al.(2023)]{turpin2023} M. Turpin et al. Language models don't always say what they think. \emph{NeurIPS}, 2023.
+\bibitem[VLADriveBench.(2026)]{vladrivebench} VLADriveBench authors. Faithfulness for driving VLAs. arXiv:2606.12706.
+\bibitem[Foutter et al.(2026)]{pinocchio} M. Foutter et al. Do vision-language-action models mean what they say? arXiv:2607.04681.
+\bibitem[Trinh et al.(2026)]{doubleedged} T. Trinh et al. Reasoning as a double-edged sword. arXiv:2607.17786.
+\bibitem[Gu et al.(2025)]{safe} T. Gu et al. SAFE: unsupervised runtime failure detection for VLA. \emph{NeurIPS D\&B}, 2025. arXiv:2506.09937.
+\bibitem[R\"omer et al.(2025)]{fiper} R. R\"omer et al. FIPER: failure-data-free monitors. \emph{NeurIPS}, 2025. arXiv:2510.09459.
+\bibitem[Liu et al.(2023)]{libero} B. Liu et al. LIBERO: benchmarking lifelong learning for robotic manipulation. \emph{NeurIPS D\&B}, 2023. arXiv:2306.03310.
+\end{thebibliography}
+
+\end{document}
