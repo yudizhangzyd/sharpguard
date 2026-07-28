@@ -37,5 +37,10 @@ environment_variables:
   DTYPE: 'bfloat16'
   SEED: '0'
 
+  # Full-benchmark sample sizes (was 20/30 for smoke runs).
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_cotfaith_train_and_sanity.sh
