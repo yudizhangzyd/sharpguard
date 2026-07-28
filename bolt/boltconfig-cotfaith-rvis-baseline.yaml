@@ -1,0 +1,32 @@
+name: 'CoT-Faith baseline: r_vis attention on non-CoT OpenVLA-7B'
+description: 'Gate 2 for CoT-Faith. Runs the same 4-bucket attention analysis on plain OpenVLA-7B (no CoT) using the same LIBERO samples so we can compare against our CoT-VLA finding (task #80). If OpenVLA shows very different action->visual / action->instr proportions, adding CoT DID redirect attention. If similar shape, the CoT segment gets attention proportional to its length and nothing special.'
+tags: ['cotfaith', 'baseline', 'rvis', 'gate-2']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 2h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  N_SAMPLES: '20'
+  RVIS_LAYERS: '0,1,2,3'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rvis_baseline.sh
