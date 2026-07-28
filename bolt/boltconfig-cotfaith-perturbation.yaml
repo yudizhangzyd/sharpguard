@@ -1,0 +1,27 @@
+name: 'CoT-Faith perturbation robustness on ECoT-bridge (6 kinds)'
+description: 'Applies 5 image perturbations (brightness low/high, gaussian noise, color jitter, patch occlude) + clean control. Reports attention distribution shift per perturbation to test whether CoT-Faith findings hold under visual distribution shift.'
+tags: ['cotfaith', 'perturbation', 'tier2']
+
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 3h
+  cluster: aws_2
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '50'
+  SEED: '0'
+  RVIS_LAYERS: '0,1,2,3'
+  DTYPE: 'bfloat16'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_perturbation.sh
