@@ -200,10 +200,17 @@ class CotAttentionAnalyzer:
     def _bucket_layer(self, attn: torch.Tensor,
                        seg: SegmentBoundaries) -> Optional[dict]:
         """attn: [B, H, T, T]. Returns per-layer bucketed attention floats
-        (as 0-D tensors so we can stack). None if T doesn't cover segments."""
+        (as 0-D tensors so we can stack). None if T doesn't cover segments.
+
+        Empty CoT segment (cot_end == instr_end) is LEGAL — for non-CoT
+        VLAs, the analyzer still computes action->{visual, instr, action}
+        attention, and action->cot naturally sums to 0.
+        """
         T = attn.shape[-1]
-        if T < seg.action_end or seg.action_end <= seg.cot_end \
-           or seg.cot_end <= seg.instr_end or seg.instr_end <= seg.visual_end:
+        if (T < seg.action_end
+            or seg.action_end <= seg.cot_end       # need >= 1 action token
+            or seg.cot_end < seg.instr_end          # allow empty CoT (==)
+            or seg.instr_end <= seg.visual_end):    # need >= 1 instr token
             return None
 
         def _mass(src_lo, src_hi, tgt_lo, tgt_hi):
