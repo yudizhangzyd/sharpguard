@@ -18,23 +18,33 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-# OpenVLA-OFT remote code imports 'prismatic.training.train_utils' which
-# only exists in moojink's openvla-oft fork. Do NOT install main openvla —
-# pip refuses to co-install two packages named 'prismatic'; whichever is
-# installed second silently loses. Only the fork is needed for OFT inference.
-if [ ! -d /tmp/openvla-oft ]; then
-    git clone --depth 1 https://github.com/moojink/openvla-oft /tmp/openvla-oft || true
-fi
-# Force uninstall any prismatic left over from previous runs
+# ============================================================================
+# OFT setup — bypass pip install of the fork entirely.
+# The remote modeling_prismatic.py only needs 'prismatic.training.train_utils'.
+# Cloning the fork + PYTHONPATH + neutering the top-level __init__ chain
+# avoids importing dlimp/tfds/tensorflow_metadata → protobuf runtime_version
+# deadlock (tf 2.15 pins protobuf<5 but tfds 4.9.3 needs protobuf 5+).
+# ============================================================================
 pip uninstall -y prismatic openvla openvla-oft 2>/dev/null || true
-# Install fork WITH deps — needs draccus, dlimp for prismatic.conf/vla imports.
-(cd /tmp/openvla-oft && pip install -e . || true)
-# Sanity: prismatic.training.train_utils must import.
-python -c "from prismatic.training.train_utils import get_next_action; print('[oft] prismatic.training.train_utils OK')" || {
-    echo "[oft] FATAL: prismatic.training.train_utils not importable" >&2
-    python -c "import prismatic, os; print('prismatic at:', prismatic.__file__)" >&2 || true
+rm -rf /tmp/openvla-oft
+git clone --depth 1 https://github.com/moojink/openvla-oft /tmp/openvla-oft || true
+# Neuter the aggressive __init__ chain — only training/train_utils needed.
+for f in \
+    /tmp/openvla-oft/prismatic/__init__.py \
+    /tmp/openvla-oft/prismatic/models/__init__.py \
+    /tmp/openvla-oft/prismatic/vla/__init__.py \
+    /tmp/openvla-oft/prismatic/conf/__init__.py ; do
+    : > "$f"
+done
+# training/__init__ stays as-is (safe, minimal).
+# Just install draccus (used in configs, harmless if unused).
+pip install "draccus==0.8.0" 2>/dev/null || true
+# Sanity: reachable via PYTHONPATH.
+PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}" python -c "from prismatic.training.train_utils import get_next_action; print('[oft] prismatic.training.train_utils OK')" || {
+    echo "[oft] FATAL: import failed" >&2
     exit 2
 }
+export PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}"
 
 # tf/tfds for loading LIBERO probe images.
 pip install "dm-tree" "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" \
