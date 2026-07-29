@@ -40,26 +40,57 @@ ECOT_TAGS_ORDER = [
 
 
 def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridge_orig_lerobot"):
-    """Load first-step samples from any lerobot-format VLA dataset."""
+    """Load first-step samples from any lerobot-format VLA dataset.
+
+    Loads only ONE parquet shard via HTTP-range partial download rather than
+    streaming the entire dataset (some are 99k+ files).
+    """
     from datasets import load_dataset
-    print(f"[lerobot] streaming {dataset_repo}")
-    ds = load_dataset(dataset_repo, split="train", streaming=True)
+    print(f"[lerobot] loading first shard from {dataset_repo}")
+    # Try single-shard load first (fast), fall back to streaming.
+    ds = None
+    try:
+        # LeRobot datasets have parquet files at data/chunk-000/*.parquet
+        from huggingface_hub import HfApi
+        api = HfApi()
+        files = api.list_repo_files(dataset_repo, repo_type="dataset")
+        parquets = sorted([f for f in files if f.endswith(".parquet")])[:1]
+        if parquets:
+            print(f"[lerobot] loading single shard: {parquets[0]}")
+            ds = load_dataset(dataset_repo, data_files=parquets[0], split="train",
+                                streaming=True)
+    except Exception as e:
+        print(f"[lerobot] single-shard load failed ({e}); falling back to full stream")
+    if ds is None:
+        ds = load_dataset(dataset_repo, split="train", streaming=True)
     from PIL import Image as PILImage
     out = []
     seen_ep = set()
+    IMG_KEYS = ["observation.image_0", "observation.images.image_0",
+                  "observation.images.image", "observation.images.top",
+                  "observation.images.main", "observation.images.wrist",
+                  "observation.images.agentview_image", "observation.images.exterior_image_1_left",
+                  "observation.images.cam_high", "observation.images.cam_low",
+                  "image", "observation.image"]
+    INSTR_KEYS = ["language_instruction", "task", "instruction", "task_description",
+                    "annotation.human.action.task_description", "prompt"]
     for row in ds:
         if len(out) >= n_samples: break
         ep = row.get("episode_index", None)
-        # First-step of each new episode
         if ep in seen_ep: continue
         seen_ep.add(ep)
-        img = row.get("observation.image_0") or row.get("observation.images.image_0") or row.get("image")
+        img = None
+        for k in IMG_KEYS:
+            if k in row and row[k] is not None:
+                img = row[k]; break
         if img is None:
-            # fallback: take first image-like key
             for k, v in row.items():
-                if "image" in k.lower():
+                if "image" in k.lower() and v is not None:
                     img = v; break
-        instr = row.get("language_instruction") or row.get("task") or row.get("instruction")
+        instr = None
+        for k in INSTR_KEYS:
+            if k in row and row[k] is not None:
+                instr = row[k]; break
         act = row.get("action")
         if img is None or instr is None or act is None: continue
         if isinstance(instr, list): instr = instr[0] if instr else ""

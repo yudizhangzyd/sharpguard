@@ -28,15 +28,8 @@ export TOKENIZERS_PARALLELISM=false
 pip uninstall -y prismatic openvla openvla-oft 2>/dev/null || true
 rm -rf /tmp/openvla-oft
 git clone --depth 1 https://github.com/moojink/openvla-oft /tmp/openvla-oft || true
-# Neuter the aggressive __init__ chain — only training/train_utils needed.
-for f in \
-    /tmp/openvla-oft/prismatic/__init__.py \
-    /tmp/openvla-oft/prismatic/models/__init__.py \
-    /tmp/openvla-oft/prismatic/vla/__init__.py \
-    /tmp/openvla-oft/prismatic/conf/__init__.py ; do
-    : > "$f"
-done
-# training/__init__ stays as-is (safe, minimal).
+# Neuter EVERY __init__ in the fork — only leaf modules matter.
+find /tmp/openvla-oft/prismatic -name __init__.py -exec sh -c ': > "$1"' _ {} \;
 # Just install draccus (used in configs, harmless if unused).
 pip install "draccus==0.8.0" 2>/dev/null || true
 # Sanity: reachable via PYTHONPATH.
