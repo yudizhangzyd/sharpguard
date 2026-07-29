@@ -180,7 +180,7 @@ def run(args):
             # Capture attention via teacher-forced forward on cot+action.
             a_ids = np.clip(np.floor((gt_action + 1) / 2 * 256).astype(np.int64), 0, 255)
             a_ids = vocab - 1 - a_ids
-            input_ids = proc["input_ids"][0]
+            input_ids = proc["input_ids"][0].to("cpu")
             eos = processor.tokenizer.eos_token_id
             full_ids = torch.cat([input_ids,
                                     torch.from_numpy(a_ids).to(input_ids.dtype),
