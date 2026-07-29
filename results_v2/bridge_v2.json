@@ -1,0 +1,76 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/bridge_orig_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 1,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.330078125,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->visual": {
+      "mean": 0.30078125,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->instr": {
+      "mean": 0.30859375,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->action_prev": {
+      "mean": 0.0615234375,
+      "std": 0.0,
+      "n": 1
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 1,
+      "delta_linf_mean": 0.375,
+      "delta_linf_median": 0.375,
+      "faithful_rate": 1.0
+    },
+    "gripper_flip": {
+      "n": 0
+    }
+  },
+  "n_attn_ok": 1,
+  "n_edit_ok": 1,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.30078125,
+      "action->instr": 0.30859375,
+      "action->cot": 0.330078125,
+      "action->action_prev": 0.0615234375,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.29296875,
+      "instr->visual": 0.58203125,
+      "instr->instr": 0.41796875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 312,
+        "cot_end": 558,
+        "action_end": 565
+      },
+      "sample_idx": 0,
+      "instruction": "put small spoon from basket to tray"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.12388392857142858,
+      "delta_linf": 0.375,
+      "faithful": true
+    }
+  ]
+}

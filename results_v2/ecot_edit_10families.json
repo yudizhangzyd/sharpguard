@@ -1,0 +1,3410 @@
+{
+  "n_samples_requested": 30,
+  "threshold_linf": 0.05,
+  "aggregate": {
+    "subject_swap": {
+      "n": 21,
+      "n_skipped": 9,
+      "delta_l1_mean": {
+        "mean": 0.021258503401360547,
+        "std": 0.06711600247916313,
+        "median": 0.0
+      },
+      "delta_linf": {
+        "mean": 0.12946428571428573,
+        "std": 0.42181692879487676,
+        "median": 0.0
+      },
+      "faithful_rate": 0.2857142857142857,
+      "faithful_threshold_linf": 0.05
+    },
+    "direction_flip": {
+      "n": 30,
+      "n_skipped": 0,
+      "delta_l1_mean": {
+        "mean": 0.06086309523809523,
+        "std": 0.07949047633310798,
+        "median": 0.041852678571428575
+      },
+      "delta_linf": {
+        "mean": 0.32265625,
+        "std": 0.4039505738091347,
+        "median": 0.29296875
+      },
+      "faithful_rate": 0.6,
+      "faithful_threshold_linf": 0.05
+    },
+    "gripper_flip": {
+      "n": 30,
+      "n_skipped": 0,
+      "delta_l1_mean": {
+        "mean": 0.002901785714285714,
+        "std": 0.008719654010993129,
+        "median": 0.0
+      },
+      "delta_linf": {
+        "mean": 0.0203125,
+        "std": 0.0610375780769519,
+        "median": 0.0
+      },
+      "faithful_rate": 0.1,
+      "faithful_threshold_linf": 0.05
+    }
+  },
+  "per_sample": [
+    {
+      "sample": 0,
+      "family": "subject_swap",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "black book",
+        "to": "red coffee mug"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.19921875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.4140625,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.05915178571428571,
+      "delta_linf": 0.4140625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 0,
+      "family": "gripper_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 1,
+      "family": "subject_swap",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 1,
+      "family": "direction_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 1,
+      "family": "gripper_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 2,
+      "family": "subject_swap",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 2,
+      "family": "direction_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.20703125,
+        0.00390625,
+        -0.15234375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.20703125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.99609375
+      ],
+      "delta_per_dim": [
+        -0.203125,
+        0.0,
+        0.359375,
+        0.0,
+        0.0,
+        0.0,
+        1.9921875
+      ],
+      "delta_l1_mean": 0.36495535714285715,
+      "delta_linf": 1.9921875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 2,
+      "family": "gripper_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.20703125,
+        0.00390625,
+        -0.15234375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.20703125,
+        0.00390625,
+        -0.15234375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 3,
+      "family": "subject_swap",
+      "instruction": "pick up the yellow and white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "white yellow mug",
+        "to": "black book"
+      },
+      "a_orig": [
+        0.28515625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.22265625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.0625,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.008928571428571428,
+      "delta_linf": 0.0625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 3,
+      "family": "direction_flip",
+      "instruction": "pick up the yellow and white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.28515625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.28125,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.04017857142857143,
+      "delta_linf": 0.28125,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 3,
+      "family": "gripper_flip",
+      "instruction": "pick up the yellow and white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.28515625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.28515625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 4,
+      "family": "subject_swap",
+      "instruction": "pick up the book and place it in the right compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "black book",
+        "to": "red coffee mug"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 4,
+      "family": "direction_flip",
+      "instruction": "pick up the book and place it in the right compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.27734375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.4921875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0703125,
+      "delta_linf": 0.4921875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 4,
+      "family": "gripper_flip",
+      "instruction": "pick up the book and place it in the right compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 5,
+      "family": "subject_swap",
+      "instruction": "turn on the stove",
+      "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 5,
+      "family": "direction_flip",
+      "instruction": "turn on the stove",
+      "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.45703125,
+        0.45703125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.17578125,
+        -0.17578125,
+        -0.19921875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.171875,
+        -0.6328125,
+        -0.65625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.20870535714285715,
+      "delta_linf": 0.65625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 5,
+      "family": "gripper_flip",
+      "instruction": "turn on the stove",
+      "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.45703125,
+        0.45703125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.45703125,
+        0.26953125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        -0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.026785714285714284,
+      "delta_linf": 0.1875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 6,
+      "family": "subject_swap",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "black book",
+        "to": "red coffee mug"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 6,
+      "family": "direction_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.08984375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.3046875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.04352678571428571,
+      "delta_linf": 0.3046875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 6,
+      "family": "gripper_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.2109375,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.030133928571428572,
+      "delta_linf": 0.2109375,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 7,
+      "family": "subject_swap",
+      "instruction": "put the yellow and white mug to the front of the white mug",
+      "file_base": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "white yellow mug",
+        "to": "porcelain mug"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 7,
+      "family": "direction_flip",
+      "instruction": "put the yellow and white mug to the front of the white mug",
+      "file_base": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 7,
+      "family": "gripper_flip",
+      "instruction": "put the yellow and white mug to the front of the white mug",
+      "file_base": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 8,
+      "family": "subject_swap",
+      "instruction": "close the microwave",
+      "file_base": "KITCHEN_SCENE6_close_the_microwave_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "microwave",
+        "to": "porcelain mug"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 8,
+      "family": "direction_flip",
+      "instruction": "close the microwave",
+      "file_base": "KITCHEN_SCENE6_close_the_microwave_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.2109375,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.030133928571428572,
+      "delta_linf": 0.2109375,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 8,
+      "family": "gripper_flip",
+      "instruction": "close the microwave",
+      "file_base": "KITCHEN_SCENE6_close_the_microwave_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 9,
+      "family": "subject_swap",
+      "instruction": "put the chocolate pudding in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "chocolate pudding",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.19140625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.026785714285714284,
+      "delta_linf": 0.1875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 9,
+      "family": "direction_flip",
+      "instruction": "put the chocolate pudding in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.17578125,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.390625,
+        -0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.08258928571428571,
+      "delta_linf": 0.390625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 9,
+      "family": "gripper_flip",
+      "instruction": "put the chocolate pudding in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 10,
+      "family": "subject_swap",
+      "instruction": "put the butter at the back in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "butter",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 10,
+      "family": "direction_flip",
+      "instruction": "put the butter at the back in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 10,
+      "family": "gripper_flip",
+      "instruction": "put the butter at the back in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 11,
+      "family": "subject_swap",
+      "instruction": "put the black bowl in the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 11,
+      "family": "direction_flip",
+      "instruction": "put the black bowl in the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.43359375,
+        -0.23828125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.19921875,
+        0.19921875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.6328125,
+        0.4375,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.15290178571428573,
+      "delta_linf": 0.6328125,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 11,
+      "family": "gripper_flip",
+      "instruction": "put the black bowl in the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.43359375,
+        -0.23828125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.43359375,
+        -0.23828125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 12,
+      "family": "subject_swap",
+      "instruction": "pick up the salad dressing and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "new salad dressing",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 12,
+      "family": "direction_flip",
+      "instruction": "pick up the salad dressing and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 12,
+      "family": "gripper_flip",
+      "instruction": "pick up the salad dressing and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 13,
+      "family": "subject_swap",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 13,
+      "family": "direction_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 13,
+      "family": "gripper_flip",
+      "instruction": "pick up the book on the right and place it on the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 14,
+      "family": "subject_swap",
+      "instruction": "pick up the book on the right and place it under the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 14,
+      "family": "direction_flip",
+      "instruction": "pick up the book on the right and place it under the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.25,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.03571428571428571,
+      "delta_linf": 0.25,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 14,
+      "family": "gripper_flip",
+      "instruction": "pick up the book on the right and place it under the cabinet shelf",
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 15,
+      "family": "subject_swap",
+      "instruction": "put the black bowl at the front on the plate",
+      "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "plate",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.21484375,
+        0.63671875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.53515625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        -0.1015625,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.014508928571428572,
+      "delta_linf": 0.1015625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 15,
+      "family": "direction_flip",
+      "instruction": "put the black bowl at the front on the plate",
+      "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.63671875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        -0.36328125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.2109375,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.17299107142857142,
+      "delta_linf": 1.0,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 15,
+      "family": "gripper_flip",
+      "instruction": "put the black bowl at the front on the plate",
+      "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.63671875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.63671875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 16,
+      "family": "subject_swap",
+      "instruction": "pick up the white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "desk caddy",
+        "to": "black book"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 16,
+      "family": "direction_flip",
+      "instruction": "pick up the white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 16,
+      "family": "gripper_flip",
+      "instruction": "pick up the white mug and place it to the right of the caddy",
+      "file_base": "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 17,
+      "family": "subject_swap",
+      "instruction": "put the black bowl on the plate",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "plate",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 17,
+      "family": "direction_flip",
+      "instruction": "put the black bowl on the plate",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 17,
+      "family": "gripper_flip",
+      "instruction": "put the black bowl on the plate",
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 18,
+      "family": "subject_swap",
+      "instruction": "stack the black bowl at the front on the black bowl in the middle",
+      "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 18,
+      "family": "direction_flip",
+      "instruction": "stack the black bowl at the front on the black bowl in the middle",
+      "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 18,
+      "family": "gripper_flip",
+      "instruction": "stack the black bowl at the front on the black bowl in the middle",
+      "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 19,
+      "family": "subject_swap",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "black book",
+        "to": "white yellow mug"
+      },
+      "a_orig": [
+        0.22265625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.22265625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 19,
+      "family": "direction_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.22265625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.10546875,
+        -0.17578125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.328125,
+        0.0078125,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.04799107142857143,
+      "delta_linf": 0.328125,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 19,
+      "family": "gripper_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.22265625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.22265625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 20,
+      "family": "subject_swap",
+      "instruction": "pick up the alphabet soup and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "alphabet soup",
+        "to": "cream cheese"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 20,
+      "family": "direction_flip",
+      "instruction": "pick up the alphabet soup and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 20,
+      "family": "gripper_flip",
+      "instruction": "pick up the alphabet soup and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 21,
+      "family": "subject_swap",
+      "instruction": "put the butter at the front in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "butter",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.30078125,
+        0.19140625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.046875,
+        0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.033482142857142856,
+      "delta_linf": 0.1875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 21,
+      "family": "direction_flip",
+      "instruction": "put the butter at the front in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.17578125,
+        -0.17578125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.4296875,
+        -0.1796875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.08705357142857142,
+      "delta_linf": 0.4296875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 21,
+      "family": "gripper_flip",
+      "instruction": "put the butter at the front in the top drawer of the cabinet and close it",
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.25390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 22,
+      "family": "subject_swap",
+      "instruction": "put the white bowl on the plate",
+      "file_base": "KITCHEN_SCENE7_put_the_white_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "white bowl",
+        "to": "plate"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.12890625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.34765625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.21875,
+        0.0,
+        0.0,
+        0.0,
+        1.9921875
+      ],
+      "delta_l1_mean": 0.3158482142857143,
+      "delta_linf": 1.9921875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 22,
+      "family": "direction_flip",
+      "instruction": "put the white bowl on the plate",
+      "file_base": "KITCHEN_SCENE7_put_the_white_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.12890625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.19921875,
+        -0.36328125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.1953125,
+        -0.4921875,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.09821428571428571,
+      "delta_linf": 0.4921875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 22,
+      "family": "gripper_flip",
+      "instruction": "put the white bowl on the plate",
+      "file_base": "KITCHEN_SCENE7_put_the_white_bowl_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.12890625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.12890625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 23,
+      "family": "subject_swap",
+      "instruction": "put the red mug on the plate",
+      "file_base": "LIVING_ROOM_SCENE6_put_the_red_mug_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "red coffee mug",
+        "to": "porcelain mug"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 23,
+      "family": "direction_flip",
+      "instruction": "put the red mug on the plate",
+      "file_base": "LIVING_ROOM_SCENE6_put_the_red_mug_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 23,
+      "family": "gripper_flip",
+      "instruction": "put the red mug on the plate",
+      "file_base": "LIVING_ROOM_SCENE6_put_the_red_mug_on_the_plate_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 24,
+      "family": "subject_swap",
+      "instruction": "put the wine bottle on the wine rack",
+      "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "wine bottle",
+        "to": "akita black bowl"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 24,
+      "family": "direction_flip",
+      "instruction": "put the wine bottle on the wine rack",
+      "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 24,
+      "family": "gripper_flip",
+      "instruction": "put the wine bottle on the wine rack",
+      "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 25,
+      "family": "subject_swap",
+      "instruction": "pick up the milk and put it in the basket",
+      "file_base": "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "milk",
+        "to": "alphabet soup"
+      },
+      "a_orig": [
+        0.39453125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.25390625,
+        -0.18359375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.140625,
+        -0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.046875,
+      "delta_linf": 0.1875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 25,
+      "family": "direction_flip",
+      "instruction": "pick up the milk and put it in the basket",
+      "file_base": "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.39453125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.17578125,
+        0.19140625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.5703125,
+        0.1875,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.10825892857142858,
+      "delta_linf": 0.5703125,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 25,
+      "family": "gripper_flip",
+      "instruction": "pick up the milk and put it in the basket",
+      "file_base": "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.39453125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.39453125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 26,
+      "family": "subject_swap",
+      "instruction": "open the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 26,
+      "family": "direction_flip",
+      "instruction": "open the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        -0.32421875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.17578125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.4296875,
+        0.328125,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.10825892857142858,
+      "delta_linf": 0.4296875,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 26,
+      "family": "gripper_flip",
+      "instruction": "open the top drawer of the cabinet",
+      "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.25390625,
+        -0.32421875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.25390625,
+        -0.32421875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 27,
+      "family": "subject_swap",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "black book",
+        "to": "white yellow mug"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 27,
+      "family": "direction_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        -0.13671875,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.3515625,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.05022321428571429,
+      "delta_linf": 0.3515625,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 27,
+      "family": "gripper_flip",
+      "instruction": "pick up the book and place it in the left compartment of the caddy",
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.21484375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        -0.2109375,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.030133928571428572,
+      "delta_linf": 0.2109375,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 28,
+      "family": "subject_swap",
+      "instruction": "pick up the butter and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "subject_swap",
+        "from": "butter",
+        "to": "alphabet soup"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 28,
+      "family": "direction_flip",
+      "instruction": "pick up the butter and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 28,
+      "family": "gripper_flip",
+      "instruction": "pick up the butter and put it in the tray",
+      "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    },
+    {
+      "sample": 29,
+      "family": "subject_swap",
+      "instruction": "put the middle black bowl on top of the cabinet",
+      "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "no plausible edit"
+    },
+    {
+      "sample": 29,
+      "family": "direction_flip",
+      "instruction": "put the middle black bowl on top of the cabinet",
+      "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "direction_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.24609375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        -0.20703125,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        -0.453125,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.06473214285714286,
+      "delta_linf": 0.453125,
+      "faithful": true,
+      "skipped": false
+    },
+    {
+      "sample": 29,
+      "family": "gripper_flip",
+      "instruction": "put the middle black bowl on top of the cabinet",
+      "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "edit_meta": {
+        "family": "gripper_flip"
+      },
+      "a_orig": [
+        0.00390625,
+        0.24609375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "a_edit": [
+        0.00390625,
+        0.24609375,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        -0.99609375
+      ],
+      "delta_per_dim": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false,
+      "skipped": false
+    }
+  ]
+}

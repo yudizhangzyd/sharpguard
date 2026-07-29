@@ -1,0 +1,76 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/bc_z_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 1,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.322265625,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->visual": {
+      "mean": 0.28515625,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->instr": {
+      "mean": 0.31640625,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->action_prev": {
+      "mean": 0.076171875,
+      "std": 0.0,
+      "n": 1
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 1,
+      "delta_linf_mean": 1.0234375,
+      "delta_linf_median": 1.0234375,
+      "faithful_rate": 1.0
+    },
+    "gripper_flip": {
+      "n": 0
+    }
+  },
+  "n_attn_ok": 1,
+  "n_edit_ok": 1,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.28515625,
+      "action->instr": 0.31640625,
+      "action->cot": 0.322265625,
+      "action->action_prev": 0.076171875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.28515625,
+      "instr->visual": 0.55078125,
+      "instr->instr": 0.44921875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 316,
+        "cot_end": 548,
+        "action_end": 555
+      },
+      "sample_idx": 0,
+      "instruction": "place the white sponge in the ceramic bowl"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5089285714285714,
+      "delta_linf": 1.0234375,
+      "faithful": true
+    }
+  ]
+}

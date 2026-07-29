@@ -1,0 +1,373 @@
+{
+  "openvla_libero_spatial": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.52359375,
+        "std": 0.012559915001454031,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.42349609375,
+        "std": 0.012609551070448236,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.05333984375,
+        "std": 0.0016229311170738582,
+        "n": 100
+      },
+      "per_source_action_mass_total": {
+        "mean": 0.9999609375,
+        "std": 0.0003886669676197734,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "openvla_libero_object": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.5188671875,
+        "std": 0.015179739770882725,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.422578125,
+        "std": 0.014321934151907082,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.0585693359375,
+        "std": 0.0016375631189193363,
+        "n": 100
+      },
+      "per_source_action_mass_total": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "openvla_libero_goal": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.51099609375,
+        "std": 0.012854040770735957,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.4324609375,
+        "std": 0.013160584666705779,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.0564453125,
+        "std": 0.0012667111104563329,
+        "n": 100
+      },
+      "per_source_action_mass_total": {
+        "mean": 0.9999609375,
+        "std": 0.0003886669676197733,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "openvla_libero_10": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.535234375,
+        "std": 0.012389403313038325,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.41076171875,
+        "std": 0.012193179641124876,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.05386962890625,
+        "std": 0.0013396069731735026,
+        "n": 100
+      },
+      "per_source_action_mass_total": {
+        "mean": 0.99984375,
+        "std": 0.0007654655446197433,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "deepthink_base": {
+    "attn": {},
+    "n": 0
+  },
+  "deepthink_sft": {
+    "attn": {},
+    "n": 0
+  },
+  "deepthink_rl": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.30517578125,
+        "std": 0.019163281791450926,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.43310546875,
+        "std": 0.017411044051292693,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.235908203125,
+        "std": 0.004010462905154845,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "ecot_bridge_v2": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.330078125,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->visual": {
+        "mean": 0.30078125,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->instr": {
+        "mean": 0.30859375,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->action_prev": {
+        "mean": 0.0615234375,
+        "std": 0.0,
+        "n": 1
+      }
+    },
+    "n": 1,
+    "edit": {
+      "subject_swap": {
+        "n": 0
+      },
+      "direction_flip": {
+        "n": 1,
+        "delta_linf_mean": 0.375,
+        "delta_linf_median": 0.375,
+        "faithful_rate": 1.0
+      },
+      "gripper_flip": {
+        "n": 0
+      }
+    }
+  },
+  "ecot_fractal": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.3515625,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->visual": {
+        "mean": 0.287109375,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->instr": {
+        "mean": 0.291015625,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->action_prev": {
+        "mean": 0.068359375,
+        "std": 0.0,
+        "n": 1
+      }
+    },
+    "n": 1,
+    "edit": {
+      "subject_swap": {
+        "n": 0
+      },
+      "direction_flip": {
+        "n": 1,
+        "delta_linf_mean": 1.15625,
+        "delta_linf_median": 1.15625,
+        "faithful_rate": 1.0
+      },
+      "gripper_flip": {
+        "n": 1,
+        "delta_linf_mean": 0.0,
+        "delta_linf_median": 0.0,
+        "faithful_rate": 0.0
+      }
+    }
+  },
+  "ecot_bcz": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.322265625,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->visual": {
+        "mean": 0.28515625,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->instr": {
+        "mean": 0.31640625,
+        "std": 0.0,
+        "n": 1
+      },
+      "action->action_prev": {
+        "mean": 0.076171875,
+        "std": 0.0,
+        "n": 1
+      }
+    },
+    "n": 1,
+    "edit": {
+      "subject_swap": {
+        "n": 0
+      },
+      "direction_flip": {
+        "n": 1,
+        "delta_linf_mean": 1.0234375,
+        "delta_linf_median": 1.0234375,
+        "faithful_rate": 1.0
+      },
+      "gripper_flip": {
+        "n": 0
+      }
+    }
+  },
+  "ecot_libero_ours": {
+    "attn": {
+      "action->cot": {
+        "mean": 0.3490625,
+        "std": 0.00830976076812308,
+        "n": 100
+      },
+      "action->visual": {
+        "mean": 0.2872265625,
+        "std": 0.006273272102427389,
+        "n": 100
+      },
+      "action->instr": {
+        "mean": 0.29236328125,
+        "std": 0.008543420627052269,
+        "n": 100
+      },
+      "action->action_prev": {
+        "mean": 0.0712451171875,
+        "std": 0.002191392976717267,
+        "n": 100
+      },
+      "cot->visual": {
+        "mean": 0.33255859375,
+        "std": 0.0038950523096766216,
+        "n": 100
+      },
+      "cot->instr": {
+        "mean": 0.35869140625,
+        "std": 0.00655607362988166,
+        "n": 100
+      },
+      "cot->cot_self": {
+        "mean": 0.30880859375,
+        "std": 0.0083592609148173,
+        "n": 100
+      },
+      "per_source_action_mass_total": {
+        "mean": 0.9999609375,
+        "std": 0.0003886669676197733,
+        "n": 100
+      }
+    },
+    "n": 100
+  },
+  "ecot_edit_10fam": {
+    "agg": {
+      "subject_swap": {
+        "n": 21,
+        "n_skipped": 9,
+        "delta_l1_mean": {
+          "mean": 0.021258503401360547,
+          "std": 0.06711600247916313,
+          "median": 0.0
+        },
+        "delta_linf": {
+          "mean": 0.12946428571428573,
+          "std": 0.42181692879487676,
+          "median": 0.0
+        },
+        "faithful_rate": 0.2857142857142857,
+        "faithful_threshold_linf": 0.05
+      },
+      "direction_flip": {
+        "n": 30,
+        "n_skipped": 0,
+        "delta_l1_mean": {
+          "mean": 0.06086309523809523,
+          "std": 0.07949047633310798,
+          "median": 0.041852678571428575
+        },
+        "delta_linf": {
+          "mean": 0.32265625,
+          "std": 0.4039505738091347,
+          "median": 0.29296875
+        },
+        "faithful_rate": 0.6,
+        "faithful_threshold_linf": 0.05
+      },
+      "gripper_flip": {
+        "n": 30,
+        "n_skipped": 0,
+        "delta_l1_mean": {
+          "mean": 0.002901785714285714,
+          "std": 0.008719654010993129,
+          "median": 0.0
+        },
+        "delta_linf": {
+          "mean": 0.0203125,
+          "std": 0.0610375780769519,
+          "median": 0.0
+        },
+        "faithful_rate": 0.1,
+        "faithful_threshold_linf": 0.05
+      }
+    },
+    "n_edits": 0
+  }
+}

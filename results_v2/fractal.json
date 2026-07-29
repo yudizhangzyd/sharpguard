@@ -1,0 +1,86 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/fractal20220817_data_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 1,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.3515625,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->visual": {
+      "mean": 0.287109375,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->instr": {
+      "mean": 0.291015625,
+      "std": 0.0,
+      "n": 1
+    },
+    "action->action_prev": {
+      "mean": 0.068359375,
+      "std": 0.0,
+      "n": 1
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 1,
+      "delta_linf_mean": 1.15625,
+      "delta_linf_median": 1.15625,
+      "faithful_rate": 1.0
+    },
+    "gripper_flip": {
+      "n": 1,
+      "delta_linf_mean": 0.0,
+      "delta_linf_median": 0.0,
+      "faithful_rate": 0.0
+    }
+  },
+  "n_attn_ok": 1,
+  "n_edit_ok": 2,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.287109375,
+      "action->instr": 0.291015625,
+      "action->cot": 0.3515625,
+      "action->action_prev": 0.068359375,
+      "cot->visual": 0.322265625,
+      "cot->instr": 0.359375,
+      "cot->cot_self": 0.318359375,
+      "instr->visual": 0.546875,
+      "instr->instr": 0.453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 318,
+        "cot_end": 625,
+        "action_end": 632
+      },
+      "sample_idx": 0,
+      "instruction": "pick rxbar chocolate from bottom drawer and place on counter"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6049107142857143,
+      "delta_linf": 1.15625,
+      "faithful": true
+    },
+    {
+      "sample": 0,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    }
+  ]
+}
