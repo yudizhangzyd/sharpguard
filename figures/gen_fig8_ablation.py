@@ -64,4 +64,4 @@ ax2.set_title("(b) Data-seed variance (50%)", loc="left",
 ax2.legend(fontsize=FONT_SIZE-2, frameon=False, loc="upper right")
 ax2.set_axisbelow(True); ax2.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
 
-save(fig, "fig7_ablation")
+save(fig, "fig8_ablation")

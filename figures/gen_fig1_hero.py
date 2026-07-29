@@ -139,4 +139,4 @@ ax_pie.set_title("action-token\nattention split\n(ECoT-bridge)",
 fig.suptitle(f"Task: \"{instr[:70]}...\"",
               fontsize=FONT_SIZE-1, y=1.02, style="italic")
 
-save(fig, "fig1_hero_v2")
+save(fig, "fig1_hero")

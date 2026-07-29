@@ -40,4 +40,4 @@ ax.legend(ncol=2, frameon=False, loc="upper right",
 ax.set_title("ECoT-bridge model, evaluation across 4 manipulation corpora",
               fontsize=FONT_SIZE, loc="left", style="italic")
 
-save(fig, "fig6_cross_corpus_attention")
+save(fig, "fig7_cross_corpus")

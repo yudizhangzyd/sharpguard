@@ -46,7 +46,7 @@ We present \textbf{CoT-Faith}, a standardized benchmark for measuring chain-of-t
 % ============================================================
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.98\textwidth]{fig1_hero_v2.pdf}
+    \includegraphics[width=0.98\textwidth]{fig1_hero.pdf}
     \caption{\textbf{CoT-Faith at a glance.} A real ECoT-bridge sample: original 9-tag CoT (blue) vs the same trace with a single \emph{direction\_flip} edit in \texttt{MOVE} (red). The resulting 7-dim action deltas quantify how much the CoT drives the action. CoT-Faith aggregates three probes (P1: attention decomposition, P2: causal edit $\Delta$, P3: attention$\to$error AUROC) across 13 VLAs and 4 corpora.}
     \label{fig:hero}
 \end{figure}
@@ -293,7 +293,7 @@ Figure~\ref{fig:bridge_vs_libero} contrasts our r=32 LIBERO fine-tune against EC
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.55\textwidth]{fig6_bridge_vs_libero.pdf}
+    \includegraphics[width=0.55\textwidth]{fig5_bridge_vs_libero.pdf}
     \caption{\textbf{Bridge- vs LIBERO-trained CoT-VLA Faithfulness Score (F4).} Same architecture, same prompt, near-identical attention distributions; but $\sim 2\times$ gap in causal effect on three shared edit families.}
     \label{fig:bridge_vs_libero}
 \end{figure}
@@ -307,7 +307,7 @@ Figure~\ref{fig:cross_corpus} shows the four-bucket attention distribution is re
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.7\textwidth]{fig6_cross_corpus_attention.pdf}
+    \includegraphics[width=0.7\textwidth]{fig7_cross_corpus.pdf}
     \caption{\textbf{Cross-corpus attention consistency (F5).} ECoT-bridge evaluated across LIBERO ($N{=}100$), Bridge~V2, RT-1/Fractal, and BC-Z ($N{=}1$ each). All four attention buckets deviate by $<3$pp across corpora.}
     \label{fig:cross_corpus}
 \end{figure}
@@ -318,7 +318,7 @@ Figure~\ref{fig:ablation} isolates two additional axes. Panel (a) shows the LoRA
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\textwidth]{fig7_ablation.pdf}
+    \includegraphics[width=0.95\textwidth]{fig8_ablation.pdf}
     \caption{\textbf{Ablations.} (a) LoRA rank ($r \in \{8,16,64\}$) on 5 edit families — higher rank monotonically raises causal effect on 4/5 families. (b) 50\%-data split seed variance is $\leq 15$pp, confirming main-result gaps are not seed artifacts.}
     \label{fig:ablation}
 \end{figure}
@@ -329,7 +329,7 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.55\textwidth]{fig5_prompt_ablation.pdf}
+    \includegraphics[width=0.55\textwidth]{fig9_prompt_ablation.pdf}
     \caption{\textbf{Prompt-format ablation (ECoT-bridge).} Truncating any portion of the CoT causes $\geq 95\%$ of samples to change action.}
     \label{fig:prompt}
 \end{figure}

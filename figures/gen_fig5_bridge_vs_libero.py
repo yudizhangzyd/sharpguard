@@ -48,4 +48,4 @@ ax.legend(loc="upper left", frameon=False, fontsize=FONT_SIZE-1)
 ax.set_axisbelow(True)
 ax.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
 
-save(fig, "fig6_bridge_vs_libero")
+save(fig, "fig5_bridge_vs_libero")

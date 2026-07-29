@@ -45,4 +45,4 @@ ax.axhline(1.0, color="gray", linestyle=":", linewidth=0.4, alpha=0.5)
 ax.set_axisbelow(True)
 ax.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
 
-save(fig, "fig5_prompt_ablation")
+save(fig, "fig9_prompt_ablation")
