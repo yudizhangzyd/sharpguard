@@ -66,20 +66,15 @@ def _load_lerobot_manual(dataset_repo, n_samples):
             except Exception: continue
         print(f"[manual] {len(tasks_map)} task entries")
 
-    # 2. first parquet file
+    # 2. iterate over parquet files (each is 1 episode); each contributes 1 sample.
     parquets = sorted([f for f in files if f.endswith(".parquet") and "data/" in f])
     if not parquets:
         print(f"[manual] no parquet files found")
         return []
-    pp = hf_hub_download(dataset_repo, parquets[0], repo_type="dataset")
-    table = pq.read_table(pp)
-    print(f"[manual] loaded {len(table)} rows from {parquets[0]}")
-    row_cols = table.column_names
-    print(f"[manual] parquet cols: {row_cols}")
+    print(f"[manual] {len(parquets)} parquet files available; will read up to {n_samples}")
 
     # 3. video mp4 candidates (all image streams)
     videos = [f for f in files if f.endswith(".mp4") and "videos/" in f]
-    # Pick the image_0 / main / primary stream if available
     IMG_STREAM_PREF = ["image_0", "image", "top", "main", "primary", "agentview_image", "cam_high", "wrist"]
     video_dirs = sorted(set(v.rsplit("/", 1)[0] for v in videos))
     chosen_dir = None
@@ -92,37 +87,42 @@ def _load_lerobot_manual(dataset_repo, n_samples):
     print(f"[manual] video dir: {chosen_dir}")
 
     out = []
-    ep_col = table.column("episode_index").to_pylist() if "episode_index" in row_cols else list(range(len(table)))
-    tidx_col = table.column("task_index").to_pylist() if "task_index" in row_cols else [0] * len(table)
-    act_col = table.column("action").to_pylist() if "action" in row_cols else None
-    if act_col is None:
-        print(f"[manual] no action column in parquet")
-        return []
-
-    seen_ep = set()
-    for i, ep_idx in enumerate(ep_col):
+    for parquet_path in parquets[:n_samples * 2]:  # buffer for skips
         if len(out) >= n_samples: break
-        if ep_idx in seen_ep: continue
-        seen_ep.add(ep_idx)
-        # Fetch matching video mp4
-        vname = f"{chosen_dir}/episode_{ep_idx:06d}.mp4" if chosen_dir else None
-        if vname is None or vname not in files:
-            continue
         try:
+            pp = hf_hub_download(dataset_repo, parquet_path, repo_type="dataset")
+            table = pq.read_table(pp)
+            row_cols = table.column_names
+            if len(out) == 0:
+                print(f"[manual] parquet cols: {row_cols}")
+            if "action" not in row_cols:
+                continue
+            ep_col = table.column("episode_index").to_pylist() if "episode_index" in row_cols else [0]
+            tidx_col = table.column("task_index").to_pylist() if "task_index" in row_cols else [0]
+            act_col = table.column("action").to_pylist()
+            # Take first row (start of episode)
+            ep_idx = int(ep_col[0])
+            tidx = int(tidx_col[0])
+            action = _np.asarray(act_col[0], dtype=_np.float32).reshape(-1)[:7]
+            # Fetch matching video
+            vname = f"{chosen_dir}/episode_{ep_idx:06d}.mp4" if chosen_dir else None
+            if vname is None or vname not in files:
+                if len(out) < 3: print(f"[manual] ep {ep_idx}: no video {vname}")
+                continue
             vp = hf_hub_download(dataset_repo, vname, repo_type="dataset")
             container = av.open(vp)
             first_frame = next(container.decode(video=0))
             img = first_frame.to_image()
             container.close()
+            instr = tasks_map.get(tidx, "manipulate object")
+            out.append({"image": img, "instruction": str(instr), "action": action, "episode": ep_idx})
+            if len(out) == 1:
+                print(f"[manual] first sample: instr='{instr[:80]}' img={img.size} act={action.shape}")
+            if len(out) % 5 == 0:
+                print(f"[manual] progress: {len(out)}/{n_samples}")
         except Exception as e:
-            if len(out) < 3: print(f"[manual] ep {ep_idx} video fail: {e}")
+            if len(out) < 5: print(f"[manual] parquet {parquet_path}: {e}")
             continue
-        instr = tasks_map.get(tidx_col[i], "")
-        if not instr: instr = "manipulate object"
-        action = _np.asarray(act_col[i], dtype=_np.float32).reshape(-1)[:7]
-        out.append({"image": img, "instruction": str(instr), "action": action, "episode": int(ep_idx)})
-        if len(out) == 1:
-            print(f"[manual] first sample: instr='{instr[:80]}' img={img.size} act={action.shape}")
     print(f"[manual] extracted {len(out)}/{n_samples}")
     return out
 
