@@ -22,7 +22,7 @@ environment_variables:
   HF_HUB_OFFLINE: '0'
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
-  CKPT_PATH: 'Embodied-CoT/ecot-libero-90-bridgev2'
+  CKPT_PATH: 'Embodied-CoT/ecot-openvla-7b-bridge'
   DATASET_REPO: 'IPEC-COMMUNITY/roboturk_lerobot'
   N_SAMPLES: '60'
   DTYPE: 'bfloat16'

@@ -27,7 +27,8 @@ if [ ! -d /tmp/openvla-oft ]; then
 fi
 # Force uninstall any prismatic left over from previous runs
 pip uninstall -y prismatic openvla openvla-oft 2>/dev/null || true
-(cd /tmp/openvla-oft && pip install -e . --no-deps || true)
+# Install fork WITH deps — needs draccus, dlimp for prismatic.conf/vla imports.
+(cd /tmp/openvla-oft && pip install -e . || true)
 # Sanity: prismatic.training.train_utils must import.
 python -c "from prismatic.training.train_utils import get_next_action; print('[oft] prismatic.training.train_utils OK')" || {
     echo "[oft] FATAL: prismatic.training.train_utils not importable" >&2
