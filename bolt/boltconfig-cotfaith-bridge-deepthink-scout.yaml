@@ -1,0 +1,22 @@
+name: 'CoT-Faith scout: Bridge V2 dataset + DeepThinkVLA/OFT/FastECoT model loadability'
+description: 'Probe HF for (1) Embodied-CoT/embodied_features_and_demos_bridge and variants; (2) DeepThinkVLA yinchenghust/*; (3) OpenVLA-OFT moojink/*; (4) Fast ECoT / ThinkingVLA / ZR-0 alternates. Attempt AutoConfig load under transformers>=4.45 for paligemma support. Report which are loadable.'
+tags: ['cotfaith', 'scout', 'multi-model', 'multi-dataset']
+
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 128
+  timeout: 1h
+  cluster: aws_2
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_bridge_deepthink_scout.sh
