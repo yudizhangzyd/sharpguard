@@ -47,7 +47,10 @@ def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridg
     out = []
     # Prefer lerobot native loader (handles v2 video-parquet split correctly).
     try:
-        from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+        try:
+            from lerobot.datasets.lerobot_dataset import LeRobotDataset
+        except ImportError:
+            from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
         print(f"[lerobot] LeRobotDataset({dataset_repo})")
         ds = LeRobotDataset(dataset_repo)
         n_episodes = min(n_samples, ds.num_episodes)

@@ -23,7 +23,7 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
-  BASE_MODEL: 'moojink/openvla-7b-oft-finetuned-libero-spatial'
+  BASE_MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
   N_SAMPLES: '100'
   RVIS_LAYERS: '0,1,2,3'
   DTYPE: 'bfloat16'
