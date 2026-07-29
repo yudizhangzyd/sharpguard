@@ -18,8 +18,14 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-# OpenVLA-OFT remote code imports 'prismatic'. Clone + install openvla repo
-# so the prismatic package is available.
+# OpenVLA-OFT remote code imports 'prismatic.training.train_utils' which
+# only exists in moojink's openvla-oft fork (not the main openvla repo).
+# Clone that fork for OFT models; also clone main openvla for base baselines.
+if [ ! -d /tmp/openvla-oft ]; then
+    git clone --depth 1 https://github.com/moojink/openvla-oft /tmp/openvla-oft || true
+fi
+(cd /tmp/openvla-oft && pip install -e . || true)
+# Also main openvla in case some baselines need it
 if [ ! -d /tmp/openvla ]; then
     git clone --depth 1 https://github.com/openvla/openvla /tmp/openvla || true
 fi
