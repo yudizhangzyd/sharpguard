@@ -1,0 +1,31 @@
+name: 'CoT-Faith: ECoT-bridge 10-family edit completion (N=100)'
+description: 'Fill in the ECoT-bridge row of the CoT-Faith leaderboard: run all 10 causal-edit families with N=100 samples on public Embodied-CoT/ecot-openvla-7b-bridge model. Complements the earlier 3-family run.'
+tags: ['cotfaith', 'edit', 'ecot-bridge', '10-families']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_only.sh

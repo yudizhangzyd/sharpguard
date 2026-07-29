@@ -1,0 +1,45 @@
+name: 'CoT-Faith: LoRA r=32 fine-tune + all 10 edit families'
+description: 'r=32 (main model) full pipeline: train ECoT-bridge on LIBERO-90 with rank 32, then run all 10 causal-edit families. Fills missing cells in the leaderboard.'
+tags: ['cotfaith', 'lora-r32', 'train', 'edit']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '15000'
+  BATCH_SIZE: '2'
+  MAX_STEPS_PER_EP: '0'
+  DTYPE: 'bfloat16'
+  SEED: '0'
+
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_train_and_sanity.sh

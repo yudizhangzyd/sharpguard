@@ -74,6 +74,7 @@ GRIPPER_PAIRS = [
 
 # Location-phrase pairs (2-word combos found in LIBERO scenes).
 LOCATION_PAIRS = [
+    # Original 2-word pairs
     ("left compartment",  "right compartment"),
     ("right compartment", "left compartment"),
     ("top shelf",         "bottom shelf"),
@@ -82,6 +83,21 @@ LOCATION_PAIRS = [
     ("back of",           "front of"),
     ("side of",           "top of"),
     ("top of",            "side of"),
+    # Expanded set — single-word spatial adjectives commonly appearing in
+    # LIBERO PLAN/SUBTASK annotations. Increases location_swap coverage
+    # from N=12 to N>60 without changing edit semantics.
+    (r"\bleft\b",   "right"),
+    (r"\bright\b",  "left"),
+    (r"\btop\b",    "bottom"),
+    (r"\bbottom\b", "top"),
+    (r"\bupper\b",  "lower"),
+    (r"\blower\b",  "upper"),
+    (r"\bfront\b",  "back"),
+    (r"\bback\b",   "front"),
+    (r"\bnear\b",   "far"),
+    (r"\bfar\b",    "near"),
+    (r"\binside\b", "outside"),
+    (r"\boutside\b", "inside"),
 ]
 
 # Verb replacements (asymmetric — keep primary action word swap).
