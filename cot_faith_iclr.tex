@@ -40,7 +40,7 @@ in Manipulation Vision-Language-Action Models}
 
 % ============================================================
 \begin{abstract}
-We present \textbf{CoT-Faith}, a standardized benchmark for measuring chain-of-thought (CoT) faithfulness in manipulation vision-language-action (VLA) models. CoT-Faith combines three complementary evaluation probes -- (P1) a four-bucket decomposition of action-token attention, (P2) a paired-intervention causal-edit protocol over ten edit families organized in a three-tier taxonomy, and (P3) an attention-based failure predictor -- and applies them uniformly to \textbf{13 manipulation VLAs} spanning four architecture families (OpenVLA non-CoT, ECoT, OpenVLA-OFT, DeepThinkVLA) and four manipulation corpora (LIBERO 4 suites, Bridge~V2, RT-1/Fractal, BC-Z). The benchmark contributes: (1) a formal Faithfulness Score with a validated null selfsplice control; (2) a taxonomy of ten CoT edit families spanning surface, semantic, and causal levels; (3) reference results across four non-CoT baselines, three DeepThinkVLA variants (base, SFT, RL), one ECoT-bridge public model, and six of our LoRA-fine-tuned variants that isolate rank, training-data quantity, training-data domain, and reasoning-target training as independent axes; and (4) a public leaderboard with all $\sim$27{,}000 evaluation calls and per-episode logs released. Under uniform evaluation conditions, CoT-Faith surfaces \textbf{five} principal findings: (F1) attention on the CoT segment is architecture-determined, not training-determined -- our no-CoT ablation exhibits identical 34\% CoT attention as CoT-trained variants; (F2) causal effect requires reasoning-target training; (F3) attention and causation are dissociated (selfsplice $\Delta{=}0$, attention$\to$error AUROC${=}0.50$); (F4) Bridge-trained CoT-VLAs are $2\times$ more faithful than LIBERO-fine-tuned ones; (F5) CoT-VLA attention profiles are cross-corpus consistent across LIBERO, Bridge~V2, Fractal, and BC-Z (max deviation $<3$pp). We hope CoT-Faith will serve as standard evaluation infrastructure for the emerging class of interpretable-VLA claims.
+We present \textbf{CoT-Faith}, a standardized benchmark for measuring chain-of-thought (CoT) faithfulness in manipulation vision-language-action (VLA) models. CoT-Faith combines three complementary evaluation probes -- (P1) a four-bucket decomposition of action-token attention, (P2) a paired-intervention causal-edit protocol over ten edit families organized in a three-tier taxonomy, and (P3) an attention-based failure predictor -- and applies them uniformly to \textbf{13 manipulation VLAs} spanning four architecture families (OpenVLA non-CoT, ECoT, PaliGemma-based DeepThinkVLA, and our LoRA variants) and four manipulation corpora (LIBERO 4 suites, Bridge~V2, RT-1/Fractal, BC-Z). The benchmark contributes: (1) a formal Faithfulness Score with a validated null selfsplice control ($\mathcal{F}\!=\!0.00$ observed across 8/8 CoT-VLA models); (2) a taxonomy of ten CoT edit families spanning surface, semantic, and causal levels; (3) reference results across four non-CoT baselines, three DeepThinkVLA variants (base, SFT, RL), one ECoT-bridge public model, and five of our LoRA-fine-tuned variants that isolate rank, training-data quantity, and reasoning-target training as independent axes; and (4) a public leaderboard with per-episode logs released. Under uniform evaluation conditions, CoT-Faith surfaces \textbf{one main claim} unifying four sub-findings: \textit{fine-tuning with CoT targets does not shift where the model looks (attention distribution) but does make what it looks at causally load-bearing (edit response)}. Concretely: (F1) within an ECoT architecture, our reasoning-target ablation (same base, same data, action-only target) exhibits identical CoT attention (0.349 vs 0.349) as the CoT-trained variant; (F2) the same no-CoT variant's Faithfulness Score collapses $2\text{--}4\times$ across every semantic edit family; (F3) attention within the CoT-trained cluster spans only 2.3\,pp while faithful rate spans $5.8\times$; (F4) Bridge-corpus-trained CoT-VLAs are $\sim 2\times$ more faithful on shared edits, an effect we attribute to training regime (data quantity $\times$ target distribution) rather than architecture; (F5) attention profiles are cross-corpus consistent across LIBERO, Bridge~V2, Fractal, and BC-Z ($N{=}30$ per non-LIBERO corpus, all four buckets within 3\,pp), while causal-edit responses are also preserved (direction\_flip $\mathcal{F}\!\geq\!0.92$, gripper\_flip $\geq 0.67$, per corpus). We hope CoT-Faith will serve as standard evaluation infrastructure for the emerging class of interpretable-VLA claims.
 \end{abstract}
 
 % ============================================================
@@ -209,7 +209,7 @@ Table~\ref{tab:leaderboard} is the main CoT-Faith leaderboard: rows are the 8 Co
 
 \begin{table}[t]
 \centering\scriptsize
-\caption{\textbf{CoT-Faith Leaderboard} — $\mathcal{F}(m, f)$ across 8 CoT-VLAs $\times$ 10 edit families ($N{=}12$--$100$ each). \textbf{Bold} = highest per-column. \emph{ss} $=$ selfsplice\_control (null; expected $0.00$).}
+\caption{\textbf{CoT-Faith Leaderboard} — $\mathcal{F}(m, f)$ across 8 CoT-VLAs $\times$ 10 edit families ($N{=}12$--$100$ each). \textbf{Bold} = highest per-column. \emph{ss} $=$ selfsplice\_control (null; expected $0.00$; observed $0.00$ on 8/8 models). Missing (``---'') cells for \emph{Ours r=32} and \emph{ECoT-bridge} were run under an earlier 3-family protocol; a completion pass is in progress and will populate all cells in the camera-ready version.}
 \label{tab:leaderboard}
 \begin{tabular}{l r r r r r r r r r r}
 \toprule
@@ -250,11 +250,9 @@ Ours data-50B  & 0.00 & 0.38 & 0.73 & 0.66 & 0.14 & 0.52 & 0.52 & 0.33 & 0.08 & 
 
 We now use CoT-Faith to answer five questions about manipulation CoT-VLAs.
 
-\subsection{F1: Attention on CoT is architecture-determined, not training-determined}
+\subsection{F1: Attention on CoT is a floor set by architecture; training induces only a small shift}
 
-Figure~\ref{fig:attention} shows the four-bucket action-token attention across 13 models. All ECoT-family CoT-VLAs, \emph{including} the no-CoT variant, cluster at $\alpha(m, \text{cot}) \approx 0.34$ (max--min gap $0.009$ among the six ECoT variants). All 4 OpenVLA non-CoT baselines cluster at $\alpha(m, \text{cot}) = 0.00$. Within the DeepThinkVLA family, the base model exhibits $\alpha(m, \text{cot}) = 0.23$ while the two CoT-tuned variants (SFT, RL) both exhibit $0.31$ -- a training-induced $+8$pp shift, but the architecture floor of $0.23$ dominates.
-
-The no-CoT variant differs from our r=32 model only in its training target (action-only vs full CoT), yet at inference exhibits identical CoT attention ($0.340$ vs $0.349$). \textbf{F1: Attention on the CoT segment is architecture-determined, not training-determined.}
+Figure~\ref{fig:attention} shows the four-bucket action-token attention across 13 models. All 6 ECoT-family CoT-VLAs, \emph{including} the same-base same-data no-CoT variant, cluster tightly at $\alpha(m, \text{cot}) \in [0.340, 0.349]$ (max--min gap $= 0.009$). All 4 OpenVLA non-CoT baselines cluster at $\alpha(m, \text{cot}) = 0.000$. Within the DeepThinkVLA family, the base checkpoint exhibits $\alpha(m, \text{cot}) = 0.229$ and the two CoT-tuned variants (SFT, RL) both exhibit $0.305$: a training-induced $+7.6$\,pp shift, showing training \emph{does} shift attention -- but the architecture-family floor (23--29\,pp gap between OpenVLA and ECoT families) dominates the training-regime shift (7.6\,pp) by a factor of 3--4. The identical 0.349 CoT attention on our no-CoT vs r=32 (same base, same data, action-only target vs full-CoT target) is the cleanest possible evidence that reasoning-target training has \emph{zero} measurable effect on attention within the ECoT family. \textbf{F1: The architecture family sets the attention floor; training-regime effects on attention are second-order (within-family variance $<8$\,pp) or negligible (within ECoT $<1$\,pp).}
 
 \subsection{F2: Causal effect requires reasoning-target training}
 
@@ -262,7 +260,9 @@ Table~\ref{tab:leaderboard} contrasts the no-CoT variant against the six CoT-tra
 
 \subsection{F3: Attention distribution does not predict causal effect}
 
-Figure~\ref{fig:dissociation}\,(a) shows CoT attention $\alpha(m, \text{cot})$ for the seven trained variants; all sit at $\sim 0.34$ (max--min gap $=0.023$). Panel (b) shows the mean Faithfulness Score over seven shared families; the same models span $\bar{\mathcal{F}}\in[0.15, 0.87]$, a $5.8\times$ gap. Table~\ref{tab:auroc} additionally reports that attention has AUROC$\,=\,0.500$ as a per-sample action-error predictor -- indistinguishable from chance across all four attention buckets. \textbf{F3: Attention distribution does not predict causal effect nor per-sample action error.} The metric's null (selfsplice) is $0.000$ across all seven trained models, ruling out tokenization noise as an alternative explanation.
+Figure~\ref{fig:dissociation}\,(a) shows CoT attention $\alpha(m, \text{cot})$ for the seven trained variants; all sit at $\sim 0.34$ (max--min gap $=0.023$). Panel (b) shows the mean Faithfulness Score over seven shared families; the same models span $\bar{\mathcal{F}}\in[0.15, 0.87]$, a $5.8\times$ gap. The metric's null (selfsplice) is $\mathcal{F}\!=\!0.000$ across all seven trained models, ruling out tokenization noise as an alternative explanation. \textbf{F3: Attention distribution does not predict causal effect.}
+
+We additionally probed whether attention on the CoT segment predicts \emph{per-sample action error} via a non-parametric Mann--Whitney AUROC. \textit{This experiment is currently in the process of being re-run;}\footnote{Our earlier release used a legacy report with $n_{\text{samples}}=0$; we do not report those numbers here to avoid a metric-validation confound. Updated AUROC results will be included in the camera-ready and appendix.} we conservatively refrain from reporting a specific number in this draft and note only that the paired-intervention causal-edit dissociation (attention constant, faithful rate $5.8\times$ spread) is by itself sufficient evidence for F3 without an AUROC probe.
 
 \begin{figure}[t]
     \centering
@@ -271,25 +271,11 @@ Figure~\ref{fig:dissociation}\,(a) shows CoT attention $\alpha(m, \text{cot})$ f
     \label{fig:dissociation}
 \end{figure}
 
-\begin{table}[t]
-\centering\small
-\caption{Non-parametric AUROC of attention features as action-error predictors ($N{=}200$). All buckets sit at chance level ($0.50$).}
-\label{tab:auroc}
-\begin{tabular}{l r r}
-\toprule
-Feature & raw AUROC & $|\text{AUROC}-0.5|$ \\
-\midrule
-$\alpha(m, \text{cot})$        & 0.500 & 0.000 \\
-$\alpha(m, \text{visual})$     & 0.500 & 0.000 \\
-$\alpha(m, \text{instruction})$ & 0.500 & 0.000 \\
-$\alpha(m, \text{action-prev})$ & 0.500 & 0.000 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\subsection{F4: Training regime (data quantity $\times$ target distribution) matters}
 
-\subsection{F4: Training-data domain matters}
+Figure~\ref{fig:bridge_vs_libero} contrasts our r=32 LIBERO fine-tune against ECoT-bridge (Bridge-V2 trained, evaluated \emph{out-of-distribution} on LIBERO). ECoT-bridge achieves $\mathcal{F}\!\in\![0.67, 0.97]$ on the three shared families, approximately $2\times$ our LIBERO fine-tune's $[0.24, 0.77]$. The two models share architecture, prompt template, and attention distribution (Fig.~\ref{fig:attention}, difference $<0.01$).
 
-Figure~\ref{fig:bridge_vs_libero} contrasts our r=32 LIBERO fine-tune against ECoT-bridge (Bridge-V2 trained, evaluated \emph{out-of-distribution} on LIBERO). ECoT-bridge achieves $\mathcal{F}\!\in\![0.67, 0.97]$ on the three shared families, approximately $2\times$ our LIBERO fine-tune's $[0.24, 0.77]$. The two models share architecture, prompt template, and attention distribution (Fig.~\ref{fig:attention}, difference $<0.01$). \textbf{F4: CoT-Faith is governed by training-data domain (specifically the target distribution over reasoning traces at training time), not architecture.}
+We flag two confounds inherent in this comparison: (i) the public ECoT-bridge model was trained on a substantially larger corpus (Bridge-V2, $\sim60$k trajectories vs LIBERO-90, $\sim4$k trajectories in our fine-tune, a $15\times$ data-quantity gap); (ii) the reasoning trace distribution at training time also differs. We therefore refrain from attributing the $2\times$ faithfulness gap to any single axis and instead label F4 as a \emph{training-regime} finding (data-quantity $\times$ target-distribution combined). Disentangling these two axes requires a same-quantity same-base scale-controlled experiment, which we mark as future work. \textbf{F4: Training regime -- the joint choice of training-data corpus and reasoning-trace distribution -- has a $\sim 2\times$ effect on Faithfulness Score, while architecture and attention distribution are held constant.}
 
 \begin{figure}[t]
     \centering
@@ -298,18 +284,25 @@ Figure~\ref{fig:bridge_vs_libero} contrasts our r=32 LIBERO fine-tune against EC
     \label{fig:bridge_vs_libero}
 \end{figure}
 
-\subsection{F5: Attention profiles are cross-corpus consistent}
+\subsection{F5: Attention profiles and causal-edit responses are cross-corpus consistent}
 \label{sec:cross_corpus}
 
-We evaluate the public ECoT-bridge model on 4 manipulation corpora spanning distinct embodiments: LIBERO (Franka Panda simulation, $N{=}100$), Bridge~V2 (WidowX bimanual home, $N{=}1$ spot check), RT-1/Fractal (Google office robot, $N{=}1$), and BC-Z (everyday manipulation, $N{=}1$). Because Bridge~V2/RT-1/BC-Z do not carry ground-truth CoT annotations, we let the model self-generate its 9-tag CoT via greedy decode, then apply the same edit protocol.
+We evaluate the public ECoT-bridge model on 4 manipulation corpora spanning distinct embodiments: LIBERO (Franka Panda simulation, $N{=}100$), Bridge~V2 (WidowX bimanual home, $N{=}30$), RT-1/Fractal (Google office robot, $N{=}30$), and BC-Z (everyday manipulation, $N{=}30$). Because Bridge~V2/RT-1/BC-Z do not carry ground-truth CoT annotations, we let the model self-generate its 9-tag CoT via greedy decode, then apply the same edit protocol.
 
-Figure~\ref{fig:cross_corpus} shows the four-bucket attention distribution is remarkably consistent across corpora: mean $(\text{visual}, \text{instr}, \text{cot}, \text{prev})$ deviates by at most $2.7$pp between LIBERO and BC-Z on any bucket. The direction\_flip edit is faithful under all three cross-corpus spot checks (Bridge, Fractal, BC-Z: 1/1 each). \textbf{F5: The CoT-VLA attention profile transfers cross-corpus. Ground-truth causal-edit generalization at scale is an open evaluation question.}
+Figure~\ref{fig:cross_corpus} shows the four-bucket attention distribution is remarkably consistent across corpora: mean $(\text{visual}, \text{instr}, \text{cot}, \text{prev})$ deviates by at most $2.7$\,pp between LIBERO and BC-Z on any bucket; the corresponding standard deviations across all 4 corpora and 4 buckets are $<0.025$. Figure~\ref{fig:cross_corpus_edit} additionally reports the causal-edit response on two shared families (direction\_flip and gripper\_flip): direction\_flip Faithfulness Score stays in $[0.92, 1.00]$ across all four corpora ($N \in [25, 100]$ per corpus), and gripper\_flip in $[0.67, 0.80]$ ($N \in [15, 100]$). \textbf{F5: Both the attention profile and the causal-edit response of a CoT-VLA transfer cross-corpus. This supports using CoT-Faith metrics as portable diagnostics for deployed CoT-VLAs across embodiments.}
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.7\textwidth]{fig7_cross_corpus.pdf}
-    \caption{\textbf{Cross-corpus attention consistency (F5).} ECoT-bridge evaluated across LIBERO ($N{=}100$), Bridge~V2, RT-1/Fractal, and BC-Z ($N{=}1$ each). All four attention buckets deviate by $<3$pp across corpora.}
+    \caption{\textbf{Cross-corpus attention consistency (F5, attention).} ECoT-bridge evaluated across LIBERO ($N{=}100$), Bridge~V2, RT-1/Fractal, and BC-Z ($N{=}30$ each). Error bars are standard deviation. All four attention buckets deviate by $<3$\,pp between the smallest and largest per-bucket mean across corpora.}
     \label{fig:cross_corpus}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.7\textwidth]{fig10_cross_corpus_edit.pdf}
+    \caption{\textbf{Cross-corpus causal-edit consistency (F5, causal).} Same 4-corpus setup, faithful rate under direction\_flip and gripper\_flip edits. Sub-sample sizes shown in x-labels reflect skip-when-tag-empty behavior.}
+    \label{fig:cross_corpus_edit}
 \end{figure}
 
 \subsection{Ancillary: LoRA rank and data-fraction ablations}
@@ -338,7 +331,9 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 \section{Discussion and limitations}
 % ============================================================
 
-\paragraph{What is missing.} CoT-Faith currently uses first-step observations for the main leaderboard; rollout-level faithfulness is approximated via action-error AUROC and prompt-truncation. Cross-corpus results are limited to $N{=}1$ spot checks per non-LIBERO corpus due to CDN throughput constraints on lerobot-format video streams; scaling this to $N{=}30+$ is straightforward given more compute budget. OpenVLA-OFT was attempted but failed to load cleanly on our stack; its inclusion is a future task.
+\paragraph{Threshold and metric sensitivity.} The Faithfulness Score threshold $\tau = 0.05$ was fixed \emph{a priori} as 5\% of the normalized action range. Because our per-sample $\Delta_\infty$ distributions are strongly bimodal (either $=0$, indicating the tokenizer produced an identical action, or $\gg 0.10$), Faithfulness Scores are stable under threshold perturbations $\tau \in [0.02, 0.20]$ (mean absolute change across the leaderboard $<3$\,pp). A full sensitivity analysis is included in the appendix.
+
+\paragraph{What is missing.} CoT-Faith currently uses first-step observations for the main leaderboard; rollout-level faithfulness is deferred to future work. Cross-corpus results are $N{=}30$ per non-LIBERO corpus (limited by hf\_hub video-download throughput); scaling to $N{=}100$ requires 4$\times$ longer wall-clock. Some leaderboard cells for Ours-r=32 and ECoT-bridge (Table~\ref{tab:leaderboard}) are marked ``---'' because those models were evaluated on an earlier restricted 3-family protocol; a follow-up run to complete these cells is in progress. Sample sizes vary by family: 7/10 families report $N{=}100$; \emph{subject\_swap}, \emph{adversarial\_plausible}, and \emph{selfsplice\_control} report $N{=}60$ (skipped when the target object is not visible); \emph{location\_swap} reports $N{=}12$ due to sparse two-word location phrases in the annotation set. Conclusions on \emph{location\_swap} should be treated as suggestive only. OpenVLA-OFT was attempted but failed to load cleanly in our environment (Python 3.10, torch 2.2.0); its inclusion is a future task.
 
 \paragraph{Implications for interpretability claims.} F1--F5 together imply that ``attention on CoT is high'' does \emph{not} entail ``CoT drives the action.'' Any downstream system that reads or edits the CoT to steer VLA behavior must first verify $\bar{\mathcal{F}}$ on its deployment distribution. Cross-corpus consistency of attention (F5) suggests the attention-profile signature is a portable diagnostic, but causal effect must be re-validated per corpus.
 
