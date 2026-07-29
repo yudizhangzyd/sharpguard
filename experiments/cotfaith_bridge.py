@@ -39,61 +39,107 @@ ECOT_TAGS_ORDER = [
 ]
 
 
-def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridge_orig_lerobot"):
-    """Load samples from lerobot-format datasets using the native lerobot lib
-    which auto-joins video frames with parquet actions and tasks.jsonl."""
+def _load_lerobot_manual(dataset_repo, n_samples):
+    """Manual loader for lerobot-format datasets — bypasses the lerobot lib
+    entirely by fetching meta/tasks.jsonl + first parquet + first-frame of
+    matching mp4 videos via hf_hub_download + pyarrow + av.
+    Handles v2.0, v2.1, and v3.0 uniformly (they all share this file layout).
+    """
+    import json as _json
     from PIL import Image as PILImage
-    import numpy as np
-    out = []
-    # Prefer lerobot native loader (handles v2 video-parquet split correctly).
-    try:
-        try:
-            from lerobot.datasets.lerobot_dataset import LeRobotDataset
-        except ImportError:
-            from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
-        print(f"[lerobot] LeRobotDataset({dataset_repo})")
-        ds = LeRobotDataset(dataset_repo)
-        n_episodes = min(n_samples, ds.num_episodes)
-        # Step 0 of each episode
-        for ep_idx in range(n_episodes):
-            try:
-                start_idx = int(ds.episode_data_index["from"][ep_idx].item())
-                item = ds[start_idx]
-                # image: any key ending in image tensor (C,H,W float or H,W,C uint8)
-                img_tensor = None
-                for k, v in item.items():
-                    if hasattr(v, "shape") and len(v.shape) == 3 \
-                            and ("image" in k.lower() or "img" in k.lower() or "rgb" in k.lower()):
-                        img_tensor = v; break
-                if img_tensor is None: continue
-                arr = img_tensor.cpu().numpy() if hasattr(img_tensor, "cpu") else np.asarray(img_tensor)
-                if arr.shape[0] == 3 and arr.ndim == 3:
-                    arr = arr.transpose(1, 2, 0)
-                if arr.dtype != np.uint8:
-                    arr = (np.clip(arr, 0, 1) * 255).astype(np.uint8) if arr.max() <= 1 else arr.astype(np.uint8)
-                img = PILImage.fromarray(arr).convert("RGB")
-                # instruction: from task if present
-                task = item.get("task", "") if isinstance(item, dict) else ""
-                if not task: task = getattr(ds.meta, "tasks", {}).get(int(item.get("task_index", 0)), "manipulate object")
-                act = item.get("action")
-                if act is None: continue
-                if hasattr(act, "cpu"): act = act.cpu().numpy()
-                out.append({"image": img, "instruction": str(task),
-                             "action": np.asarray(act, dtype=np.float32).reshape(-1)[:7],
-                             "episode": ep_idx})
-                if len(out) == 1:
-                    print(f"[lerobot] first sample: instr='{task[:80]}' img={img.size} act.shape={act.shape}")
-            except Exception as e:
-                if ep_idx < 3: print(f"[lerobot] ep {ep_idx}: {e}")
-                continue
-        print(f"[lerobot] extracted {len(out)}/{n_samples} via LeRobotDataset")
-        return out
-    except Exception as e:
-        print(f"[lerobot] LeRobotDataset load failed: {e}")
+    import numpy as _np
+    from huggingface_hub import hf_hub_download, HfApi
+    import pyarrow.parquet as pq
+    import av
+    api = HfApi()
+    files = list(api.list_repo_files(dataset_repo, repo_type="dataset"))
 
-    # Fallback: HF datasets streaming (single-shard) with schema autodetect
-    from datasets import load_dataset
+    # 1. tasks.jsonl (task_index -> instruction)
+    tasks_map = {}
+    task_file = next((f for f in files if f.endswith("tasks.jsonl")), None)
+    if task_file:
+        tp = hf_hub_download(dataset_repo, task_file, repo_type="dataset")
+        for line in open(tp):
+            try:
+                d = _json.loads(line)
+                tasks_map[int(d.get("task_index", d.get("id", 0)))] = d.get("task", d.get("instruction", ""))
+            except Exception: continue
+        print(f"[manual] {len(tasks_map)} task entries")
+
+    # 2. first parquet file
+    parquets = sorted([f for f in files if f.endswith(".parquet") and "data/" in f])
+    if not parquets:
+        print(f"[manual] no parquet files found")
+        return []
+    pp = hf_hub_download(dataset_repo, parquets[0], repo_type="dataset")
+    table = pq.read_table(pp)
+    print(f"[manual] loaded {len(table)} rows from {parquets[0]}")
+    row_cols = table.column_names
+    print(f"[manual] parquet cols: {row_cols}")
+
+    # 3. video mp4 candidates (all image streams)
+    videos = [f for f in files if f.endswith(".mp4") and "videos/" in f]
+    # Pick the image_0 / main / primary stream if available
+    IMG_STREAM_PREF = ["image_0", "image", "top", "main", "primary", "agentview_image", "cam_high", "wrist"]
+    video_dirs = sorted(set(v.rsplit("/", 1)[0] for v in videos))
+    chosen_dir = None
+    for pref in IMG_STREAM_PREF:
+        for d in video_dirs:
+            if pref in d.lower(): chosen_dir = d; break
+        if chosen_dir: break
+    if chosen_dir is None and video_dirs:
+        chosen_dir = video_dirs[0]
+    print(f"[manual] video dir: {chosen_dir}")
+
+    out = []
+    ep_col = table.column("episode_index").to_pylist() if "episode_index" in row_cols else list(range(len(table)))
+    tidx_col = table.column("task_index").to_pylist() if "task_index" in row_cols else [0] * len(table)
+    act_col = table.column("action").to_pylist() if "action" in row_cols else None
+    if act_col is None:
+        print(f"[manual] no action column in parquet")
+        return []
+
+    seen_ep = set()
+    for i, ep_idx in enumerate(ep_col):
+        if len(out) >= n_samples: break
+        if ep_idx in seen_ep: continue
+        seen_ep.add(ep_idx)
+        # Fetch matching video mp4
+        vname = f"{chosen_dir}/episode_{ep_idx:06d}.mp4" if chosen_dir else None
+        if vname is None or vname not in files:
+            continue
+        try:
+            vp = hf_hub_download(dataset_repo, vname, repo_type="dataset")
+            container = av.open(vp)
+            first_frame = next(container.decode(video=0))
+            img = first_frame.to_image()
+            container.close()
+        except Exception as e:
+            if len(out) < 3: print(f"[manual] ep {ep_idx} video fail: {e}")
+            continue
+        instr = tasks_map.get(tidx_col[i], "")
+        if not instr: instr = "manipulate object"
+        action = _np.asarray(act_col[i], dtype=_np.float32).reshape(-1)[:7]
+        out.append({"image": img, "instruction": str(instr), "action": action, "episode": int(ep_idx)})
+        if len(out) == 1:
+            print(f"[manual] first sample: instr='{instr[:80]}' img={img.size} act={action.shape}")
+    print(f"[manual] extracted {len(out)}/{n_samples}")
+    return out
+
+
+def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridge_orig_lerobot"):
+    """Load samples from lerobot-format datasets. Uses a manual loader that
+    fetches parquet + mp4 + tasks.jsonl directly via hf_hub_download to avoid
+    lerobot-lib version/format quirks."""
+    print(f"[lerobot] manual loader on {dataset_repo}")
+    try:
+        out = _load_lerobot_manual(dataset_repo, n_samples)
+        if out: return out
+    except Exception as e:
+        import traceback
+        print(f"[lerobot] manual loader failed: {e}\n{traceback.format_exc()[-500:]}")
     print(f"[lerobot] fallback: HF datasets streaming {dataset_repo}")
+    from datasets import load_dataset
     ds = load_dataset(dataset_repo, split="train", streaming=True)
     from PIL import Image as PILImage
     out = []
