@@ -12,8 +12,14 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-# Datasets modules
-pip install --upgrade "datasets>=3.0" "transformers>=4.45" || true
+# Datasets library only. Do NOT upgrade transformers — the setup already
+# installed a torch 2.2.0 (cu118) compatible transformers. Newer transformers
+# / datasets require torch>=2.4's torch.distributed.tensor.DTensor.
+pip install "datasets>=2.19,<3.0" || true
+# Verify torch, datasets, transformers all importable together.
+python -c "import torch, datasets, transformers; print(f'[ds] torch={torch.__version__} datasets={datasets.__version__} transformers={transformers.__version__}')" || {
+    echo "[ds] FATAL: import chain broken"; exit 2;
+}
 
 python experiments/cotfaith_bridge.py \
     --ckpt-path "${CKPT_PATH:-Embodied-CoT/ecot-libero-90-bridgev2}" \

@@ -19,21 +19,19 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
 # OpenVLA-OFT remote code imports 'prismatic.training.train_utils' which
-# only exists in moojink's openvla-oft fork. Install fork LAST so its
-# prismatic package wins over any other prismatic on the site-packages path.
-if [ ! -d /tmp/openvla ]; then
-    git clone --depth 1 https://github.com/openvla/openvla /tmp/openvla || true
-fi
-(cd /tmp/openvla && pip install -e . || true)
+# only exists in moojink's openvla-oft fork. Do NOT install main openvla —
+# pip refuses to co-install two packages named 'prismatic'; whichever is
+# installed second silently loses. Only the fork is needed for OFT inference.
 if [ ! -d /tmp/openvla-oft ]; then
     git clone --depth 1 https://github.com/moojink/openvla-oft /tmp/openvla-oft || true
 fi
-# Install fork LAST — overrides main openvla's prismatic package.
+# Force uninstall any prismatic left over from previous runs
+pip uninstall -y prismatic openvla openvla-oft 2>/dev/null || true
 (cd /tmp/openvla-oft && pip install -e . --no-deps || true)
-# Verify prismatic.training.train_utils importable before running.
+# Sanity: prismatic.training.train_utils must import.
 python -c "from prismatic.training.train_utils import get_next_action; print('[oft] prismatic.training.train_utils OK')" || {
     echo "[oft] FATAL: prismatic.training.train_utils not importable" >&2
-    python -c "import prismatic, os; print('prismatic at:', os.path.dirname(prismatic.__file__)); print('contents:', os.listdir(os.path.dirname(prismatic.__file__)))" >&2
+    python -c "import prismatic, os; print('prismatic at:', prismatic.__file__)" >&2 || true
     exit 2
 }
 
