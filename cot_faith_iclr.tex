@@ -239,7 +239,7 @@ Ours data-50B  & 0.00 & 0.38 & 0.73 & 0.66 & 0.14 & 0.52 & 0.52 & 0.33 & 0.08 & 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.98\textwidth]{fig2_attention_distribution.pdf}
-    \caption{\textbf{Attention distribution across 13 models spanning 4 architecture families (P1).} All 6 ECoT-family CoT-VLAs (including the reasoning-target-stripped no-CoT variant) cluster at $(\text{visual}, \text{instr}, \text{CoT}, \text{prev}) \approx (0.29, 0.30, 0.34, 0.07)$; DeepThinkVLA family clusters at $(0.00, 0.44, 0.30, 0.24)$ (visual is folded into image-token attention that lives outside our 4-bucket decomposition on PaliGemma); OpenVLA non-CoT baselines cluster at $(0.52, 0.42, 0.00, 0.05)$. Within each family, training-regime differences are $<3$pp.}
+    \caption{\textbf{Attention distribution across 13 models spanning 4 architecture families (P1).} Panel (a) --- 10 models in the OpenVLA/ECoT families, where the four buckets are directly comparable. All 6 ECoT-family CoT-VLAs (including the reasoning-target-stripped no-CoT variant) cluster tightly at $(\text{visual}, \text{instr}, \text{CoT}, \text{prev}) \approx (0.29, 0.30, 0.34, 0.07)$; OpenVLA non-CoT baselines cluster at $(0.52, 0.42, 0.00, 0.05)$. Panel (b) --- DeepThinkVLA family (PaliGemma). We omit the visual bar because PaliGemma routes image tokens through a schema outside our 4-bucket decomposition; visual~$\equiv 0$ is a schema artifact, not a training effect. Within DT, the CoT bucket rises from 0.229 (base) to 0.305 (SFT/RL), a training-induced $+7.6$\,pp shift.}
     \label{fig:attention}
 \end{figure}
 
@@ -331,7 +331,14 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 \section{Discussion and limitations}
 % ============================================================
 
-\paragraph{Threshold and metric sensitivity.} The Faithfulness Score threshold $\tau = 0.05$ was fixed \emph{a priori} as 5\% of the normalized action range. Because our per-sample $\Delta_\infty$ distributions are strongly bimodal (either $=0$, indicating the tokenizer produced an identical action, or $\gg 0.10$), Faithfulness Scores are stable under threshold perturbations $\tau \in [0.02, 0.20]$ (mean absolute change across the leaderboard $<3$\,pp). A full sensitivity analysis is included in the appendix.
+\paragraph{Threshold and metric sensitivity.} The Faithfulness Score threshold $\tau = 0.05$ was fixed \emph{a priori} as 5\% of the normalized action range. Because our per-sample $\Delta_\infty$ distributions are strongly bimodal (either $=0$, indicating the tokenizer produced an identical action, or $\gg 0.10$), Faithfulness Scores are stable under threshold perturbations. Figure~\ref{fig:threshold} plots mean faithful rate over 7 non-control families as a function of $\tau \in [0.01, 0.30]$ for 6 models: rankings are preserved across every threshold, and the qualitative gap between the no-CoT variant and the CoT-trained cluster is maintained.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.65\textwidth]{fig11_threshold_sensitivity.pdf}
+    \caption{\textbf{Faithfulness Score threshold sensitivity.} Mean faithful rate over 7 non-control families vs $\tau \in [0.01, 0.30]$ (log scale). Model rankings are preserved across the full range; the no-CoT vs CoT-trained gap remains $\geq 2\times$ at every $\tau$.}
+    \label{fig:threshold}
+\end{figure}
 
 \paragraph{What is missing.} CoT-Faith currently uses first-step observations for the main leaderboard; rollout-level faithfulness is deferred to future work. Cross-corpus results are $N{=}30$ per non-LIBERO corpus (limited by hf\_hub video-download throughput); scaling to $N{=}100$ requires 4$\times$ longer wall-clock. Some leaderboard cells for Ours-r=32 and ECoT-bridge (Table~\ref{tab:leaderboard}) are marked ``---'' because those models were evaluated on an earlier restricted 3-family protocol; a follow-up run to complete these cells is in progress. Sample sizes vary by family: 7/10 families report $N{=}100$; \emph{subject\_swap}, \emph{adversarial\_plausible}, and \emph{selfsplice\_control} report $N{=}60$ (skipped when the target object is not visible); \emph{location\_swap} reports $N{=}12$ due to sparse two-word location phrases in the annotation set. Conclusions on \emph{location\_swap} should be treated as suggestive only. OpenVLA-OFT was attempted but failed to load cleanly in our environment (Python 3.10, torch 2.2.0); its inclusion is a future task.
 
