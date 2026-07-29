@@ -74,11 +74,25 @@ def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridg
                   "image", "observation.image"]
     INSTR_KEYS = ["language_instruction", "task", "instruction", "task_description",
                     "annotation.human.action.task_description", "prompt"]
+    ep_key = None
+    first_row_logged = False
     for row in ds:
         if len(out) >= n_samples: break
-        ep = row.get("episode_index", None)
-        if ep in seen_ep: continue
-        seen_ep.add(ep)
+        if not first_row_logged:
+            print(f"[lerobot] first-row keys: {sorted(row.keys())}")
+            # detect episode key
+            for k in ["episode_index", "episode_id", "episode"]:
+                if k in row: ep_key = k; break
+            first_row_logged = True
+        # first-step-per-episode; if no episode key, take every 20th row.
+        if ep_key:
+            ep = row[ep_key]
+            if ep in seen_ep: continue
+            seen_ep.add(ep)
+        else:
+            if len(seen_ep) * 20 > len(out) * 20 + 1:
+                seen_ep.add(len(seen_ep)); continue
+            seen_ep.add(len(seen_ep))
         img = None
         for k in IMG_KEYS:
             if k in row and row[k] is not None:
@@ -92,7 +106,10 @@ def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridg
             if k in row and row[k] is not None:
                 instr = row[k]; break
         act = row.get("action")
-        if img is None or instr is None or act is None: continue
+        if img is None or instr is None or act is None:
+            if len(out) == 0 and len(seen_ep) < 5:
+                print(f"[lerobot] skip row: img={img is not None} instr={instr is not None} act={act is not None}")
+            continue
         if isinstance(instr, list): instr = instr[0] if instr else ""
         if not isinstance(img, PILImage.Image):
             try:

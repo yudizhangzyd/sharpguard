@@ -33,7 +33,7 @@ find /tmp/openvla-oft/prismatic -name __init__.py -exec sh -c ': > "$1"' _ {} \;
 # Just install draccus (used in configs, harmless if unused).
 pip install "draccus==0.8.0" 2>/dev/null || true
 # Sanity: reachable via PYTHONPATH.
-PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}" python -c "from prismatic.training.train_utils import get_next_action; print('[oft] prismatic.training.train_utils OK')" || {
+PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}" python -c "from prismatic.training.train_utils import get_current_action_mask; print('[oft] prismatic.training.train_utils OK')" || {
     echo "[oft] FATAL: import failed" >&2
     exit 2
 }
