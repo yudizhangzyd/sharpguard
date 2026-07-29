@@ -37,6 +37,9 @@ PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}" python -c "from prismatic.training
     echo "[oft] FATAL: import failed" >&2
     exit 2
 }
+# Patch train_utils.py: cast bool tensor to long before cumsum (torch 2.2 compat).
+sed -i 's|torch.cumsum(newline_positions, dim=1)|torch.cumsum(newline_positions.long(), dim=1)|g' \
+    /tmp/openvla-oft/prismatic/training/train_utils.py
 export PYTHONPATH="/tmp/openvla-oft:${PYTHONPATH:-}"
 
 # tf/tfds for loading LIBERO probe images.

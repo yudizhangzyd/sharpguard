@@ -12,13 +12,14 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-# Datasets library only. Do NOT upgrade transformers — the setup already
-# installed a torch 2.2.0 (cu118) compatible transformers. Newer transformers
-# / datasets require torch>=2.4's torch.distributed.tensor.DTensor.
+# Datasets lib + lerobot native library for v2 dataset (video+parquet+tasks).
 pip install "datasets>=2.19,<3.0" || true
-# Verify torch, datasets, transformers all importable together.
+pip install "lerobot" 2>&1 | tail -3 || true
 python -c "import torch, datasets, transformers; print(f'[ds] torch={torch.__version__} datasets={datasets.__version__} transformers={transformers.__version__}')" || {
     echo "[ds] FATAL: import chain broken"; exit 2;
+}
+python -c "from lerobot.common.datasets.lerobot_dataset import LeRobotDataset; print('[ds] lerobot native OK')" || {
+    echo "[ds] WARN: lerobot native missing — will fall back to HF datasets" >&2
 }
 
 python experiments/cotfaith_bridge.py \

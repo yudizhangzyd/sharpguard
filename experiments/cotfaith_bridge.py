@@ -40,29 +40,58 @@ ECOT_TAGS_ORDER = [
 
 
 def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridge_orig_lerobot"):
-    """Load first-step samples from any lerobot-format VLA dataset.
-
-    Loads only ONE parquet shard via HTTP-range partial download rather than
-    streaming the entire dataset (some are 99k+ files).
-    """
-    from datasets import load_dataset
-    print(f"[lerobot] loading first shard from {dataset_repo}")
-    # Try single-shard load first (fast), fall back to streaming.
-    ds = None
+    """Load samples from lerobot-format datasets using the native lerobot lib
+    which auto-joins video frames with parquet actions and tasks.jsonl."""
+    from PIL import Image as PILImage
+    import numpy as np
+    out = []
+    # Prefer lerobot native loader (handles v2 video-parquet split correctly).
     try:
-        # LeRobot datasets have parquet files at data/chunk-000/*.parquet
-        from huggingface_hub import HfApi
-        api = HfApi()
-        files = api.list_repo_files(dataset_repo, repo_type="dataset")
-        parquets = sorted([f for f in files if f.endswith(".parquet")])[:1]
-        if parquets:
-            print(f"[lerobot] loading single shard: {parquets[0]}")
-            ds = load_dataset(dataset_repo, data_files=parquets[0], split="train",
-                                streaming=True)
+        from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+        print(f"[lerobot] LeRobotDataset({dataset_repo})")
+        ds = LeRobotDataset(dataset_repo)
+        n_episodes = min(n_samples, ds.num_episodes)
+        # Step 0 of each episode
+        for ep_idx in range(n_episodes):
+            try:
+                start_idx = int(ds.episode_data_index["from"][ep_idx].item())
+                item = ds[start_idx]
+                # image: any key ending in image tensor (C,H,W float or H,W,C uint8)
+                img_tensor = None
+                for k, v in item.items():
+                    if hasattr(v, "shape") and len(v.shape) == 3 \
+                            and ("image" in k.lower() or "img" in k.lower() or "rgb" in k.lower()):
+                        img_tensor = v; break
+                if img_tensor is None: continue
+                arr = img_tensor.cpu().numpy() if hasattr(img_tensor, "cpu") else np.asarray(img_tensor)
+                if arr.shape[0] == 3 and arr.ndim == 3:
+                    arr = arr.transpose(1, 2, 0)
+                if arr.dtype != np.uint8:
+                    arr = (np.clip(arr, 0, 1) * 255).astype(np.uint8) if arr.max() <= 1 else arr.astype(np.uint8)
+                img = PILImage.fromarray(arr).convert("RGB")
+                # instruction: from task if present
+                task = item.get("task", "") if isinstance(item, dict) else ""
+                if not task: task = getattr(ds.meta, "tasks", {}).get(int(item.get("task_index", 0)), "manipulate object")
+                act = item.get("action")
+                if act is None: continue
+                if hasattr(act, "cpu"): act = act.cpu().numpy()
+                out.append({"image": img, "instruction": str(task),
+                             "action": np.asarray(act, dtype=np.float32).reshape(-1)[:7],
+                             "episode": ep_idx})
+                if len(out) == 1:
+                    print(f"[lerobot] first sample: instr='{task[:80]}' img={img.size} act.shape={act.shape}")
+            except Exception as e:
+                if ep_idx < 3: print(f"[lerobot] ep {ep_idx}: {e}")
+                continue
+        print(f"[lerobot] extracted {len(out)}/{n_samples} via LeRobotDataset")
+        return out
     except Exception as e:
-        print(f"[lerobot] single-shard load failed ({e}); falling back to full stream")
-    if ds is None:
-        ds = load_dataset(dataset_repo, split="train", streaming=True)
+        print(f"[lerobot] LeRobotDataset load failed: {e}")
+
+    # Fallback: HF datasets streaming (single-shard) with schema autodetect
+    from datasets import load_dataset
+    print(f"[lerobot] fallback: HF datasets streaming {dataset_repo}")
+    ds = load_dataset(dataset_repo, split="train", streaming=True)
     from PIL import Image as PILImage
     out = []
     seen_ep = set()
