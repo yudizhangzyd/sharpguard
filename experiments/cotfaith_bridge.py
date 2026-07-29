@@ -39,12 +39,11 @@ ECOT_TAGS_ORDER = [
 ]
 
 
-def load_bridge_v2_samples(n_samples, seed=0):
-    """Load first-step samples from IPEC-COMMUNITY/bridge_orig_lerobot."""
+def load_bridge_v2_samples(n_samples, seed=0, dataset_repo="IPEC-COMMUNITY/bridge_orig_lerobot"):
+    """Load first-step samples from any lerobot-format VLA dataset."""
     from datasets import load_dataset
-    print(f"[bridge] streaming IPEC-COMMUNITY/bridge_orig_lerobot")
-    ds = load_dataset("IPEC-COMMUNITY/bridge_orig_lerobot",
-                        split="train", streaming=True)
+    print(f"[lerobot] streaming {dataset_repo}")
+    ds = load_dataset(dataset_repo, split="train", streaming=True)
     from PIL import Image as PILImage
     out = []
     seen_ep = set()
@@ -167,8 +166,9 @@ def run(args):
     ))
     analyzer = CotAttentionAnalyzer(hook, processor.tokenizer, n_visual=256)
 
-    samples = load_bridge_v2_samples(args.n_samples, seed=args.seed)
-    print(f"[bridge] loaded {len(samples)} Bridge V2 samples")
+    samples = load_bridge_v2_samples(args.n_samples, seed=args.seed,
+                                       dataset_repo=args.dataset_repo)
+    print(f"[bridge] loaded {len(samples)} {args.dataset_repo} samples")
 
     per_attn, per_edit = [], []
     for si, s in enumerate(samples):
@@ -266,7 +266,7 @@ def run(args):
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     (out / "bridge_report.json").write_text(json.dumps({
-        "model": args.ckpt_path, "dataset": "IPEC-COMMUNITY/bridge_orig_lerobot",
+        "model": args.ckpt_path, "dataset": args.dataset_repo,
         "n_samples_requested": args.n_samples, "n_samples_used": len(samples),
         "attention_aggregate": attn_agg, "edit_aggregate": edit_agg,
         "n_attn_ok": len(per_attn), "n_edit_ok": len(per_edit),
@@ -291,6 +291,8 @@ def main():
     p.add_argument("--threshold", type=float, default=0.05)
     p.add_argument("--rvis-layers", default="0,1,2,3")
     p.add_argument("--dtype", default="bfloat16")
+    p.add_argument("--dataset-repo", default="IPEC-COMMUNITY/bridge_orig_lerobot",
+                     help="Any lerobot-format dataset repo id")
     args = p.parse_args()
     run(args)
 
