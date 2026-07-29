@@ -18,6 +18,13 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
+# OpenVLA-OFT remote code imports 'prismatic'. Clone + install openvla repo
+# so the prismatic package is available.
+if [ ! -d /tmp/openvla ]; then
+    git clone --depth 1 https://github.com/openvla/openvla /tmp/openvla || true
+fi
+(cd /tmp/openvla && pip install -e . || true)
+
 # tf/tfds for loading LIBERO probe images.
 pip install "dm-tree" "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" \
             "toml" "termcolor" "tqdm" "click" || true

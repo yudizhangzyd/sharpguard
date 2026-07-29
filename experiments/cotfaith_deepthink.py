@@ -126,8 +126,8 @@ def run(args):
         try:
             cot_text = build_cot_text(gt)
             orig_prompt = build_deepthink_prompt(instr, cot_text)
-            # Attention probe
-            proc = processor(orig_prompt, img)
+            # Attention probe — PaliGemma processor requires keyword args.
+            proc = processor(text=orig_prompt, images=img, return_tensors="pt")
             input_ids = proc["input_ids"][0]
             vocab = processor.tokenizer.vocab_size
             a_ids = action_ids(gt_action, vocab)
@@ -153,7 +153,7 @@ def run(args):
 
             # Causal edit for 3 core families
             def _generate_action(text_pre):
-                p = processor(text_pre, img)
+                p = processor(text=text_pre, images=img, return_tensors="pt")
                 p = {k: v.to(device) if hasattr(v, 'to') else v for k, v in p.items()}
                 # cast pixel to dtype
                 if "pixel_values" in p:
