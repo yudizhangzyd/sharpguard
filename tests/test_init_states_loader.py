@@ -15,20 +15,19 @@ loader is wrong AND the run still looks finished". Test 4 is the important one:
 an unparseable file must raise. Run this before the rollout, not after.
 """
 
-import importlib.util
 import os
+import sys
 import tempfile
 
 import numpy as np
 import torch
 
-_SPEC = importlib.util.spec_from_file_location(
-    "libero_sim_under_test",
-    os.path.join(os.path.dirname(__file__), "..", "sharpguard", "libero_sim.py"),
-)
-_MOD = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(_MOD)
-load = _MOD._load_libero_init_states
+# Import the real package rather than exec'ing the file under a synthetic module
+# name: `@dataclass` resolves its annotations through
+# `sys.modules[cls.__module__]`, so a module that was never registered there
+# makes RolloutConfig's decoration fail with an unrelated AttributeError.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from sharpguard.libero_sim import _load_libero_init_states as load  # noqa: E402
 
 
 def main() -> int:
