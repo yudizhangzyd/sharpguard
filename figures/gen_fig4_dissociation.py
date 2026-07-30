@@ -22,9 +22,25 @@ MODELS = [
     ("Ours\ndata-50 B", f"{BASE}/data-50B",      C_COT_TRAINED),
     ("Ours\nr=8",      f"{BASE}/lora-r8",        C_COT_TRAINED),
     ("Ours\nr=16",     f"{BASE}/lora-r16",       C_COT_TRAINED),
+    ("Ours\nr=32",     "/tmp/cf_done/bcihypv3gu", C_COT_TRAINED),
     ("Ours\nr=64",     f"{BASE}/lora-r64",       C_COT_TRAINED),
-    ("ECoT-\nbridge",  f"{OLD}/ecot-bridge",     C_ECOT_BRIDGE),
+    ("ECoT-\nbridge",  "/tmp/cf_done/8rcgy9kukj/edit_only", C_ECOT_BRIDGE),  # attention shared with old
 ]
+
+# ECoT-bridge attention: reuse old (bridge model didn't change)
+# but pull edit from new 10-family run
+def _load_edit(path):
+    if path.endswith("edit_only"):
+        return json.load(open(f"{path.replace('/edit_only','')}/cotfaith-edit/cot_edit_report.json"))
+    return json.load(open(f"{path}/cotfaith-edit/cot_edit_report.json"))
+
+def _load_rvis(path):
+    if "cf_done/bcihypv3gu" in path:
+        return json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json"))
+    if "cf_done/8rcgy9kukj" in path:
+        # ECoT-bridge attention from cf_sweep
+        return json.load(open(f"{OLD}/ecot-bridge/cotfaith-rvis/rvis_cot_report.json"))
+    return json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json"))
 
 # 7 families available on 8-model set (skip r=32 which only has 3)
 SHARED_FAMS = ["subject_swap", "direction_flip", "gripper_flip",
@@ -33,9 +49,9 @@ SHARED_FAMS = ["subject_swap", "direction_flip", "gripper_flip",
 
 attn_cot, faithful_avg = [], []
 for name, path, _ in MODELS:
-    a = json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json")).get("aggregate", {})
+    a = _load_rvis(path).get("aggregate", {})
     attn_cot.append(a.get("action->cot", {}).get("mean", 0.0))
-    e = json.load(open(f"{path}/cotfaith-edit/cot_edit_report.json")).get("aggregate", {})
+    e = _load_edit(path).get("aggregate", {})
     fr = [e[f]["faithful_rate"] for f in SHARED_FAMS if e.get(f, {}).get("n", 0) > 0]
     faithful_avg.append(np.mean(fr) if fr else 0.0)
 

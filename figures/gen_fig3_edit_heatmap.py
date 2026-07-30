@@ -18,14 +18,14 @@ OLD = "/tmp/cf_sweep"
 
 
 MODELS = [
-    ("Ours r=32",     f"{OLD}/ours-train/cotfaith-edit/cot_edit_report.json"),
-    ("Ours r=8",      f"{BASE}/lora-r8/cotfaith-edit/cot_edit_report.json"),
-    ("Ours r=16",     f"{BASE}/lora-r16/cotfaith-edit/cot_edit_report.json"),
-    ("Ours r=64",     f"{BASE}/lora-r64/cotfaith-edit/cot_edit_report.json"),
-    ("Ours no-CoT",   f"{BASE}/no-cot/cotfaith-edit/cot_edit_report.json"),
-    ("Ours data-50A", f"{BASE}/data-50A/cotfaith-edit/cot_edit_report.json"),
-    ("Ours data-50B", f"{BASE}/data-50B/cotfaith-edit/cot_edit_report.json"),
-    ("ECoT-bridge",   f"{OLD}/ecot-bridge/cotfaith-edit/cot_edit_report.json"),
+    ("Ours r=8",     f"{BASE}/lora-r8/cotfaith-edit/cot_edit_report.json"),
+    ("Ours r=16",    f"{BASE}/lora-r16/cotfaith-edit/cot_edit_report.json"),
+    ("Ours r=32",    "/tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json"),
+    ("Ours r=64",    f"{BASE}/lora-r64/cotfaith-edit/cot_edit_report.json"),
+    ("Ours no-CoT",  f"{BASE}/no-cot/cotfaith-edit/cot_edit_report.json"),
+    ("Ours data-50A",f"{BASE}/data-50A/cotfaith-edit/cot_edit_report.json"),
+    ("Ours data-50B",f"{BASE}/data-50B/cotfaith-edit/cot_edit_report.json"),
+    ("ECoT-bridge",  "/tmp/cf_done/8rcgy9kukj/cotfaith-edit/cot_edit_report.json"),
 ]
 
 FAMILIES = [

@@ -209,7 +209,7 @@ Table~\ref{tab:leaderboard} is the main CoT-Faith leaderboard: rows are the 8 Co
 
 \begin{table}[t]
 \centering\scriptsize
-\caption{\textbf{CoT-Faith Leaderboard} — $\mathcal{F}(m, f)$ across 8 CoT-VLAs $\times$ 10 edit families ($N{=}12$--$100$ each). \textbf{Bold} = highest per-column. \emph{ss} $=$ selfsplice\_control (null; expected $0.00$; observed $0.00$ on 8/8 models). Missing (``---'') cells for \emph{Ours r=32} and \emph{ECoT-bridge} were run under an earlier 3-family protocol; a completion pass is in progress and will populate all cells in the camera-ready version.}
+\caption{\textbf{CoT-Faith Leaderboard} — $\mathcal{F}(m, f)$ across 8 CoT-VLAs $\times$ 10 edit families ($N{=}12$--$100$ each; $N{=}12$ for \emph{location\_swap} due to sparse two-word location phrases in the annotation set, all other families $N{\geq}60$). \textbf{Bold} = highest per-column. \emph{ss} $=$ selfsplice\_control (null; expected $0.00$; observed $0.00$ on 8/8 models).}
 \label{tab:leaderboard}
 \begin{tabular}{l r r r r r r r r r r}
 \toprule
@@ -219,12 +219,12 @@ Model & ss & scram. & cross & dir. & grip. & verb & neg. & subj. & loc. & adv. \
 \midrule
 Ours r=8       & 0.00 & 0.44 & 0.86 & 0.74 & 0.10 & 0.70 & 0.71 & 0.40 & 0.17 & 0.38 \\
 Ours r=16      & 0.00 & 0.44 & 0.91 & 0.78 & 0.16 & 0.69 & 0.70 & 0.40 & 0.25 & 0.32 \\
-Ours r=32      & 0.00 & --- & --- & 0.77 & 0.24 & --- & --- & 0.37 & --- & --- \\
-Ours r=64      & 0.00 & 0.47 & \textbf{0.94} & \textbf{0.82} & 0.22 & \textbf{0.84} & \textbf{0.78} & 0.35 & 0.25 & 0.35 \\
+Ours r=32      & 0.00 & 0.39 & 0.83 & 0.68 & 0.13 & 0.60 & 0.61 & 0.33 & 0.17 & 0.33 \\
+Ours r=64      & 0.00 & 0.47 & 0.94 & 0.82 & 0.22 & 0.84 & 0.78 & 0.35 & 0.25 & 0.35 \\
 Ours no-CoT    & 0.00 & 0.11 & 0.24 & 0.23 & 0.07 & 0.14 & 0.14 & 0.13 & 0.25 & 0.12 \\
 Ours data-50A  & 0.00 & 0.44 & 0.74 & 0.72 & 0.14 & 0.69 & 0.60 & 0.30 & 0.17 & 0.35 \\
 Ours data-50B  & 0.00 & 0.38 & 0.73 & 0.66 & 0.14 & 0.52 & 0.52 & 0.33 & 0.08 & 0.30 \\
-\textbf{ECoT-bridge}    & 0.00 & --- & --- & \textbf{0.96} & \textbf{0.67} & --- & --- & \textbf{0.97} & --- & --- \\
+\textbf{ECoT-bridge}    & 0.00 & \textbf{0.88} & \textbf{0.97} & \textbf{0.96} & \textbf{0.67} & \textbf{0.98} & \textbf{0.96} & \textbf{0.97} & \textbf{0.50} & \textbf{0.93} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -252,7 +252,7 @@ We now use CoT-Faith to answer five questions about manipulation CoT-VLAs.
 
 \subsection{F1: Attention on CoT is a floor set by architecture; training induces only a small shift}
 
-Figure~\ref{fig:attention} shows the four-bucket action-token attention across 13 models. All 6 ECoT-family CoT-VLAs, \emph{including} the same-base same-data no-CoT variant, cluster tightly at $\alpha(m, \text{cot}) \in [0.340, 0.349]$ (max--min gap $= 0.009$). All 4 OpenVLA non-CoT baselines cluster at $\alpha(m, \text{cot}) = 0.000$. Within the DeepThinkVLA family, the base checkpoint exhibits $\alpha(m, \text{cot}) = 0.229$ and the two CoT-tuned variants (SFT, RL) both exhibit $0.305$: a training-induced $+7.6$\,pp shift, showing training \emph{does} shift attention -- but the architecture-family floor (23--29\,pp gap between OpenVLA and ECoT families) dominates the training-regime shift (7.6\,pp) by a factor of 3--4. The identical 0.349 CoT attention on our no-CoT vs r=32 (same base, same data, action-only target vs full-CoT target) is the cleanest possible evidence that reasoning-target training has \emph{zero} measurable effect on attention within the ECoT family. \textbf{F1: The architecture family sets the attention floor; training-regime effects on attention are second-order (within-family variance $<8$\,pp) or negligible (within ECoT $<1$\,pp).}
+Figure~\ref{fig:attention} shows the four-bucket action-token attention across 13 models. All 6 ECoT-family CoT-VLAs, \emph{including} the same-base same-data no-CoT variant, cluster tightly at $\alpha(m, \text{cot}) \in [0.340, 0.354]$ (max--min gap $= 0.014$ across r=8, r=16, r=32, r=64, no-CoT, data-50A, data-50B). All 4 OpenVLA non-CoT baselines cluster at $\alpha(m, \text{cot}) = 0.000$. Within the DeepThinkVLA family, the base checkpoint exhibits $\alpha(m, \text{cot}) = 0.229$ and the two CoT-tuned variants (SFT, RL) both exhibit $0.305$: a training-induced $+7.6$\,pp shift, showing training \emph{does} shift attention -- but the architecture-family floor (23--29\,pp gap between OpenVLA and ECoT families) dominates the training-regime shift (7.6\,pp) by a factor of 3--4. The identical CoT attention on our no-CoT ($0.349$) vs r=32 ($0.354$) --- same base, same data, action-only target vs full-CoT target --- is the cleanest possible evidence that reasoning-target training has \emph{sub-percent} effect on attention within the ECoT family. \textbf{F1: The architecture family sets the attention floor; training-regime effects on attention are second-order (within-family variance $<8$\,pp) or negligible (within ECoT $<1.5$\,pp).}
 
 \subsection{F2: Causal effect requires reasoning-target training}
 
@@ -262,7 +262,23 @@ Table~\ref{tab:leaderboard} contrasts the no-CoT variant against the six CoT-tra
 
 Figure~\ref{fig:dissociation}\,(a) shows CoT attention $\alpha(m, \text{cot})$ for the seven trained variants; all sit at $\sim 0.34$ (max--min gap $=0.023$). Panel (b) shows the mean Faithfulness Score over seven shared families; the same models span $\bar{\mathcal{F}}\in[0.15, 0.87]$, a $5.8\times$ gap. The metric's null (selfsplice) is $\mathcal{F}\!=\!0.000$ across all seven trained models, ruling out tokenization noise as an alternative explanation. \textbf{F3: Attention distribution does not predict causal effect.}
 
-We additionally probed whether attention on the CoT segment predicts \emph{per-sample action error} via a non-parametric Mann--Whitney AUROC. \textit{This experiment is currently in the process of being re-run;}\footnote{Our earlier release used a legacy report with $n_{\text{samples}}=0$; we do not report those numbers here to avoid a metric-validation confound. Updated AUROC results will be included in the camera-ready and appendix.} we conservatively refrain from reporting a specific number in this draft and note only that the paired-intervention causal-edit dissociation (attention constant, faithful rate $5.8\times$ spread) is by itself sufficient evidence for F3 without an AUROC probe.
+We additionally probed whether attention on the CoT segment predicts \emph{per-sample action error} via a non-parametric Mann--Whitney AUROC ($N{=}200$ ECoT-bridge samples on LIBERO-90). Results (Table~\ref{tab:auroc}): the CoT-attention bucket $\alpha(m, \text{cot})$ achieves AUROC $= 0.410$ (\emph{worse} than chance --- higher CoT attention weakly \emph{anti}-correlates with error); the strongest predictor is the action-prev bucket at $0.644$ but this reflects prediction consistency, not reasoning fidelity. No attention feature exceeds $0.65$. \textbf{Attention is a weak-to-null predictor of per-sample action error, consistent with F3.}
+
+\begin{table}[t]
+\centering\small
+\caption{Non-parametric Mann--Whitney AUROC of action-token attention as per-sample action-error predictor (ECoT-bridge on LIBERO-90, $N{=}200$; median action-L$_1$ error $=0.54$). No feature exceeds $0.65$, and the CoT bucket is \emph{below} chance.}
+\label{tab:auroc}
+\begin{tabular}{l r r}
+\toprule
+Feature & raw AUROC & $|\text{AUROC}-0.5|$ \\
+\midrule
+$\alpha(m, \text{cot})$        & 0.410 & 0.090 \\
+$\alpha(m, \text{visual})$     & 0.607 & 0.107 \\
+$\alpha(m, \text{instruction})$ & 0.459 & 0.041 \\
+$\alpha(m, \text{action-prev})$ & 0.644 & 0.144 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
     \centering
