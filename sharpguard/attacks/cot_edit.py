@@ -74,7 +74,7 @@ GRIPPER_PAIRS = [
 
 # Location-phrase pairs (2-word combos found in LIBERO scenes).
 LOCATION_PAIRS = [
-    # Original 2-word pairs
+    # Original 2-word pairs (literal-string matched, case-insensitive).
     ("left compartment",  "right compartment"),
     ("right compartment", "left compartment"),
     ("top shelf",         "bottom shelf"),
@@ -83,21 +83,22 @@ LOCATION_PAIRS = [
     ("back of",           "front of"),
     ("side of",           "top of"),
     ("top of",            "side of"),
-    # Expanded set — single-word spatial adjectives commonly appearing in
-    # LIBERO PLAN/SUBTASK annotations. Increases location_swap coverage
-    # from N=12 to N>60 without changing edit semantics.
-    (r"\bleft\b",   "right"),
-    (r"\bright\b",  "left"),
-    (r"\btop\b",    "bottom"),
-    (r"\bbottom\b", "top"),
-    (r"\bupper\b",  "lower"),
-    (r"\blower\b",  "upper"),
-    (r"\bfront\b",  "back"),
-    (r"\bback\b",   "front"),
-    (r"\bnear\b",   "far"),
-    (r"\bfar\b",    "near"),
-    (r"\binside\b", "outside"),
-    (r"\boutside\b", "inside"),
+]
+# Single-word spatial adjectives (regex \b word-boundary matched). Kept in
+# a SEPARATE list to avoid re.escape() clobbering the \b escapes.
+LOCATION_WORD_PAIRS = [
+    ("left",    "right"),
+    ("right",   "left"),
+    ("top",     "bottom"),
+    ("bottom",  "top"),
+    ("upper",   "lower"),
+    ("lower",   "upper"),
+    ("front",   "back"),
+    ("back",    "front"),
+    ("near",    "far"),
+    ("far",     "near"),
+    ("inside",  "outside"),
+    ("outside", "inside"),
 ]
 
 # Verb replacements (asymmetric — keep primary action word swap).
@@ -257,19 +258,32 @@ def gripper_flip(reasoning: dict) -> Optional[dict]:
 # ------------- edit family 4: location swap -------------
 
 def location_swap(reasoning: dict) -> Optional[dict]:
-    """Swap 2-word location phrases in PLAN / SUBTASK (skip MOVE which
-    direction_flip already covers)."""
+    """Swap 2-word location phrases + single-word spatial adjectives in
+    PLAN / SUBTASK / TASK (skip MOVE which direction_flip covers). Uses
+    literal string match for phrases and regex \\b word-boundary match
+    for single words."""
     edited = copy.deepcopy(reasoning)
     changed = False
     def _apply(v):
         nonlocal changed
         if not isinstance(v, str): return v
         new = v
+        # 2-word phrases: literal case-insensitive replace.
         for src, dst in LOCATION_PAIRS:
             if src.lower() in new.lower():
                 new = re.sub(re.escape(src), dst, new, flags=re.IGNORECASE)
-        if new != v:
-            changed = True
+        # Single words: \b-anchored to avoid partial-word hits ("left" in "leftmost").
+        # Two-phase to avoid double-swaps (left→right→left again).
+        placeholders = {}
+        for i, (src, _dst) in enumerate(LOCATION_WORD_PAIRS):
+            marker = f"__LOCSWAP_{i}__"
+            placeholders[marker] = _dst
+            new2 = re.sub(r"\b" + src + r"\b", marker, new, flags=re.IGNORECASE)
+            if new2 != new: changed = True
+            new = new2
+        for marker, dst in placeholders.items():
+            new = new.replace(marker, dst)
+        if new != v: changed = True
         return new
     plan = edited.get("plan")
     if isinstance(plan, dict):
