@@ -478,5 +478,67 @@ EDIT_FAMILIES = {
     "selfsplice_control":   selfsplice_control,
     "syntactic_scramble":   syntactic_scramble,
     "cross_task_swap":      cross_task_swap,
+    "paraphrase_null":      None,  # populated below
 }
+
+
+# ------------- edit family 11: paraphrase-preserving null -------------
+
+# Meaning-preserving verb synonyms (unlike verb_swap which changes meaning).
+# If a model is faithful to *semantic content*, F should ~= 0 on this family.
+# If faithful only to surface tokens, F > 0 (model is sensitive to phrasing).
+# This is a stronger null than selfsplice, which is trivially zero under
+# greedy decoding (byte-identical input).
+PARAPHRASE_SYNONYMS = [
+    (r"\bmove\b",   "shift"),
+    (r"\bgrasp\b",  "seize"),
+    (r"\bpick\b",   "lift"),
+    (r"\bplace\b",  "set"),
+    (r"\bpush\b",   "press"),
+    (r"\brelease\b", "let go of"),
+    (r"\bturn\b",   "rotate"),
+    (r"\bopen\b",   "unclose"),
+    (r"\bclose\b",  "shut"),
+]
+
+
+def paraphrase_null(reasoning: dict) -> Optional[dict]:
+    """Replace verbs in MOVE/PLAN/SUBTASK with meaning-preserving synonyms.
+    A faithful model should show F ~= 0 under this edit (a true no-op semantic
+    intervention), unlike selfsplice_control which is trivially F=0 by
+    determinism. Distinguishes 'metric well-behaved' from 'tokenizer
+    deterministic'.
+    """
+    edited = copy.deepcopy(reasoning)
+    changed = False
+    def _apply(v):
+        nonlocal changed
+        if not isinstance(v, str): return v
+        new = v
+        placeholders = {}
+        for i, (pat, syn) in enumerate(PARAPHRASE_SYNONYMS):
+            marker = f"__PARA_{i}__"
+            placeholders[marker] = syn
+            new2 = re.sub(pat, marker, new, flags=re.IGNORECASE)
+            if new2 != new: changed = True
+            new = new2
+        for marker, syn in placeholders.items():
+            new = new.replace(marker, syn)
+        return new
+    for k in ("task", "subtask", "subtask_reasoning", "subtask_reason",
+                "movement", "move", "movement_reasoning", "move_reasoning"):
+        if k in edited:
+            edited[k] = _apply(edited[k])
+    plan = edited.get("plan")
+    if isinstance(plan, dict):
+        edited["plan"] = {k: _apply(v) for k, v in plan.items()}
+    elif isinstance(plan, str):
+        edited["plan"] = _apply(plan)
+    if not changed:
+        return None
+    edited["__edit_meta__"] = {"family": "paraphrase_null"}
+    return edited
+
+
+EDIT_FAMILIES["paraphrase_null"] = paraphrase_null
 
