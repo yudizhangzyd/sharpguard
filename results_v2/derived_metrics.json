@@ -3448,6 +3448,180 @@
    "top_bucket": "cot",
    "max_sampling_std_pp": 0.09408171566253119
   },
+  "layers_8_11": {
+   "n_seeds": 3,
+   "runs": [
+    "ecot_bridge_rvis_layers8_11_seed0.json",
+    "ecot_bridge_rvis_layers8_11_seed1.json",
+    "ecot_bridge_rvis_layers8_11_seed2.json"
+   ],
+   "layers": "8,9,10,11",
+   "n_per_run": 100,
+   "cot": {
+    "mean": 0.1570703125,
+    "std": 0.00033073621527102246,
+    "range_pp": 0.05957031250000133,
+    "per_seed": [
+     0.156689453125,
+     0.15728515625,
+     0.157236328125
+    ]
+   },
+   "visual": {
+    "mean": 0.42852213541666667,
+    "std": 0.0005808152846273692,
+    "range_pp": 0.101562500000002,
+    "per_seed": [
+     0.4278515625,
+     0.4288671875,
+     0.42884765625
+    ]
+   },
+   "instr": {
+    "mean": 0.3356640625,
+    "std": 0.0006943901888527578,
+    "range_pp": 0.13281249999999578,
+    "per_seed": [
+     0.3364453125,
+     0.3351171875,
+     0.3354296875
+    ]
+   },
+   "action_prev": {
+    "mean": 0.078740234375,
+    "std": 0.00022476854075163558,
+    "range_pp": 0.04492187499999939,
+    "per_seed": [
+     0.0789697265625,
+     0.07873046875,
+     0.0785205078125
+    ]
+   },
+   "bucket_order": [
+    "visual",
+    "instr",
+    "cot",
+    "action_prev"
+   ],
+   "top_bucket": "visual",
+   "max_sampling_std_pp": 0.06943901888527577
+  },
+  "layers_16_19": {
+   "n_seeds": 3,
+   "runs": [
+    "ecot_bridge_rvis_layers16_19_seed0.json",
+    "ecot_bridge_rvis_layers16_19_seed1.json",
+    "ecot_bridge_rvis_layers16_19_seed2.json"
+   ],
+   "layers": "16,17,18,19",
+   "n_per_run": 100,
+   "cot": {
+    "mean": 0.21189778645833335,
+    "std": 0.002210233722370395,
+    "range_pp": 0.40722656250000155,
+    "per_seed": [
+     0.212890625,
+     0.209365234375,
+     0.2134375
+    ]
+   },
+   "visual": {
+    "mean": 0.41254557291666666,
+    "std": 0.0026105715507556133,
+    "range_pp": 0.5195312499999993,
+    "per_seed": [
+     0.41009765625,
+     0.41529296875,
+     0.41224609375
+    ]
+   },
+   "instr": {
+    "mean": 0.30912109375,
+    "std": 0.000947215285389236,
+    "range_pp": 0.18750000000000155,
+    "per_seed": [
+     0.30998046875,
+     0.30927734375,
+     0.30810546875
+    ]
+   },
+   "action_prev": {
+    "mean": 0.06646158854166666,
+    "std": 0.0005530813541182461,
+    "range_pp": 0.09814453124999956,
+    "per_seed": [
+     0.067099609375,
+     0.0661669921875,
+     0.0661181640625
+    ]
+   },
+   "bucket_order": [
+    "visual",
+    "instr",
+    "cot",
+    "action_prev"
+   ],
+   "top_bucket": "visual",
+   "max_sampling_std_pp": 0.2610571550755613
+  },
+  "layers_28_31": {
+   "n_seeds": 3,
+   "runs": [
+    "ecot_bridge_rvis_layers28_31_seed0.json",
+    "ecot_bridge_rvis_layers28_31_seed1.json",
+    "ecot_bridge_rvis_layers28_31_seed2.json"
+   ],
+   "layers": "28,29,30,31",
+   "n_per_run": 100,
+   "cot": {
+    "mean": 0.26147135416666667,
+    "std": 0.0004341403391367201,
+    "range_pp": 0.07519531249999822,
+    "per_seed": [
+     0.261220703125,
+     0.261220703125,
+     0.26197265625
+    ]
+   },
+   "visual": {
+    "mean": 0.45536458333333335,
+    "std": 0.0008241014924490657,
+    "range_pp": 0.146484375,
+    "per_seed": [
+     0.4544140625,
+     0.45580078125,
+     0.45587890625
+    ]
+   },
+   "instr": {
+    "mean": 0.22730794270833332,
+    "std": 0.0009044325570906345,
+    "range_pp": 0.1699218749999981,
+    "per_seed": [
+     0.227978515625,
+     0.227666015625,
+     0.226279296875
+    ]
+   },
+   "action_prev": {
+    "mean": 0.05576171875,
+    "std": 0.0005704328854105542,
+    "range_pp": 0.11328124999999967,
+    "per_seed": [
+     0.0563671875,
+     0.055234375,
+     0.05568359375
+    ]
+   },
+   "bucket_order": [
+    "visual",
+    "cot",
+    "instr",
+    "action_prev"
+   ],
+   "top_bucket": "visual",
+   "max_sampling_std_pp": 0.09044325570906345
+  },
   "full_layers_0_31": {
    "n_seeds": 3,
    "runs": [
@@ -3517,6 +3691,75 @@
    "visual_full": 0.41443359375000005,
    "visual_rise_pp": 12.40755208333334,
    "note": "the submitted alpha(cot) > alpha(visual) ordering holds only in layers 0-3; over all 32 layers it reverses"
+  },
+  "depth_sweep": {
+   "layer_sets": [
+    "early_layers_0_3",
+    "layers_8_11",
+    "layers_16_19",
+    "layers_28_31",
+    "full_layers_0_31"
+   ],
+   "n_seeds_each": 3,
+   "blocks_probed": [
+    "early_layers_0_3",
+    "layers_8_11",
+    "layers_16_19",
+    "layers_28_31"
+   ],
+   "cot_by_block": {
+    "early_layers_0_3": 0.34403645833333335,
+    "layers_8_11": 0.1570703125,
+    "layers_16_19": 0.21189778645833335,
+    "layers_28_31": 0.26147135416666667
+   },
+   "top_bucket_by_block": {
+    "early_layers_0_3": "cot",
+    "layers_8_11": "visual",
+    "layers_16_19": "visual",
+    "layers_28_31": "visual"
+   },
+   "bucket_order_by_block": {
+    "early_layers_0_3": [
+     "cot",
+     "instr",
+     "visual",
+     "action_prev"
+    ],
+    "layers_8_11": [
+     "visual",
+     "instr",
+     "cot",
+     "action_prev"
+    ],
+    "layers_16_19": [
+     "visual",
+     "instr",
+     "cot",
+     "action_prev"
+    ],
+    "layers_28_31": [
+     "visual",
+     "cot",
+     "instr",
+     "action_prev"
+    ]
+   },
+   "blocks_where_cot_leads": [
+    "early_layers_0_3"
+   ],
+   "n_blocks_where_cot_leads": 1,
+   "n_blocks_probed": 4,
+   "cot_swing_pp": 18.696614583333336,
+   "cot_min_block": "layers_8_11",
+   "cot_max_block": "early_layers_0_3",
+   "max_sampling_std_pp": 0.2610571550755613,
+   "swing_over_sampling_noise": 71.61885518104923,
+   "cot_is_monotone_in_depth": false,
+   "visual_leads_in_all_but": [
+    "early_layers_0_3"
+   ],
+   "note": "alpha(cot) leads in exactly 1 of 4 four-layer blocks, and it is the block the submission reported. Across depth alpha(cot) swings 18.7 pp against a 0.26 pp sampling floor, so the layer set is part of the claim, not a presentation choice."
   }
  },
  "training_replicate": {
@@ -3687,7 +3930,7 @@
   "any_bucket_abs_diff_pp_max": 1.4511718750000013
  },
  "noise_hierarchy": {
-  "sampling_std_pp": 0.09408171566253119,
+  "sampling_std_pp": 0.2610571550755613,
   "sampling_note": "3 draws of n=100 from ONE frozen checkpoint",
   "training_run_diff_pp": 1.4511718750000013,
   "training_run_cot_diff_pp": 1.4511718750000013,

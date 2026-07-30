@@ -536,9 +536,13 @@ def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
     a.check(sec, "sampling std of alpha(cot) at layers 0-3 <= 0.06 pp", True,
             dig(early, "cot", "std") * 100 <= 0.06,
             source=f"std={dig(early,'cot','std')*100:.3f} pp over 3 seeds")
-    a.check(sec, "no bucket's sampling std exceeds 0.094 pp", True,
+    a.check(sec, "no bucket's sampling std exceeds 0.094 pp at the two "
+                 "endpoint layer sets (0-3 and all 32)", True,
             max(early.get("max_sampling_std_pp"),
-                full.get("max_sampling_std_pp")) <= 0.0945)
+                full.get("max_sampling_std_pp")) <= 0.0945,
+            source="the five-set worst case is checked separately below and is "
+                   "0.26 pp, which is the figure the paper must quote whenever "
+                   "it speaks about the sweep rather than a single set")
 
     # The adverse result: the ordering is an artifact of the layer choice.
     ds = sr.get("depth_sensitivity") or {}
@@ -559,6 +563,73 @@ def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
             r3(dig(full, "visual", "mean")), tol=0.0015)
     a.check(sec, "the depth effect is >100x sampling noise", True,
             ds.get("cot_drop_pp", 0) > 100 * full.get("max_sampling_std_pp", 1))
+
+    # The five-layer-set sweep. Two endpoints could be dismissed as a cherry-
+    # picked pair; four four-layer blocks plus the all-layer average cannot.
+    sw = sr.get("depth_sweep") or {}
+    if not sw:
+        a.check(sec, "a five-layer-set depth sweep exists", True, None,
+                source="derived_metrics.attention_seed_repeats.depth_sweep")
+        return
+
+    a.check(sec, "the sweep covers 5 layer sets", 5,
+            len(sw.get("layer_sets") or []))
+    a.check(sec, "every layer set has 3 seeds", 3, sw.get("n_seeds_each"))
+    for name in (sw.get("layer_sets") or []):
+        a.check(sec, f"3-seed repeats exist at {name}", 3,
+                dig(sr, name, "n_seeds"))
+
+    # Per-block alpha(cot) / alpha(visual): the exact five rows of the table in
+    # the layer-depth paragraph. Quoted from derived_metrics, asserted here.
+    for name, cot, vis in (
+        ("early_layers_0_3", 0.3440, 0.2904),
+        ("layers_8_11", 0.1571, 0.4285),
+        ("layers_16_19", 0.2119, 0.4125),
+        ("layers_28_31", 0.2615, 0.4554),
+        ("full_layers_0_31", 0.2126, 0.4144),
+    ):
+        a.check(sec, f"alpha(cot) at {name} = {cot:.4f}", cot,
+                round(dig(sr, name, "cot", "mean"), 4), tol=0.0002)
+        a.check(sec, f"alpha(visual) at {name} = {vis:.4f}", vis,
+                round(dig(sr, name, "visual", "mean"), 4), tol=0.0002)
+
+    a.check(sec, "4 four-layer blocks were probed", 4, sw.get("n_blocks_probed"))
+    a.check(sec, "alpha(cot) leads in exactly 1 of the 4 blocks", 1,
+            sw.get("n_blocks_where_cot_leads"))
+    a.check(sec, "the one block where cot leads is the one the submission "
+                 "reported (layers 0-3)", ["early_layers_0_3"],
+            sw.get("blocks_where_cot_leads"),
+            source="if this ever becomes a different block, the paper's "
+                   "'and it is the block the submission reported' is false")
+    a.check(sec, "alpha(visual) leads in all four other layer sets",
+            ["early_layers_0_3"], sw.get("visual_leads_in_all_but"))
+    a.check(sec, "alpha(cot) is minimal at layers 8-11", "layers_8_11",
+            sw.get("cot_min_block"))
+    a.check(sec, "alpha(cot) is maximal at layers 0-3", "early_layers_0_3",
+            sw.get("cot_max_block"))
+    a.check(sec, "alpha(cot) swings 18.7 pp across depth", 18.7,
+            round(sw.get("cot_swing_pp"), 1), tol=0.06)
+    a.check(sec, "alpha(cot) is NOT monotone in depth", False,
+            sw.get("cot_is_monotone_in_depth"),
+            source="the paper must not describe the trend as a decay; the "
+                   "minimum is interior (layers 8-11), not at either end")
+    a.check(sec, "worst-case 3-seed sampling std across all five sets = "
+                 "0.26 pp", 0.26, round(sw.get("max_sampling_std_pp"), 2),
+            tol=0.006)
+    a.check(sec, "the depth swing is 72x the five-set sampling floor", 72,
+            round(sw.get("swing_over_sampling_noise")), tol=0.6)
+    a.check(sec, "the sweep's worst-case sigma comes from layers 16-19 "
+                 "(so the 0.094 pp figure above must stay scoped)", True,
+            abs(dig(sr, "layers_16_19", "max_sampling_std_pp")
+                - sw.get("max_sampling_std_pp")) < 1e-9)
+
+    tex = TEX.read_text() if TEX.exists() else ""
+    for frag in ("exactly one of the four four-layer blocks",
+                 "$18.7$\\,pp", "$72\\times$"):
+        a.check(sec, f"the manuscript states the sweep result ({frag!r})",
+                True, frag in tex, source=str(TEX))
+    a.check(sec, "the manuscript scopes the 0.094 pp sigma to its layer set",
+            True, "at this layer set" in tex, source=str(TEX))
 
 
 def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
@@ -655,14 +726,27 @@ def audit_release(a: Audit) -> None:
     a.check(sec, "10,906 of those carry a scored action pair "
                  "(the rest are skipped: target object not in frame)",
             10906, n["edit"][1])
-    a.check(sec, "2,120 per-observation attention records released",
-            2120, n["attn"][0])
+    # Both of the next two are read OUT OF THE MANUSCRIPT rather than hardcoded.
+    # They were hardcoded, and adding nine attention runs made the audit fail on
+    # its own stale constants while the paper still quoted the old ones -- the
+    # check pointed at the wrong document. Parsing the paper means the count can
+    # only ever fail when the paper and the artifacts genuinely disagree.
+    tex = TEX.read_text() if TEX.exists() else ""
+    m = re.search(r"\\textbf\{([\d{},]+)\} per-observation attention records", tex)
+    want_attn = int(re.sub(r"[^\d]", "", m.group(1))) if m else None
+    a.check(sec, "the attention-record count the manuscript quotes is the "
+                 "number released", want_attn, n["attn"][0],
+            source="cot_faith_iclr.tex: 'N per-observation attention records'")
     a.check(sec, "200 withdrawn-P3 records retained so the withdrawal is "
                  "checkable", 200, n["p3"][0])
 
     total_mb = sum(f.stat().st_size for f in (root / "results_v2").rglob("*.json"))
     total_mb /= 1024 * 1024
-    a.check(sec, "released JSON totals 13.0 MB", 13.0, round(total_mb, 1), tol=0.15)
+    m = re.search(r"--- \$([\d.]+)\$\\,MB of JSON in total", tex)
+    want_mb = float(m.group(1)) if m else None
+    a.check(sec, "the release size the manuscript quotes matches the release",
+            want_mb, round(total_mb, 1), tol=0.15,
+            source="cot_faith_iclr.tex: '$N$\\,MB of JSON in total'")
 
     # --- no stale n=1 artifact sitting next to the N=30 claim (reviewer 5d) ---
     stale = []

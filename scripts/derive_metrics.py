@@ -142,12 +142,22 @@ TRAIN_REPLICATE_PAIRS = [
      "edit": None},
 ]
 
-# 3 sampling seeds x 2 layer sets on the frozen public ECoT-bridge checkpoint.
-# "early" (0-3) is what the submission reported; "full" is all 32 layers.
+# 3 sampling seeds x 5 layer sets on the frozen public ECoT-bridge checkpoint.
+# "early" (0-3) is what the submission reported; "full" is all 32. The three
+# mid/late blocks were added because reporting only the two endpoints left the
+# obvious question open -- is layers 0-3 unusual, or is the whole first half of
+# the network CoT-leading? -- and the answer changes the claim.
 ATTN_SEED_RUNS = {
     "early_layers_0_3": ["ecot_bridge_rvis_earlylayers_seed%d.json" % s for s in (0, 1, 2)],
+    "layers_8_11":      ["ecot_bridge_rvis_layers8_11_seed%d.json" % s for s in (0, 1, 2)],
+    "layers_16_19":     ["ecot_bridge_rvis_layers16_19_seed%d.json" % s for s in (0, 1, 2)],
+    "layers_28_31":     ["ecot_bridge_rvis_layers28_31_seed%d.json" % s for s in (0, 1, 2)],
     "full_layers_0_31": ["ecot_bridge_rvis_fulllayers_seed%d.json" % s for s in (0, 1, 2)],
 }
+# Depth order for the sweep, endpoints last so the pre-existing two-set
+# comparison below reads the same keys it always did.
+ATTN_DEPTH_ORDER = ["early_layers_0_3", "layers_8_11", "layers_16_19",
+                    "layers_28_31", "full_layers_0_31"]
 ATTN_BUCKETS = ["action->cot", "action->visual", "action->instr",
                 "action->action_prev"]
 
@@ -318,6 +328,49 @@ def derive_attention_seed_repeats():
             "visual_rise_pp": (f["visual"]["mean"] - e["visual"]["mean"]) * 100,
             "note": ("the submitted alpha(cot) > alpha(visual) ordering holds only "
                      "in layers 0-3; over all 32 layers it reverses"),
+        }
+
+    # The full sweep. Reporting only the two endpoints left it possible that
+    # "layers 0-3 vs all 32" was an averaging artifact rather than a depth
+    # effect; with three intermediate blocks it is not. This block exists so
+    # the paper can quote the sweep instead of the endpoints.
+    depth = [t for t in ATTN_DEPTH_ORDER if t in out]
+    blocks = [t for t in depth if t != "full_layers_0_31"]
+    if len(blocks) >= 3:
+        cot = {t: out[t]["cot"]["mean"] for t in blocks}
+        lead = {t: out[t]["top_bucket"] for t in blocks}
+        cot_leading = [t for t in blocks if lead[t] == "cot"]
+        max_sig = max(out[t]["max_sampling_std_pp"] for t in depth)
+        swing = (max(cot.values()) - min(cot.values())) * 100
+        out["depth_sweep"] = {
+            "layer_sets": depth,
+            "n_seeds_each": 3,
+            "blocks_probed": blocks,
+            "cot_by_block": cot,
+            "top_bucket_by_block": lead,
+            "bucket_order_by_block": {t: out[t]["bucket_order"] for t in blocks},
+            # The load-bearing number: only ONE of the four 4-layer blocks puts
+            # CoT on top, and it is the block the submission happened to pick.
+            "blocks_where_cot_leads": cot_leading,
+            "n_blocks_where_cot_leads": len(cot_leading),
+            "n_blocks_probed": len(blocks),
+            "cot_swing_pp": swing,
+            "cot_min_block": min(cot, key=cot.get),
+            "cot_max_block": max(cot, key=cot.get),
+            "max_sampling_std_pp": max_sig,
+            # Depth variation vs the sampling floor. If this ratio is large the
+            # layer set is not a free parameter, it is part of the claim.
+            "swing_over_sampling_noise": (swing / max_sig) if max_sig else None,
+            "cot_is_monotone_in_depth": (
+                list(cot.values()) == sorted(cot.values())
+                or list(cot.values()) == sorted(cot.values(), reverse=True)),
+            "visual_leads_in_all_but": [t for t in blocks if lead[t] != "visual"],
+            "note": ("alpha(cot) leads in exactly %d of %d four-layer blocks, "
+                     "and it is the block the submission reported. Across depth "
+                     "alpha(cot) swings %.1f pp against a %.2f pp sampling "
+                     "floor, so the layer set is part of the claim, not a "
+                     "presentation choice." % (len(cot_leading), len(blocks),
+                                                swing, max_sig)),
         }
     return out or None
 
@@ -726,7 +779,7 @@ def main():
     if attn_seeds:
         print("\n=== attention: sampling error bars and depth sensitivity ===")
         for tag, e in attn_seeds.items():
-            if tag == "depth_sensitivity":
+            if tag in ("depth_sensitivity", "depth_sweep"):
                 continue
             print(f"  {tag:18s} n_seeds={e['n_seeds']} order={e['bucket_order']}")
             for b in ("cot", "visual", "instr", "action_prev"):
@@ -737,6 +790,13 @@ def main():
         if ds:
             print(f"  ordering preserved across depth: {ds['ordering_is_preserved']} "
                   f"({ds['reported_layers_top_bucket']} -> {ds['all_layers_top_bucket']})")
+        sw = attn_seeds.get("depth_sweep")
+        if sw:
+            print(f"  cot leads in {sw['n_blocks_where_cot_leads']}/"
+                  f"{sw['n_blocks_probed']} 4-layer blocks "
+                  f"({', '.join(sw['blocks_where_cot_leads'])}); "
+                  f"cot swings {sw['cot_swing_pp']:.1f}pp across depth = "
+                  f"{sw['swing_over_sampling_noise']:.0f}x the sampling floor")
     if train_rep:
         print("\n=== same-config training replicate (the leaderboard error bar) ===")
         for pr in train_rep["pairs"]:

@@ -37,7 +37,7 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
    boolean `faithful = delta_linf > tau`.
-2. **Attention records** (2,120 released) — per-observation four-bucket
+2. **Attention records** (3,020 released) — per-observation four-bucket
    decomposition of action-token attention mass (visual / instruction / CoT /
    previous-action), with segment boundaries and segment token counts so that
    per-token normalization is recomputable.
@@ -45,7 +45,7 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-15,346 records in 13.0 MB of JSON across 15 models: 13,026 edit records, 2,120
+16,246 records in 13.6 MB of JSON across 15 models: 13,026 edit records, 3,020
 attention records, and 200 records behind the withdrawn P3 probe (retained so
 the withdrawal is checkable rather than asserted). Per-model edit runs are
 1,000 records (10 families x N=100); the three ECoT-bridge seeds are 1,100 each
@@ -74,14 +74,19 @@ deliberately incomplete in ways the paper states as limitations:
   both normalizations exist, the one-sided version overstates the model by
   4.4x — so that table's ordering is **not** floor-corrected.
 - **All reported attention is averaged over layers 0-3, and the layer set
-  changes the answer.** Over all 32 layers the four buckets reorder:
-  `cot` 0.344 -> 0.213 and `visual` 0.290 -> 0.414. Sampling noise is 0.09 pp,
-  so this is not noise. Do not quote a bucket ordering from this release
-  without stating its layer set. Both layer sets are released
-  (`ecot_bridge_rvis_{early,full}layers_seed{0,1,2}.json`).
+  changes the answer.** We now sweep five layer sets x 3 seeds. `cot` leads in
+  **exactly one of the four four-layer blocks probed, and it is the block the
+  submission reported**: alpha(cot) = 0.344 (0-3), 0.157 (8-11), 0.212 (16-19),
+  0.262 (28-31), 0.213 (all 32), while `visual` leads in the other four sets.
+  The 18.7 pp swing is non-monotone in depth and runs against a worst-case
+  three-seed sampling sigma of 0.26 pp — a ratio of 72x, so this is not noise.
+  Do not quote a bucket ordering from this release without stating its layer
+  set. All five sets are released
+  (`ecot_bridge_rvis_{earlylayers,layers8_11,layers16_19,layers28_31,fulllayers}_seed{0,1,2}.json`).
 - **Attention error bars come from two retraining pairs, not from per-model
-  replicates.** Sampling noise is measured at sigma <= 0.094 pp (3 seeds,
-  N=100), but the quantity leaderboard rows differ in is same-config
+  replicates.** Sampling noise is measured at sigma <= 0.094 pp at the
+  reported layer set and <= 0.26 pp across all five (3 seeds, N=100 each), but
+  the quantity leaderboard rows differ in is same-config
   retraining, for which only 2 pairs exist (0.56 and 1.45 pp) against a
   2.30 pp within-family spread. That ratio (1.6x) supports **no** within-family
   ordering, and two pairs are a magnitude, not a distribution. For `F`, the
@@ -262,7 +267,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 218 claims, one of which is that this
+The audit script currently checks 250 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
