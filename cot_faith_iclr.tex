@@ -56,7 +56,7 @@ We present \textbf{CoT-Faith}, a standardized benchmark for measuring chain-of-t
 \label{sec:intro}
 % ============================================================
 
-Vision-language-action (VLA) models that emit chain-of-thought reasoning alongside their action tokens are widely proposed as a route toward interpretable robotics: the reasoning is expected to expose the model's plan for review, correction, or safety monitoring \citep{ecot,cotvla,ecotlite,deepthinkvla}. This premise -- that the emitted CoT \emph{drives} the subsequent action decode -- underwrites downstream systems such as CoT-based safety monitors, CoT-edit-based corrective interventions, and CoT-derived auditing. Yet the premise has not been empirically evaluated for manipulation VLAs under uniform conditions. Recent work has evaluated CoT-faithfulness for driving VLAs \citep{vladrivebench,pinocchio} and probed a single edit family in one manipulation setting \citep{doubleedged}; a general, cross-model, cross-corpus, standardized benchmark for manipulation-domain CoT-faithfulness is missing.
+Vision-language-action (VLA) models that emit chain-of-thought reasoning alongside their action tokens are widely proposed as a route toward interpretable robotics: the reasoning is expected to expose the model's plan for review, correction, or safety monitoring \citep{ecot,cotvla,ecotlite,deepthinkvla}. This premise -- that the emitted CoT \emph{drives} the subsequent action decode -- underwrites downstream systems such as CoT-based safety monitors, CoT-edit-based corrective interventions, and CoT-derived auditing. Yet the premise has not been empirically evaluated for manipulation VLAs under uniform conditions. Recent work has evaluated CoT-faithfulness for driving VLAs \citep{vladrivebench,pinocchio} and probed CoT-based safety monitors under perturbation in a small manipulation cohort \citep{doubleedged}; a general, cross-model, cross-corpus, standardized benchmark for manipulation-domain CoT-faithfulness is missing.
 
 We taxonomize the design space of CoT-faithfulness evaluation into three probe families (attention, causal-intervention, downstream-utility) and populate each with formal metrics, a null control, and reference implementations. Applied to 15 manipulation VLAs across 4 architecture families (OpenVLA non-CoT $\times 4$, DeepThinkVLA $\times 3$, our ECoT LoRA-fine-tune $\times 7$, ECoT-bridge public $\times 1$), CoT-Faith enables systematic study of \emph{which training regimes yield actually load-bearing reasoning}, distinct from \emph{which regimes surface-emit reasoning text}.
 
@@ -75,13 +75,13 @@ We taxonomize the design space of CoT-faithfulness evaluation into three probe f
 % ============================================================
 
 \paragraph{Manipulation VLAs with chain-of-thought.}
-ECoT \citep{ecot} introduced the nine-tag reasoning trace (\texttt{TASK}, \texttt{PLAN}, \texttt{VISIBLE OBJECTS}, \texttt{SUBTASK REASONING}, \texttt{SUBTASK}, \texttt{MOVE REASONING}, \texttt{MOVE}, \texttt{GRIPPER POSITION}, \texttt{ACTION}) as the target during LoRA fine-tuning of OpenVLA-7B. ECoT-Lite \citep{ecotlite} released dense per-timestep reasoning annotations over 90 LIBERO tasks. DeepThinkVLA \citep{deepthinkvla} extended the framework with hybrid causal/bidirectional decoders on PaliGemma. OpenVLA-OFT \citep{openvlaoft} added an orthogonal fine-tuning recipe. All four assume that the emitted CoT informs the action.
+ECoT \citep{ecot} introduced the nine-tag reasoning trace (\texttt{TASK}, \texttt{PLAN}, \texttt{VISIBLE OBJECTS}, \texttt{SUBTASK REASONING}, \texttt{SUBTASK}, \texttt{MOVE REASONING}, \texttt{MOVE}, \texttt{GRIPPER POSITION}, \texttt{ACTION}) as the target during LoRA fine-tuning of OpenVLA-7B. ECoT-Lite / Efficient Embodied Reasoning \citep{ecotlite} released dense per-timestep reasoning annotations over 90 LIBERO tasks and studied training strategies for efficient embodied reasoning. DeepThinkVLA \citep{deepthinkvla} extended the framework with a hybrid-attention decoder (causal attention for language, bidirectional attention for parallel action decoding) on PaliGemma, plus a two-stage SFT-then-RL alignment pipeline. OpenVLA-OFT \citep{openvlaoft} proposed an Optimized Fine-Tuning recipe (parallel decoding, action chunking, continuous action representation) for adapting VLAs to new robot setups. All four assume that the emitted CoT informs the action.
 
 \paragraph{Faithfulness in language models.}
 For LLMs, \citet{turpin2023} showed that CoT can be post-hoc rationalisation; \citet{lanham2023} showed rank-based CoT importance is inconsistent across tasks. These motivate our manipulation-domain investigation.
 
 \paragraph{Existing embodied CoT-faith work.}
-VLADriveBench \citep{vladrivebench} defined the mentioning/hallucination/contradiction/action-alignment quartet for autonomous-driving CoT-VLAs. Pinocchio \citep{pinocchio} trained a critic to score CoT for driving trajectories. \citet{doubleedged} evaluated three architectures on LIBERO with a single entity-swap edit family and explicitly deferred direction-swap and gripper-flip to future work; they did not include a null selfsplice control, and did not evaluate cross-corpus generalization.
+VLADriveBench \citep{vladrivebench} defined the mentioning/hallucination/contradiction/action-alignment quartet plus a CoT-intervention protocol for autonomous-driving CoT-VLAs. Pinocchio \citep{pinocchio} operationalized a behavioral surrogate for embodied faithfulness through a learned critic scoring observation grounding and stepwise coherence on driving trajectories. \citet{doubleedged} evaluated three VLA reasoning designs (no-reasoning, text-CoT, latent-iterative) on LIBERO and SimplerEnv under vision/reasoning/action-stage perturbations and monitor-based defenses; their study focused on robustness under perturbation and did not include a null selfsplice control or a multi-family causal-edit taxonomy, and did not evaluate cross-corpus generalization of a CoT-driven action monitor.
 
 \paragraph{Comparison with existing manipulation benchmarks.} Table~\ref{tab:compare} contrasts CoT-Faith with prior VLA benchmarks on the axes of faithfulness-specificity, edit-family coverage, statistical protocol, model-family and corpus coverage. CoT-Faith is the first to combine: (a) faithfulness-specific metrics; (b) $\geq 10$ edit families with a null control; (c) a same-base same-data reasoning-target ablation; (d) cross-corpus evaluation.
 
@@ -97,7 +97,7 @@ LIBERO \citep{libero} & no & 0 & --- & 5 & no & 1 \\
 Colosseum \citep{colosseum} & no (robustness) & 14 perturb. & no & 5 & no & 1 \\
 VLABench \citep{vlabench} & partial (DL) & 5 grounding & no & $\sim$5 & no & 1 \\
 LIBERO-Safety \citep{liberosafety} & no (safety) & 40 tasks/3 tiers & no & 8+2 & no & 1 \\
-Double-Edged \citep{doubleedged} & yes & 1 (entity) & no & 3 & no & 1 \\
+Double-Edged \citep{doubleedged} & partial (robustness) & 0 (perturbations) & no & 3 & no & 2 \\
 \midrule
 \textbf{CoT-Faith (ours)} & \textbf{yes} & \textbf{10 (3-tier)} & \textbf{yes} & \textbf{15} & \textbf{yes} & \textbf{1 (+3 pilot)} \\
 \bottomrule
@@ -375,20 +375,20 @@ CoT-Faith is the first standardized benchmark for chain-of-thought faithfulness 
 % ============================================================
 \bibliographystyle{plainnat}
 \begin{thebibliography}{99}
-\bibitem[Zawalski et~al.(2024)]{ecot} M.~Zawalski, R.~Julian, W.~Chen, et~al. Robotic control via embodied chain-of-thought reasoning. \emph{CoRL}, 2024. arXiv:2407.08693.
-\bibitem[Chen et~al.(2025)]{ecotlite} X.~Chen et~al. ECoT-Lite: reasoning as pretraining for VLA. arXiv:2505.08243.
-\bibitem[Yin et~al.(2026)]{deepthinkvla} C.~Yin et~al. DeepThinkVLA: causal alignment. arXiv:2511.15669.
-\bibitem[Zhao et~al.(2025)]{cotvla} Y.~Zhao et~al. CoT-VLA. \emph{CVPR}, 2025.
-\bibitem[Kim et~al.(2025)]{openvlaoft} M.~Kim et~al. OpenVLA-OFT: orthogonal fine-tuning. arXiv:2505.09000.
-\bibitem[Turpin et~al.(2023)]{turpin2023} M.~Turpin et~al. Language models don't always say what they think. \emph{NeurIPS}, 2023.
-\bibitem[Lanham et~al.(2023)]{lanham2023} T.~Lanham et~al. Measuring faithfulness in chain-of-thought reasoning. arXiv:2307.13702.
-\bibitem[Anonymous(2026a)]{vladrivebench} VLADriveBench authors. arXiv:2606.12706.
-\bibitem[Foutter et~al.(2026)]{pinocchio} M.~Foutter et~al. Do vision-language-action models mean what they say? arXiv:2607.04681.
-\bibitem[Trinh et~al.(2026)]{doubleedged} T.~Trinh et~al. Reasoning as a double-edged sword. arXiv:2607.17786.
-\bibitem[Liu et~al.(2023)]{libero} B.~Liu et~al. LIBERO. \emph{NeurIPS D\&B}, 2023.
+\bibitem[Zawalski et~al.(2024)]{ecot} M.~Zawalski, W.~Chen, K.~Pertsch, O.~Mees, C.~Finn, and S.~Levine. Robotic control via embodied chain-of-thought reasoning. \emph{CoRL}, 2024. arXiv:2407.08693.
+\bibitem[Chen et~al.(2025)]{ecotlite} W.~Chen, S.~Belkhale, S.~Mirchandani, O.~Mees, and D.~Driess. Training Strategies for Efficient Embodied Reasoning. arXiv:2505.08243, 2025.
+\bibitem[Yin et~al.(2025)]{deepthinkvla} C.~Yin, Y.~Lin, W.~Xu, S.~Tam, and X.~Zeng. DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models. arXiv:2511.15669, 2025.
+\bibitem[Zhao et~al.(2025)]{cotvla} Q.~Zhao, Y.~Lu, M.~J.~Kim, Z.~Fu, et~al. {CoT-VLA}: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models. \emph{CVPR}, 2025.
+\bibitem[Kim et~al.(2025)]{openvlaoft} M.~J.~Kim, C.~Finn, and P.~Liang. Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success (OpenVLA-OFT). arXiv:2502.19645, 2025.
+\bibitem[Turpin et~al.(2023)]{turpin2023} M.~Turpin, J.~Michael, E.~Perez, and S.~R.~Bowman. Language models don't always say what they think: unfaithful explanations in chain-of-thought prompting. \emph{NeurIPS}, 2023.
+\bibitem[Lanham et~al.(2023)]{lanham2023} T.~Lanham et~al. Measuring faithfulness in chain-of-thought reasoning. arXiv:2307.13702, 2023.
+\bibitem[Nguyen et~al.(2026)]{vladrivebench} T.~Nguyen, D.~Guo, T.~Lampo, F.~Wu, and B.~Yaman. {VLADriveBench}: Evaluating CoT-Action Relationship in VLA for Autonomous Driving. arXiv:2606.12706, 2026.
+\bibitem[Foutter et~al.(2026)]{pinocchio} M.~Foutter, M.~Cercola, L.~Wild, Y.~Wang, and M.~Li. Do vision-language-action models mean what they say? On the role of faithfulness in embodied reasoning. arXiv:2607.04681, 2026.
+\bibitem[Trinh et~al.(2026)]{doubleedged} T.~D.~Trinh, N.~Akhtar, and B.~Azam. Reasoning as a double-edged sword: architecture and cross-stage robustness in vision-language-action models. arXiv:2607.17786, 2026.
+\bibitem[Liu et~al.(2023)]{libero} B.~Liu, Y.~Zhu, C.~Gao, Y.~Feng, Q.~Liu, Y.~Zhu, and P.~Stone. {LIBERO}: Benchmarking Knowledge Transfer for Lifelong Robot Learning. \emph{NeurIPS Datasets \& Benchmarks Track}, 2023.
 \bibitem[Pumacay et~al.(2024)]{colosseum} W.~Pumacay et~al. The Colosseum: a benchmark for evaluating generalization for robotic manipulation. \emph{RSS}, 2024.
-\bibitem[VLABench(2024)]{vlabench} VLABench authors. arXiv:2412.18194.
-\bibitem[Anonymous(2026b)]{liberosafety} LIBERO-Safety authors. arXiv:2606.23686.
+\bibitem[Zhang et~al.(2024)]{vlabench} S.~Zhang, Z.~Xu, P.~Liu, X.~Yu, and Y.~Li. {VLABench}: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks. arXiv:2412.18194, 2024.
+\bibitem[Cui et~al.(2026)]{liberosafety} R.~Cui, Z.~Zhang, J.~Pang, H.~Chi, and J.~Guo. {LIBERO-Safety}: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models. arXiv:2606.23686, 2026.
 \end{thebibliography}
 
 \end{document}
