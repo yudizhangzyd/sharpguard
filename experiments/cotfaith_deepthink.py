@@ -242,6 +242,14 @@ def run(args):
                 dall = a_edit_chunk - a_orig_chunk
                 per_sample_edit.append({
                     "sample": si, "family": fname, "file_base": fbase,
+                    # The scored action pair, stored in full. Without it the
+                    # direction-aware score F_dir and the signed cos_xyz -- the
+                    # two statistics that reverse the magnitude ranking -- are
+                    # not computable for this model, and DeepThinkVLA would be a
+                    # second architecture family only for the metric the paper
+                    # itself argues against reporting alone.
+                    "a_orig": [float(x) for x in a_orig_chunk[0]],
+                    "a_edit": [float(x) for x in a_edit_chunk[0]],
                     "delta_l1_mean": float(np.mean(np.abs(d0))),
                     "delta_linf":    float(np.max(np.abs(d0))),
                     "faithful":      float(np.max(np.abs(d0))) > args.threshold,
