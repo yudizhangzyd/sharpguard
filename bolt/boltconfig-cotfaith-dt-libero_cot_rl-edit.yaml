@@ -11,13 +11,13 @@ resources:
   task_type: 1gpu
   disk_gb: 512
   timeout: 8h
-  cluster: aws_6
+  cluster: aws_10
 environment_variables:
   HF_HOME: /tmp/hf
   HF_HUB_OFFLINE: '0'
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
-  CKPT_PATH: 'yinchenghust/deepthinkvla_libero_cot_rl'
+  CKPT_HF_ID: 'yinchenghust/deepthinkvla_libero_cot_rl'
   N_SAMPLES: '100'
   THRESHOLD: '0.05'
   DTYPE: 'bfloat16'
