@@ -143,11 +143,23 @@ deliberately incomplete in ways the paper states as limitations:
   any DeepThinkVLA checkpoint (`action_prev` leads on base at 0.384, `instr` on
   SFT and RL at 0.310), so the "CoT bucket is largest" observation is specific
   to both the layer set and the architecture family.
-- **No rollout-level records.** All measurements are first-step. A diagnostic
-  rollout returned Task SR 0/20 on a public checkpoint with a published ~85%
-  SR; that failure is disclosed, its cause (a scoring bug reading
-  `info["success"]`, a key LIBERO never sets) is fixed, and the reproduction is
-  in flight. No number in the paper is conditioned on it.
+- **No rollout-level records, and the decoder gate has failed twice.** All
+  measurements are first-step. The first diagnostic rollout returned Task SR
+  0/20 on a public checkpoint with a published ~85% SR; cause, a scoring bug
+  reading `info["success"]`, a key LIBERO never sets. With that fixed the
+  four-suite gate returned 0.08 (libero_goal) and 0.00 (libero_object) — also
+  not the policy: LIBERO's `.pruned_init` files are `torch.save` archives, our
+  loader read them with `np.load` (which opens the zip and returns raw `bytes`),
+  so every episode fell back to a random `env.reset()` instead of the suite's
+  canonical evaluation initial state. **Both runs exited 0 and wrote a
+  well-formed `sr.json`**, which is the failure mode this release now guards
+  against specifically: the loader raises instead of falling back
+  (`tests/test_init_states_loader.py` asserts that on garbage input), and every
+  rollout report records `n_episodes_canonical_init` /
+  `all_episodes_used_canonical_init` so an SR cannot be read without its
+  provenance. The corrected gate is running; it is not in this release. **No
+  number in the paper is conditioned on a rollout, and we do not claim the
+  decoder is validated at the rollout level.**
 - **Probe P3 (attention->action-error AUROC) is withdrawn**, not merely
   caveated: a decoder audit showed it was computed cross-domain. The
   implementation and the audit that killed it are both released
