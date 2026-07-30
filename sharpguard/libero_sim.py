@@ -53,18 +53,64 @@ def is_available() -> bool:
 
 
 def _load_libero_init_states(path: str):
-    """LIBERO's init_states files vary in format across suites/versions.
-    Returns numpy array of shape (n_episodes, state_dim), or None if the
-    file's structure doesn't match expectations. Caller falls back to
-    env.reset() sampling when None.
+    """LIBERO's per-(task, episode) evaluation initial states.
+
+    Returns a numpy array of shape (n_episodes, state_dim). RAISES if the file
+    exists but cannot be parsed. That is deliberate: the previous version
+    returned None and let the caller fall back to `env.reset()`, and because
+    `.pruned_init` files are `torch.save` archives rather than numpy ones, the
+    fallback fired on *every* task of *every* suite. The resulting runs looked
+    like completed evaluations and reported Task SR = 0.00-0.08 against a
+    published ~85%, because a random reset does not place the objects where the
+    task (or the training distribution) expects them. A silent fallback here
+    cannot be distinguished from a real result downstream, so there is none.
+
+    `.pruned_init` is PyTorch's zip serialization: entries `archive/data.pkl`
+    and `archive/version`. `np.load` will happily open the zip and then hand
+    back raw `bytes` for those entries, which is where the old
+    `'bytes' object has no attribute 'tobytes'` came from. LIBERO's own loader
+    (`libero.libero.benchmark.Benchmark.get_task_init_states`) uses
+    `torch.load`, so that is what we try first.
     """
     if not os.path.exists(path):
+        # A missing file is a different fact from an unparseable one: some
+        # suites genuinely ship no init states, and for those env.reset() is
+        # the documented behavior.
+        print(f"[libero-sim] no init_states file at {path}; env.reset() is the "
+              f"documented behavior when the suite ships none")
         return None
+
+    def _as_array(obj):
+        if isinstance(obj, torch.Tensor):
+            obj = obj.detach().cpu().numpy()
+        if isinstance(obj, (list, tuple)) and obj:
+            first = obj[0]
+            if isinstance(first, torch.Tensor):
+                obj = np.stack([t.detach().cpu().numpy().ravel() for t in obj])
+            elif isinstance(first, np.ndarray):
+                obj = np.stack([np.asarray(a).ravel() for a in obj])
+        return obj if isinstance(obj, np.ndarray) else None
+
+    # torch.load first: this is the authoritative format for `.pruned_init`.
+    try:
+        arr = _as_array(torch.load(path, map_location="cpu",
+                                   weights_only=False))
+        if arr is not None and arr.ndim == 2 and arr.shape[1] >= 30:
+            print(f"[libero-sim] init_states {os.path.basename(path)}: "
+                  f"{arr.shape[0]} episodes x {arr.shape[1]} dims (torch)")
+            return np.asarray(arr, dtype=np.float64)
+        torch_err = f"parsed but wrong shape: {None if arr is None else arr.shape}"
+    except Exception as e:
+        torch_err = f"{type(e).__name__}: {e}"
+
     try:
         loaded = np.load(path, allow_pickle=True)
     except Exception as e:
-        print(f"[libero-sim] init_states load failed at {path}: {e}")
-        return None
+        raise RuntimeError(
+            f"init_states at {path} could not be read by torch.load "
+            f"({torch_err}) or np.load ({type(e).__name__}: {e}). Rolling out "
+            f"from env.reset() instead would silently produce a meaningless "
+            f"Task SR, so this is fatal.") from e
     def _validate(arr):
         """Only accept 2D arrays that look like state vectors (~70+ dims)."""
         if not isinstance(arr, np.ndarray):
@@ -121,10 +167,17 @@ def _load_libero_init_states(path: str):
                             return arr
                 except Exception as e:
                     print(f"[libero-sim] pickle inside {path}[{name}]: {e}")
-        print(f"[libero-sim] init_states at {path}: no valid state-vector "
-              f"array found in keys {keys}. Falling back to env.reset().")
-        return None
-    return _validate(loaded)
+        raise RuntimeError(
+            f"init_states at {path}: no state-vector array in keys {keys} "
+            f"(torch.load also failed: {torch_err}). Rolling out from "
+            f"env.reset() instead would silently produce a meaningless Task "
+            f"SR, so this is fatal.")
+    arr = _validate(loaded)
+    if arr is None:
+        raise RuntimeError(
+            f"init_states at {path} is not a 2D state-vector array "
+            f"(torch.load also failed: {torch_err}).")
+    return arr
 
 
 # -----------------------------------------------------------------------
@@ -317,6 +370,7 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
 
     mal = np.asarray(cfg.malicious_action, dtype=np.float32)
     successes, asr_hits, total = 0, 0, 0
+    n_canonical_init, n_reset_init = 0, 0
 
     for task_idx in range(n_tasks):
         task = task_suite.get_task(task_idx)
@@ -345,10 +399,21 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                 continue
 
             env.reset()
-            if init_states is not None and ep < len(init_states):
+            if init_states is None:
+                obs = env.reset()          # suite ships none; see loader
+                n_reset_init += 1
+            elif ep < len(init_states):
                 obs = env.set_init_state(init_states[ep])
+                n_canonical_init += 1
             else:
-                obs = env.reset()
+                # Asking for more episodes than the suite has canonical init
+                # states for is a configuration error, not something to paper
+                # over with a random reset -- it would mix two different
+                # initial-state distributions inside one reported SR.
+                raise RuntimeError(
+                    f"episode {ep} requested but {task.init_states_file} has "
+                    f"only {len(init_states)} canonical init states; lower "
+                    f"--n-eps-per-task rather than mixing in random resets")
             # Settling period: after reset, the arm and free-fall objects
             # need ~10 physics steps to reach their resting state. Rolling
             # out policy actions during this window feeds it chaotic obs
@@ -422,6 +487,15 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         "n_total": total,
         "n_success": successes,
         "n_asr": asr_hits,
+        # Provenance for the SR, recorded because its absence is what let a
+        # broken gate run look like a real one: an SR measured from random
+        # env.reset() states is not comparable to a published number measured
+        # from the suite's canonical init states, and nothing downstream could
+        # previously tell the two apart.
+        "n_episodes_canonical_init": n_canonical_init,
+        "n_episodes_reset_init": n_reset_init,
+        "all_episodes_used_canonical_init": (n_reset_init == 0
+                                             and n_canonical_init == total),
         "SR": successes / max(total, 1) if not cfg.apply_trigger else float("nan"),
         "ASR": asr_hits / max(total, 1) if cfg.apply_trigger else float("nan"),
     }
