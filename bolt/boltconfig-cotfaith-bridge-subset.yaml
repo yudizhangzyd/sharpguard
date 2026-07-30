@@ -1,0 +1,30 @@
+name: 'CoT-Faith F4 deconfound: LoRA r=32 on 4k Bridge V2 subset (matched to LIBERO-90 scale)'
+description: 'Fine-tune ECoT-bridge base on Bridge V2 4k-trajectory subset with Embodied-CoT reasoning annotations. Same rank/steps/base as Ours-r=32 LIBERO fine-tune. Isolates corpus effect from data quantity (reviewer-flagged F4 confound).'
+tags: ['cotfaith','deconfound','bridge-subset','F4']
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources: {docker_image: docker.apple.com/iris/iris:2.15.0, task_type: 1gpu, disk_gb: 512, timeout: 24h, cluster: aws_6}
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  BRIDGE_DATASET: 'IPEC-COMMUNITY/bridge_orig_lerobot'
+  BRIDGE_REASONING: 'Embodied-CoT/embodied_features_bridge'
+  N_TRAJECTORIES: '4000'
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '15000'
+  BATCH_SIZE: '2'
+  DTYPE: 'bfloat16'
+  SEED: '0'
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_bridge_subset.sh

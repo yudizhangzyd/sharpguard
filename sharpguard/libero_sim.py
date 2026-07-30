@@ -84,6 +84,43 @@ def _load_libero_init_states(path: str):
             arr = _validate(loaded[name])
             if arr is not None:
                 return arr
+        # Try LIBERO .pruned_init format: numpy archive with keys
+        # 'archive/data.pkl' + 'archive/version' where the .pkl holds a
+        # pickled list/dict of state dicts.
+        for name in keys:
+            if name.endswith("data.pkl"):
+                import pickle
+                try:
+                    obj = pickle.loads(loaded[name].tobytes())
+                    if isinstance(obj, list):
+                        # list of state dicts or state arrays
+                        vecs = []
+                        for it in obj:
+                            if isinstance(it, dict):
+                                # concatenate all numeric arrays in insertion order
+                                parts = []
+                                for k, v in it.items():
+                                    if isinstance(v, np.ndarray):
+                                        parts.append(v.ravel())
+                                if parts:
+                                    vecs.append(np.concatenate(parts))
+                            elif isinstance(it, np.ndarray):
+                                vecs.append(it.ravel())
+                        if vecs:
+                            arr = np.stack(vecs)
+                            arr = _validate(arr)
+                            if arr is not None:
+                                return arr
+                    elif isinstance(obj, np.ndarray):
+                        arr = _validate(obj)
+                        if arr is not None:
+                            return arr
+                    elif isinstance(obj, dict) and "states" in obj:
+                        arr = _validate(np.asarray(obj["states"]))
+                        if arr is not None:
+                            return arr
+                except Exception as e:
+                    print(f"[libero-sim] pickle inside {path}[{name}]: {e}")
         print(f"[libero-sim] init_states at {path}: no valid state-vector "
               f"array found in keys {keys}. Falling back to env.reset().")
         return None

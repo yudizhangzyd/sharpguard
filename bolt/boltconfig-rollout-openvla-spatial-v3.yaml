@@ -1,0 +1,22 @@
+name: 'CoT-Faith rollout v3: OpenVLA-libero-spatial Task SR (init_state fix)'
+description: 'Rollout Task SR with fixed init_state loader (handles LIBERO .pruned_init pickle archive format). N=20 eps.'
+tags: ['cotfaith','rollout','libero-spatial','init-fix']
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources: {docker_image: docker.apple.com/iris/iris:2.15.0, task_type: 1gpu, disk_gb: 512, timeout: 8h, cluster: aws_6}
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  MODEL: 'openvla/openvla-7b-finetuned-libero-spatial'
+  LIBERO_SUITE: 'libero_spatial'
+  UNNORM_KEY: 'libero_spatial'
+  N_EPS_PER_TASK: '2'
+  MAX_STEPS: '200'
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_rollout_baseline.sh
