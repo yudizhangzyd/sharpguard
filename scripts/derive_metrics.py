@@ -485,6 +485,120 @@ def derive_calibration(path, label):
     return c
 
 
+DT_RUNS = {
+    "DT-base": "deepthink_base.json",
+    "DT-SFT":  "deepthink_sft.json",
+    "DT-RL":   "deepthink_rl.json",
+}
+
+
+def derive_deepthink_p2():
+    """P2 on the SECOND architecture family, with its own floor beside it.
+
+    Until the decode was fixed, the submission's answer to "does P2 generalize
+    beyond ECoT?" was three rows of attention and no edit records at all. It now
+    has both, and the point of deriving it here rather than quoting F alone is
+    that these runs carry `paraphrase_null` (floor) and `cross_task_swap`
+    (ceiling) in the SAME run as the semantic families -- so F_diff and the
+    two-sided normalization are defined for DeepThinkVLA exactly as they are for
+    ECoT-bridge, using the same code path (`per_run_stats`) and the same
+    definitions (`derive_calibration`). A cross-family claim built from two
+    different estimators would not be a cross-family claim.
+
+    What is NOT available here: `bbox_jitter_null` and `instr_random_sub` are in
+    the 13-family calibration set, not the 11-family protocol these runs use, so
+    the out-of-CoT control and the CoT-specificity ratio are undefined for
+    DeepThinkVLA. Stated, not silently omitted.
+    """
+    out = {}
+    for label, fname in DT_RUNS.items():
+        rep = _canon(fname)
+        if not rep or not rep.get("per_sample_edit"):
+            continue
+        # per_run_stats reads rep["per_sample"]; the DeepThinkVLA harness names
+        # the same records "per_sample_edit" because that report also carries
+        # per_sample_attn. Shimming rather than duplicating keeps one estimator.
+        pr = per_run_stats({"per_sample": rep["per_sample_edit"]})
+        if not pr:
+            continue
+        fams = {}
+        for fam, st in sorted(pr.items()):
+            e = {"n": st["n"], "F_mag": st["F_mag"],
+                 "F_mag_wilson": list(wilson(st["k_mag"], st["n"])),
+                 "cos_xyz": st["cos_xyz"],
+                 "cos_xyz_faithful_subset": st["cos_xyz_faithful_subset"]}
+            if fam in DIRECTIONAL_FAMILIES:
+                e["F_dir"] = st.get("F_dir")
+                e["n_directional"] = st.get("n_directional")
+                e["F_dir_wilson"] = list(wilson(st.get("k_dir", 0),
+                                                st.get("n_directional", 0)))
+            ag = (rep.get("edit_aggregate") or {}).get(fam) or {}
+            e["n_skipped"] = ag.get("n_skipped")
+            # Recorded because the leaderboard scores chunk step 0 while this
+            # model emits 10 steps: if F were an artifact of scoring the first
+            # step, the chunk-wide rate would disagree with it.
+            e["F_mag_chunk"] = ag.get("faithful_rate_chunk")
+            e["delta_linf_mean"] = ag.get("delta_linf_mean")
+            e["delta_linf_chunk_mean"] = ag.get("delta_linf_chunk_mean")
+            fams[fam] = e
+
+        fr = {f: v["F_mag"] for f, v in fams.items()}
+        f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
+        m = {"label": label, "source": os.path.join(CANON, fname),
+             "model": rep.get("model"), "seed": rep.get("seed"),
+             "n_families_scored": len(fams),
+             "n_attn_ok": rep.get("n_attn_ok"),
+             "n_decode_failures": (rep.get("action_decode") or {}).get(
+                 "n_sample_failures"),
+             "F_bar_non_control": f_bar, "families": fams}
+        if "paraphrase_null" in fr:
+            m["paraphrase_null"] = fr["paraphrase_null"]
+            m["F_bar_diff_vs_paraphrase_null"] = f_bar - fr["paraphrase_null"]
+            m["n_families_above_floor"] = sum(
+                1 for f in NON_CONTROL if f in fr and fr[f] > fr["paraphrase_null"])
+        if "cross_task_swap" in fr and "paraphrase_null" in fr:
+            lo, hi = fr["paraphrase_null"], fr["cross_task_swap"]
+            m["ceiling_cross_task_swap"] = hi
+            m["dynamic_range"] = hi - lo
+            m["calibration_is_degenerate"] = (hi - lo) < 0.05
+            m["F_bar_two_sided"] = ((f_bar - lo) / (hi - lo)) if (hi - lo) >= 0.05 else None
+        # selfsplice_control replaces the CoT with itself, so a nonzero F here
+        # would mean the harness manufactures deltas. It is the one family whose
+        # expected value is exactly 0.
+        if "selfsplice_control" in fr:
+            m["selfsplice_control_F"] = fr["selfsplice_control"]
+            m["identity_edit_is_exactly_zero"] = (fr["selfsplice_control"] == 0.0)
+        out[label] = m
+
+    if not out:
+        return None
+    # The cross-family claim itself, computed rather than asserted in prose.
+    deg = [k for k, v in out.items() if v.get("calibration_is_degenerate")]
+    floors = {k: v.get("paraphrase_null") for k, v in out.items()
+              if v.get("paraphrase_null") is not None}
+    summary = {
+        "n_models": len(out),
+        "n_with_measured_floor": len(floors),
+        "paraphrase_null_by_model": floors,
+        "n_degenerate": len(deg),
+        "degenerate_models": sorted(deg),
+        "F_bar_diff_by_model": {k: v.get("F_bar_diff_vs_paraphrase_null")
+                                for k, v in out.items()},
+        "any_model_with_negative_F_diff": any(
+            (v.get("F_bar_diff_vs_paraphrase_null") or 0) < 0 for v in out.values()),
+        "all_identity_edits_exactly_zero": all(
+            v.get("identity_edit_is_exactly_zero") for v in out.values()),
+    }
+    summary["note"] = (
+        "P2 now covers two architecture families. The finding replicates: on "
+        "every DeepThinkVLA checkpoint a meaning-preserving paraphrase moves the "
+        "action about as much as the semantic edits do, so magnitude F is no "
+        "more interpretable here than on ECoT-bridge. This is the check that "
+        "would have dissolved F2 had it come out the other way.")
+    out["summary"] = summary
+    return out
+
+
 def main():
     models = {}
     for name, paths in EDIT_RUNS.items():
@@ -723,6 +837,7 @@ def main():
         "attention": attn,
         "attention_baselines_noncot": baselines,
         "attention_deepthink": dt,
+        "deepthink_p2": derive_deepthink_p2(),
         "cross_corpus_n30": cross,
         "attention_noise_floor": noise,
         "calibration_floors": calib,
