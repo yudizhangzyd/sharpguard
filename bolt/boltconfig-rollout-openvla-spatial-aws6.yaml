@@ -1,6 +1,6 @@
-name: 'Diagnostic: base OpenVLA-7B-finetuned-libero-spatial Task SR'
-description: 'Sanity check: rollout the BASE OpenVLA checkpoint (no LoRA, no backdoor) on matching LIBERO suite WITH proper action un-normalization. Kim et al. report SR ~85-95%. If we hit that, the predict_action fix is confirmed and the earlier Task SR = 0 result for TemporalTrap was an artifact of missing un-normalization.'
-tags: ['diagnostic', 'baseline-sr', 'openvla-libero-spatial']
+name: 'CoT-Faith rollout: OpenVLA-libero-spatial Task SR (N=20)'
+description: 'LIBERO rollout Task SR for OpenVLA non-CoT baseline on LIBERO-Spatial. Provides one anchor point for M4 (faithful rate vs task success correlation) and M5 (rollout metric).'
+tags: ['cotfaith', 'rollout', 'libero-spatial', 'openvla-baseline']
 
 project_id: ads_algo_signal_qucacheoffline
 
@@ -12,9 +12,9 @@ priority: 1
 
 resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
-  task_type: 8gpu
+  task_type: 1gpu
   disk_gb: 512
-  timeout: 3h
+  timeout: 8h
   cluster: aws_6
 
 environment_variables:
@@ -27,8 +27,8 @@ environment_variables:
   LIBERO_SUITE: 'libero_spatial'
   UNNORM_KEY: 'libero_spatial'
 
-  N_EPS_PER_TASK: '5'   # 50 eps total across 10 tasks
-  MAX_STEPS: '300'
+  N_EPS_PER_TASK: '2'
+  MAX_STEPS: '200'
 
   DTYPE: 'bfloat16'
   ATTN: 'eager'
