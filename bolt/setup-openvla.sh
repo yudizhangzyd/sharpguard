@@ -258,3 +258,8 @@ fi
 echo "--- /tmp/sharpguard.env ---"
 cat /tmp/sharpguard.env 2>/dev/null || true
 
+
+# GPU arch preflight. A cluster whose GPUs this PyTorch has no kernels for
+# must fail HERE, not silently 100 caught exceptions later with an empty
+# report. See bolt/preflight_gpu.py for the incident this prevents.
+python bolt/preflight_gpu.py

@@ -278,6 +278,19 @@ def run(args):
     # A run where NOTHING decoded is a harness failure, not a finding. The
     # previous version wrote n=0 for all 11 families and exited 0, which is
     # how the submission ended up claiming DeepThinkVLA was "attention-only".
+    # Nothing at all succeeded. Distinct from the case below: this means the
+    # sample loop itself never produced a usable forward pass -- on aws_10 the
+    # cause was a B200 (sm_100) with a PyTorch built only up to sm_90, which
+    # raised per-sample and still let the job exit 0 with an empty report.
+    if not per_sample_attn and not per_sample_edit:
+        uniq = list(dict.fromkeys(decode_failures))[:3]
+        raise RuntimeError(
+            f"every one of {args.n_samples} samples failed: the attention probe "
+            f"produced 0 records and the edit protocol produced 0 records. An "
+            f"empty report is a harness or environment failure, never a "
+            f"measurement, so none is written. Check the GPU arch/PyTorch "
+            f"compatibility first. Diagnostics: {uniq}")
+
     if per_sample_attn and not per_sample_edit:
         uniq = list(dict.fromkeys(decode_failures))[:3]
         raise RuntimeError(
