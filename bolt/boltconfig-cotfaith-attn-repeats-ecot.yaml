@@ -15,7 +15,7 @@ resources:
   task_type: 1gpu
   disk_gb: 512
   timeout: 12h
-  cluster: aws_10
+  cluster: aws_2   # A100. NOT aws_10: B200 sm_100 vs torch sm_90 cap -- a run there 'completes' with 0 valid samples
 
 environment_variables:
   HF_HOME: /tmp/hf

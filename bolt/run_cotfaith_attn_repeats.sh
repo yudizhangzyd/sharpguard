@@ -41,6 +41,32 @@ pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
             --force-reinstall --no-deps || true
 
 CKPT="${CKPT_HF_ID:?CKPT_HF_ID must be set}"
+
+# Preflight: abort in seconds if the GPU cannot actually run a kernel, instead
+# of burning the timeout and reporting "COMPLETED" with an empty report. A run
+# on a p6-b200 node did exactly that -- torch in this image is built for
+# sm_50..sm_90, the B200 is sm_100, so every launch raised "no kernel image is
+# available for execution on the device" while the job still exited 0.
+python - <<'PY'
+import sys, torch
+if not torch.cuda.is_available():
+    sys.exit("[preflight] FATAL: no CUDA device visible")
+name = torch.cuda.get_device_name(0)
+cap = torch.cuda.get_device_capability(0)
+arches = torch.cuda.get_arch_list()
+print(f"[preflight] device={name} capability=sm_{cap[0]}{cap[1]} torch={torch.__version__}")
+print(f"[preflight] torch was built for: {arches}")
+try:
+    a = torch.randn(64, 64, device="cuda", dtype=torch.bfloat16)
+    _ = (a @ a).float().sum().item()
+    torch.cuda.synchronize()
+except Exception as e:
+    sys.exit(f"[preflight] FATAL: a trivial bf16 matmul failed on {name} "
+             f"(sm_{cap[0]}{cap[1]} vs built-for {arches}): {e}")
+print("[preflight] OK")
+PY
+
+N_OK_BEFORE=0
 N_SAMPLES="${N_SAMPLES:-100}"
 N_REPEATS="${N_REPEATS:-3}"
 LAYERS_EARLY="${RVIS_LAYERS:-0,1,2,3}"
@@ -71,34 +97,52 @@ for depth in early full; do
     done
 done
 
-# Aggregate mean+-std across seeds, per depth, without needing a local rerun.
+# Aggregate mean+-std across seeds, per depth. Exits non-zero unless every
+# depth has at least 2 runs that actually scored samples -- a report file can
+# exist with n_samples=0 when the per-sample loop caught an exception on every
+# sample, and treating that as success is how a totally failed run got marked
+# COMPLETED once already.
 python - <<'PY'
-import json, os, glob, statistics as st
+import json, os, glob, sys, statistics as st
 base = os.environ.get("BOLT_ARTIFACT_DIR", "./artifacts") + "/cotfaith-attn-repeats"
-summary = {}
+summary, problems = {}, []
 for depth in ("early", "full"):
     runs = sorted(glob.glob(f"{base}/{depth}_seed*/rvis_cot_report.json"))
     buckets = {"action->cot": [], "action->visual": [],
                "action->instr": [], "action->action_prev": []}
+    n_nonempty = 0
     for r in runs:
-        agg = json.load(open(r))["aggregate"]
+        rep = json.load(open(r))
+        if not rep.get("n_samples"):
+            problems.append(f"{r}: n_samples=0 (every sample raised)")
+            continue
+        n_nonempty += 1
         for k in buckets:
-            v = agg.get(k, {}).get("mean")
+            v = rep["aggregate"].get(k, {}).get("mean")
             if v is not None:
                 buckets[k].append(v)
     summary[depth] = {
-        "n_runs": len(runs),
+        "n_report_files": len(runs),
+        "n_runs_with_samples": n_nonempty,
         "runs": runs,
         **{k: {"mean": (st.mean(v) if v else None),
-               "std": (st.stdev(v) if len(v) > 1 else 0.0 if v else None),
+               "std": (st.stdev(v) if len(v) > 1 else None),
                "values": v}
            for k, v in buckets.items()},
     }
+    if n_nonempty < 2:
+        problems.append(f"depth={depth}: only {n_nonempty} run(s) produced "
+                        f"samples; a std needs >=2")
 out = f"{base}/attn_repeats_summary.json"
 json.dump(summary, open(out, "w"), indent=2)
 print(json.dumps(summary, indent=2)[:4000])
 print("wrote", out)
+if problems:
+    print("\n[FATAL] this run does not support the error bars it was launched for:")
+    for p in problems:
+        print("  -", p)
+    sys.exit(1)
+print("[ok] every depth has >=2 runs with samples")
 PY
 
 echo "==== Done ===="
-exit 0
