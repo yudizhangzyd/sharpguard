@@ -1,0 +1,226 @@
+# Datasheet for CoT-Faith
+
+Following Gebru et al., *Datasheets for Datasets* (2021). Every count in this
+document is reproducible from the released artifacts by
+`python3 scripts/verify_paper_numbers.py`, which exits non-zero on any
+mismatch.
+
+CoT-Faith is a **benchmark and evaluation artifact**, not a new robot
+demonstration corpus. It contributes (a) a taxonomy of chain-of-thought edit
+families with executable generators, (b) per-sample measurement records for 15
+vision-language-action models, and (c) the derivation and audit scripts that
+turn those records into the numbers in the paper. All observations are drawn
+from existing, separately licensed public corpora.
+
+---
+
+## Motivation
+
+**For what purpose was the dataset created?**
+To test empirically whether the chain-of-thought that a manipulation VLA emits
+actually drives its subsequent action decode. Interpretable-robotics work
+assumes it does, and downstream systems (CoT safety monitors, CoT-edit
+corrective interventions, CoT auditing) inherit that assumption. No uniform,
+cross-model, cross-corpus benchmark existed for the manipulation domain.
+
+**Who created it and who funded it?**
+Anonymous for review. Compute was provided by the authors' institution.
+
+---
+
+## Composition
+
+**What do the instances represent?**
+Three kinds of record, all keyed to a (model, observation, edit family) triple:
+
+1. **Edit records** (11,726 released; 9,756 scored) — for one image/instruction/CoT triple
+   and one edit family: the original 7-DoF action `a_orig`, the action after
+   the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
+   boolean `faithful = delta_linf > tau`.
+2. **Attention records** (1,420 released) — per-observation four-bucket
+   decomposition of action-token attention mass (visual / instruction / CoT /
+   previous-action), with segment boundaries and segment token counts so that
+   per-token normalization is recomputable.
+3. **Derived metrics** (`results_v2/derived_metrics.json`) — every aggregate
+   the manuscript quotes, with its source file path recorded inline.
+
+**How many instances?**
+13,346 records in 11.4 MB of JSON across 15 models: 11,726 edit records, 1,420
+attention records, and 200 records behind the withdrawn P3 probe (retained so
+the withdrawal is checkable rather than asserted). Per-model edit runs are
+1,000 records (10 families x N=100); the three ECoT-bridge seeds are 1,100 each
+(11 families) and the calibration run is 1,300 (13 families); the three
+cross-corpus runs are 40-45 each.
+
+Of the 11,726 edit records, **9,756 carry a scored action pair**. The other
+1,970 are retained with `skipped: true` and a machine-readable `reason` --- most
+often that the edit family's target object is not visible in the frame, which
+is a property of the observation, not a failure. They are released rather than
+filtered so that the denominator of every reported `F` is recomputable and no
+family's effective N has to be taken on trust. `verify_paper_numbers.py`
+asserts both counts.
+
+**Is any information missing, and why?**
+
+This is the section a reader should read most carefully. The release is
+deliberately incomplete in ways the paper states as limitations:
+
+- **Calibration floors exist for 1 of 8 CoT-VLAs.** Only ECoT-bridge has
+  `paraphrase_null`, `bbox_jitter_null`, and `instr_random_sub`. The seven
+  "ours" LoRA variants therefore have **no measured floor**, so their
+  `F` values are uncalibrated and no differential or CoT-specificity statistic
+  can be computed for them.
+- **Attention is single-run** for all 15 models in the submitted numbers, with
+  a measured run-to-run noise floor of 1.45 pp against a 2.30 pp within-family
+  spread. No within-family attention ordering is supported by the data.
+- **DeepThinkVLA has attention records but no edit records.** The edit harness
+  failed on a PaliGemma action-vocabulary mismatch; the fixed harness raises
+  instead of writing an empty report, and the re-run is not in this release.
+- **`visual` is identically 0.0 for all three DeepThinkVLA rows.** This is a
+  segmentation-schema artifact of applying a 4-bucket decomposition designed
+  for OpenVLA to PaliGemma, not a property of those models. Do not read it as
+  "DeepThinkVLA ignores the image".
+- **No rollout-level records.** All measurements are first-step. A diagnostic
+  rollout returned Task SR 0/20 on a public checkpoint with a published ~85%
+  SR; that failure is disclosed, its cause (a scoring bug reading
+  `info["success"]`, a key LIBERO never sets) is fixed, and the reproduction is
+  in flight. No number in the paper is conditioned on it.
+- **Probe P3 (attention->action-error AUROC) is withdrawn**, not merely
+  caveated: a decoder audit showed it was computed cross-domain. The
+  implementation and the audit that killed it are both released
+  (`results_v2/decoder_audit.json`) so the withdrawal is checkable.
+- **Sample sizes vary by family.** 7 of 10 semantic families are N=100;
+  `subject_swap`, `adversarial_plausible`, `selfsplice_control` are N=60-69
+  (skipped when the target object is not visible in frame); `location_swap` is
+  N=70-74 for ECoT-bridge after an annotation fix but remains N=12 for the
+  seven pre-fix "ours" rows.
+- **Seeds:** only ECoT-bridge has 3 seeds. All other rows are single-run point
+  estimates with Wilson 95% confidence intervals.
+
+**Does the dataset contain confidential or offensive content?**
+No. Observations are tabletop manipulation frames from public robotics
+corpora; instructions are short task descriptions ("put the black bowl in the
+drawer"). No human faces, no personal data, no text sourced from the open web.
+
+---
+
+## Collection process
+
+**How was the data acquired?**
+Observations, instructions, and ground-truth actions are read from existing
+public corpora. Chain-of-thought traces come from the ECoT reasoning
+annotations. The edit families are applied programmatically by
+`sharpguard/attacks.py`; each edited CoT is stored verbatim so any reviewer can
+inspect exactly what perturbation was scored. Model outputs are produced by
+forward/generate passes on public or author-trained checkpoints. No human
+annotation was collected and no crowdworkers were involved.
+
+**Source corpora**
+
+| corpus | role | upstream license |
+|---|---|---|
+| LIBERO-90 (`libero_lm_90`) | primary evaluation suite | MIT |
+| Bridge V2 | cross-corpus transfer (N=30) | CC-BY 4.0 |
+| RT-1 / Fractal | cross-corpus transfer (N=30) | Apache-2.0 |
+| BC-Z | cross-corpus transfer (N=30) | CC-BY 4.0 |
+| ECoT reasoning annotations (`embodied_features_and_demos_libero`) | CoT traces | MIT |
+
+**Model checkpoints evaluated**
+
+| checkpoint | role | upstream license |
+|---|---|---|
+| `openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10}` | non-CoT baselines | MIT |
+| `Embodied-CoT/ecot-openvla-7b-bridge` | public CoT-VLA reference | MIT |
+| `yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}` | second architecture family | see upstream; PaliGemma base carries the Gemma Terms of Use |
+| our 7 LoRA fine-tunes of `ecot-openvla-7b-bridge` | rank / data / reasoning-target ablations | released under the code license below |
+
+Sampling is a deterministic pass over the TFDS shards at `seed=0` (seeds >0
+shuffle shard order); the seed is recorded in every report.
+
+---
+
+## Preprocessing / cleaning / labeling
+
+Images are used at native corpus resolution and passed through each model's own
+processor. Instructions are lowercased in the OpenVLA prompt template to match
+the official inference format. CoT traces are rendered into each architecture's
+own prompt schema (nine-tag for ECoT, single `<think>` block for DeepThinkVLA)
+and the renderer is released.
+
+Actions are dequantized with the convention the *training* tokenizer used
+(`discretized = vocab_size - token_id`, then bin centers of
+`linspace(-1, 1, 256)`), and un-normalized with the checkpoint's own
+`norm_stats[unnorm_key]`. Both steps are load-bearing and both were wrong in an
+earlier revision; the corrected implementation is in
+`sharpguard/libero_sim.py:predict_action`.
+
+Raw model reports are preserved. `results_v2/superseded/` retains earlier runs
+that the paper no longer cites, with a README explaining what replaced each.
+
+---
+
+## Uses
+
+**What is the dataset intended to be used for?**
+Reporting CoT-faithfulness for a manipulation VLA **with its calibration
+floors beside it**. The benchmark's own headline result is that the magnitude
+score is not interpretable in absolute terms without them.
+
+**What should it NOT be used for?**
+
+- Do **not** report `F` as an absolute faithfulness number. On the one model
+  where we measured a floor, a meaning-preserving paraphrase scores 0.960
+  against a maximum-effect ceiling of 0.970, and an out-of-CoT control that
+  never touches the reasoning scores 0.99 — higher than all ten CoT families.
+- Do **not** rank models by magnitude `F`. The ranking inverts under the
+  direction-aware score: ECoT-bridge goes from 0.963 to 0.120 on
+  `direction_flip` while the LoRA variants it outscored genuinely reverse.
+- Do **not** read the four attention buckets as a salience ranking. The CoT
+  bucket is largest because it is longest; per token it receives less attention
+  than the instruction (3.9x) or the previous-action tokens (8.1x).
+- Do **not** treat any within-architecture attention difference here as real.
+  All are below the measured 1.45 pp noise floor.
+- Do **not** use `F` as a safety guarantee for a CoT monitor. A high score is
+  consistent with a model whose action merely reacts to token-level changes.
+
+---
+
+## Distribution and maintenance
+
+**How is it distributed?**
+As supplementary material with the paper submission: code, the 13 edit-family
+generators, all per-sample records under `results_v2/`, the derivation script,
+and the audit script. An anonymized public mirror will be linked at
+camera-ready; the review-time bundle is self-contained and requires no network
+access to re-derive any reported number.
+
+**Reproduction**
+
+```bash
+python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
+python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
+```
+
+The audit script currently checks 115 claims, one of which is that this
+number itself is not stale. It is designed to fail: a claim
+whose supporting artifact is missing is recorded as a failure, not skipped.
+
+**Will it be maintained, and by whom?**
+Yes, by the authors. The first camera-ready deliverable is the calibration
+sweep across the remaining seven CoT-VLAs — the check that would either
+establish or dissolve finding F2.
+
+**How can users report errors?**
+Through the repository issue tracker after de-anonymization. During review,
+please note any discrepancy in the reviewer discussion; if
+`verify_paper_numbers.py` fails on the released bundle, that is a bug in the
+release and we want to hear about it.
+
+---
+
+## Licensing
+
+See `LICENSE`. In brief: our code and the measurement records we produced are
+released permissively; the underlying corpora and third-party checkpoints
+remain under their own upstream licenses, which are listed above and are **not**
+relicensed by this release.

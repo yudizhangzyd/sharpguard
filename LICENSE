@@ -1,0 +1,81 @@
+CoT-Faith — licensing
+=====================
+
+This release has two parts under two licenses, plus third-party material that
+is NOT relicensed here.
+
+--------------------------------------------------------------------------
+1. Code — MIT License
+--------------------------------------------------------------------------
+Applies to: sharpguard/, experiments/, scripts/, figures/, bolt/, tests/.
+
+Copyright (c) 2026 The CoT-Faith authors (anonymous for review)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------
+2. Measurement records — CC BY 4.0
+--------------------------------------------------------------------------
+Applies to: results_v2/ (all per-sample edit records, attention records,
+derived metrics, the decoder audit, and results_v2/superseded/).
+
+These are measurements we produced by running the models listed below. They are
+licensed under the Creative Commons Attribution 4.0 International License:
+https://creativecommons.org/licenses/by/4.0/
+
+The records contain edited chain-of-thought text derived from the ECoT
+reasoning annotations (MIT). They contain no images and no raw demonstration
+trajectories from any upstream corpus.
+
+--------------------------------------------------------------------------
+3. Third-party material — NOT relicensed by this release
+--------------------------------------------------------------------------
+This benchmark evaluates and depends on material owned by others. Using it
+requires complying with their terms directly. Nothing above grants any right
+to the following.
+
+Evaluation corpora (accessed at run time; not redistributed here):
+  LIBERO-90 / libero_lm_90 ..................... MIT
+  Bridge V2 .................................... CC BY 4.0
+  RT-1 / Fractal ............................... Apache-2.0
+  BC-Z ......................................... CC BY 4.0
+  ECoT reasoning annotations
+    (Embodied-CoT/embodied_features_and_demos_libero) ... MIT
+
+Model checkpoints (downloaded from Hugging Face at run time):
+  openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10} ... MIT
+  Embodied-CoT/ecot-openvla-7b-bridge ........................... MIT
+  yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl} .. see the
+      upstream model cards. These are PaliGemma-based and the Google Gemma
+      Terms of Use apply to the base model:
+      https://ai.google.dev/gemma/terms
+
+Our 7 LoRA fine-tunes are derivatives of Embodied-CoT/ecot-openvla-7b-bridge
+(MIT) and are released under the MIT terms in section 1.
+
+Software dependencies (transformers, torch, LIBERO, robosuite, MuJoCo, TFDS,
+and others in requirements.txt) carry their own licenses.
+
+--------------------------------------------------------------------------
+4. Attribution
+--------------------------------------------------------------------------
+If you use CoT-Faith, please cite the paper and also cite the upstream corpora
+and checkpoints you evaluate on. The faithfulness numbers are not meaningful
+without knowing which model and corpus produced them, so the attribution is
+substantive rather than a formality.

@@ -453,6 +453,93 @@ def audit_decoder(a: Audit, da: Optional[dict]) -> None:
             200, dig(da, "_provenance", "n"))
 
 
+def audit_release(a: Audit) -> None:
+    """The 'Public release' paragraph and DATASHEET.md quote concrete counts.
+    A D&B submission whose release description does not match the release is
+    exactly the defect the R1 reviewer called disqualifying, so the counts are
+    asserted against the files on disk rather than trusted."""
+    sec = "Release integrity (DATASHEET / LICENSE / artifact counts)"
+    root = Path(__file__).resolve().parent.parent
+
+    for fname, label in (("DATASHEET.md", "datasheet (Gebru et al. format)"),
+                         ("LICENSE", "license file")):
+        a.check(sec, f"{label} present at repo root", True,
+                (root / fname).exists(), source=fname)
+
+    # --- record counts, classified by schema rather than by filename ---
+    can = root / "results_v2" / "canonical_runs"
+    n = {"edit": [0, 0], "attn": [0, 0], "p3": [0, 0]}   # [records, scored]
+
+    def acc(kind: str, lst: list) -> None:
+        n[kind][0] += len(lst)
+        n[kind][1] += sum(1 for r in lst if isinstance(r, dict)
+                          and not r.get("skipped"))
+
+    for f in sorted(can.glob("*.json")):
+        rec = load(f)
+        if not isinstance(rec, dict):
+            continue
+        if isinstance(rec.get("per_sample_edit"), list):
+            acc("edit", rec["per_sample_edit"])
+        if isinstance(rec.get("per_sample_attn"), list):
+            acc("attn", rec["per_sample_attn"])
+        ps = rec.get("per_sample")
+        if isinstance(ps, list) and ps:
+            # Classify on the UNION of keys: the first record of a run is
+            # sometimes a skipped one carrying only {family, reason}, which
+            # made an earlier version of this check misfile whole files.
+            keys = set().union(*(r.keys() for r in ps if isinstance(r, dict)))
+            if "aurocs" in rec or "median_error_l1" in rec:
+                acc("p3", ps)
+            elif {"delta_linf", "faithful", "a_edit"} & keys:
+                acc("edit", ps)
+            else:
+                acc("attn", ps)
+
+    a.check(sec, "11,726 per-sample edit records released", 11726, n["edit"][0],
+            source=f"schema-classified over {can}/*.json")
+    a.check(sec, "9,756 of those carry a scored action pair "
+                 "(the rest are skipped: target object not in frame)",
+            9756, n["edit"][1])
+    a.check(sec, "1,420 per-observation attention records released",
+            1420, n["attn"][0])
+    a.check(sec, "200 withdrawn-P3 records retained so the withdrawal is "
+                 "checkable", 200, n["p3"][0])
+
+    total_mb = sum(f.stat().st_size for f in (root / "results_v2").rglob("*.json"))
+    total_mb /= 1024 * 1024
+    a.check(sec, "released JSON totals 11.4 MB", 11.4, round(total_mb, 1), tol=0.15)
+
+    # --- no stale n=1 artifact sitting next to the N=30 claim (reviewer 5d) ---
+    stale = []
+    for f in sorted((root / "results_v2").glob("*.json")):
+        try:
+            rec = json.loads(f.read_text())
+        except Exception:
+            continue
+        if isinstance(rec, dict) and rec.get("n_samples_used") == 1:
+            stale.append(f.name)
+    a.check(sec, "no n_samples_used=1 artifact at the top of results_v2/ "
+                 "(the withdrawn pilot is under superseded/)", [], stale,
+            source="reviewer critical #5(d): committed artifacts contradicted "
+                   "the submitted N=30")
+    a.check(sec, "superseded/ carries a README naming what replaced each run",
+            True, (root / "results_v2" / "superseded" / "README.md").exists())
+
+    # --- the paper's own self-description must match ---
+    tex = TEX.read_text() if TEX.exists() else ""
+    for needle, label in (
+        ("11{,}726", "paper quotes the edit-record count"),
+        ("9{,}756", "paper quotes the scored-subset count"),
+        ("1{,}420", "paper quotes the attention-record count"),
+        ("DATASHEET.md", "paper points readers at the datasheet"),
+        ("LICENSE", "paper states the license"),
+    ):
+        a.check(sec, label, True, needle in tex, source=f"searched for '{needle}'")
+    a.check(sec, "no [URL] placeholder left in the manuscript", True,
+            "\\url{[URL]}" not in tex and "[URL]" not in tex)
+
+
 def audit_manuscript_hygiene(a: Audit) -> None:
     """Catch the defect class the reviewer found twice: prose left behind after
     a numbers revision, still contradicting the artifacts."""
@@ -522,7 +609,17 @@ def main() -> int:
     audit_f5(a, d)
     audit_f6_directional(a, d)
     audit_decoder(a, da)
+    audit_release(a)
     audit_manuscript_hygiene(a)
+
+    # The manuscript states how many claims this script checks. Let the script
+    # verify its own advertised size, so adding a check cannot silently make
+    # the paper's description of the audit stale.
+    quoted = re.search(r"checks \$(\d+)\$ claims", TEX.read_text()) if TEX.exists() else None
+    a.check("Release integrity (DATASHEET / LICENSE / artifact counts)",
+            "the claim count the manuscript advertises matches this script",
+            len(a.rows) + 1, int(quoted.group(1)) if quoted else None,
+            source="cot_faith_iclr.tex: 'checks $N$ claims'")
 
     rc = a.report()
     if args.json:
