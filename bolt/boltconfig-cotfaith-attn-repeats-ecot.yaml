@@ -1,0 +1,36 @@
+name: 'CoT-Faith R1: attention error bars + full 32-layer sweep (ECoT-bridge)'
+description: 'R1 reviewer critical #5, items (c) and (6). The paper''s alpha(cot) numbers are all single-run, and the only run-to-run noise estimate we had was accidental (two r=32 runs 1.45pp apart = 63% of the 2.30pp cluster spread that F1 and F3 both depend on). This job measures 3 independent sample draws so mean+-std is real, and repeats the whole 4-bucket decomposition over all 32 LLaMA blocks instead of layers 0-3, so the paper can say whether the bucket ordering is a property of the network or of the layer subset we chose. No claim about attention is defensible until both land.'
+tags: ['cotfaith', 'attention', 'error-bars', 'full-depth', 'r1']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 12h
+  cluster: aws_10
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  N_REPEATS: '3'
+  RVIS_LAYERS: '0,1,2,3'
+  # All 32 LLaMA blocks. Attention capture for 32 layers at ~550 tokens is
+  # ~0.6 GB in bf16, well inside a single device.
+  RVIS_LAYERS_FULL: '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_attn_repeats.sh
