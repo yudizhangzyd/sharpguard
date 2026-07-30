@@ -1,0 +1,462 @@
+{
+  "model": "yinchenghust/deepthinkvla_base",
+  "n_samples": 100,
+  "seed": 0,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.2290234375,
+      "std": 0.01641815044584803,
+      "n": 100
+    },
+    "action->visual": {
+      "mean": 0.0,
+      "std": 0.0,
+      "n": 100
+    },
+    "action->instr": {
+      "mean": 0.5102734375,
+      "std": 0.014573035100856006,
+      "n": 100
+    },
+    "action->action_prev": {
+      "mean": 0.252763671875,
+      "std": 0.005042420680302137,
+      "n": 100
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 0
+    },
+    "gripper_flip": {
+      "n": 0
+    }
+  },
+  "n_attn_ok": 100,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.515625,
+      "action->cot": 0.2275390625,
+      "action->action_prev": 0.25,
+      "cot->visual": 0.0,
+      "cot->instr": 0.34765625,
+      "cot->cot_self": 0.60546875,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 327,
+        "action_end": 335
+      },
+      "sample_idx": 0,
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.515625,
+      "action->cot": 0.2236328125,
+      "action->action_prev": 0.25390625,
+      "cot->visual": 0.0,
+      "cot->instr": 0.345703125,
+      "cot->cot_self": 0.60546875,
+      "instr->visual": 0.0,
+      "instr->instr": 0.67578125,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 325,
+        "action_end": 333
+      },
+      "sample_idx": 1,
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.515625,
+      "action->cot": 0.2216796875,
+      "action->action_prev": 0.255859375,
+      "cot->visual": 0.0,
+      "cot->instr": 0.34375,
+      "cot->cot_self": 0.609375,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 326,
+        "action_end": 334
+      },
+      "sample_idx": 2,
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.498046875,
+      "action->cot": 0.2373046875,
+      "action->action_prev": 0.2578125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.32421875,
+      "cot->cot_self": 0.6328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.66796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 336,
+        "action_end": 344
+      },
+      "sample_idx": 3,
+      "file_base": "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.515625,
+      "action->cot": 0.2265625,
+      "action->action_prev": 0.248046875,
+      "cot->visual": 0.0,
+      "cot->instr": 0.345703125,
+      "cot->cot_self": 0.609375,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 327,
+        "action_end": 335
+      },
+      "sample_idx": 4,
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.5078125,
+      "action->cot": 0.23046875,
+      "action->action_prev": 0.251953125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.357421875,
+      "cot->cot_self": 0.58984375,
+      "instr->visual": 0.0,
+      "instr->instr": 0.67578125,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 310,
+        "action_end": 318
+      },
+      "sample_idx": 5,
+      "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51171875,
+      "action->cot": 0.2294921875,
+      "action->action_prev": 0.251953125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.33984375,
+      "cot->cot_self": 0.61328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.671875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 327,
+        "action_end": 335
+      },
+      "sample_idx": 6,
+      "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51953125,
+      "action->cot": 0.220703125,
+      "action->action_prev": 0.25390625,
+      "cot->visual": 0.0,
+      "cot->instr": 0.35546875,
+      "cot->cot_self": 0.59765625,
+      "instr->visual": 0.0,
+      "instr->instr": 0.671875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 327,
+        "action_end": 335
+      },
+      "sample_idx": 7,
+      "file_base": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.53125,
+      "action->cot": 0.20703125,
+      "action->action_prev": 0.255859375,
+      "cot->visual": 0.0,
+      "cot->instr": 0.40234375,
+      "cot->cot_self": 0.55078125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.68359375,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 305,
+        "action_end": 313
+      },
+      "sample_idx": 8,
+      "file_base": "KITCHEN_SCENE6_close_the_microwave_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.486328125,
+      "action->cot": 0.25390625,
+      "action->action_prev": 0.251953125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.32421875,
+      "cot->cot_self": 0.6328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.62890625,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 332,
+        "action_end": 340
+      },
+      "sample_idx": 9,
+      "file_base": "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.494140625,
+      "action->cot": 0.251953125,
+      "action->action_prev": 0.2470703125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.330078125,
+      "cot->cot_self": 0.625,
+      "instr->visual": 0.0,
+      "instr->instr": 0.64453125,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 334,
+        "action_end": 342
+      },
+      "sample_idx": 10,
+      "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.49609375,
+      "action->cot": 0.2421875,
+      "action->action_prev": 0.25390625,
+      "cot->visual": 0.0,
+      "cot->instr": 0.318359375,
+      "cot->cot_self": 0.63671875,
+      "instr->visual": 0.0,
+      "instr->instr": 0.640625,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 332,
+        "action_end": 340
+      },
+      "sample_idx": 11,
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.50390625,
+      "action->cot": 0.244140625,
+      "action->action_prev": 0.2421875,
+      "cot->visual": 0.0,
+      "cot->instr": 0.34765625,
+      "cot->cot_self": 0.609375,
+      "instr->visual": 0.0,
+      "instr->instr": 0.66015625,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 326,
+        "action_end": 334
+      },
+      "sample_idx": 12,
+      "file_base": "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51953125,
+      "action->cot": 0.228515625,
+      "action->action_prev": 0.2451171875,
+      "cot->visual": 0.0,
+      "cot->instr": 0.353515625,
+      "cot->cot_self": 0.6015625,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 325,
+        "action_end": 333
+      },
+      "sample_idx": 13,
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51171875,
+      "action->cot": 0.234375,
+      "action->action_prev": 0.24609375,
+      "cot->visual": 0.0,
+      "cot->instr": 0.34375,
+      "cot->cot_self": 0.61328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 328,
+        "action_end": 336
+      },
+      "sample_idx": 14,
+      "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51171875,
+      "action->cot": 0.2197265625,
+      "action->action_prev": 0.2578125,
+      "cot->visual": 0.0,
+      "cot->instr": 0.3359375,
+      "cot->cot_self": 0.61328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.671875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 322,
+        "action_end": 330
+      },
+      "sample_idx": 15,
+      "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.515625,
+      "action->cot": 0.2275390625,
+      "action->action_prev": 0.25,
+      "cot->visual": 0.0,
+      "cot->instr": 0.3515625,
+      "cot->cot_self": 0.6015625,
+      "instr->visual": 0.0,
+      "instr->instr": 0.68359375,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 330,
+        "action_end": 338
+      },
+      "sample_idx": 16,
+      "file_base": "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51171875,
+      "action->cot": 0.2275390625,
+      "action->action_prev": 0.25,
+      "cot->visual": 0.0,
+      "cot->instr": 0.353515625,
+      "cot->cot_self": 0.59765625,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6796875,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 315,
+        "action_end": 323
+      },
+      "sample_idx": 17,
+      "file_base": "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.51171875,
+      "action->cot": 0.2314453125,
+      "action->action_prev": 0.25,
+      "cot->visual": 0.0,
+      "cot->instr": 0.32421875,
+      "cot->cot_self": 0.6328125,
+      "instr->visual": 0.0,
+      "instr->instr": 0.65625,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 331,
+        "action_end": 339
+      },
+      "sample_idx": 18,
+      "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5"
+    },
+    {
+      "action->visual": 0.0,
+      "action->instr": 0.5078125,
+      "action->cot": 0.2314453125,
+      "action->action_prev": 0.25390625,
+      "cot->visual": 0.0,
+      "cot->instr": 0.3359375,
+      "cot->cot_self": 0.6171875,
+      "instr->visual": 0.0,
+      "instr->instr": 0.6640625,
+      "per_source_action_mass_total": 0.9921875,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 0,
+        "instr_end": 259,
+        "cot_end": 329,
+        "action_end": 337
+      },
+      "sample_idx": 19,
+      "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5"
+    }
+  ],
+  "per_sample_edit": []
+}

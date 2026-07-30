@@ -1,0 +1,47 @@
+name: 'CoT-Faith R1: no-CoT retrain + 13-family calibrated edit'
+description: 'R1 reviewer item 3. Identical recipe/seed as the pinned no-CoT run; re-runs the edit stage with the 13-family set. instr_random_sub is the out-of-CoT decode-sensitivity calibrator needed to test whether the no-CoT model is *selectively* CoT-insensitive or globally prompt-insensitive.'
+tags: ['cotfaith', 'no-cot-ablation', 'r1-calibration']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 8gpu
+  disk_gb: 1024
+  timeout: 24h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '15000'
+  BATCH_SIZE: '2'
+  MAX_STEPS_PER_EP: '0'
+  DTYPE: 'bfloat16'
+  SEED: '0'
+
+  # Full-benchmark sample sizes (was 20/30 for smoke runs).
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+  REASONING_MODE: 'no_cot'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_train_and_sanity.sh

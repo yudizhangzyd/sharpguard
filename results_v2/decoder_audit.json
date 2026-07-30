@@ -1,0 +1,93 @@
+{
+ "_provenance": {
+  "auroc_log": "/tmp/cf_done/wqy4kt9up6/cotfaith-auroc/cot_auroc_report.json",
+  "rollout_log": "/tmp/cf_r3_all/funng2vik5/rollout-baseline/sr.json",
+  "sanity_log": "/tmp/cf_done/bcihypv3gu/cotfaith-sanity/sanity_report.json",
+  "n": 200
+ },
+ "per_dim": {
+  "dx": {
+   "corr": -0.41916630495446067,
+   "pred_mean": -0.2708984375,
+   "gt_mean": 0.14442857197951525,
+   "pred_std": 0.42854638071887396,
+   "gt_std": 0.16044852224524395
+  },
+  "dy": {
+   "corr": -0.6002827387653598,
+   "pred_mean": -0.06109375,
+   "gt_mean": 0.014156249897787347,
+   "pred_std": 0.3429017944324585,
+   "gt_std": 0.18288649078258745
+  },
+  "dz": {
+   "corr": 0.3544919901840793,
+   "pred_mean": -0.5112109375,
+   "gt_mean": -0.0009508929622825235,
+   "pred_std": 0.2098119238651514,
+   "gt_std": 0.07596425600922857
+  },
+  "droll": {
+   "corr": 0.1700885637863171,
+   "pred_mean": 0.130546875,
+   "gt_mean": -0.0015803571621654554,
+   "pred_std": 0.3148055478529315,
+   "gt_std": 0.016077476397915125
+  },
+  "dpitch": {
+   "corr": 0.1541952286042719,
+   "pred_mean": 0.45984375,
+   "gt_mean": 0.00982500008365605,
+   "pred_std": 0.3166020227672472,
+   "gt_std": 0.030626389916740285
+  },
+  "dyaw": {
+   "corr": 0.032429671817089424,
+   "pred_mean": -0.061171875,
+   "gt_mean": -0.009137500030919909,
+   "pred_std": 0.21799830388800476,
+   "gt_std": 0.028726971410716597
+  },
+  "gripper": {
+   "corr": null,
+   "pred_mean": 0.97609375,
+   "gt_mean": -1.0,
+   "pred_std": 0.13999999999999999,
+   "gt_std": 0.0
+  }
+ },
+ "corr_flat_all_dims": -0.6917711033937217,
+ "l1": {
+  "model": 0.597215593286923,
+  "constant_zero": 0.1897048471299266,
+  "predict_dataset_mean": 0.04574111627420394,
+  "dataset_mean_action": [
+   0.14442857197951525,
+   0.014156249897787347,
+   -0.0009508929622825235,
+   -0.0015803571621654554,
+   0.00982500008365605,
+   -0.009137500030919909,
+   -1.0
+  ],
+  "model_over_zero": 3.148130384237874,
+  "model_over_mean": 13.056428044011845
+ },
+ "gate_model_beats_predict_mean": false,
+ "gripper_sign_agreement": 0.02,
+ "rollout_public_openvla_libero_spatial": {
+  "n_total": 20,
+  "n_success": 0,
+  "n_asr": 0,
+  "SR": 0.0,
+  "ASR": NaN,
+  "unnorm_key": "libero_spatial",
+  "suite": "libero_spatial",
+  "model": "openvla/openvla-7b-finetuned-libero-spatial"
+ },
+ "frame_mismatch_evidence": {
+  "unnorm_key_used": "bridge_orig",
+  "eval_suite": "LIBERO-90",
+  "note": "Bridge-corpus action de-normalization statistics applied to LIBERO episodes."
+ }
+}

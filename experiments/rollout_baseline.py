@@ -35,7 +35,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--model", required=True)
     p.add_argument("--suite", default="libero_spatial")
-    p.add_argument("--unnorm-key", default="libero_spatial_no_noops",
+    p.add_argument("--unnorm-key", default="libero_spatial",
                    help="Key into model.norm_stats for action un-normalization.")
     p.add_argument("--n-eps-per-task", type=int, default=5)
     p.add_argument("--max-steps", type=int, default=300)

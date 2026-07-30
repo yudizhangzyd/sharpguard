@@ -11,5 +11,7 @@ from .cot_edit import (
     subject_swap, direction_flip, gripper_flip,
     location_swap, verb_swap, negation, adversarial_plausible,
     selfsplice_control, syntactic_scramble, cross_task_swap,
+    paraphrase_null, bbox_jitter_null, instr_random_sub,
+    apply_instr_random_sub,
     EDIT_FAMILIES,
 )

@@ -1,0 +1,786 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/fractal20220817_data_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 30,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.33567708333333335,
+      "std": 0.012844509262161944,
+      "n": 30
+    },
+    "action->visual": {
+      "mean": 0.29108072916666666,
+      "std": 0.007521996912672424,
+      "n": 30
+    },
+    "action->instr": {
+      "mean": 0.30078125,
+      "std": 0.008705476380441031,
+      "n": 30
+    },
+    "action->action_prev": {
+      "mean": 0.07244466145833334,
+      "std": 0.004366379980329542,
+      "n": 30
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 25,
+      "delta_linf_mean": 0.9371875,
+      "delta_linf_median": 1.0,
+      "faithful_rate": 0.92
+    },
+    "gripper_flip": {
+      "n": 20,
+      "delta_linf_mean": 0.573828125,
+      "delta_linf_median": 0.421875,
+      "faithful_rate": 0.8
+    }
+  },
+  "n_attn_ok": 30,
+  "n_edit_ok": 45,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.287109375,
+      "action->instr": 0.291015625,
+      "action->cot": 0.3515625,
+      "action->action_prev": 0.068359375,
+      "cot->visual": 0.322265625,
+      "cot->instr": 0.359375,
+      "cot->cot_self": 0.318359375,
+      "instr->visual": 0.546875,
+      "instr->instr": 0.453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 318,
+        "cot_end": 625,
+        "action_end": 632
+      },
+      "sample_idx": 0,
+      "instruction": "pick rxbar chocolate from bottom drawer and place on counter"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.30078125,
+      "action->cot": 0.33203125,
+      "action->action_prev": 0.068359375,
+      "cot->visual": 0.341796875,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.291015625,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.416015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 307,
+        "cot_end": 537,
+        "action_end": 544
+      },
+      "sample_idx": 1,
+      "instruction": "close middle drawer"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.27734375,
+      "action->cot": 0.359375,
+      "action->action_prev": 0.06982421875,
+      "cot->visual": 0.333984375,
+      "cot->instr": 0.345703125,
+      "cot->cot_self": 0.322265625,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.4140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 309,
+        "cot_end": 628,
+        "action_end": 635
+      },
+      "sample_idx": 2,
+      "instruction": "pick apple from white bowl"
+    },
+    {
+      "action->visual": 0.291015625,
+      "action->instr": 0.294921875,
+      "action->cot": 0.341796875,
+      "action->action_prev": 0.0732421875,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.359375,
+      "cot->cot_self": 0.30859375,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.4296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 311,
+        "cot_end": 594,
+        "action_end": 601
+      },
+      "sample_idx": 3,
+      "instruction": "move coke can near water bottle"
+    },
+    {
+      "action->visual": 0.28125,
+      "action->instr": 0.3125,
+      "action->cot": 0.333984375,
+      "action->action_prev": 0.0732421875,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.37109375,
+      "cot->cot_self": 0.296875,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 315,
+        "cot_end": 556,
+        "action_end": 563
+      },
+      "sample_idx": 4,
+      "instruction": "pick brown chip bag from top drawer and place on counter"
+    },
+    {
+      "action->visual": 0.28515625,
+      "action->instr": 0.31640625,
+      "action->cot": 0.326171875,
+      "action->action_prev": 0.0693359375,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.2890625,
+      "instr->visual": 0.546875,
+      "instr->instr": 0.453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 319,
+        "cot_end": 558,
+        "action_end": 565
+      },
+      "sample_idx": 5,
+      "instruction": "pick green jalapeno chip bag from bottom drawer and place on counter"
+    },
+    {
+      "action->visual": 0.298828125,
+      "action->instr": 0.306640625,
+      "action->cot": 0.3203125,
+      "action->action_prev": 0.0732421875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.376953125,
+      "cot->cot_self": 0.287109375,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 315,
+        "cot_end": 533,
+        "action_end": 540
+      },
+      "sample_idx": 6,
+      "instruction": "pick sponge from top drawer and place on counter"
+    },
+    {
+      "action->visual": 0.3125,
+      "action->instr": 0.30859375,
+      "action->cot": 0.306640625,
+      "action->action_prev": 0.07177734375,
+      "cot->visual": 0.353515625,
+      "cot->instr": 0.375,
+      "cot->cot_self": 0.26953125,
+      "instr->visual": 0.58984375,
+      "instr->instr": 0.408203125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 307,
+        "cot_end": 480,
+        "action_end": 487
+      },
+      "sample_idx": 7,
+      "instruction": "open middle drawer"
+    },
+    {
+      "action->visual": 0.294921875,
+      "action->instr": 0.3125,
+      "action->cot": 0.322265625,
+      "action->action_prev": 0.0703125,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.369140625,
+      "cot->cot_self": 0.28515625,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.4296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 315,
+        "cot_end": 553,
+        "action_end": 560
+      },
+      "sample_idx": 8,
+      "instruction": "pick 7up can from bottom shelf of fridge"
+    },
+    {
+      "action->visual": 0.294921875,
+      "action->instr": 0.302734375,
+      "action->cot": 0.33203125,
+      "action->action_prev": 0.068359375,
+      "cot->visual": 0.33984375,
+      "cot->instr": 0.365234375,
+      "cot->cot_self": 0.294921875,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.4140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 307,
+        "cot_end": 519,
+        "action_end": 526
+      },
+      "sample_idx": 9,
+      "instruction": "knock orange can over"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.302734375,
+      "action->cot": 0.326171875,
+      "action->action_prev": 0.07568359375,
+      "cot->visual": 0.341796875,
+      "cot->instr": 0.37109375,
+      "cot->cot_self": 0.2890625,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.421875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 524,
+        "action_end": 531
+      },
+      "sample_idx": 10,
+      "instruction": "pick rxbar chocolate"
+    },
+    {
+      "action->visual": 0.291015625,
+      "action->instr": 0.291015625,
+      "action->cot": 0.33984375,
+      "action->action_prev": 0.07763671875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.361328125,
+      "cot->cot_self": 0.3046875,
+      "instr->visual": 0.58984375,
+      "instr->instr": 0.41015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 305,
+        "cot_end": 530,
+        "action_end": 537
+      },
+      "sample_idx": 11,
+      "instruction": "pick apple"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.29296875,
+      "action->cot": 0.34375,
+      "action->action_prev": 0.0703125,
+      "cot->visual": 0.328125,
+      "cot->instr": 0.359375,
+      "cot->cot_self": 0.3125,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.431640625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 312,
+        "cot_end": 606,
+        "action_end": 613
+      },
+      "sample_idx": 12,
+      "instruction": "move green rice chip bag near brown chip bag"
+    },
+    {
+      "action->visual": 0.291015625,
+      "action->instr": 0.287109375,
+      "action->cot": 0.349609375,
+      "action->action_prev": 0.07275390625,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.35546875,
+      "cot->cot_self": 0.314453125,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.427734375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 623,
+        "action_end": 630
+      },
+      "sample_idx": 13,
+      "instruction": "pick banana from white bowl"
+    },
+    {
+      "action->visual": 0.283203125,
+      "action->instr": 0.296875,
+      "action->cot": 0.337890625,
+      "action->action_prev": 0.08203125,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.302734375,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 315,
+        "cot_end": 580,
+        "action_end": 587
+      },
+      "sample_idx": 14,
+      "instruction": "pick sponge from middle drawer and place on counter"
+    },
+    {
+      "action->visual": 0.28125,
+      "action->instr": 0.3046875,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.07861328125,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.298828125,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.4296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 311,
+        "cot_end": 553,
+        "action_end": 560
+      },
+      "sample_idx": 15,
+      "instruction": "place coke can into bottom drawer"
+    },
+    {
+      "action->visual": 0.291015625,
+      "action->instr": 0.294921875,
+      "action->cot": 0.34765625,
+      "action->action_prev": 0.06787109375,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.359375,
+      "cot->cot_self": 0.30859375,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.42578125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 584,
+        "action_end": 591
+      },
+      "sample_idx": 16,
+      "instruction": "place water bottle upright"
+    },
+    {
+      "action->visual": 0.2890625,
+      "action->instr": 0.3046875,
+      "action->cot": 0.337890625,
+      "action->action_prev": 0.06982421875,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.30078125,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.443359375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 315,
+        "cot_end": 577,
+        "action_end": 584
+      },
+      "sample_idx": 17,
+      "instruction": "place green jalapeno chip bag into top drawer"
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.310546875,
+      "action->cot": 0.3046875,
+      "action->action_prev": 0.0791015625,
+      "cot->visual": 0.34765625,
+      "cot->instr": 0.3828125,
+      "cot->cot_self": 0.26953125,
+      "instr->visual": 0.58203125,
+      "instr->instr": 0.416015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 307,
+        "cot_end": 474,
+        "action_end": 481
+      },
+      "sample_idx": 18,
+      "instruction": "open top drawer"
+    },
+    {
+      "action->visual": 0.283203125,
+      "action->instr": 0.30859375,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.072265625,
+      "cot->visual": 0.333984375,
+      "cot->instr": 0.369140625,
+      "cot->cot_self": 0.296875,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.4296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 550,
+        "action_end": 557
+      },
+      "sample_idx": 19,
+      "instruction": "pick banana from white bowl"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6049107142857143,
+      "delta_linf": 1.15625,
+      "faithful": true
+    },
+    {
+      "sample": 0,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 1,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5089285714285714,
+      "delta_linf": 1.0546875,
+      "faithful": true
+    },
+    {
+      "sample": 2,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.34375,
+      "delta_linf": 0.953125,
+      "faithful": true
+    },
+    {
+      "sample": 3,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.44308035714285715,
+      "delta_linf": 1.0,
+      "faithful": true
+    },
+    {
+      "sample": 4,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6361607142857143,
+      "delta_linf": 1.75,
+      "faithful": true
+    },
+    {
+      "sample": 4,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.7299107142857143,
+      "delta_linf": 1.4765625,
+      "faithful": true
+    },
+    {
+      "sample": 5,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.16629464285714285,
+      "delta_linf": 0.296875,
+      "faithful": true
+    },
+    {
+      "sample": 5,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.03125,
+      "delta_linf": 0.09375,
+      "faithful": true
+    },
+    {
+      "sample": 6,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.53125,
+      "delta_linf": 1.5546875,
+      "faithful": true
+    },
+    {
+      "sample": 6,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.14397321428571427,
+      "delta_linf": 0.8046875,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.41517857142857145,
+      "delta_linf": 1.125,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.12723214285714285,
+      "delta_linf": 0.328125,
+      "faithful": true
+    },
+    {
+      "sample": 8,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6294642857142857,
+      "delta_linf": 1.2578125,
+      "faithful": true
+    },
+    {
+      "sample": 8,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.20089285714285715,
+      "delta_linf": 0.75,
+      "faithful": true
+    },
+    {
+      "sample": 9,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.09821428571428571,
+      "delta_linf": 0.28125,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.29799107142857145,
+      "delta_linf": 1.0234375,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0033482142857142855,
+      "delta_linf": 0.0234375,
+      "faithful": false
+    },
+    {
+      "sample": 11,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.002232142857142857,
+      "delta_linf": 0.015625,
+      "faithful": false
+    },
+    {
+      "sample": 11,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.47767857142857145,
+      "delta_linf": 1.4921875,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.31361607142857145,
+      "delta_linf": 0.734375,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.20647321428571427,
+      "delta_linf": 0.5,
+      "faithful": true
+    },
+    {
+      "sample": 13,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.296875,
+      "delta_linf": 1.4765625,
+      "faithful": true
+    },
+    {
+      "sample": 13,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.036830357142857144,
+      "delta_linf": 0.1171875,
+      "faithful": true
+    },
+    {
+      "sample": 14,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.11607142857142858,
+      "delta_linf": 0.328125,
+      "faithful": true
+    },
+    {
+      "sample": 15,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5859375,
+      "delta_linf": 1.0,
+      "faithful": true
+    },
+    {
+      "sample": 16,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.2689732142857143,
+      "delta_linf": 1.5625,
+      "faithful": true
+    },
+    {
+      "sample": 16,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 18,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.2578125,
+      "delta_linf": 0.4609375,
+      "faithful": true
+    },
+    {
+      "sample": 18,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.36941964285714285,
+      "delta_linf": 0.7734375,
+      "faithful": true
+    },
+    {
+      "sample": 19,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6863839285714286,
+      "delta_linf": 1.5,
+      "faithful": true
+    },
+    {
+      "sample": 19,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.004464285714285714,
+      "delta_linf": 0.03125,
+      "faithful": false
+    },
+    {
+      "sample": 20,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.3950892857142857,
+      "delta_linf": 1.6171875,
+      "faithful": true
+    },
+    {
+      "sample": 21,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.25,
+      "delta_linf": 0.9453125,
+      "faithful": true
+    },
+    {
+      "sample": 21,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.19084821428571427,
+      "delta_linf": 0.7578125,
+      "faithful": true
+    },
+    {
+      "sample": 22,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 23,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.31138392857142855,
+      "delta_linf": 0.8515625,
+      "faithful": true
+    },
+    {
+      "sample": 25,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.03236607142857143,
+      "delta_linf": 0.1015625,
+      "faithful": true
+    },
+    {
+      "sample": 25,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.10379464285714286,
+      "delta_linf": 0.34375,
+      "faithful": true
+    },
+    {
+      "sample": 26,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.19084821428571427,
+      "delta_linf": 0.4296875,
+      "faithful": true
+    },
+    {
+      "sample": 27,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.39620535714285715,
+      "delta_linf": 1.0,
+      "faithful": true
+    },
+    {
+      "sample": 27,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.026785714285714284,
+      "delta_linf": 0.1875,
+      "faithful": true
+    },
+    {
+      "sample": 28,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.25111607142857145,
+      "delta_linf": 0.7578125,
+      "faithful": true
+    },
+    {
+      "sample": 29,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.8113839285714286,
+      "delta_linf": 1.9921875,
+      "faithful": true
+    },
+    {
+      "sample": 29,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.28125,
+      "delta_linf": 1.0,
+      "faithful": true
+    }
+  ]
+}

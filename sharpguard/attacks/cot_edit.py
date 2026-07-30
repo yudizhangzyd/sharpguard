@@ -39,6 +39,7 @@ target-text builder (build_ecot_target_text) is unchanged.
 from __future__ import annotations
 
 import copy
+import random
 import re
 from typing import Optional
 
@@ -541,4 +542,94 @@ def paraphrase_null(reasoning: dict) -> Optional[dict]:
 
 
 EDIT_FAMILIES["paraphrase_null"] = paraphrase_null
+
+
+# ------------- edit family 12: bbox-jitter null (second calibration floor) ---
+# Perturbs every VISIBLE OBJECTS bbox coordinate by +/- 1 pixel.  At 224x224
+# input resolution a 1-px box shift is below the visual-token granularity, so
+# the *referent* of every reasoning tag is unchanged: this is a semantics-
+# preserving distractor.  Together with paraphrase_null it brackets the
+# "surface-form sensitivity floor" of the Faithfulness Score from a second,
+# non-lexical direction (digits instead of verbs).
+def bbox_jitter_null(reasoning: dict, seed: int = 0) -> Optional[dict]:
+    rng = random.Random(seed + 991)
+    edited = copy.deepcopy(reasoning)
+    bb = edited.get("bboxes")
+    changed = False
+
+    def _jit(v):
+        nonlocal changed
+        if isinstance(v, (list, tuple)):
+            out = []
+            for x in v:
+                if isinstance(x, (list, tuple)):
+                    out.append(_jit(x))
+                elif isinstance(x, int) and not isinstance(x, bool):
+                    changed = True
+                    out.append(max(0, x + rng.choice((-1, 1))))
+                elif isinstance(x, float):
+                    changed = True
+                    out.append(x + rng.choice((-1.0, 1.0)))
+                else:
+                    out.append(x)
+            return out
+        return v
+
+    if isinstance(bb, dict):
+        edited["bboxes"] = {k: _jit(v) for k, v in bb.items()}
+    elif isinstance(bb, list):
+        edited["bboxes"] = [_jit(v) for v in bb]
+    else:
+        return None
+    if not changed:
+        return None
+    edited["__edit_meta__"] = {"family": "bbox_jitter_null", "delta_px": 1}
+    return edited
+
+
+EDIT_FAMILIES["bbox_jitter_null"] = bbox_jitter_null
+
+
+# ------------- edit family 13: out-of-CoT decode-sensitivity calibrator -----
+# Substitutes K random word tokens in the *user instruction* -- text that sits
+# OUTSIDE the CoT segment entirely.  F on this family measures how much the
+# action decode moves under an arbitrary prompt perturbation of comparable
+# token budget, with the CoT held byte-identical.  It is the per-model
+# calibrator that separates CoT-specific sensitivity from global prompt
+# sensitivity (needed to interpret F2).
+_RANDOM_SUB_VOCAB = [
+    "quartz", "ledger", "marimba", "trellis", "opaque", "kelvin",
+    "sundial", "gravel", "lantern", "porcelain", "cipher", "meadow",
+]
+
+
+def instr_random_sub(reasoning: dict, seed: int = 0, n_tokens: int = 5) -> Optional[dict]:
+    """The reasoning dict is returned UNCHANGED; the harness reads
+    ``__edit_meta__['instr_random_sub']`` and rewrites the instruction instead.
+    """
+    edited = copy.deepcopy(reasoning)
+    edited["__edit_meta__"] = {
+        "family": "instr_random_sub",
+        "instr_random_sub": int(n_tokens),
+        "seed": int(seed),
+        "target_segment": "instruction (outside CoT)",
+    }
+    return edited
+
+
+EDIT_FAMILIES["instr_random_sub"] = instr_random_sub
+
+
+def apply_instr_random_sub(instruction: str, seed: int = 0, n_tokens: int = 5) -> str:
+    """Replace up to ``n_tokens`` words of ``instruction`` with random nonce
+    words.  Deterministic given ``seed``."""
+    rng = random.Random(seed + 4242)
+    words = instruction.split()
+    if not words:
+        return instruction
+    k = min(n_tokens, len(words))
+    idxs = rng.sample(range(len(words)), k)
+    for i in idxs:
+        words[i] = rng.choice(_RANDOM_SUB_VOCAB)
+    return " ".join(words)
 

@@ -1,0 +1,751 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/bc_z_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 30,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.32174479166666664,
+      "std": 0.02350756310219058,
+      "n": 30
+    },
+    "action->visual": {
+      "mean": 0.29641927083333336,
+      "std": 0.00989090646266619,
+      "n": 30
+    },
+    "action->instr": {
+      "mean": 0.31080729166666665,
+      "std": 0.014983013566352864,
+      "n": 30
+    },
+    "action->action_prev": {
+      "mean": 0.07101236979166667,
+      "std": 0.0033751110796446863,
+      "n": 30
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 25,
+      "delta_linf_mean": 0.830625,
+      "delta_linf_median": 0.796875,
+      "faithful_rate": 0.92
+    },
+    "gripper_flip": {
+      "n": 15,
+      "delta_linf_mean": 0.3328125,
+      "delta_linf_median": 0.28125,
+      "faithful_rate": 0.6666666666666666
+    }
+  },
+  "n_attn_ok": 30,
+  "n_edit_ok": 40,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.28515625,
+      "action->instr": 0.31640625,
+      "action->cot": 0.322265625,
+      "action->action_prev": 0.076171875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.28515625,
+      "instr->visual": 0.55078125,
+      "instr->instr": 0.44921875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 316,
+        "cot_end": 548,
+        "action_end": 555
+      },
+      "sample_idx": 0,
+      "instruction": "place the white sponge in the ceramic bowl"
+    },
+    {
+      "action->visual": 0.2890625,
+      "action->instr": 0.306640625,
+      "action->cot": 0.328125,
+      "action->action_prev": 0.07666015625,
+      "cot->visual": 0.33984375,
+      "cot->instr": 0.373046875,
+      "cot->cot_self": 0.287109375,
+      "instr->visual": 0.57421875,
+      "instr->instr": 0.42578125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 541,
+        "action_end": 548
+      },
+      "sample_idx": 1,
+      "instruction": "move the arm in a circular motion"
+    },
+    {
+      "action->visual": 0.310546875,
+      "action->instr": 0.333984375,
+      "action->cot": 0.287109375,
+      "action->action_prev": 0.06982421875,
+      "cot->visual": 0.34765625,
+      "cot->instr": 0.396484375,
+      "cot->cot_self": 0.255859375,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 314,
+        "cot_end": 486,
+        "action_end": 493
+      },
+      "sample_idx": 2,
+      "instruction": "place the bottle in the ceramic bowl"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.3125,
+      "action->cot": 0.322265625,
+      "action->action_prev": 0.06884765625,
+      "cot->visual": 0.337890625,
+      "cot->instr": 0.3828125,
+      "cot->cot_self": 0.28125,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 527,
+        "action_end": 534
+      },
+      "sample_idx": 3,
+      "instruction": "drag the ceramic bowl in a circle"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.3125,
+      "action->cot": 0.3203125,
+      "action->action_prev": 0.0703125,
+      "cot->visual": 0.337890625,
+      "cot->instr": 0.380859375,
+      "cot->cot_self": 0.28125,
+      "instr->visual": 0.5546875,
+      "instr->instr": 0.4453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 316,
+        "cot_end": 534,
+        "action_end": 541
+      },
+      "sample_idx": 4,
+      "instruction": "place the white sponge in the ceramic bowl"
+    },
+    {
+      "action->visual": 0.27734375,
+      "action->instr": 0.2890625,
+      "action->cot": 0.36328125,
+      "action->action_prev": 0.0703125,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.34765625,
+      "cot->cot_self": 0.3203125,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.416015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 308,
+        "cot_end": 644,
+        "action_end": 651
+      },
+      "sample_idx": 5,
+      "instruction": "place apple in tray"
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.314453125,
+      "action->cot": 0.314453125,
+      "action->action_prev": 0.064453125,
+      "cot->visual": 0.34765625,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.2734375,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.421875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 309,
+        "cot_end": 486,
+        "action_end": 493
+      },
+      "sample_idx": 6,
+      "instruction": "place eraser in metal cup"
+    },
+    {
+      "action->visual": 0.30078125,
+      "action->instr": 0.3046875,
+      "action->cot": 0.3203125,
+      "action->action_prev": 0.072265625,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.287109375,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.4140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 309,
+        "cot_end": 522,
+        "action_end": 529
+      },
+      "sample_idx": 7,
+      "instruction": "place eraser in metal cup"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.3046875,
+      "action->cot": 0.337890625,
+      "action->action_prev": 0.0654296875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.30078125,
+      "instr->visual": 0.57421875,
+      "instr->instr": 0.423828125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 571,
+        "action_end": 578
+      },
+      "sample_idx": 8,
+      "instruction": "place sponge in tray"
+    },
+    {
+      "action->visual": 0.28515625,
+      "action->instr": 0.3046875,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.07177734375,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.296875,
+      "instr->visual": 0.56640625,
+      "instr->instr": 0.43359375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 573,
+        "action_end": 580
+      },
+      "sample_idx": 9,
+      "instruction": "place the eraser on the white sponge"
+    },
+    {
+      "action->visual": 0.294921875,
+      "action->instr": 0.30078125,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.0673828125,
+      "cot->visual": 0.337890625,
+      "cot->instr": 0.37109375,
+      "cot->cot_self": 0.2890625,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.4296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 311,
+        "cot_end": 531,
+        "action_end": 538
+      },
+      "sample_idx": 10,
+      "instruction": "wipe tray with sponge"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.296875,
+      "action->cot": 0.34375,
+      "action->action_prev": 0.06640625,
+      "cot->visual": 0.328125,
+      "cot->instr": 0.361328125,
+      "cot->cot_self": 0.310546875,
+      "instr->visual": 0.5625,
+      "instr->instr": 0.4375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 311,
+        "cot_end": 586,
+        "action_end": 593
+      },
+      "sample_idx": 11,
+      "instruction": "pick up the ceramic bowl"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.31640625,
+      "action->cot": 0.318359375,
+      "action->action_prev": 0.0732421875,
+      "cot->visual": 0.33984375,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.283203125,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.427734375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 309,
+        "cot_end": 506,
+        "action_end": 513
+      },
+      "sample_idx": 12,
+      "instruction": "stack bowls into tray"
+    },
+    {
+      "action->visual": 0.28515625,
+      "action->instr": 0.30859375,
+      "action->cot": 0.328125,
+      "action->action_prev": 0.0771484375,
+      "cot->visual": 0.333984375,
+      "cot->instr": 0.37109375,
+      "cot->cot_self": 0.294921875,
+      "instr->visual": 0.5625,
+      "instr->instr": 0.4375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 560,
+        "action_end": 567
+      },
+      "sample_idx": 13,
+      "instruction": "place the pepper on the white sponge"
+    },
+    {
+      "action->visual": 0.287109375,
+      "action->instr": 0.30859375,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.06982421875,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.296875,
+      "instr->visual": 0.57421875,
+      "instr->instr": 0.42578125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 545,
+        "action_end": 552
+      },
+      "sample_idx": 14,
+      "instruction": "place banana in red bowl"
+    },
+    {
+      "action->visual": 0.298828125,
+      "action->instr": 0.314453125,
+      "action->cot": 0.31640625,
+      "action->action_prev": 0.0712890625,
+      "cot->visual": 0.341796875,
+      "cot->instr": 0.375,
+      "cot->cot_self": 0.28125,
+      "instr->visual": 0.57421875,
+      "instr->instr": 0.423828125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 309,
+        "cot_end": 496,
+        "action_end": 503
+      },
+      "sample_idx": 15,
+      "instruction": "stack cups into tray"
+    },
+    {
+      "action->visual": 0.32421875,
+      "action->instr": 0.33984375,
+      "action->cot": 0.263671875,
+      "action->action_prev": 0.07275390625,
+      "cot->visual": 0.3515625,
+      "cot->instr": 0.41015625,
+      "cot->cot_self": 0.23828125,
+      "instr->visual": 0.5546875,
+      "instr->instr": 0.4453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 316,
+        "cot_end": 451,
+        "action_end": 458
+      },
+      "sample_idx": 16,
+      "instruction": "place the ceramic cup in the ceramic bowl"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.306640625,
+      "action->cot": 0.3203125,
+      "action->action_prev": 0.07568359375,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.375,
+      "cot->cot_self": 0.279296875,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.419921875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 508,
+        "action_end": 515
+      },
+      "sample_idx": 17,
+      "instruction": "wipe table surface with eraser"
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.326171875,
+      "action->cot": 0.296875,
+      "action->action_prev": 0.07177734375,
+      "cot->visual": 0.34375,
+      "cot->instr": 0.390625,
+      "cot->cot_self": 0.265625,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.443359375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 314,
+        "cot_end": 495,
+        "action_end": 502
+      },
+      "sample_idx": 18,
+      "instruction": "place the bottle in the ceramic bowl"
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.318359375,
+      "action->cot": 0.302734375,
+      "action->action_prev": 0.07177734375,
+      "cot->visual": 0.34765625,
+      "cot->instr": 0.37890625,
+      "cot->cot_self": 0.2734375,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.421875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 500,
+        "action_end": 507
+      },
+      "sample_idx": 19,
+      "instruction": "place fork in purple bowl"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5089285714285714,
+      "delta_linf": 1.0234375,
+      "faithful": true
+    },
+    {
+      "sample": 1,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6428571428571429,
+      "delta_linf": 1.4765625,
+      "faithful": true
+    },
+    {
+      "sample": 2,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.05915178571428571,
+      "delta_linf": 0.203125,
+      "faithful": true
+    },
+    {
+      "sample": 3,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5133928571428571,
+      "delta_linf": 1.453125,
+      "faithful": true
+    },
+    {
+      "sample": 3,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.052455357142857144,
+      "delta_linf": 0.203125,
+      "faithful": true
+    },
+    {
+      "sample": 4,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.3470982142857143,
+      "delta_linf": 1.421875,
+      "faithful": true
+    },
+    {
+      "sample": 5,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.05915178571428571,
+      "delta_linf": 0.3046875,
+      "faithful": true
+    },
+    {
+      "sample": 6,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5703125,
+      "delta_linf": 1.3515625,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5133928571428571,
+      "delta_linf": 1.0546875,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.15290178571428573,
+      "delta_linf": 0.6875,
+      "faithful": true
+    },
+    {
+      "sample": 8,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.3325892857142857,
+      "delta_linf": 1.0,
+      "faithful": true
+    },
+    {
+      "sample": 9,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.14620535714285715,
+      "delta_linf": 0.46875,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5200892857142857,
+      "delta_linf": 1.0,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 11,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.28348214285714285,
+      "delta_linf": 1.0078125,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5792410714285714,
+      "delta_linf": 1.46875,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.44308035714285715,
+      "delta_linf": 1.0859375,
+      "faithful": true
+    },
+    {
+      "sample": 13,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.33705357142857145,
+      "delta_linf": 0.7890625,
+      "faithful": true
+    },
+    {
+      "sample": 14,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.12946428571428573,
+      "delta_linf": 0.28125,
+      "faithful": true
+    },
+    {
+      "sample": 14,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.13504464285714285,
+      "delta_linf": 0.328125,
+      "faithful": true
+    },
+    {
+      "sample": 15,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.48660714285714285,
+      "delta_linf": 1.0234375,
+      "faithful": true
+    },
+    {
+      "sample": 15,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.10267857142857142,
+      "delta_linf": 0.28125,
+      "faithful": true
+    },
+    {
+      "sample": 17,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 18,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.23772321428571427,
+      "delta_linf": 0.5234375,
+      "faithful": true
+    },
+    {
+      "sample": 18,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 19,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.002232142857142857,
+      "delta_linf": 0.015625,
+      "faithful": false
+    },
+    {
+      "sample": 20,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.328125,
+      "delta_linf": 0.796875,
+      "faithful": true
+    },
+    {
+      "sample": 21,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.2890625,
+      "delta_linf": 0.6875,
+      "faithful": true
+    },
+    {
+      "sample": 21,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.025669642857142856,
+      "delta_linf": 0.0859375,
+      "faithful": true
+    },
+    {
+      "sample": 22,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.23772321428571427,
+      "delta_linf": 0.7734375,
+      "faithful": true
+    },
+    {
+      "sample": 23,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5122767857142857,
+      "delta_linf": 1.2578125,
+      "faithful": true
+    },
+    {
+      "sample": 23,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 24,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.015625,
+      "delta_linf": 0.03125,
+      "faithful": false
+    },
+    {
+      "sample": 24,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.015625,
+      "delta_linf": 0.03125,
+      "faithful": false
+    },
+    {
+      "sample": 25,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.32142857142857145,
+      "delta_linf": 0.796875,
+      "faithful": true
+    },
+    {
+      "sample": 26,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.28683035714285715,
+      "delta_linf": 0.5546875,
+      "faithful": true
+    },
+    {
+      "sample": 26,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.2924107142857143,
+      "delta_linf": 0.734375,
+      "faithful": true
+    },
+    {
+      "sample": 28,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.21428571428571427,
+      "delta_linf": 0.46875,
+      "faithful": true
+    },
+    {
+      "sample": 28,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.12165178571428571,
+      "delta_linf": 0.3125,
+      "faithful": true
+    },
+    {
+      "sample": 29,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.4419642857142857,
+      "delta_linf": 0.7734375,
+      "faithful": true
+    }
+  ]
+}

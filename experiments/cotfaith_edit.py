@@ -191,7 +191,8 @@ def run(args):
                         alt_idx = (alt_idx + 1) % len(all_samples)
                     alt_gt = all_samples[alt_idx][2]
                     edited = fedit(gt, alt_reasoning=alt_gt, seed=args.seed)
-                elif fname == "syntactic_scramble":
+                elif fname in ("syntactic_scramble", "bbox_jitter_null",
+                                "instr_random_sub"):
                     edited = fedit(gt, seed=args.seed + si)
                 else:
                     edited = fedit(gt)
@@ -205,7 +206,20 @@ def run(args):
                     })
                     continue
                 edit_meta = edited.pop("__edit_meta__", {})
-                edited_target = prompt + build_ecot_target_text(edited) + " ACTION:"
+                # Out-of-CoT calibrator: the CoT is byte-identical and the
+                # *instruction* is perturbed instead, so we rebuild the prompt.
+                if "instr_random_sub" in edit_meta:
+                    from sharpguard.attacks import apply_instr_random_sub
+                    instr_pert = apply_instr_random_sub(
+                        instr.lower(), seed=args.seed + si,
+                        n_tokens=int(edit_meta["instr_random_sub"]))
+                    edit_prompt = (f"{ECOT_SYSTEM_PROMPT} USER: What action "
+                                    f"should the robot take to {instr_pert}? "
+                                    f"ASSISTANT: ")
+                    edit_meta["instruction_perturbed"] = instr_pert[:200]
+                else:
+                    edit_prompt = prompt
+                edited_target = edit_prompt + build_ecot_target_text(edited) + " ACTION:"
                 a_edit = infer_action(model, processor, edited_target, img, device, dtype)
                 if a_edit is None:
                     all_results.append({"sample": si, "family": fname,

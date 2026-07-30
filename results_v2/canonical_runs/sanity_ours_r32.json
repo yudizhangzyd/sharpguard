@@ -1,0 +1,90 @@
+{
+  "ckpt_path": "/mnt/task_wrapper/user_output/artifacts/cotfaith-train/merged_model",
+  "unnorm_key_used": "bridge_orig",
+  "instruction": "pick up the book and place it in the left compartment of the caddy",
+  "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+  "demo_id": 34,
+  "generated_text": "<s> A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. USER: What action should the robot take to pick up the book and place it in the left compartment of the caddy? ASSISTANT: TASK:  PLAN: move to the black book. grasp the black book. move the black book to the desk caddy. release the black book into the left compartment of the desk caddy VISIBLE OBJECTS: black book 1 [[118, 154], [168, 167]], red coffee mug 1 [[116, 155], [163, 191]], desk caddy 1 [[74, 18], [129, 131]] SUBTASK REASONING: The robot needs to move to the black book because it is currently positioned above the brown box and not near the black book or the caddy. SUBTASK: move to the black book MOVE REASONING: The black book is positioned further back on the table than the robot, so the robot should move back and right to reach it easily. MOVE: move back and right GRIPPER POSITION: [48, 111] ACTION:\u9280\u6c60\u8ad6\u8ad6\u8ad6\u8ad6\u7ed9</s>",
+  "n_tags_found": 9,
+  "tags_found": [
+    "TASK:",
+    "PLAN:",
+    "VISIBLE OBJECTS:",
+    "SUBTASK REASONING:",
+    "SUBTASK:",
+    "MOVE REASONING:",
+    "MOVE:",
+    "GRIPPER POSITION:",
+    "ACTION:"
+  ],
+  "action": [
+    0.010303902015966506,
+    0.005727314077755924,
+    0.007293689200545048,
+    0.001138307649715134,
+    -0.006809380210497831,
+    -6.671134046487559e-05,
+    -0.996078431372549
+  ],
+  "n_libero_keyword_hits": 18,
+  "n_bridge_keyword_hits": 0,
+  "gt_reasoning_first_step": {
+    "plan": {
+      "0": "move to the black book",
+      "1": "grasp the black book",
+      "2": "move the black book to the desk caddy",
+      "3": "release the black book into the left compartment of the desk caddy"
+    },
+    "subtask_reasoning": "The robot needs to move to the black book because it is currently positioned above the white coffee mug, which prevents it from directly reaching and grasping the book.",
+    "subtask": "move to the black book",
+    "movement_reasoning": "The black book is positioned further away from the robot than the caddy, so the robot should move back to reach the black book.",
+    "movement": "move back",
+    "bboxes": {
+      "black book 1": [
+        [
+          111,
+          61
+        ],
+        [
+          162,
+          83
+        ]
+      ],
+      "red coffee mug 1": [
+        [
+          159,
+          139
+        ],
+        [
+          209,
+          186
+        ]
+      ],
+      "porcelain mug 1": [
+        [
+          126,
+          85
+        ],
+        [
+          164,
+          123
+        ]
+      ],
+      "desk caddy 1": [
+        [
+          75,
+          20
+        ],
+        [
+          131,
+          134
+        ]
+      ]
+    },
+    "gripper": [
+      55,
+      115
+    ]
+  },
+  "verdict": "PASS"
+}

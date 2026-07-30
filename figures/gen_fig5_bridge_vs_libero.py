@@ -11,30 +11,21 @@ Table 1 and with the numeric values quoted in Section 5 (F4). Paths:
   - lora-r32       : /tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json
   - ECoT-bridge    : /tmp/cf_done/8rcgy9kukj/cotfaith-edit/cot_edit_report.json
 """
-import json, sys
-sys.path.insert(0, "/Users/yudizhang/Documents/sharpguard/figures")
+import json, sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
+from _data import fam
 import matplotlib.pyplot as plt
 import numpy as np
 
-# NOTE (round-2 fix 1): switched from /tmp/cf_sweep/{ours-train,ecot-bridge}
-# to the /tmp/cf_done/ reports that Table 1 was filled from. The old cf_sweep
-# reports produced Fig-5 values (0.37/0.77/0.24 vs 0.97/0.96/0.67) that did
-# NOT match the Table 1 lora-r32 row (0.33/0.68/0.13). This edit resolves the
-# reviewer-flagged numeric mismatch.
-LORA_R32_REPORT   = "/tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json"
-ECOT_BRIDGE_REPORT = "/tmp/cf_done/8rcgy9kukj/cotfaith-edit/cot_edit_report.json"
-
-# Load
-def _faithful(path, fam):
-    a = json.load(open(path))["aggregate"].get(fam, {})
-    return a.get("faithful_rate", 0.0)
-
-FAMS = [("subject swap",    "subject_swap"),
-        ("direction flip",  "direction_flip"),
-        ("gripper flip",    "gripper_flip")]
-ours  = [_faithful(LORA_R32_REPORT, k)   for _, k in FAMS]
-bridge = [_faithful(ECOT_BRIDGE_REPORT, k) for _, k in FAMS]
+# Both rows now come from results_v2/derived_metrics.json, which pins ONE
+# canonical run per model (ECoT-bridge = 3-seed mean).  No hardcoded literals.
+FAMS = [("subject swap",   "subject_swap"),
+        ("direction flip", "direction_flip"),
+        ("gripper flip",   "gripper_flip")]
+ours   = [fam("ours-r32", k, "F_mag")    for _, k in FAMS]
+bridge = [fam("ecot-bridge", k, "F_mag") for _, k in FAMS]
+bridge_std = [fam("ecot-bridge", k, "F_mag_std") for _, k in FAMS]
 
 xs = np.arange(len(FAMS))
 w = 0.35

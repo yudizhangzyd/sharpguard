@@ -1,0 +1,10 @@
+{
+  "n_total": 20,
+  "n_success": 0,
+  "n_asr": 0,
+  "SR": 0.0,
+  "ASR": NaN,
+  "unnorm_key": "libero_spatial",
+  "suite": "libero_spatial",
+  "model": "openvla/openvla-7b-finetuned-libero-spatial"
+}

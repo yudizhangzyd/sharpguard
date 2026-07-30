@@ -9,7 +9,8 @@ edit family (which mutates spatial adverbs in MOVE/PLAN) — no hardcoded
 object references.
 """
 import json, sys
-sys.path.insert(0, "/Users/yudizhang/Documents/sharpguard/figures")
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
@@ -119,7 +120,9 @@ ax_sum.text(0.02, 0.78, summary, fontsize=FONT_SIZE-1,
 # Attention pie (real ECoT-bridge values from cf_sweep)
 ax_pie = fig.add_subplot(gs[:, 2])
 BUCKETS = ["visual", "instr", "CoT", "act-prev"]
-values = [0.290, 0.300, 0.344, 0.065]
+from _data import ATTN as _A
+_m = _A["ecot-bridge"]["mass"]
+values = [_m["visual"], _m["instruction"], _m["cot"], _m["action_prev"]]
 colors = ["#4477AA", "#EE6677", "#228833", "#AA3377"]
 wedges, texts, autotexts = ax_pie.pie(
     values, labels=BUCKETS, colors=colors,

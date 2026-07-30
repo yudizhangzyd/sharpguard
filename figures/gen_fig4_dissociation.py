@@ -1,92 +1,76 @@
-"""Fig 4 — attention vs causation DISSOCIATION plot.
+"""Fig 4 -- attention/causation dissociation (F3), with the ceiling-normalized
+panel demanded by R1 item 4.
 
-Two-panel figure: (a) attn->cot per model (all cluster ~0.34), (b) avg
-faithful rate across shared families per model (huge spread). Same
-horizontal axis order, same model set → shows attention shape does
-NOT predict causal effect. This is the paper's central story figure.
+(a) alpha(m, cot) per model, with the measured run-to-run noise floor drawn as
+    a band so the 2.3 pp cluster spread can be read against it.
+(b) raw mean magnitude-F over the 7 non-control families.
+(c) the SAME quantity normalized by each model's own cross_task_swap ceiling.
+    Under normalization the no-CoT collapse largely disappears -- F2 has to be
+    restated.
+
+All numbers from results_v2/derived_metrics.json.  No hardcoded literals.
 """
-import json, sys
-sys.path.insert(0, "/Users/yudizhang/Documents/sharpguard/figures")
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
-import matplotlib.pyplot as plt
+from _data import MODELS, ATTN, NOISE, ORDER, LABELS
 import numpy as np
+import matplotlib.pyplot as plt
 
+MS = [m for m in ORDER if m in MODELS and m in ATTN]
+COL = [C_NO_COT if m == "ours-no-cot" else
+       C_ECOT_BRIDGE if m == "ecot-bridge" else C_COT_TRAINED for m in MS]
+xs = np.arange(len(MS))
 
-BASE = "/tmp/cf_full_sweep"
-OLD = "/tmp/cf_sweep"
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13.6, 3.3),
+                                    gridspec_kw={"wspace": 0.28})
 
+# ---- (a) attention on CoT + measured noise floor --------------------------
+att = [ATTN[m]["mass"]["cot"] for m in MS]
+astd = [ATTN[m]["mass_std"]["cot"] for m in MS]
+ax1.bar(xs, att, color=COL, edgecolor="black", lw=0.4, yerr=astd, capsize=2,
+        error_kw={"lw": 0.6})
+mid = float(np.mean(att))
+half = NOISE["abs_diff_pp"] / 200.0          # +/- half of the observed run-to-run gap
+ax1.axhspan(mid - half, mid + half, color="gray", alpha=0.22, lw=0)
+ax1.text(len(MS) - 0.45, 0.075,
+         f"run-to-run noise ({NOISE['abs_diff_pp']:.2f} pp,\n"
+         f"{100*NOISE['noise_as_frac_of_spread']:.0f}% of the "
+         f"{NOISE['cluster_spread_pp']:.2f} pp spread)",
+         ha="right", va="bottom", fontsize=FONT_SIZE - 4, color="0.25")
+ax1.annotate("", xy=(len(MS) - 1.1, mid), xytext=(len(MS) - 1.1, 0.115),
+             arrowprops=dict(arrowstyle="->", lw=0.6, color="0.35"))
+for i, v in enumerate(att):
+    ax1.text(i, v + 0.016, f"{v:.3f}", ha="center", fontsize=FONT_SIZE - 4)
+ax1.set_xticks(xs); ax1.set_xticklabels([LABELS[m] for m in MS], fontsize=FONT_SIZE - 3)
+ax1.set_ylabel(r"$\alpha(m,\mathrm{cot})$")
+ax1.set_ylim(0, 0.50)
+ax1.set_title("(a) Attention on CoT: spread is inside the noise floor",
+              loc="left", fontsize=FONT_SIZE, style="italic")
+ax1.set_axisbelow(True); ax1.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 
-MODELS = [
-    ("Ours\nno-CoT",   f"{BASE}/no-cot",         C_NO_COT),
-    ("Ours\ndata-50 A", f"{BASE}/data-50A",      C_COT_TRAINED),
-    ("Ours\ndata-50 B", f"{BASE}/data-50B",      C_COT_TRAINED),
-    ("Ours\nr=8",      f"{BASE}/lora-r8",        C_COT_TRAINED),
-    ("Ours\nr=16",     f"{BASE}/lora-r16",       C_COT_TRAINED),
-    ("Ours\nr=32",     "/tmp/cf_done/bcihypv3gu", C_COT_TRAINED),
-    ("Ours\nr=64",     f"{BASE}/lora-r64",       C_COT_TRAINED),
-    ("ECoT-\nbridge",  "/tmp/cf_done/8rcgy9kukj/edit_only", C_ECOT_BRIDGE),  # attention shared with old
-]
+# ---- (b) raw mean magnitude-F -------------------------------------------
+raw = [MODELS[m]["F_bar_mag"] for m in MS]
+ax2.bar(xs, raw, color=COL, edgecolor="black", lw=0.4)
+for i, v in enumerate(raw):
+    ax2.text(i, v + 0.02, f"{v:.2f}", ha="center", fontsize=FONT_SIZE - 4)
+ax2.set_xticks(xs); ax2.set_xticklabels([LABELS[m] for m in MS], fontsize=FONT_SIZE - 3)
+ax2.set_ylabel(r"$\bar{\mathcal{F}}$ (raw, 7 families)")
+ax2.set_ylim(0, 1.05)
+ax2.set_title(f"(b) Raw: {max(raw)/min(raw):.1f}$\\times$ spread",
+              loc="left", fontsize=FONT_SIZE, style="italic")
+ax2.set_axisbelow(True); ax2.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 
-# ECoT-bridge attention: reuse old (bridge model didn't change)
-# but pull edit from new 10-family run
-def _load_edit(path):
-    if path.endswith("edit_only"):
-        return json.load(open(f"{path.replace('/edit_only','')}/cotfaith-edit/cot_edit_report.json"))
-    return json.load(open(f"{path}/cotfaith-edit/cot_edit_report.json"))
-
-def _load_rvis(path):
-    if "cf_done/bcihypv3gu" in path:
-        return json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json"))
-    if "cf_done/8rcgy9kukj" in path:
-        # ECoT-bridge attention from cf_sweep
-        return json.load(open(f"{OLD}/ecot-bridge/cotfaith-rvis/rvis_cot_report.json"))
-    return json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json"))
-
-# 7 non-control families
-SHARED_FAMS = ["direction_flip", "gripper_flip",
-                "verb_swap", "negation",
-                "subject_swap", "location_swap", "adversarial_plausible"]
-
-attn_cot, faithful_avg = [], []
-for name, path, _ in MODELS:
-    a = _load_rvis(path).get("aggregate", {})
-    attn_cot.append(a.get("action->cot", {}).get("mean", 0.0))
-    e = _load_edit(path).get("aggregate", {})
-    fr = [e[f]["faithful_rate"] for f in SHARED_FAMS if e.get(f, {}).get("n", 0) > 0]
-    faithful_avg.append(np.mean(fr) if fr else 0.0)
-
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 3.2),
-                                  gridspec_kw={"wspace": 0.24})
-xs = np.arange(len(MODELS))
-colors = [m[2] for m in MODELS]
-
-# Panel A: attention-to-CoT
-ax1.bar(xs, attn_cot, color=colors, edgecolor="black", linewidth=0.4)
-ax1.set_xticks(xs)
-ax1.set_xticklabels([m[0] for m in MODELS], fontsize=FONT_SIZE-2)
-ax1.set_ylabel("action$\\to$cot attention")
-ax1.set_ylim(0, 0.5)
-ax1.axhline(0.34, color="gray", linestyle=":", linewidth=0.7, alpha=0.5)
-ax1.text(6.3, 0.36, "$\\sim$0.34", fontsize=FONT_SIZE-2, color="gray")
-ax1.set_title("(a) Attention on CoT segment  —  all similar",
-                loc="left", fontsize=FONT_SIZE, style="italic")
-for i, v in enumerate(attn_cot):
-    ax1.text(i, v + 0.01, f"{v:.2f}", ha="center",
-              fontsize=FONT_SIZE-2)
-ax1.set_axisbelow(True)
-ax1.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
-
-# Panel B: average faithful rate
-ax2.bar(xs, faithful_avg, color=colors, edgecolor="black", linewidth=0.4)
-ax2.set_xticks(xs)
-ax2.set_xticklabels([m[0] for m in MODELS], fontsize=FONT_SIZE-2)
-ax2.set_ylabel("avg faithful rate across 7 families")
-ax2.set_ylim(0, 1.0)
-ax2.set_title("(b) Causal effect  —  huge spread",
-                loc="left", fontsize=FONT_SIZE, style="italic")
-for i, v in enumerate(faithful_avg):
-    ax2.text(i, v + 0.02, f"{v:.2f}", ha="center", fontsize=FONT_SIZE-2)
-ax2.set_axisbelow(True)
-ax2.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
+# ---- (c) normalized by each model's own cross_task_swap ceiling ------------
+nrm = [MODELS[m]["F_bar_norm_ceiling"] for m in MS]
+ax3.bar(xs, nrm, color=COL, edgecolor="black", lw=0.4)
+for i, v in enumerate(nrm):
+    ax3.text(i, v + 0.02, f"{v:.2f}", ha="center", fontsize=FONT_SIZE - 4)
+ax3.set_xticks(xs); ax3.set_xticklabels([LABELS[m] for m in MS], fontsize=FONT_SIZE - 3)
+ax3.set_ylabel(r"$\bar{\mathcal{F}}\,/\,\mathcal{F}(\mathrm{cross\_task\_swap})$")
+ax3.set_ylim(0, 1.05)
+ax3.set_title(f"(c) Ceiling-normalized: only {max(nrm)/min(nrm):.1f}$\\times$ spread",
+              loc="left", fontsize=FONT_SIZE, style="italic")
+ax3.set_axisbelow(True); ax3.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 
 save(fig, "fig4_dissociation")

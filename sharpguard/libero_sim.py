@@ -388,7 +388,16 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                 if len(first_actions) < 5:
                     first_actions.append(action)
                 obs, reward, done, info = env.step(action)
-                if isinstance(info, dict) and info.get("success", False):
+                # LIBERO signals task completion through `done` (and reward=1),
+                # NOT through info["success"] — that key does not exist, so the
+                # old `info.get("success")` test scored every solved episode as
+                # a failure and pinned Task SR at exactly 0. Kim's
+                # run_libero_eval.py counts a success iff `done` is set. Our
+                # cfg.max_steps is below robosuite's own horizon, so a `done`
+                # here can only mean the task was solved, never a timeout.
+                if ((isinstance(info, dict) and info.get("success", False))
+                        or (reward is not None and float(reward) > 0)
+                        or done):
                     success = True
                     done = True
                 steps += 1

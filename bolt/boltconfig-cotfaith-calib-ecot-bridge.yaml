@@ -1,0 +1,21 @@
+name: 'CoT-Faith R1: calibration floors on ECoT-bridge (13 families)'
+description: 'R1 reviewer item 2+3. Adds bbox_jitter_null (semantics-preserving distractor = 2nd calibration floor) and instr_random_sub (out-of-CoT random 5-token substitution = per-model decode-sensitivity calibrator) to the 11 existing families. Enables F_diff and the CoT-specific-vs-global-prompt-sensitivity separation.'
+tags: ['cotfaith','edit','ecot-bridge','r1-calibration']
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources: {docker_image: docker.apple.com/iris/iris:2.15.0, task_type: 1gpu, disk_gb: 512, timeout: 6h, cluster: aws_6}
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  SEED: '0'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_only.sh

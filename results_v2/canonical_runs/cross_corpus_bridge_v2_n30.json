@@ -1,0 +1,758 @@
+{
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/bridge_orig_lerobot",
+  "n_samples_requested": 30,
+  "n_samples_used": 30,
+  "attention_aggregate": {
+    "action->cot": {
+      "mean": 0.33763020833333335,
+      "std": 0.01615108281597467,
+      "n": 30
+    },
+    "action->visual": {
+      "mean": 0.2952473958333333,
+      "std": 0.009516127076359382,
+      "n": 30
+    },
+    "action->instr": {
+      "mean": 0.301171875,
+      "std": 0.009796825159362851,
+      "n": 30
+    },
+    "action->action_prev": {
+      "mean": 0.06591796875,
+      "std": 0.004267458939506548,
+      "n": 30
+    }
+  },
+  "edit_aggregate": {
+    "subject_swap": {
+      "n": 0
+    },
+    "direction_flip": {
+      "n": 26,
+      "delta_linf_mean": 0.8362379807692307,
+      "delta_linf_median": 0.765625,
+      "faithful_rate": 1.0
+    },
+    "gripper_flip": {
+      "n": 15,
+      "delta_linf_mean": 0.36354166666666665,
+      "delta_linf_median": 0.265625,
+      "faithful_rate": 0.8
+    }
+  },
+  "n_attn_ok": 30,
+  "n_edit_ok": 41,
+  "per_sample_attn": [
+    {
+      "action->visual": 0.30078125,
+      "action->instr": 0.30859375,
+      "action->cot": 0.330078125,
+      "action->action_prev": 0.0615234375,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.29296875,
+      "instr->visual": 0.58203125,
+      "instr->instr": 0.41796875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 312,
+        "cot_end": 558,
+        "action_end": 565
+      },
+      "sample_idx": 0,
+      "instruction": "put small spoon from basket to tray"
+    },
+    {
+      "action->visual": 0.294921875,
+      "action->instr": 0.31640625,
+      "action->cot": 0.322265625,
+      "action->action_prev": 0.06640625,
+      "cot->visual": 0.3359375,
+      "cot->instr": 0.3828125,
+      "cot->cot_self": 0.28125,
+      "instr->visual": 0.54296875,
+      "instr->instr": 0.45703125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 321,
+        "cot_end": 580,
+        "action_end": 587
+      },
+      "sample_idx": 1,
+      "instruction": "put the blue cube on the right side of the table on top of the rectangular block"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.302734375,
+      "action->cot": 0.33203125,
+      "action->action_prev": 0.07080078125,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.373046875,
+      "cot->cot_self": 0.294921875,
+      "instr->visual": 0.5625,
+      "instr->instr": 0.4375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 527,
+        "action_end": 534
+      },
+      "sample_idx": 2,
+      "instruction": "put the red object into the pot"
+    },
+    {
+      "action->visual": 0.291015625,
+      "action->instr": 0.294921875,
+      "action->cot": 0.34765625,
+      "action->action_prev": 0.0654296875,
+      "cot->visual": 0.32421875,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.3125,
+      "instr->visual": 0.546875,
+      "instr->instr": 0.44921875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 316,
+        "cot_end": 600,
+        "action_end": 607
+      },
+      "sample_idx": 3,
+      "instruction": "put the rectangle block on top of the red arch and yellow block"
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.302734375,
+      "action->cot": 0.326171875,
+      "action->action_prev": 0.0654296875,
+      "cot->visual": 0.34765625,
+      "cot->instr": 0.365234375,
+      "cot->cot_self": 0.2890625,
+      "instr->visual": 0.59375,
+      "instr->instr": 0.404296875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 509,
+        "action_end": 516
+      },
+      "sample_idx": 4,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.306640625,
+      "action->instr": 0.30859375,
+      "action->cot": 0.3203125,
+      "action->action_prev": 0.06396484375,
+      "cot->visual": 0.3515625,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.28515625,
+      "instr->visual": 0.59375,
+      "instr->instr": 0.408203125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 547,
+        "action_end": 554
+      },
+      "sample_idx": 5,
+      "instruction": "take broccoli out of pan"
+    },
+    {
+      "action->visual": 0.271484375,
+      "action->instr": 0.298828125,
+      "action->cot": 0.37109375,
+      "action->action_prev": 0.0595703125,
+      "cot->visual": 0.318359375,
+      "cot->instr": 0.3515625,
+      "cot->cot_self": 0.330078125,
+      "instr->visual": 0.55078125,
+      "instr->instr": 0.451171875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 317,
+        "cot_end": 655,
+        "action_end": 662
+      },
+      "sample_idx": 6,
+      "instruction": "Picked the piece of chocolate and put it into the drawer"
+    },
+    {
+      "action->visual": 0.2890625,
+      "action->instr": 0.30859375,
+      "action->cot": 0.33984375,
+      "action->action_prev": 0.061279296875,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.302734375,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.44140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 561,
+        "action_end": 568
+      },
+      "sample_idx": 7,
+      "instruction": "Move the blue fork to the lower right burner"
+    },
+    {
+      "action->visual": 0.318359375,
+      "action->instr": 0.3203125,
+      "action->cot": 0.29296875,
+      "action->action_prev": 0.068359375,
+      "cot->visual": 0.349609375,
+      "cot->instr": 0.39453125,
+      "cot->cot_self": 0.2578125,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.423828125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 307,
+        "cot_end": 452,
+        "action_end": 459
+      },
+      "sample_idx": 8,
+      "instruction": "open the drawer"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.30078125,
+      "action->cot": 0.34375,
+      "action->action_prev": 0.06396484375,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.3046875,
+      "instr->visual": 0.55859375,
+      "instr->instr": 0.439453125,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 583,
+        "action_end": 590
+      },
+      "sample_idx": 9,
+      "instruction": "Move the can in the middle bottom of the table"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.302734375,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.06689453125,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.3671875,
+      "cot->cot_self": 0.30078125,
+      "instr->visual": 0.5703125,
+      "instr->instr": 0.431640625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 310,
+        "cot_end": 539,
+        "action_end": 546
+      },
+      "sample_idx": 10,
+      "instruction": "end effector reaching pot or pan"
+    },
+    {
+      "action->visual": 0.29296875,
+      "action->instr": 0.296875,
+      "action->cot": 0.33984375,
+      "action->action_prev": 0.0712890625,
+      "cot->visual": 0.333984375,
+      "cot->instr": 0.36328125,
+      "cot->cot_self": 0.302734375,
+      "instr->visual": 0.56640625,
+      "instr->instr": 0.43359375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 311,
+        "cot_end": 536,
+        "action_end": 543
+      },
+      "sample_idx": 11,
+      "instruction": "bmbfbbfgjjg"
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.294921875,
+      "action->cot": 0.3359375,
+      "action->action_prev": 0.0712890625,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.361328125,
+      "cot->cot_self": 0.3046875,
+      "instr->visual": 0.5859375,
+      "instr->instr": 0.4140625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 528,
+        "action_end": 535
+      },
+      "sample_idx": 12,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.28125,
+      "action->instr": 0.2890625,
+      "action->cot": 0.359375,
+      "action->action_prev": 0.0693359375,
+      "cot->visual": 0.330078125,
+      "cot->instr": 0.3515625,
+      "cot->cot_self": 0.318359375,
+      "instr->visual": 0.58984375,
+      "instr->instr": 0.41015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 573,
+        "action_end": 580
+      },
+      "sample_idx": 13,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.298828125,
+      "action->instr": 0.2890625,
+      "action->cot": 0.345703125,
+      "action->action_prev": 0.06640625,
+      "cot->visual": 0.33203125,
+      "cot->instr": 0.361328125,
+      "cot->cot_self": 0.306640625,
+      "instr->visual": 0.5625,
+      "instr->instr": 0.435546875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 313,
+        "cot_end": 620,
+        "action_end": 627
+      },
+      "sample_idx": 14,
+      "instruction": "move the silver pot to the lower right burner"
+    },
+    {
+      "action->visual": 0.310546875,
+      "action->instr": 0.30078125,
+      "action->cot": 0.326171875,
+      "action->action_prev": 0.06396484375,
+      "cot->visual": 0.345703125,
+      "cot->instr": 0.365234375,
+      "cot->cot_self": 0.2890625,
+      "instr->visual": 0.58984375,
+      "instr->instr": 0.41015625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 308,
+        "cot_end": 531,
+        "action_end": 538
+      },
+      "sample_idx": 15,
+      "instruction": "sweep into pile"
+    },
+    {
+      "action->visual": 0.2890625,
+      "action->instr": 0.29296875,
+      "action->cot": 0.345703125,
+      "action->action_prev": 0.0703125,
+      "cot->visual": 0.33984375,
+      "cot->instr": 0.349609375,
+      "cot->cot_self": 0.310546875,
+      "instr->visual": 0.6015625,
+      "instr->instr": 0.396484375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 568,
+        "action_end": 575
+      },
+      "sample_idx": 16,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.296875,
+      "action->instr": 0.29296875,
+      "action->cot": 0.3515625,
+      "action->action_prev": 0.059326171875,
+      "cot->visual": 0.34375,
+      "cot->instr": 0.349609375,
+      "cot->cot_self": 0.306640625,
+      "instr->visual": 0.609375,
+      "instr->instr": 0.390625,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 566,
+        "action_end": 573
+      },
+      "sample_idx": 17,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.302734375,
+      "action->instr": 0.306640625,
+      "action->cot": 0.32421875,
+      "action->action_prev": 0.0673828125,
+      "cot->visual": 0.33984375,
+      "cot->instr": 0.376953125,
+      "cot->cot_self": 0.283203125,
+      "instr->visual": 0.578125,
+      "instr->instr": 0.419921875,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 303,
+        "cot_end": 477,
+        "action_end": 484
+      },
+      "sample_idx": 18,
+      "instruction": ""
+    },
+    {
+      "action->visual": 0.30078125,
+      "action->instr": 0.322265625,
+      "action->cot": 0.306640625,
+      "action->action_prev": 0.0693359375,
+      "cot->visual": 0.341796875,
+      "cot->instr": 0.384765625,
+      "cot->cot_self": 0.271484375,
+      "instr->visual": 0.5625,
+      "instr->instr": 0.4375,
+      "per_source_action_mass_total": 1.0,
+      "n_layers_used": 4,
+      "segments": {
+        "visual_end": 256,
+        "instr_end": 312,
+        "cot_end": 499,
+        "action_end": 506
+      },
+      "sample_idx": 19,
+      "instruction": "move the pot put on the purple cloth"
+    }
+  ],
+  "per_sample_edit": [
+    {
+      "sample": 0,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.12388392857142858,
+      "delta_linf": 0.375,
+      "faithful": true
+    },
+    {
+      "sample": 1,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.23995535714285715,
+      "delta_linf": 0.796875,
+      "faithful": true
+    },
+    {
+      "sample": 2,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.16183035714285715,
+      "delta_linf": 0.5,
+      "faithful": true
+    },
+    {
+      "sample": 3,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.20647321428571427,
+      "delta_linf": 0.640625,
+      "faithful": true
+    },
+    {
+      "sample": 4,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.22879464285714285,
+      "delta_linf": 0.4609375,
+      "faithful": true
+    },
+    {
+      "sample": 5,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.4877232142857143,
+      "delta_linf": 1.5,
+      "faithful": true
+    },
+    {
+      "sample": 6,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.4654017857142857,
+      "delta_linf": 1.03125,
+      "faithful": true
+    },
+    {
+      "sample": 6,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.203125,
+      "delta_linf": 0.640625,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.07589285714285714,
+      "delta_linf": 0.171875,
+      "faithful": true
+    },
+    {
+      "sample": 7,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.09040178571428571,
+      "delta_linf": 0.171875,
+      "faithful": true
+    },
+    {
+      "sample": 8,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.37276785714285715,
+      "delta_linf": 0.546875,
+      "faithful": true
+    },
+    {
+      "sample": 8,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.16071428571428573,
+      "delta_linf": 0.5859375,
+      "faithful": true
+    },
+    {
+      "sample": 9,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.21428571428571427,
+      "delta_linf": 0.6796875,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.17075892857142858,
+      "delta_linf": 0.4453125,
+      "faithful": true
+    },
+    {
+      "sample": 10,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.03794642857142857,
+      "delta_linf": 0.1953125,
+      "faithful": true
+    },
+    {
+      "sample": 11,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.21540178571428573,
+      "delta_linf": 0.8671875,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.30580357142857145,
+      "delta_linf": 0.828125,
+      "faithful": true
+    },
+    {
+      "sample": 12,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.08035714285714286,
+      "delta_linf": 0.4375,
+      "faithful": true
+    },
+    {
+      "sample": 13,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.4642857142857143,
+      "delta_linf": 1.140625,
+      "faithful": true
+    },
+    {
+      "sample": 13,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.08370535714285714,
+      "delta_linf": 0.234375,
+      "faithful": true
+    },
+    {
+      "sample": 15,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.3482142857142857,
+      "delta_linf": 0.75,
+      "faithful": true
+    },
+    {
+      "sample": 16,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.2689732142857143,
+      "delta_linf": 0.6328125,
+      "faithful": true
+    },
+    {
+      "sample": 17,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.021205357142857144,
+      "delta_linf": 0.1015625,
+      "faithful": true
+    },
+    {
+      "sample": 17,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 18,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.21540178571428573,
+      "delta_linf": 0.75,
+      "faithful": true
+    },
+    {
+      "sample": 18,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.14508928571428573,
+      "delta_linf": 0.421875,
+      "faithful": true
+    },
+    {
+      "sample": 19,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    },
+    {
+      "sample": 20,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.3549107142857143,
+      "delta_linf": 0.65625,
+      "faithful": true
+    },
+    {
+      "sample": 20,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.07589285714285714,
+      "delta_linf": 0.2265625,
+      "faithful": true
+    },
+    {
+      "sample": 21,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.20647321428571427,
+      "delta_linf": 1.0546875,
+      "faithful": true
+    },
+    {
+      "sample": 22,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.47098214285714285,
+      "delta_linf": 1.3046875,
+      "faithful": true
+    },
+    {
+      "sample": 23,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.5167410714285714,
+      "delta_linf": 1.7265625,
+      "faithful": true
+    },
+    {
+      "sample": 24,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.6049107142857143,
+      "delta_linf": 1.9921875,
+      "faithful": true
+    },
+    {
+      "sample": 24,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.13169642857142858,
+      "delta_linf": 0.6328125,
+      "faithful": true
+    },
+    {
+      "sample": 25,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.29129464285714285,
+      "delta_linf": 0.78125,
+      "faithful": true
+    },
+    {
+      "sample": 25,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.34933035714285715,
+      "delta_linf": 1.1796875,
+      "faithful": true
+    },
+    {
+      "sample": 26,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.08035714285714286,
+      "delta_linf": 0.359375,
+      "faithful": true
+    },
+    {
+      "sample": 27,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.265625,
+      "delta_linf": 0.8125,
+      "faithful": true
+    },
+    {
+      "sample": 28,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.078125,
+      "delta_linf": 0.265625,
+      "faithful": true
+    },
+    {
+      "sample": 29,
+      "family": "direction_flip",
+      "delta_l1_mean": 0.3671875,
+      "delta_linf": 1.296875,
+      "faithful": true
+    },
+    {
+      "sample": 29,
+      "family": "gripper_flip",
+      "delta_l1_mean": 0.0,
+      "delta_linf": 0.0,
+      "faithful": false
+    }
+  ]
+}

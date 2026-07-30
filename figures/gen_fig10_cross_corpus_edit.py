@@ -1,35 +1,45 @@
-"""Fig 10: Cross-corpus causal-edit (F5 causal counterpart, N=15-100).
-ECoT-bridge direction_flip / gripper_flip on LIBERO + 3 external corpora.
+"""Fig 10 -- cross-corpus causal-edit response (F5), N=30 per non-LIBERO corpus.
+
+Loaded from results_v2/derived_metrics.json.  No hardcoded literals.
+NOTE: these are magnitude-F values; the directional caveat of Fig. 12 applies
+to the direction_flip column here too (self-decoded CoT logs on the lerobot
+corpora do not store a_orig/a_edit, so directional-F cannot yet be computed
+cross-corpus -- stated as a limitation).
 """
-import sys
-sys.path.insert(0, "/Users/yudizhang/Documents/sharpguard/figures")
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
+from _data import MODELS, CROSS, fam
 import numpy as np, matplotlib.pyplot as plt
 
-# Real from v13 aws_6 (ik5n2thine, c2saurubyx, kbb6g24nyg) + LIBERO ECoT-bridge run
-DATA = [
-    ("LIBERO",    0.96, 100, 0.70, 100),
-    ("Bridge V2", 1.00,  26, 0.80,  15),
-    ("Fractal",   0.92,  25, 0.80,  20),
-    ("BC-Z",      0.92,  25, 0.67,  15),
-]
+rows = [("LIBERO",
+         fam("ecot-bridge", "direction_flip", "F_mag"),
+         MODELS["ecot-bridge"]["families"]["direction_flip"]["n_total"],
+         fam("ecot-bridge", "gripper_flip", "F_mag"),
+         MODELS["ecot-bridge"]["families"]["gripper_flip"]["n_total"])]
+for tag, name in (("bridge_v2", "Bridge V2"), ("fractal", "Fractal"), ("bcz", "BC-Z")):
+    e = CROSS[tag]["edit"]
+    rows.append((name, e["direction_flip"]["faithful_rate"], e["direction_flip"]["n"],
+                 e["gripper_flip"]["faithful_rate"], e["gripper_flip"]["n"]))
 
-labels = [f"{d[0]}\n(dir N={d[2]}; grip N={d[4]})" for d in DATA]
-direction = [d[1] for d in DATA]
-gripper   = [d[3] for d in DATA]
+labels = [f"{r[0]}\n(dir N={r[2]}; grip N={r[4]})" for r in rows]
+direction = [r[1] for r in rows]
+gripper = [r[3] for r in rows]
 x = np.arange(len(labels)); w = 0.35
-fig, ax = plt.subplots(1, 1, figsize=(6.6, 3.4))
-b1 = ax.bar(x - w/2, direction, w, label="direction_flip", color=C_COT_TRAINED, edgecolor="black", linewidth=0.4)
-b2 = ax.bar(x + w/2, gripper,   w, label="gripper_flip",   color="#EE6677",     edgecolor="black", linewidth=0.4)
-for bar, v in zip(b1, direction):
-    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f"{v:.2f}", ha="center", va="bottom", fontsize=FONT_SIZE-2)
-for bar, v in zip(b2, gripper):
-    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f"{v:.2f}", ha="center", va="bottom", fontsize=FONT_SIZE-2)
-ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=FONT_SIZE-1)
-ax.set_ylabel(r"Faithful rate  ($\Delta_\infty > 0.05$)")
+fig, ax = plt.subplots(1, 1, figsize=(6.8, 3.4))
+b1 = ax.bar(x - w / 2, direction, w, label="direction_flip", color=C_COT_TRAINED,
+            edgecolor="black", linewidth=0.4)
+b2 = ax.bar(x + w / 2, gripper, w, label="gripper_flip", color=C_NO_COT,
+            edgecolor="black", linewidth=0.4)
+for bars, vals in ((b1, direction), (b2, gripper)):
+    for bar, v in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
+                f"{v:.2f}", ha="center", va="bottom", fontsize=FONT_SIZE - 2)
+ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=FONT_SIZE - 1)
+ax.set_ylabel(r"magnitude-$\mathcal{F}$  ($\Delta_\infty > 0.05$)")
 ax.set_ylim(0, 1.15)
-ax.legend(loc="upper right", frameon=False, fontsize=FONT_SIZE-1)
-ax.set_title("ECoT-bridge causal-edit response across 4 corpora (F5)",
-              fontsize=FONT_SIZE, loc="left", style="italic")
+ax.legend(loc="upper right", frameon=False, fontsize=FONT_SIZE - 1)
+ax.set_title("ECoT-bridge magnitude-$\\mathcal{F}$ across 4 corpora (F5)",
+             fontsize=FONT_SIZE, loc="left", style="italic")
 ax.axhline(1.0, color="gray", linestyle=":", linewidth=0.4, alpha=0.5)
 save(fig, "fig10_cross_corpus_edit")
