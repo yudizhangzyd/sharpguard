@@ -1,0 +1,25 @@
+name: 'CoT-Faith DT-base edit families (N=100)'
+description: 'DeepThinkVLA-base 10-family causal edit protocol. Fills leaderboard gap identified by R3 reviewer (DT was attention-only, causal-edit family coverage was 1).'
+tags: ['cotfaith', 'deepthink', 'edit', 'base']
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 8h
+  cluster: aws_6
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_PATH: 'yinchenghust/deepthinkvla_base'
+  N_SAMPLES: '100'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_deepthink.sh

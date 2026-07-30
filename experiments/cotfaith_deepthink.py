@@ -18,6 +18,13 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 
 
+ALL_FAMS = ["subject_swap", "direction_flip", "gripper_flip",
+            "location_swap", "verb_swap", "negation",
+            "adversarial_plausible", "selfsplice_control",
+            "syntactic_scramble", "cross_task_swap",
+            "paraphrase_null"]
+
+
 def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json,
                           n_samples, seed=0):
     from huggingface_hub import snapshot_download
@@ -169,7 +176,7 @@ def run(args):
             a_orig = _generate_action(orig_prompt)
             if a_orig is None: continue
 
-            for fname in ["subject_swap", "direction_flip", "gripper_flip"]:
+            for fname in ALL_FAMS:
                 fedit = EDIT_FAMILIES[fname]
                 edited = fedit(gt)
                 if edited is None: continue
@@ -203,7 +210,7 @@ def run(args):
 
     attn_agg, n_attn = _agg(per_sample_attn)
     edit_agg = {}
-    for fam in ["subject_swap", "direction_flip", "gripper_flip"]:
+    for fam in ALL_FAMS:
         rows = [r for r in per_sample_edit if r["family"] == fam]
         if not rows:
             edit_agg[fam] = {"n": 0}; continue
