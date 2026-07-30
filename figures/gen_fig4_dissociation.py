@@ -42,10 +42,10 @@ def _load_rvis(path):
         return json.load(open(f"{OLD}/ecot-bridge/cotfaith-rvis/rvis_cot_report.json"))
     return json.load(open(f"{path}/cotfaith-rvis/rvis_cot_report.json"))
 
-# 7 families available on 8-model set (skip r=32 which only has 3)
-SHARED_FAMS = ["subject_swap", "direction_flip", "gripper_flip",
-                "verb_swap", "negation", "adversarial_plausible",
-                "cross_task_swap"]
+# 7 non-control families
+SHARED_FAMS = ["direction_flip", "gripper_flip",
+                "verb_swap", "negation",
+                "subject_swap", "location_swap", "adversarial_plausible"]
 
 attn_cot, faithful_avg = [], []
 for name, path, _ in MODELS:
