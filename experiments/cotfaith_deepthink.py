@@ -68,6 +68,66 @@ def action_ids(a, vocab, bins=256):
     return vocab - 1 - idx
 
 
+# ---------------------------------------------------------------------------
+# Action-token vocabulary resolution
+# ---------------------------------------------------------------------------
+# The original decoder hardcoded OpenVLA's convention: action bins live in the
+# top 256 ids of `tokenizer.vocab_size`. DeepThinkVLA is PaliGemma-based, whose
+# tokenizer reports a `vocab_size` that excludes added tokens while the model's
+# embedding table is larger (PaliGemma adds 1024 <locNNNN> + 128 <segNNN>).
+# With the wrong anchor, ZERO generated ids land in [V-256, V), so
+# `_generate_action` returned None on every sample, `a_orig is None` skipped
+# the whole family loop, and the job wrote a report with n=0 for all 11
+# families while exiting 0. That silent-success path is why the paper had to
+# call DeepThinkVLA "attention-only".
+#
+# We now try every plausible anchor, pick the one that actually decodes, and
+# record which one won. If none decode we raise with the observed token ids
+# rather than emitting an empty report.
+
+def candidate_action_vocabs(model, tokenizer):
+    """Plausible upper bounds V such that action bins occupy [V-256, V).
+
+    Ordered most- to least-likely. Deduplicated, preserving order.
+    """
+    cands = []
+    def _add(v, why):
+        if isinstance(v, int) and v > 256 and all(v != c[0] for c in cands):
+            cands.append((v, why))
+    try:
+        emb = model.get_input_embeddings()
+        _add(int(emb.weight.shape[0]), "model input-embedding rows")
+    except Exception:
+        pass
+    _add(len(tokenizer), "len(tokenizer) incl. added tokens")
+    _add(int(getattr(tokenizer, "vocab_size", 0) or 0), "tokenizer.vocab_size")
+    try:
+        _add(int(model.config.text_config.vocab_size), "config.text_config.vocab_size")
+    except Exception:
+        pass
+    try:
+        _add(int(model.config.vocab_size), "config.vocab_size")
+    except Exception:
+        pass
+    return cands
+
+
+def decode_action_bins(gen_ids, vocab_candidates, bins=256, n_dims=7):
+    """Return (action, chosen_vocab, why) or (None, None, diagnostic_str).
+
+    A candidate wins if >= n_dims of `gen_ids` fall in [V-256, V).
+    """
+    for V, why in vocab_candidates:
+        lo = V - bins
+        hit = [V - 1 - t for t in gen_ids if lo <= t < V]
+        if len(hit) >= n_dims:
+            return dequantize(np.asarray(hit[:n_dims])), V, why
+    diag = (f"no candidate vocab decoded >= {n_dims} action bins. "
+            f"generated ids={list(gen_ids)}; "
+            f"candidates={[(v, w) for v, w in vocab_candidates]}")
+    return None, None, diag
+
+
 def build_deepthink_prompt(instruction, cot_text=None):
     """DeepThinkVLA prompt format. Based on OpenpiFastOft architecture."""
     p = f"Instruction: {instruction}\n"
@@ -125,6 +185,14 @@ def run(args):
 
     per_sample_attn = []
     per_sample_edit = []
+    # Action-vocab resolution state. `chosen_vocab` records which anchor won so
+    # the report is self-describing; `decode_failures` and `n_orig_decode_fail`
+    # make a total decode failure loud instead of an all-zero report.
+    action_vocabs = candidate_action_vocabs(model, processor.tokenizer)
+    print(f"[deepthink] action-vocab candidates: {action_vocabs}")
+    chosen_vocab = {"V": None, "why": None}
+    decode_failures = []
+    n_orig_decode_fail = 0
 
     it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
                               args.reasoning_json, args.n_samples,
@@ -158,23 +226,31 @@ def run(args):
             except Exception as e:
                 print(f"[deepthink] attn sample {si} skipped: {str(e)[:200]}")
 
-            # Causal edit for 3 core families
+            # Causal edit over all families.
             def _generate_action(text_pre):
                 p = processor(text=text_pre, images=img, return_tensors="pt")
                 p = {k: v.to(device) if hasattr(v, 'to') else v for k, v in p.items()}
                 # cast pixel to dtype
                 if "pixel_values" in p:
                     p["pixel_values"] = p["pixel_values"].to(dtype)
+                n_in = p["input_ids"].shape[1]
                 with torch.no_grad():
-                    out = model.generate(**p, max_new_tokens=8, do_sample=False)
-                gen_ids = out[0, -8:].cpu().tolist()
-                lo = vocab - 256
-                bins = [vocab - 1 - t for t in gen_ids if lo <= t < vocab][:7]
-                if len(bins) < 7: return None
-                return dequantize(np.asarray(bins))
+                    out = model.generate(**p, max_new_tokens=12, do_sample=False)
+                # `generate` may or may not echo the prompt depending on the
+                # model class; slice off the prompt only when it is echoed.
+                seq = out[0].cpu().tolist()
+                gen_ids = seq[n_in:] if len(seq) > n_in else seq
+                act, V, why = decode_action_bins(gen_ids, action_vocabs)
+                if act is None:
+                    decode_failures.append(why)
+                    return None
+                chosen_vocab["V"], chosen_vocab["why"] = V, why
+                return act
 
             a_orig = _generate_action(orig_prompt)
-            if a_orig is None: continue
+            if a_orig is None:
+                n_orig_decode_fail += 1
+                continue
 
             for fname in ALL_FAMS:
                 fedit = EDIT_FAMILIES[fname]
@@ -198,6 +274,17 @@ def run(args):
             print(f"[deepthink] sample {si}: {e}\n{traceback.format_exc()[-400:]}")
 
     hook.close()
+
+    # A run where NOTHING decoded is a harness failure, not a finding. The
+    # previous version wrote n=0 for all 11 families and exited 0, which is
+    # how the submission ended up claiming DeepThinkVLA was "attention-only".
+    if per_sample_attn and not per_sample_edit:
+        uniq = list(dict.fromkeys(decode_failures))[:3]
+        raise RuntimeError(
+            f"action decode failed on every one of {n_orig_decode_fail} samples "
+            f"while the attention probe succeeded on {len(per_sample_attn)}. "
+            f"The action-token vocabulary anchor is wrong for this checkpoint; "
+            f"no edit report will be written. Diagnostics: {uniq}")
 
     def _agg(rows):
         m, s, n = {}, {}, len(rows)
@@ -226,7 +313,15 @@ def run(args):
         }
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
+    decode_meta = {
+        "action_vocab_candidates": [{"V": v, "why": w} for v, w in action_vocabs],
+        "action_vocab_chosen": chosen_vocab["V"],
+        "action_vocab_chosen_why": chosen_vocab["why"],
+        "n_orig_decode_fail": n_orig_decode_fail,
+        "decode_failure_examples": list(dict.fromkeys(decode_failures))[:3],
+    }
     (out / "deepthink_report.json").write_text(json.dumps({
+        "action_decode": decode_meta,
         "model": args.ckpt_path,
         "n_samples": args.n_samples,
         "seed": args.seed,

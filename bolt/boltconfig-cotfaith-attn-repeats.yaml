@@ -1,0 +1,32 @@
+name: 'CoT-Faith R1: attention error bars + full 32-layer sweep (ECoT-bridge)'
+description: 'R1 reviewer critical #5 items (c) and (6). The submitted alpha(cot) values are single-run, so the 2.30pp within-ECoT spread that F1 and F3 hinge on has no noise floor; and layers are fixed at 0-3 without evidence that the choice is principled. This job runs the identical measurement at 3 seeds x 5 layer sets (all 32 layers, 0-3, 8-11, 16-19, 28-31) on the public ECoT-bridge checkpoint, giving mean+-std error bars and a depth profile. No training required.'
+tags: ['cotfaith', 'attention', 'error-bars', 'layer-sweep', 'r1']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu               # read-only forward passes on one 7B model
+  disk_gb: 512
+  timeout: 12h                  # 15 runs x ~100 samples, generous headroom
+  cluster: aws_10               # aws_6 p4d pool is saturated; aws_10 is idle
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  SEEDS: '0 1 2'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_attn_repeats.sh
