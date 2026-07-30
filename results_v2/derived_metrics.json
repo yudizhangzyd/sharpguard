@@ -2989,6 +2989,7 @@
   "noise_as_frac_of_spread": 0.630195080576761
  },
  "calibration_floors": {
+  "label": "ecot-bridge",
   "source": "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json",
   "n_families": 13,
   "seed": 0,
@@ -3106,6 +3107,601 @@
   "instr_random_sub": 0.98989898989899,
   "F_bar_diff_vs_instr_random_sub": -0.1207153164296022,
   "cot_specificity_ratio": 0.8780528946272386,
-  "n_families_above_out_of_cot_control": 0
+  "n_families_above_out_of_cot_control": 0,
+  "ceiling_cross_task_swap": 0.97,
+  "dynamic_range": 0.010000000000000009,
+  "calibration_is_degenerate": true,
+  "F_bar_two_sided": null
+ },
+ "calibration_by_model": {
+  "ecot-bridge": {
+   "label": "ecot-bridge",
+   "source": "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json",
+   "n_families": 13,
+   "seed": 0,
+   "F_bar_non_control": 0.8691836734693877,
+   "families": {
+    "adversarial_plausible": {
+     "F_mag": 0.9333333333333333,
+     "n": 60,
+     "wilson": [
+      0.8407442010623228,
+      0.973771725856802
+     ]
+    },
+    "bbox_jitter_null": {
+     "F_mag": 0.46,
+     "n": 100,
+     "wilson": [
+      0.36560643853331865,
+      0.5573531460647615
+     ]
+    },
+    "cross_task_swap": {
+     "F_mag": 0.97,
+     "n": 100,
+     "wilson": [
+      0.9154792191959729,
+      0.9897456617765852
+     ]
+    },
+    "direction_flip": {
+     "F_mag": 0.96,
+     "n": 100,
+     "wilson": [
+      0.9016278276739262,
+      0.984336949448152
+     ]
+    },
+    "gripper_flip": {
+     "F_mag": 0.67,
+     "n": 100,
+     "wilson": [
+      0.5730516033971139,
+      0.7543701620610456
+     ]
+    },
+    "instr_random_sub": {
+     "F_mag": 0.98989898989899,
+     "n": 99,
+     "wilson": [
+      0.944983344585968,
+      0.9982147386799481
+     ]
+    },
+    "location_swap": {
+     "F_mag": 0.6142857142857143,
+     "n": 70,
+     "wilson": [
+      0.49715520645630557,
+      0.7195248221454583
+     ]
+    },
+    "negation": {
+     "F_mag": 0.96,
+     "n": 100,
+     "wilson": [
+      0.9016278276739262,
+      0.984336949448152
+     ]
+    },
+    "paraphrase_null": {
+     "F_mag": 0.96,
+     "n": 100,
+     "wilson": [
+      0.9016278276739262,
+      0.984336949448152
+     ]
+    },
+    "selfsplice_control": {
+     "F_mag": 0.0,
+     "n": 60,
+     "wilson": [
+      0.0,
+      0.06017393047793289
+     ]
+    },
+    "subject_swap": {
+     "F_mag": 0.9666666666666667,
+     "n": 60,
+     "wilson": [
+      0.8863601247107462,
+      0.9908108735098498
+     ]
+    },
+    "syntactic_scramble": {
+     "F_mag": 0.88,
+     "n": 100,
+     "wilson": [
+      0.8018773199709163,
+      0.9300066263473222
+     ]
+    },
+    "verb_swap": {
+     "F_mag": 0.98,
+     "n": 100,
+     "wilson": [
+      0.9299868370580063,
+      0.9944981477650318
+     ]
+    }
+   },
+   "paraphrase_null": 0.96,
+   "F_bar_diff_vs_paraphrase_null": -0.09081632653061222,
+   "bbox_jitter_null": 0.46,
+   "F_bar_diff_vs_bbox_jitter_null": 0.4091836734693877,
+   "instr_random_sub": 0.98989898989899,
+   "F_bar_diff_vs_instr_random_sub": -0.1207153164296022,
+   "cot_specificity_ratio": 0.8780528946272386,
+   "n_families_above_out_of_cot_control": 0,
+   "ceiling_cross_task_swap": 0.97,
+   "dynamic_range": 0.010000000000000009,
+   "calibration_is_degenerate": true,
+   "F_bar_two_sided": null
+  },
+  "ours-no-cot": {
+   "label": "ours-no-cot",
+   "source": "/Users/yudizhang/Documents/sharpguard/results_v2/canonical_runs/ours_no-cot_edit_13family_calibration.json",
+   "n_families": 13,
+   "seed": 0,
+   "F_bar_non_control": 0.12401360544217688,
+   "families": {
+    "adversarial_plausible": {
+     "F_mag": 0.03333333333333333,
+     "n": 60,
+     "wilson": [
+      0.009189126490150246,
+      0.11363987528925378
+     ]
+    },
+    "bbox_jitter_null": {
+     "F_mag": 0.05,
+     "n": 100,
+     "wilson": [
+      0.02154336145631356,
+      0.11175196527208817
+     ]
+    },
+    "cross_task_swap": {
+     "F_mag": 0.22,
+     "n": 100,
+     "wilson": [
+      0.15001174503655804,
+      0.3107053471500031
+     ]
+    },
+    "direction_flip": {
+     "F_mag": 0.27,
+     "n": 100,
+     "wilson": [
+      0.1926946091766482,
+      0.3643230022623127
+     ]
+    },
+    "gripper_flip": {
+     "F_mag": 0.06,
+     "n": 100,
+     "wilson": [
+      0.02778574526665662,
+      0.12476968531222507
+     ]
+    },
+    "instr_random_sub": {
+     "F_mag": 0.19,
+     "n": 100,
+     "wilson": [
+      0.1251465399270426,
+      0.27779024070807856
+     ]
+    },
+    "location_swap": {
+     "F_mag": 0.07142857142857142,
+     "n": 70,
+     "wilson": [
+      0.030893761510293508,
+      0.1565561312330923
+     ]
+    },
+    "negation": {
+     "F_mag": 0.17,
+     "n": 100,
+     "wilson": [
+      0.10893476059773155,
+      0.25548181233642975
+     ]
+    },
+    "paraphrase_null": {
+     "F_mag": 0.11,
+     "n": 100,
+     "wilson": [
+      0.06254131955225126,
+      0.18631463027903022
+     ]
+    },
+    "selfsplice_control": {
+     "F_mag": 0.0,
+     "n": 60,
+     "wilson": [
+      0.0,
+      0.06017393047793289
+     ]
+    },
+    "subject_swap": {
+     "F_mag": 0.13333333333333333,
+     "n": 60,
+     "wilson": [
+      0.0691402697830964,
+      0.24165394590072103
+     ]
+    },
+    "syntactic_scramble": {
+     "F_mag": 0.09,
+     "n": 100,
+     "wilson": [
+      0.04807199516388488,
+      0.16226374696643667
+     ]
+    },
+    "verb_swap": {
+     "F_mag": 0.13,
+     "n": 100,
+     "wilson": [
+      0.07757093858414264,
+      0.20980521894809878
+     ]
+    }
+   },
+   "paraphrase_null": 0.11,
+   "F_bar_diff_vs_paraphrase_null": 0.014013605442176877,
+   "bbox_jitter_null": 0.05,
+   "F_bar_diff_vs_bbox_jitter_null": 0.07401360544217687,
+   "instr_random_sub": 0.19,
+   "F_bar_diff_vs_instr_random_sub": -0.06598639455782312,
+   "cot_specificity_ratio": 0.652703186537773,
+   "n_families_above_out_of_cot_control": 1,
+   "ceiling_cross_task_swap": 0.22,
+   "dynamic_range": 0.11,
+   "calibration_is_degenerate": false,
+   "F_bar_two_sided": 0.12739641311069888
+  }
+ },
+ "calibration_contrast": {
+  "models": [
+   "ecot-bridge",
+   "ours-no-cot"
+  ],
+  "dynamic_range": {
+   "ecot-bridge": 0.010000000000000009,
+   "ours-no-cot": 0.11
+  },
+  "paraphrase_floor": {
+   "ecot-bridge": 0.96,
+   "ours-no-cot": 0.11
+  },
+  "F_bar": {
+   "ecot-bridge": 0.8691836734693877,
+   "ours-no-cot": 0.12401360544217688
+  },
+  "degenerate": {
+   "ecot-bridge": true,
+   "ours-no-cot": false
+  },
+  "n_degenerate": 1,
+  "note": "both models were scored with the identical 13-family protocol at n=100; only the high-F model loses its dynamic range"
+ },
+ "attention_seed_repeats": {
+  "early_layers_0_3": {
+   "n_seeds": 3,
+   "runs": [
+    "ecot_bridge_rvis_earlylayers_seed0.json",
+    "ecot_bridge_rvis_earlylayers_seed1.json",
+    "ecot_bridge_rvis_earlylayers_seed2.json"
+   ],
+   "layers": "0,1,2,3",
+   "n_per_run": 100,
+   "cot": {
+    "mean": 0.34403645833333335,
+    "std": 0.0005702099294179147,
+    "range_pp": 0.101562500000002,
+    "per_seed": [
+     0.34337890625,
+     0.3443359375,
+     0.34439453125
+    ]
+   },
+   "visual": {
+    "mean": 0.29035807291666665,
+    "std": 0.000452743194029011,
+    "range_pp": 0.08203125000000311,
+    "per_seed": [
+     0.29013671875,
+     0.29087890625,
+     0.29005859375
+    ]
+   },
+   "instr": {
+    "mean": 0.30026692708333336,
+    "std": 0.0009408171566253119,
+    "range_pp": 0.18750000000000155,
+    "per_seed": [
+     0.30125,
+     0.299375,
+     0.30017578125
+    ]
+   },
+   "action_prev": {
+    "mean": 0.06535725911458333,
+    "std": 0.00016454305357101857,
+    "range_pp": 0.031982421875000056,
+    "per_seed": [
+     0.0652197265625,
+     0.0653125,
+     0.06553955078125
+    ]
+   },
+   "bucket_order": [
+    "cot",
+    "instr",
+    "visual",
+    "action_prev"
+   ],
+   "top_bucket": "cot",
+   "max_sampling_std_pp": 0.09408171566253119
+  },
+  "full_layers_0_31": {
+   "n_seeds": 3,
+   "runs": [
+    "ecot_bridge_rvis_fulllayers_seed0.json",
+    "ecot_bridge_rvis_fulllayers_seed1.json",
+    "ecot_bridge_rvis_fulllayers_seed2.json"
+   ],
+   "layers": "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31",
+   "n_per_run": 100,
+   "cot": {
+    "mean": 0.21257486979166665,
+    "std": 0.000840146505507308,
+    "range_pp": 0.146484375,
+    "per_seed": [
+     0.212080078125,
+     0.212099609375,
+     0.213544921875
+    ]
+   },
+   "visual": {
+    "mean": 0.41443359375000005,
+    "std": 0.0008892619092056453,
+    "range_pp": 0.1757812500000011,
+    "per_seed": [
+     0.4136328125,
+     0.415390625,
+     0.41427734375
+    ]
+   },
+   "instr": {
+    "mean": 0.3110807291666667,
+    "std": 0.0009163743911413039,
+    "range_pp": 0.1757812500000011,
+    "per_seed": [
+     0.312109375,
+     0.31078125,
+     0.3103515625
+    ]
+   },
+   "action_prev": {
+    "mean": 0.061845703125000005,
+    "std": 0.000321830687203996,
+    "range_pp": 0.05737304687499986,
+    "per_seed": [
+     0.062216796875,
+     0.06167724609375,
+     0.06164306640625
+    ]
+   },
+   "bucket_order": [
+    "visual",
+    "instr",
+    "cot",
+    "action_prev"
+   ],
+   "top_bucket": "visual",
+   "max_sampling_std_pp": 0.09163743911413039
+  },
+  "depth_sensitivity": {
+   "reported_layers_top_bucket": "cot",
+   "all_layers_top_bucket": "visual",
+   "ordering_is_preserved": false,
+   "cot_early": 0.34403645833333335,
+   "cot_full": 0.21257486979166665,
+   "cot_drop_pp": 13.14615885416667,
+   "visual_early": 0.29035807291666665,
+   "visual_full": 0.41443359375000005,
+   "visual_rise_pp": 12.40755208333334,
+   "note": "the submitted alpha(cot) > alpha(visual) ordering holds only in layers 0-3; over all 32 layers it reverses"
+  }
+ },
+ "training_replicate": {
+  "n_pairs": 2,
+  "pairs": [
+   {
+    "label": "ours-no-cot",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, no_cot, seed 0",
+    "attention": {
+     "runs": [
+      "ours_no-cot_rvis.json",
+      "ours_no-cot_rvis_retrain.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.34908203125,
+       "run_B": 0.3547265625,
+       "abs_diff_pp": 0.5644531250000029
+      },
+      "visual": {
+       "run_A": 0.2957421875,
+       "run_B": 0.28630859375,
+       "abs_diff_pp": 0.9433593749999969
+      },
+      "instr": {
+       "run_A": 0.2903125,
+       "run_B": 0.29310546875,
+       "abs_diff_pp": 0.27929687500000133
+      },
+      "action_prev": {
+       "run_A": 0.06490478515625,
+       "run_B": 0.0658251953125,
+       "abs_diff_pp": 0.09204101562499956
+      }
+     },
+     "max_abs_diff_pp": 0.9433593749999969,
+     "cot_abs_diff_pp": 0.5644531250000029
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_no-cot_edit.json",
+      "ours_no-cot_edit_13family_calibration.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.11666666666666667,
+       "run_B": 0.03333333333333333,
+       "abs_diff": 0.08333333333333334,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.24,
+       "run_B": 0.22,
+       "abs_diff": 0.01999999999999999,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.23,
+       "run_B": 0.27,
+       "abs_diff": 0.04000000000000001,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.07,
+       "run_B": 0.06,
+       "abs_diff": 0.010000000000000009,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.25,
+       "run_B": 0.07142857142857142,
+       "abs_diff": 0.17857142857142858,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.14,
+       "run_B": 0.17,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.13333333333333333,
+       "run_B": 0.13333333333333333,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.11,
+       "run_B": 0.09,
+       "abs_diff": 0.020000000000000004,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.14,
+       "run_B": 0.13,
+       "abs_diff": 0.010000000000000009,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.08333333333333334,
+     "max_abs_diff_family": "adversarial_plausible",
+     "mean_abs_diff": 0.02370370370370371
+    }
+   },
+   {
+    "label": "ours-r32",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r32_rvis.json",
+      "ours_lora-r32_rvis_REPLICATE.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.35431640625,
+       "run_B": 0.3398046875,
+       "abs_diff_pp": 1.4511718750000013
+      },
+      "visual": {
+       "run_A": 0.28384765625,
+       "run_B": 0.296484375,
+       "abs_diff_pp": 1.2636718749999998
+      },
+      "instr": {
+       "run_A": 0.29005859375,
+       "run_B": 0.29447265625,
+       "abs_diff_pp": 0.4414062500000038
+      },
+      "action_prev": {
+       "run_A": 0.0719873046875,
+       "run_B": 0.0691552734375,
+       "abs_diff_pp": 0.28320312500000056
+      }
+     },
+     "max_abs_diff_pp": 1.4511718750000013,
+     "cot_abs_diff_pp": 1.4511718750000013
+    }
+   }
+  ],
+  "cot_abs_diff_pp_per_pair": [
+   0.5644531250000029,
+   1.4511718750000013
+  ],
+  "cot_abs_diff_pp_max": 1.4511718750000013,
+  "cot_abs_diff_pp_mean": 1.0078125000000022,
+  "any_bucket_abs_diff_pp_max": 1.4511718750000013
+ },
+ "noise_hierarchy": {
+  "sampling_std_pp": 0.09408171566253119,
+  "sampling_note": "3 draws of n=100 from ONE frozen checkpoint",
+  "training_run_diff_pp": 1.4511718750000013,
+  "training_run_cot_diff_pp": 1.4511718750000013,
+  "training_run_diff_pp_per_pair": [
+   0.5644531250000029,
+   1.4511718750000013
+  ],
+  "n_training_replicate_pairs": 2,
+  "training_run_note": "independent trainings of the SAME config; this is the quantity leaderboard rows differ in",
+  "cross_variant_spread_pp": 2.3027343749999982,
+  "cross_variant_note": "spread of alpha(cot) across the 7 ECoT variants",
+  "spread_over_training_run": 1.5868102288021508,
+  "spread_over_training_run_cot": 1.5868102288021508,
+  "within_family_ordering_supported": false,
+  "caveat": "two replicate pairs give a magnitude, not a distribution; a 2.30pp spread against a 1.45pp same-config training difference does not establish any within-family ordering"
  }
 }

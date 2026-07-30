@@ -33,11 +33,11 @@ Anonymous for review. Compute was provided by the authors' institution.
 **What do the instances represent?**
 Three kinds of record, all keyed to a (model, observation, edit family) triple:
 
-1. **Edit records** (11,726 released; 9,756 scored) — for one image/instruction/CoT triple
+1. **Edit records** (13,026 released; 10,906 scored) — for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
    boolean `faithful = delta_linf > tau`.
-2. **Attention records** (1,420 released) — per-observation four-bucket
+2. **Attention records** (2,120 released) — per-observation four-bucket
    decomposition of action-token attention mass (visual / instruction / CoT /
    previous-action), with segment boundaries and segment token counts so that
    per-token normalization is recomputable.
@@ -45,15 +45,15 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-13,346 records in 11.4 MB of JSON across 15 models: 11,726 edit records, 1,420
+15,346 records in 13.0 MB of JSON across 15 models: 13,026 edit records, 2,120
 attention records, and 200 records behind the withdrawn P3 probe (retained so
 the withdrawal is checkable rather than asserted). Per-model edit runs are
 1,000 records (10 families x N=100); the three ECoT-bridge seeds are 1,100 each
 (11 families) and the calibration run is 1,300 (13 families); the three
 cross-corpus runs are 40-45 each.
 
-Of the 11,726 edit records, **9,756 carry a scored action pair**. The other
-1,970 are retained with `skipped: true` and a machine-readable `reason` --- most
+Of the 13,026 edit records, **10,906 carry a scored action pair**. The other
+2,120 are retained with `skipped: true` and a machine-readable `reason` --- most
 often that the edit family's target object is not visible in the frame, which
 is a property of the observation, not a failure. They are released rather than
 filtered so that the denominator of every reported `F` is recomputable and no
@@ -65,17 +65,38 @@ asserts both counts.
 This is the section a reader should read most carefully. The release is
 deliberately incomplete in ways the paper states as limitations:
 
-- **Calibration floors exist for 1 of 8 CoT-VLAs.** Only ECoT-bridge has
-  `paraphrase_null`, `bbox_jitter_null`, and `instr_random_sub`. The seven
-  "ours" LoRA variants therefore have **no measured floor**, so their
-  `F` values are uncalibrated and no differential or CoT-specificity statistic
-  can be computed for them.
-- **Attention is single-run** for all 15 models in the submitted numbers, with
-  a measured run-to-run noise floor of 1.45 pp against a 2.30 pp within-family
-  spread. No within-family attention ordering is supported by the data.
+- **Calibration floors exist for 2 of 8 CoT-VLAs.** ECoT-bridge and our
+  no-CoT variant have `paraphrase_null`, `bbox_jitter_null`, and
+  `instr_random_sub` at N=100. The other six "ours" LoRA variants have **no
+  measured floor**, so their `F` values are uncalibrated, no differential or
+  CoT-specificity statistic can be computed for them, and the ceiling-
+  normalized F2 table cannot be recomputed two-sided. On the one row where
+  both normalizations exist, the one-sided version overstates the model by
+  4.4x — so that table's ordering is **not** floor-corrected.
+- **All reported attention is averaged over layers 0-3, and the layer set
+  changes the answer.** Over all 32 layers the four buckets reorder:
+  `cot` 0.344 -> 0.213 and `visual` 0.290 -> 0.414. Sampling noise is 0.09 pp,
+  so this is not noise. Do not quote a bucket ordering from this release
+  without stating its layer set. Both layer sets are released
+  (`ecot_bridge_rvis_{early,full}layers_seed{0,1,2}.json`).
+- **Attention error bars come from two retraining pairs, not from per-model
+  replicates.** Sampling noise is measured at sigma <= 0.094 pp (3 seeds,
+  N=100), but the quantity leaderboard rows differ in is same-config
+  retraining, for which only 2 pairs exist (0.56 and 1.45 pp) against a
+  2.30 pp within-family spread. That ratio (1.6x) supports **no** within-family
+  ordering, and two pairs are a magnitude, not a distribution. For `F`, the
+  same two trainings differ by mean 0.024 / max 0.083 across 9 families — the
+  error bar to attach to every single-run leaderboard cell.
 - **DeepThinkVLA has attention records but no edit records.** The edit harness
-  failed on a PaliGemma action-vocabulary mismatch; the fixed harness raises
-  instead of writing an empty report, and the re-run is not in this release.
+  assumed OpenVLA's action-token vocabulary anchor, which is wrong for a
+  PaliGemma backbone whose reported `vocab_size` excludes 1,152 added tokens,
+  so zero generated tokens fell in the action range and every family recorded
+  n=0. The fixed harness discovers the anchor across candidate vocabularies and
+  **raises** instead of writing an empty report; the re-run is not in this
+  release. (A separate empty-report path had the same shape: jobs scheduled on
+  a B200 pool whose PyTorch lacked sm_100 kernels failed every sample, were
+  caught per-sample, and exited 0. `bolt/preflight_gpu.py` now fails such a job
+  at setup.)
 - **`visual` is identically 0.0 for all three DeepThinkVLA rows.** This is a
   segmentation-schema artifact of applying a 4-bucket decomposition designed
   for OpenVLA to PaliGemma, not a property of those models. Do not read it as
@@ -175,11 +196,13 @@ score is not interpretable in absolute terms without them.
 - Do **not** rank models by magnitude `F`. The ranking inverts under the
   direction-aware score: ECoT-bridge goes from 0.963 to 0.120 on
   `direction_flip` while the LoRA variants it outscored genuinely reverse.
-- Do **not** read the four attention buckets as a salience ranking. The CoT
-  bucket is largest because it is longest; per token it receives less attention
-  than the instruction (3.9x) or the previous-action tokens (8.1x).
+- Do **not** read the four attention buckets as a salience ranking. It fails
+  two independent robustness checks: per token the CoT bucket receives less
+  attention than the instruction (3.9x) or the previous-action tokens (8.1x),
+  and over all 32 layers rather than layers 0-3 the ordering reverses outright
+  (`visual` 0.414 > `cot` 0.213).
 - Do **not** treat any within-architecture attention difference here as real.
-  All are below the measured 1.45 pp noise floor.
+  The largest is 2.30 pp against a 1.45 pp same-config retraining difference.
 - Do **not** use `F` as a safety guarantee for a CoT monitor. A high score is
   consistent with a model whose action merely reacts to token-level changes.
 
@@ -201,14 +224,15 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 115 claims, one of which is that this
+The audit script currently checks 158 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
 **Will it be maintained, and by whom?**
 Yes, by the authors. The first camera-ready deliverable is the calibration
-sweep across the remaining seven CoT-VLAs — the check that would either
-establish or dissolve finding F2.
+sweep across the remaining six CoT-VLAs — the check that would either
+establish or dissolve finding F2. Two of eight are done, and neither passes
+the CoT-specificity check (ratios 0.878 and 0.653, both below 1).
 
 **How can users report errors?**
 Through the repository issue tracker after de-anonymization. During review,

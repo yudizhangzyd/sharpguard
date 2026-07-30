@@ -453,6 +453,160 @@ def audit_decoder(a: Audit, da: Optional[dict]) -> None:
             200, dig(da, "_provenance", "n"))
 
 
+def audit_second_calibration(a: Audit, d: Optional[dict]) -> None:
+    """The R1 review's #1 objection was that construct validity was assessed on
+    one checkpoint. A second 13-family run answers it, and the answer changes
+    the finding: the degeneracy is a property of saturation, not the protocol."""
+    sec = "Second calibrated model (ours-no-cot) and the saturation contrast"
+    by = dig(d, "calibration_by_model") or {}
+    nc = by.get("ours-no-cot")
+    if nc is None:
+        a.check(sec, "a second model has all 13 families scored", True, None,
+                source="derived_metrics.calibration_by_model['ours-no-cot']")
+        return
+
+    a.check(sec, "13 edit families in the second calibration run",
+            13, nc.get("n_families"))
+    for fam, val in (("paraphrase_null", 0.11), ("bbox_jitter_null", 0.05),
+                     ("instr_random_sub", 0.19), ("cross_task_swap", 0.22)):
+        a.check(sec, f"ours-no-cot {fam} = {val}", val,
+                r3(dig(nc, "families", fam, "F_mag")), tol=0.0015)
+    a.check(sec, "ours-no-cot F_bar over non-control families = 0.124",
+            0.124, r3(nc.get("F_bar_non_control")), tol=0.0015)
+    a.check(sec, "ours-no-cot F_bar sits only +0.014 above its own floor",
+            0.014, r3(nc.get("F_bar_diff_vs_paraphrase_null")), tol=0.0015)
+
+    # The contrast is the finding: dynamic range 0.110 vs 0.010.
+    a.check(sec, "ours-no-cot dynamic range (ceiling - floor) = 0.110",
+            0.110, r3(nc.get("dynamic_range")), tol=0.0015)
+    a.check(sec, "ours-no-cot calibration is NOT degenerate",
+            False, nc.get("calibration_is_degenerate"))
+    ec = by.get("ecot-bridge") or {}
+    a.check(sec, "ECoT-bridge calibration IS degenerate",
+            True, ec.get("calibration_is_degenerate"))
+    dr_nc, dr_ec = nc.get("dynamic_range"), ec.get("dynamic_range")
+    a.check(sec, "the second model's dynamic range is 11x the first's", 11.0,
+            round(dr_nc / dr_ec, 1) if (dr_nc and dr_ec) else None, tol=0.15,
+            source="paper: 'an 11x larger dynamic range'")
+
+    # Two-sided normalization exists only where the range is real.
+    a.check(sec, "two-sided (F_bar - floor)/(ceiling - floor) = 0.127 on "
+                 "ours-no-cot", 0.127, r3(nc.get("F_bar_two_sided")), tol=0.0015)
+    a.check(sec, "two-sided statistic is UNDEFINED on the saturated model",
+            True, ec.get("F_bar_two_sided") is None,
+            source="a 0.010 denominator must not be divided by")
+    one_sided = (nc.get("F_bar_non_control") / nc.get("ceiling_cross_task_swap")
+                 if nc.get("ceiling_cross_task_swap") else None)
+    a.check(sec, "one-sided F_bar/ceiling = 0.564 on ours-no-cot",
+            0.564, r3(one_sided), tol=0.0015)
+    a.check(sec, "one-sided normalization overstates the model by 4.4x", 4.4,
+            round(one_sided / nc["F_bar_two_sided"], 1)
+            if (one_sided and nc.get("F_bar_two_sided")) else None, tol=0.06)
+
+    # Neither calibrated model passes CoT-specificity.
+    a.check(sec, "ours-no-cot CoT-specificity ratio = 0.653",
+            0.653, r3(nc.get("cot_specificity_ratio")), tol=0.0015)
+    ratios = [c.get("cot_specificity_ratio") for c in by.values()]
+    a.check(sec, "BOTH calibrated models have CoT-specificity < 1", True,
+            all(r is not None and r < 1.0 for r in ratios) and len(ratios) == 2,
+            source=f"ratios={[r3(r) for r in ratios]}")
+    a.check(sec, "exactly 1 CoT family on ours-no-cot exceeds the out-of-CoT "
+                 "control (direction_flip, CIs overlap so not claimed)",
+            1, nc.get("n_families_above_out_of_cot_control"))
+    a.check(sec, "n_degenerate = 1 of the 2 calibrated models", 1,
+            dig(d, "calibration_contrast", "n_degenerate"))
+
+
+def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
+    """R1 critical #5 items (c) and (6): the attention numbers were single-run
+    and the layer set was unjustified. Both are now measured, and the layer
+    result is adverse -- the bucket ordering does not survive full depth."""
+    sec = "Attention sampling error bars and layer-depth sensitivity"
+    sr = dig(d, "attention_seed_repeats") or {}
+    early, full = sr.get("early_layers_0_3"), sr.get("full_layers_0_31")
+    if not (early and full):
+        a.check(sec, "3-seed attention repeats exist at two layer sets", True, None,
+                source="derived_metrics.attention_seed_repeats")
+        return
+
+    for tag, e in (("layers 0-3", early), ("all 32 layers", full)):
+        a.check(sec, f"3 seeds at {tag}", 3, e.get("n_seeds"))
+    a.check(sec, "alpha(cot) at layers 0-3 = 0.3440 (the submitted value)",
+            0.344, r3(dig(early, "cot", "mean")), tol=0.0015)
+    a.check(sec, "sampling std of alpha(cot) at layers 0-3 <= 0.06 pp", True,
+            dig(early, "cot", "std") * 100 <= 0.06,
+            source=f"std={dig(early,'cot','std')*100:.3f} pp over 3 seeds")
+    a.check(sec, "no bucket's sampling std exceeds 0.094 pp", True,
+            max(early.get("max_sampling_std_pp"),
+                full.get("max_sampling_std_pp")) <= 0.0945)
+
+    # The adverse result: the ordering is an artifact of the layer choice.
+    ds = sr.get("depth_sensitivity") or {}
+    a.check(sec, "top bucket at layers 0-3 is cot", "cot",
+            ds.get("reported_layers_top_bucket"))
+    a.check(sec, "top bucket over all 32 layers is visual", "visual",
+            ds.get("all_layers_top_bucket"))
+    a.check(sec, "the four-bucket ordering does NOT survive full depth",
+            False, ds.get("ordering_is_preserved"),
+            source="paper must not claim the CoT bucket is largest in general")
+    a.check(sec, "alpha(cot) drops 13.1 pp from layers 0-3 to all 32",
+            13.1, round(ds.get("cot_drop_pp"), 1), tol=0.06)
+    a.check(sec, "alpha(visual) rises 12.4 pp over the same change",
+            12.4, round(ds.get("visual_rise_pp"), 1), tol=0.06)
+    a.check(sec, "alpha(cot) over all 32 layers = 0.213", 0.213,
+            r3(dig(full, "cot", "mean")), tol=0.0015)
+    a.check(sec, "alpha(visual) over all 32 layers = 0.414", 0.414,
+            r3(dig(full, "visual", "mean")), tol=0.0015)
+    a.check(sec, "the depth effect is >100x sampling noise", True,
+            ds.get("cot_drop_pp", 0) > 100 * full.get("max_sampling_std_pp", 1))
+
+
+def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
+    """The error bar a leaderboard owes its readers is same-config retraining,
+    not reseeded sampling. Two pairs exist; they do not license any ordering."""
+    sec = "Same-config training-run replicates (leaderboard error bar)"
+    tr = dig(d, "training_replicate") or {}
+    if not tr:
+        a.check(sec, "at least one same-config retraining pair exists", True, None,
+                source="derived_metrics.training_replicate")
+        return
+
+    a.check(sec, "2 independent same-config retraining pairs", 2, tr.get("n_pairs"))
+    per = sorted(round(v, 2) for v in (tr.get("cot_abs_diff_pp_per_pair") or []))
+    a.check(sec, "|delta alpha(cot)| across retrainings = 0.56 and 1.45 pp",
+            [0.56, 1.45], per)
+    a.check(sec, "largest same-config training difference on any bucket = 1.45 pp",
+            1.45, round(tr.get("any_bucket_abs_diff_pp_max"), 2), tol=0.006)
+
+    fp = None
+    for pr in tr.get("pairs", []):
+        if pr.get("F_per_family"):
+            fp = pr["F_per_family"]
+    a.check(sec, "F is compared across retrainings on 9 families at N>=50",
+            9, dig(fp, "n_families_compared"))
+    a.check(sec, "mean |delta F| across retrainings = 0.024", 0.024,
+            r3(dig(fp, "mean_abs_diff")), tol=0.0015)
+    a.check(sec, "max |delta F| across retrainings = 0.083", 0.083,
+            r3(dig(fp, "max_abs_diff")), tol=0.0015)
+    a.check(sec, "the worst-reproducing family is adversarial_plausible",
+            "adversarial_plausible", dig(fp, "max_abs_diff_family"))
+    a.check(sec, "location_swap is excluded from the replicate spread "
+                 "(n=12 pre-fix run measures the annotation fix, not training)",
+            True, "location_swap" in (dig(fp, "excluded_low_n") or []))
+
+    # The hierarchy, which is the actual claim.
+    h = dig(d, "noise_hierarchy") or {}
+    a.check(sec, "sampling noise (0.09 pp) is far below training-run noise "
+                 "(1.45 pp)", True,
+            (h.get("sampling_std_pp") or 9) < 0.2 * (h.get("training_run_diff_pp") or 0))
+    a.check(sec, "within-ECoT spread is only 1.6x the training-run difference",
+            1.6, round(h.get("spread_over_training_run_cot"), 1)
+            if h.get("spread_over_training_run_cot") else None, tol=0.06)
+    a.check(sec, "no within-ECoT attention ordering is supported", False,
+            h.get("within_family_ordering_supported"),
+            source="requires the spread to exceed 3x the training-run difference")
+
+
 def audit_release(a: Audit) -> None:
     """The 'Public release' paragraph and DATASHEET.md quote concrete counts.
     A D&B submission whose release description does not match the release is
@@ -496,19 +650,19 @@ def audit_release(a: Audit) -> None:
             else:
                 acc("attn", ps)
 
-    a.check(sec, "11,726 per-sample edit records released", 11726, n["edit"][0],
+    a.check(sec, "13,026 per-sample edit records released", 13026, n["edit"][0],
             source=f"schema-classified over {can}/*.json")
-    a.check(sec, "9,756 of those carry a scored action pair "
+    a.check(sec, "10,906 of those carry a scored action pair "
                  "(the rest are skipped: target object not in frame)",
-            9756, n["edit"][1])
-    a.check(sec, "1,420 per-observation attention records released",
-            1420, n["attn"][0])
+            10906, n["edit"][1])
+    a.check(sec, "2,120 per-observation attention records released",
+            2120, n["attn"][0])
     a.check(sec, "200 withdrawn-P3 records retained so the withdrawal is "
                  "checkable", 200, n["p3"][0])
 
     total_mb = sum(f.stat().st_size for f in (root / "results_v2").rglob("*.json"))
     total_mb /= 1024 * 1024
-    a.check(sec, "released JSON totals 11.4 MB", 11.4, round(total_mb, 1), tol=0.15)
+    a.check(sec, "released JSON totals 13.0 MB", 13.0, round(total_mb, 1), tol=0.15)
 
     # --- no stale n=1 artifact sitting next to the N=30 claim (reviewer 5d) ---
     stale = []
@@ -529,9 +683,9 @@ def audit_release(a: Audit) -> None:
     # --- the paper's own self-description must match ---
     tex = TEX.read_text() if TEX.exists() else ""
     for needle, label in (
-        ("11{,}726", "paper quotes the edit-record count"),
-        ("9{,}756", "paper quotes the scored-subset count"),
-        ("1{,}420", "paper quotes the attention-record count"),
+        ("13{,}026", "paper quotes the edit-record count"),
+        ("10{,}906", "paper quotes the scored-subset count"),
+        ("2{,}120", "paper quotes the attention-record count"),
         ("DATASHEET.md", "paper points readers at the datasheet"),
         ("LICENSE", "paper states the license"),
     ):
@@ -609,6 +763,9 @@ def main() -> int:
     audit_f5(a, d)
     audit_f6_directional(a, d)
     audit_decoder(a, da)
+    audit_second_calibration(a, d)
+    audit_attention_seeds_and_depth(a, d)
+    audit_training_replicate(a, d)
     audit_release(a)
     audit_manuscript_hygiene(a)
 

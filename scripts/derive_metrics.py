@@ -76,6 +76,7 @@ CALIB_RUN = "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json"
 CALIB_FLOORS = ["paraphrase_null", "bbox_jitter_null", "instr_random_sub"]
 
 
+
 # In-repo mirror of every pinned /tmp path, so the pipeline reproduces on a
 # clean checkout with no /tmp state.  /tmp wins if present (fresher), otherwise
 # results_v2/canonical_runs/ is used.
@@ -112,18 +113,62 @@ MIRROR = {
     "/tmp/cf_r3_all/c2saurubyx/cotfaith-lerobot/bridge_report.json": "cross_corpus_fractal_n30.json",
     "/tmp/cf_r3_all/kbb6g24nyg/cotfaith-lerobot/bridge_report.json": "cross_corpus_bcz_n30.json",
 }
+# Second model with all three floors: an independent retrain of the no-CoT
+# variant (identical config, reasoning_mode=no_cot, r=32, 15k steps, seed 0)
+# scored on all 13 families. This is what makes the F2 calibration claim a
+# statement about more than one checkpoint.
+CALIB_RUN_NO_COT = os.path.join(CANON, "ours_no-cot_edit_13family_calibration.json")
+
+# Same config trained twice -> the run-to-run error bar the leaderboard needs.
+# Sampling seeds cannot supply it: they redraw observations from one frozen
+# checkpoint, so they bound sampling noise only.
+#
+# Two such pairs exist. The r=32 pair was previously written off as "two runs
+# that differed in configuration"; their args.json disagree only in keys the
+# older training script did not yet emit (reasoning_mode, data_fraction), whose
+# defaults are the values the newer run records. Same base model, r, alpha, lr,
+# steps, and seed -- an independent training run of one configuration, which is
+# exactly the replicate the leaderboard needs and the reason its 1.45pp gap
+# cannot be dismissed.
+TRAIN_REPLICATE_PAIRS = [
+    {"label": "ours-no-cot",
+     "config": "r=32, alpha=16, lr=2e-5, 15k steps, no_cot, seed 0",
+     "rvis": ("ours_no-cot_rvis.json", "ours_no-cot_rvis_retrain.json"),
+     "edit": ("ours_no-cot_edit.json",
+              "ours_no-cot_edit_13family_calibration.json")},
+    {"label": "ours-r32",
+     "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+     "rvis": ("ours_lora-r32_rvis.json", "ours_lora-r32_rvis_REPLICATE.json"),
+     "edit": None},
+]
+
+# 3 sampling seeds x 2 layer sets on the frozen public ECoT-bridge checkpoint.
+# "early" (0-3) is what the submission reported; "full" is all 32 layers.
+ATTN_SEED_RUNS = {
+    "early_layers_0_3": ["ecot_bridge_rvis_earlylayers_seed%d.json" % s for s in (0, 1, 2)],
+    "full_layers_0_31": ["ecot_bridge_rvis_fulllayers_seed%d.json" % s for s in (0, 1, 2)],
+}
+ATTN_BUCKETS = ["action->cot", "action->visual", "action->instr",
+                "action->action_prev"]
 
 
 def load(p):
-    if os.path.exists(p):
-        with open(p) as fh:
-            return json.load(fh)
+    """Resolve a pinned path, preferring the in-repo mirror.
+
+    The mirror wins deliberately. If /tmp won, derived_metrics.json would be
+    built from local scratch state on the authors' machine and from
+    results_v2/canonical_runs/ on a reviewer's -- so a divergence between the
+    two would pass our audit and fail theirs. Reading the released bytes
+    everywhere makes the audit we run the audit they run."""
     alt = MIRROR.get(p)
     if alt:
         ap = os.path.join(CANON, alt)
         if os.path.exists(ap):
             with open(ap) as fh:
                 return json.load(fh)
+    if os.path.exists(p):
+        with open(p) as fh:
+            return json.load(fh)
     return None
 
 
@@ -213,6 +258,178 @@ def per_run_stats(rep):
             rec["k_dir"] = k_dir
         out[fam] = rec
     return out
+
+
+def _canon(fname):
+    fp = os.path.join(CANON, fname)
+    if not os.path.exists(fp):
+        return None
+    with open(fp) as fh:
+        return json.load(fh)
+
+
+def derive_attention_seed_repeats():
+    """Sampling error bars for the four attention buckets, and the depth
+    dependence of the bucket ORDERING.
+
+    Two separate questions that the submission conflated:
+      (a) how much does alpha move when only the 100-observation draw changes?
+      (b) does the reported bucket ordering survive using all 32 layers
+          instead of the 4 the submission chose?
+    (a) is a noise floor. (b) is a validity question, and the answer is no."""
+    out = {}
+    for tag, files in ATTN_SEED_RUNS.items():
+        reps = [(f, _canon(f)) for f in files]
+        reps = [(f, r) for f, r in reps if r]
+        if not reps:
+            continue
+        entry = {"n_seeds": len(reps), "runs": [f for f, _ in reps],
+                 "layers": reps[0][1].get("rvis_layers"),
+                 "n_per_run": reps[0][1].get("n_samples")}
+        for b in ATTN_BUCKETS:
+            vals = [r["aggregate"][b]["mean"] for _, r in reps
+                    if dig_agg(r, b) is not None]
+            if not vals:
+                continue
+            entry[b.replace("action->", "")] = {
+                "mean": mean(vals), "std": std(vals),
+                "range_pp": (max(vals) - min(vals)) * 100,
+                "per_seed": vals,
+            }
+        ranked = sorted(((k, v["mean"]) for k, v in entry.items()
+                         if isinstance(v, dict) and "mean" in v),
+                        key=lambda kv: -kv[1])
+        entry["bucket_order"] = [k for k, _ in ranked]
+        entry["top_bucket"] = ranked[0][0] if ranked else None
+        entry["max_sampling_std_pp"] = max(
+            (v["std"] * 100 for v in entry.values()
+             if isinstance(v, dict) and "std" in v), default=None)
+        out[tag] = entry
+
+    e, f = out.get("early_layers_0_3"), out.get("full_layers_0_31")
+    if e and f:
+        out["depth_sensitivity"] = {
+            "reported_layers_top_bucket": e["top_bucket"],
+            "all_layers_top_bucket": f["top_bucket"],
+            "ordering_is_preserved": e["bucket_order"] == f["bucket_order"],
+            "cot_early": e["cot"]["mean"], "cot_full": f["cot"]["mean"],
+            "cot_drop_pp": (e["cot"]["mean"] - f["cot"]["mean"]) * 100,
+            "visual_early": e["visual"]["mean"], "visual_full": f["visual"]["mean"],
+            "visual_rise_pp": (f["visual"]["mean"] - e["visual"]["mean"]) * 100,
+            "note": ("the submitted alpha(cot) > alpha(visual) ordering holds only "
+                     "in layers 0-3; over all 32 layers it reverses"),
+        }
+    return out or None
+
+
+def dig_agg(rep, bucket):
+    a = rep.get("aggregate") or rep.get("attention_aggregate") or {}
+    return (a.get(bucket) or {}).get("mean")
+
+
+def derive_training_replicate():
+    """The error bar that actually matters for a leaderboard: the same training
+    config run twice. Sampling seeds hold the checkpoint fixed and so cannot
+    bound the quantity the leaderboard rows differ in."""
+    pairs, out = [], {}
+    for spec in TRAIN_REPLICATE_PAIRS:
+        entry = {"label": spec["label"], "config": spec["config"]}
+        ra, rb = (_canon(f) for f in spec["rvis"])
+        if ra and rb:
+            deltas = {}
+            for b in ATTN_BUCKETS:
+                va, vb = dig_agg(ra, b), dig_agg(rb, b)
+                if va is None or vb is None:
+                    continue
+                deltas[b.replace("action->", "")] = {
+                    "run_A": va, "run_B": vb, "abs_diff_pp": abs(vb - va) * 100}
+            entry["attention"] = {
+                "runs": list(spec["rvis"]), "layers": ra.get("rvis_layers"),
+                "buckets": deltas,
+                "max_abs_diff_pp": max((v["abs_diff_pp"] for v in deltas.values()),
+                                       default=None),
+                "cot_abs_diff_pp": (deltas.get("cot") or {}).get("abs_diff_pp"),
+            }
+        if spec.get("edit"):
+            ea, eb = (_canon(f) for f in spec["edit"])
+            if ea and eb:
+                aa, ab = ea["aggregate"], eb["aggregate"]
+                fams, per = sorted(set(aa) & set(ab)), {}
+                for f in fams:
+                    va, vb = aa[f]["faithful_rate"], ab[f]["faithful_rate"]
+                    per[f] = {"run_A": va, "run_B": vb, "abs_diff": abs(vb - va),
+                              "n_A": aa[f]["n"], "n_B": ab[f]["n"]}
+                # location_swap is excluded from the headline spread: run A
+                # predates the annotation fix and has n=12, so its gap measures
+                # the fix, not training-run variation.
+                cmp_fams = [f for f in fams
+                            if min(per[f]["n_A"], per[f]["n_B"]) >= 50]
+                entry["F_per_family"] = {
+                    "runs": list(spec["edit"]),
+                    "n_families_compared": len(cmp_fams), "families": per,
+                    "excluded_low_n": [f for f in fams if f not in cmp_fams],
+                    "max_abs_diff": max((per[f]["abs_diff"] for f in cmp_fams),
+                                        default=None),
+                    "max_abs_diff_family": max(cmp_fams,
+                                               key=lambda f: per[f]["abs_diff"])
+                                            if cmp_fams else None,
+                    "mean_abs_diff": mean([per[f]["abs_diff"] for f in cmp_fams])
+                                      if cmp_fams else None,
+                }
+        if len(entry) > 2:
+            pairs.append(entry)
+    if not pairs:
+        return None
+    cots = [p["attention"]["cot_abs_diff_pp"] for p in pairs
+            if p.get("attention", {}).get("cot_abs_diff_pp") is not None]
+    maxes = [p["attention"]["max_abs_diff_pp"] for p in pairs
+             if p.get("attention", {}).get("max_abs_diff_pp") is not None]
+    out = {
+        "n_pairs": len(pairs), "pairs": pairs,
+        "cot_abs_diff_pp_per_pair": cots,
+        "cot_abs_diff_pp_max": max(cots) if cots else None,
+        "cot_abs_diff_pp_mean": mean(cots) if cots else None,
+        "any_bucket_abs_diff_pp_max": max(maxes) if maxes else None,
+    }
+    return out
+
+
+def derive_calibration(path, label):
+    """Two-sided calibration for one model from ONE 13-family run.
+
+    Everything is compared only against families from the same run: mixing
+    runs is what produced the 0.340-vs-0.354 discrepancy the audit catches."""
+    crep = load(path) if path.startswith("/tmp") else _canon(os.path.basename(path))
+    if not crep:
+        return None
+    ag = crep["aggregate"]
+    fr = {f: ag[f]["faithful_rate"] for f in ag}
+    n = {f: ag[f]["n"] for f in ag}
+    f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
+    c = {
+        "label": label, "source": path, "n_families": len(ag),
+        "seed": crep.get("seed"), "F_bar_non_control": f_bar,
+        "families": {f: {"F_mag": fr[f], "n": n[f],
+                         "wilson": wilson(round(fr[f] * n[f]), n[f])}
+                     for f in sorted(ag)},
+    }
+    for floor in CALIB_FLOORS:
+        if floor in fr:
+            c[floor] = fr[floor]
+            c[f"F_bar_diff_vs_{floor}"] = f_bar - fr[floor]
+    if "instr_random_sub" in fr:
+        c["cot_specificity_ratio"] = f_bar / fr["instr_random_sub"] if fr["instr_random_sub"] else None
+        c["n_families_above_out_of_cot_control"] = sum(
+            1 for f in NON_CONTROL if f in fr and fr[f] >= fr["instr_random_sub"])
+    # Two-sided normalization, and whether it is even defined. On a saturated
+    # model the floor rises to meet the ceiling and the denominator vanishes.
+    if "paraphrase_null" in fr and "cross_task_swap" in fr:
+        lo, hi = fr["paraphrase_null"], fr["cross_task_swap"]
+        c["ceiling_cross_task_swap"] = hi
+        c["dynamic_range"] = hi - lo
+        c["calibration_is_degenerate"] = (hi - lo) < 0.05
+        c["F_bar_two_sided"] = ((f_bar - lo) / (hi - lo)) if (hi - lo) >= 0.05 else None
+    return c
 
 
 def main():
@@ -380,34 +597,66 @@ def main():
         noise["cluster_spread_pp"] = (max(cots) - min(cots)) * 100
         noise["noise_as_frac_of_spread"] = noise["abs_diff_pp"] / noise["cluster_spread_pp"]
 
-    # -------- two-sided calibration floors (13-family run, ECoT-bridge) --------
-    calib = None
-    crep = load(CALIB_RUN)
-    if crep:
-        ag = crep["aggregate"]
-        fr = {f: ag[f]["faithful_rate"] for f in ag}
-        n = {f: ag[f]["n"] for f in ag}
-        f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
-        calib = {
-            "source": CALIB_RUN,
-            "n_families": len(ag),
-            "seed": crep.get("seed"),
-            "F_bar_non_control": f_bar,
-            "families": {f: {"F_mag": fr[f], "n": n[f],
-                             "wilson": wilson(round(fr[f] * n[f]), n[f])}
-                         for f in sorted(ag)},
+    # -------- two-sided calibration floors, now on TWO models --------
+    calib = derive_calibration(CALIB_RUN, "ecot-bridge")
+    calib_no_cot = derive_calibration(CALIB_RUN_NO_COT, "ours-no-cot")
+    calib_by_model = {c["label"]: c for c in (calib, calib_no_cot) if c}
+    # The headline of the calibration story is the CONTRAST: on the saturated
+    # model the floor rises to within 0.010 of the ceiling and F is
+    # uninterpretable; on the low-F model the same protocol has a real dynamic
+    # range. So the defect is a property of saturation, not of the protocol.
+    calib_contrast = None
+    if calib and calib_no_cot:
+        calib_contrast = {
+            "models": [calib["label"], calib_no_cot["label"]],
+            "dynamic_range": {c["label"]: c.get("dynamic_range")
+                              for c in (calib, calib_no_cot)},
+            "paraphrase_floor": {c["label"]: c.get("paraphrase_null")
+                                 for c in (calib, calib_no_cot)},
+            "F_bar": {c["label"]: c["F_bar_non_control"]
+                      for c in (calib, calib_no_cot)},
+            "degenerate": {c["label"]: c.get("calibration_is_degenerate")
+                           for c in (calib, calib_no_cot)},
+            "n_degenerate": sum(1 for c in (calib, calib_no_cot)
+                                if c.get("calibration_is_degenerate")),
+            "note": ("both models were scored with the identical 13-family "
+                     "protocol at n=100; only the high-F model loses its "
+                     "dynamic range"),
         }
-        for floor in CALIB_FLOORS:
-            if floor in fr:
-                calib[floor] = fr[floor]
-                calib[f"F_bar_diff_vs_{floor}"] = f_bar - fr[floor]
-        # How much of the CoT-edit response is CoT-SPECIFIC?  instr_random_sub
-        # perturbs the instruction, i.e. outside the CoT segment entirely, so it
-        # upper-bounds the share of F attributable to CoT->action routing.
-        if "instr_random_sub" in fr:
-            calib["cot_specificity_ratio"] = f_bar / fr["instr_random_sub"]
-            calib["n_families_above_out_of_cot_control"] = sum(
-                1 for f in NON_CONTROL if f in fr and fr[f] >= fr["instr_random_sub"])
+
+    attn_seeds = derive_attention_seed_repeats()
+    train_rep = derive_training_replicate()
+
+    # Noise hierarchy: three DIFFERENT quantities the submission treated as one.
+    hierarchy = None
+    if attn_seeds and train_rep and noise:
+        samp = max(v["max_sampling_std_pp"] for k, v in attn_seeds.items()
+                   if isinstance(v, dict) and v.get("max_sampling_std_pp") is not None)
+        tr = train_rep.get("any_bucket_abs_diff_pp_max")
+        tr_cot = train_rep.get("cot_abs_diff_pp_max")
+        hierarchy = {
+            "sampling_std_pp": samp,
+            "sampling_note": "3 draws of n=100 from ONE frozen checkpoint",
+            "training_run_diff_pp": tr,
+            "training_run_cot_diff_pp": tr_cot,
+            "training_run_diff_pp_per_pair": train_rep.get("cot_abs_diff_pp_per_pair"),
+            "n_training_replicate_pairs": train_rep.get("n_pairs"),
+            "training_run_note": ("independent trainings of the SAME config; "
+                                  "this is the quantity leaderboard rows "
+                                  "differ in"),
+            "cross_variant_spread_pp": noise.get("cluster_spread_pp"),
+            "cross_variant_note": "spread of alpha(cot) across the 7 ECoT variants",
+            "spread_over_training_run": (noise.get("cluster_spread_pp") / tr)
+                                        if tr else None,
+            "spread_over_training_run_cot": (noise.get("cluster_spread_pp") / tr_cot)
+                                            if tr_cot else None,
+            "within_family_ordering_supported": bool(
+                tr_cot and noise.get("cluster_spread_pp", 0) > 3 * tr_cot),
+            "caveat": ("two replicate pairs give a magnitude, not a "
+                       "distribution; a 2.30pp spread against a 1.45pp "
+                       "same-config training difference does not establish "
+                       "any within-family ordering"),
+        }
 
     out = {
         "_provenance": {
@@ -424,6 +673,11 @@ def main():
         "cross_corpus_n30": cross,
         "attention_noise_floor": noise,
         "calibration_floors": calib,
+        "calibration_by_model": calib_by_model,
+        "calibration_contrast": calib_contrast,
+        "attention_seed_repeats": attn_seeds,
+        "training_replicate": train_rep,
+        "noise_hierarchy": hierarchy,
     }
     dest = os.path.join(ROOT, "results_v2", "derived_metrics.json")
     with open(dest, "w") as fh:
@@ -460,6 +714,45 @@ def main():
             print(f"  CoT-specificity ratio   = {calib['cot_specificity_ratio']:.4f} "
                   f"({calib['n_families_above_out_of_cot_control']}/7 CoT families "
                   f"reach the out-of-CoT control)")
+    if calib_contrast:
+        print("\n=== calibration contrast across the two calibrated models ===")
+        for m in calib_contrast["models"]:
+            c = calib_by_model[m]
+            print(f"  {m:14s} floor={c.get('paraphrase_null'):.3f} "
+                  f"ceil={c.get('ceiling_cross_task_swap'):.3f} "
+                  f"range={c.get('dynamic_range'):+.3f} "
+                  f"F_bar={c['F_bar_non_control']:.3f} "
+                  f"degenerate={c.get('calibration_is_degenerate')}")
+    if attn_seeds:
+        print("\n=== attention: sampling error bars and depth sensitivity ===")
+        for tag, e in attn_seeds.items():
+            if tag == "depth_sensitivity":
+                continue
+            print(f"  {tag:18s} n_seeds={e['n_seeds']} order={e['bucket_order']}")
+            for b in ("cot", "visual", "instr", "action_prev"):
+                if b in e:
+                    print(f"       {b:12s} {e[b]['mean']:.4f} +-{e[b]['std']:.5f} "
+                          f"range={e[b]['range_pp']:.3f}pp")
+        ds = attn_seeds.get("depth_sensitivity")
+        if ds:
+            print(f"  ordering preserved across depth: {ds['ordering_is_preserved']} "
+                  f"({ds['reported_layers_top_bucket']} -> {ds['all_layers_top_bucket']})")
+    if train_rep:
+        print("\n=== same-config training replicate (the leaderboard error bar) ===")
+        for pr in train_rep["pairs"]:
+            at = pr.get("attention", {})
+            print(f"  {pr['label']:14s} |d alpha(cot)|={at.get('cot_abs_diff_pp'):.2f}pp "
+                  f"max bucket |d|={at.get('max_abs_diff_pp'):.2f}pp")
+            fp = pr.get("F_per_family")
+            if fp:
+                print(f"  {'':14s} F: max|d|={fp['max_abs_diff']:.3f} on "
+                      f"{fp['max_abs_diff_family']}, mean|d|={fp['mean_abs_diff']:.3f} "
+                      f"over {fp['n_families_compared']} families")
+        print(f"  -> alpha(cot) training-run |delta| per pair: "
+              f"{[round(v,2) for v in train_rep['cot_abs_diff_pp_per_pair']]} pp")
+    if hierarchy:
+        print("\n=== noise hierarchy ===")
+        print(json.dumps(hierarchy, indent=1))
     if noise:
         print("\n=== attention noise floor ===")
         print(json.dumps(noise, indent=1))
