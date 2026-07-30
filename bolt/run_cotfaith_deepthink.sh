@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DeepThinkVLA rvis + edit (needs transformers>=4.42 for PaliGemma).
+# DeepThinkVLA rvis + edit.
 set -e -x
 cd "$(dirname "$0")/.."
 if [ -f /tmp/sharpguard.env ]; then set -a; . /tmp/sharpguard.env; set +a; fi
@@ -9,9 +9,20 @@ nvidia-smi -L || true
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-# Upgrade transformers for PaliGemma
-pip install --upgrade "transformers>=4.45,<5.0" "tokenizers>=0.20" \
-                       "huggingface_hub>=0.24" || true
+# transformers is PINNED, not upgraded, and deliberately without `|| true`.
+# sharpguard/vendor/deepthinkvla/modeling_deepthinkvla.py is upstream's class at
+# the API the checkpoint's config.json records (4.48.1). Under 4.5x the
+# PaliGemma internals it calls -- _update_causal_mask, PALIGEMMA_INPUTS_DOCSTRING
+# -- no longer exist, and _update_causal_mask is precisely what builds the
+# bidirectional action-block mask. A floating ">=4.45,<5.0" resolved to 4.57.6
+# here. Fail at install time rather than 20 minutes into a GPU job.
+pip install "transformers==4.48.1" "huggingface_hub>=0.26,<0.30"
+python - <<'PY'
+import transformers
+assert transformers.__version__.startswith("4.48"), transformers.__version__
+from transformers.models.paligemma.modeling_paligemma import PALIGEMMA_INPUTS_DOCSTRING
+print("[preflight] transformers", transformers.__version__, "PaliGemma internals present")
+PY
 
 pip install "dm-tree" "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" \
             "toml" "termcolor" "tqdm" "click" || true

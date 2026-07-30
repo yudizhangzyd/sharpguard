@@ -20,7 +20,23 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-# Every upstream asset the benchmark loads. `kind` selects the API namespace.
+# Every upstream asset the benchmark loads, as a repo id that some config or
+# script in this repo actually resolves. An earlier version of this list was
+# written from memory and got two things wrong, which is precisely the failure
+# mode this script exists to prevent:
+#
+#   * it named Embodied-CoT/ecot-openvla-7b-oxe as "the LoRA base for our 7
+#     variants". It is not. Every bolt/boltconfig-cotfaith-{lora-r*,data-50*,
+#     calib-*}.yaml sets BASE_MODEL=Embodied-CoT/ecot-openvla-7b-bridge. The
+#     -oxe checkpoint appears only in experiments/cotfaith_scout.py, a
+#     feasibility probe that produced no reported number, so it is not a
+#     dependency of this release and is not listed.
+#   * it named two Embodied-CoT bridge repos for the cross-corpus sweep. Those
+#     404/401 because the sweep does not use them: the three cross-corpus runs
+#     load the IPEC-COMMUNITY LeRobot mirrors named below (see
+#     bolt/boltconfig-cotfaith-ds-*.yaml:DATASET_REPO). We must record the
+#     license of the artifact we actually pull, not of the original corpus it
+#     was re-hosted from.
 ASSETS = [
     # --- checkpoints we evaluate -------------------------------------------
     ("model", "openvla/openvla-7b", "OpenVLA base (arch reference)"),
@@ -28,8 +44,8 @@ ASSETS = [
     ("model", "openvla/openvla-7b-finetuned-libero-object", "non-CoT baseline + decoder gate"),
     ("model", "openvla/openvla-7b-finetuned-libero-goal", "non-CoT baseline + decoder gate"),
     ("model", "openvla/openvla-7b-finetuned-libero-10", "non-CoT baseline + decoder gate"),
-    ("model", "Embodied-CoT/ecot-openvla-7b-bridge", "public ECoT CoT-VLA (flagship row, 3 seeds)"),
-    ("model", "Embodied-CoT/ecot-openvla-7b-oxe", "LoRA base for our 7 variants"),
+    ("model", "Embodied-CoT/ecot-openvla-7b-bridge",
+     "public ECoT CoT-VLA (flagship row, 3 seeds) AND the LoRA base for our 7 variants"),
     ("model", "yinchenghust/deepthinkvla_base", "DeepThinkVLA base (attention only)"),
     ("model", "yinchenghust/deepthinkvla_libero_cot_sft", "DeepThinkVLA SFT (attention only)"),
     ("model", "yinchenghust/deepthinkvla_libero_cot_rl", "DeepThinkVLA RL (attention only)"),
@@ -37,8 +53,15 @@ ASSETS = [
     ("dataset", "openvla/modified_libero_rlds", "LIBERO-90 observations (P1/P2 primary)"),
     ("dataset", "Embodied-CoT/embodied_features_and_demos_libero",
      "LIBERO CoT reasoning annotations -- our edited CoT strings are DERIVATIVE of this"),
-    ("dataset", "Embodied-CoT/embodied_features_and_demos_bridge", "Bridge V2 cross-corpus sweep"),
-    ("dataset", "Embodied-CoT/bridge_reasoning", "Bridge V2 CoT annotations"),
+    ("dataset", "IPEC-COMMUNITY/bridge_orig_lerobot",
+     "cross-corpus sweep, Bridge V2 (N=30); LeRobot re-host we actually load"),
+    ("dataset", "IPEC-COMMUNITY/fractal20220817_data_lerobot",
+     "cross-corpus sweep, RT-1/Fractal (N=30); LeRobot re-host we actually load"),
+    ("dataset", "IPEC-COMMUNITY/bc_z_lerobot",
+     "cross-corpus sweep, BC-Z (N=30); LeRobot re-host we actually load"),
+    ("dataset", "Embodied-CoT/embodied_features_bridge",
+     "Bridge CoT annotations for the F4-deconfound subset training (scaffolded, "
+     "no reported number depends on it)"),
 ]
 
 API = "https://huggingface.co/api"

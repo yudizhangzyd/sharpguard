@@ -50,24 +50,49 @@ This benchmark evaluates and depends on material owned by others. Using it
 requires complying with their terms directly. Nothing above grants any right
 to the following.
 
+Every line in this section was read from the Hugging Face Hub API rather than
+written from memory, by scripts/fetch_upstream_licenses.py. The machine-readable
+record, including each repo's resolved commit sha, is
+results_v2/license_report.json, and scripts/verify_paper_numbers.py asserts
+that this file agrees with it. Where the Hub declares no license we say so
+instead of assigning one.
+
 Evaluation corpora (accessed at run time; not redistributed here):
-  LIBERO-90 / libero_lm_90 ..................... MIT
-  Bridge V2 .................................... CC BY 4.0
-  RT-1 / Fractal ............................... Apache-2.0
-  BC-Z ......................................... CC BY 4.0
-  ECoT reasoning annotations
-    (Embodied-CoT/embodied_features_and_demos_libero) ... MIT
+  openvla/modified_libero_rlds ................. MIT
+      LIBERO-90 observations; the primary P1/P2 suite.
+  Embodied-CoT/embodied_features_and_demos_libero  MIT
+      LIBERO CoT reasoning annotations. Our released edited-CoT strings are
+      DERIVATIVE of this corpus; MIT is what permits us to release them.
+  IPEC-COMMUNITY/bridge_orig_lerobot ........... Apache-2.0
+  IPEC-COMMUNITY/fractal20220817_data_lerobot .. Apache-2.0
+  IPEC-COMMUNITY/bc_z_lerobot .................. Apache-2.0
+      The three cross-corpus sweeps (Bridge V2, RT-1/Fractal, BC-Z at N=30
+      each) load these LeRobot re-hosts, so Apache-2.0 is the license that
+      governs our use. It is not necessarily the license of the original
+      corpus, and if you obtain Bridge V2 or BC-Z from their primary sources
+      instead you are under those sources' terms, not these.
+  Embodied-CoT/embodied_features_bridge ........ MIT
+      Bridge CoT annotations, referenced by the F4-deconfound subset training
+      that ships as scaffolding. No reported number depends on it.
 
 Model checkpoints (downloaded from Hugging Face at run time):
-  openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10} ... MIT
-  Embodied-CoT/ecot-openvla-7b-bridge ........................... MIT
-  yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl} .. see the
-      upstream model cards. These are PaliGemma-based and the Google Gemma
-      Terms of Use apply to the base model:
+  openvla/openvla-7b ........................................... MIT
+  openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10} .. MIT
+  Embodied-CoT/ecot-openvla-7b-bridge .......................... MIT
+  yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}
+      NO LICENSE DECLARED UPSTREAM. As of the date of this release these three
+      model repos carry no license tag, no cardData license, and no license
+      file on the Hub. We therefore state no license for them rather than guess
+      one, and we grant none. They are PaliGemma derivatives, so the Google
+      Gemma Terms of Use apply to the base model regardless:
       https://ai.google.dev/gemma/terms
+      Practical consequence: only attention records exist for these three
+      rows, and if you need a license for redistribution you must obtain one
+      from the upstream authors.
 
 Our 7 LoRA fine-tunes are derivatives of Embodied-CoT/ecot-openvla-7b-bridge
-(MIT) and are released under the MIT terms in section 1.
+(MIT) — the base every training config sets — and are released under the MIT
+terms in section 1.
 
 Software dependencies (transformers, torch, LIBERO, robosuite, MuJoCo, TFDS,
 and others in requirements.txt) carry their own licenses.

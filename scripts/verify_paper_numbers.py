@@ -694,6 +694,247 @@ def audit_release(a: Audit) -> None:
             "\\url{[URL]}" not in tex and "[URL]" not in tex)
 
 
+def _config_values(root: Path, key: str) -> set:
+    """Every value some bolt config assigns to an env key."""
+    out = set()
+    for f in sorted((root / "bolt").glob("boltconfig-*.yaml")):
+        for ln in f.read_text().splitlines():
+            if ln.strip().startswith(f"{key}:"):
+                out.add(ln.split(":", 1)[1].strip().strip("'\""))
+    return out
+
+
+def _base_models(root: Path, training_only: bool) -> set:
+    """BASE_MODEL values, optionally only from configs that actually train.
+
+    BASE_MODEL is overloaded across this repo's configs: in a training config it
+    is the checkpoint LoRA adapters are fitted on top of, but in an attention
+    probe config (run_cotfaith_rvis_baseline.sh) it names the model being
+    probed. Conflating the two made an earlier version of this check report the
+    four OpenVLA LIBERO baselines as rogue LoRA bases.
+    """
+    out = set()
+    for f in sorted((root / "bolt").glob("boltconfig-*.yaml")):
+        txt = f.read_text()
+        if training_only and not re.search(
+                r"command:.*run_cotfaith_(train|bridge_subset)", txt):
+            continue
+        for ln in txt.splitlines():
+            if ln.strip().startswith("BASE_MODEL:"):
+                out.add(ln.split(":", 1)[1].strip().strip("'\""))
+    return out
+
+
+def audit_deepthink_decode(a: Audit) -> None:
+    """Assert the DeepThinkVLA decode conventions and their disclosure.
+
+    Reason this is a check: the paper and the datasheet both previously gave a
+    WRONG cause for the empty DeepThinkVLA edit cells ("vocab_size excludes
+    1,152 added tokens") and a wrong description of the fix ("the harness now
+    discovers the anchor"). Both readings were invented rather than read off the
+    checkpoint. The real conventions are six, they are all in config.json, and
+    the harness asserts them at load time. A retracted explanation that is still
+    quoted somewhere in the release is indistinguishable to a reader from a
+    current one, so the retraction gets a test.
+    """
+    sec = "DeepThinkVLA decode provenance"
+    root = Path(__file__).resolve().parent.parent
+    vend = root / "sharpguard" / "vendor" / "deepthinkvla"
+
+    for fname in ("__init__.py", "constants.py", "decode.py",
+                  "modeling_deepthinkvla.py"):
+        a.check(sec, f"vendored {fname} is released", True,
+                (vend / fname).exists(), source=str(vend / fname))
+    if not (vend / "modeling_deepthinkvla.py").exists():
+        return
+
+    model_src = (vend / "modeling_deepthinkvla.py").read_text()
+    dec_src = (vend / "decode.py").read_text()
+
+    # Provenance: an unattributed copy of someone else's MIT file is a license
+    # problem, not a tidiness problem.
+    for token, what in (
+            ("4bbd0f4ea9010a421e4629e24177afc819f4b6d2", "upstream commit sha"),
+            ("9e3e0e2a2f46ceec5625963458c84f09866d1e66f"
+             "88144957ffa4523320d47c1", "upstream byte sha256"),
+            ("license  : MIT", "upstream license"),
+            ("github.com/OpenBMB/DeepThinkVLA", "upstream repo URL")):
+        a.check(sec, f"vendored model file records its {what}", True,
+                token in model_src)
+
+    # The six conventions, as constants rather than as prose.
+    a.check(sec, "action id range is the pi0fast <loc> block, not the top 256",
+            (254976, 257023),
+            (int(re.search(r"^ACTION_TOKEN_BEGIN = (\d+)", dec_src,
+                           re.M).group(1)),
+             int(re.search(r"^ACTION_TOKEN_END = (\d+)", dec_src,
+                           re.M).group(1))))
+    a.check(sec, "2048 bin edges -> 2047 centers", 2048,
+            int(re.search(r"^N_BIN_EDGES = (\d+)", dec_src, re.M).group(1)))
+    a.check(sec, "bin index is reversed within the action window", True,
+            "(ACTION_TOKEN_END - ACTION_TOKEN_BEGIN) - slice_argmax" in dec_src)
+    a.check(sec, "action chunk is 10 steps x 7 DoF", (10, 7),
+            (int(re.search(r"^NUM_ACTIONS_CHUNK = (\d+)",
+                           (vend / "constants.py").read_text(),
+                           re.M).group(1)),
+             int(re.search(r"^ACTION_DIM = (\d+)",
+                           (vend / "constants.py").read_text(),
+                           re.M).group(1))))
+    a.check(sec, "un-normalization is QUANTILE, and min/max is refused", True,
+            'ACTION_NORMALIZATION = "QUANTILE"'
+            in (vend / "constants.py").read_text()
+            and "falling" in dec_src and "min/max" in dec_src)
+    a.check(sec, "the conventions are asserted against config.json, not assumed",
+            True, "def assert_config_matches" in dec_src
+            and "refusing to decode" in dec_src)
+
+    # The one edit to upstream's model code must be declared where it is made
+    # AND in the provenance list, or the sha256 above is a false assurance.
+    a.check(sec, "the output_attentions edit to upstream is disclosed", True,
+            "output_attentions=output_attentions" in model_src
+            and "EDIT (vendoring): was False" in model_src
+            and "3. `prompt_cot_predict_action` gained an" in model_src)
+
+    exp = root / "experiments" / "cotfaith_deepthink.py"
+    if exp.exists():
+        exp_src = exp.read_text()
+        a.check(sec, "the harness no longer calls model.generate for actions",
+                True, "prompt_cot_predict_action" in exp_src
+                and ".generate(" not in exp_src)
+        a.check(sec, "the retracted text-marker segmentation is gone", [],
+                [m for m in ('instr_end_marker="Instruction:"',
+                             'cot_end_marker="Action:"')
+                 if m in exp_src])
+        a.check(sec, "the dead guessed-vocabulary code is gone", [],
+                [m for m in ("candidate_action_vocabs", "decode_action_bins",
+                             "action_vocab_chosen", "chosen_vocab")
+                 if m in exp_src])
+
+    sh = root / "bolt" / "run_cotfaith_deepthink.sh"
+    if sh.exists():
+        sh_src = sh.read_text()
+        a.check(sec, "transformers is pinned to 4.48.1, not floated", True,
+                'pip install "transformers==4.48.1"' in sh_src
+                and "transformers>=4.45" not in sh_src)
+        a.check(sec, "the pin install is not swallowed by `|| true`", True,
+                not re.search(r'transformers==4\.48\.1"[^\n]*\|\| true', sh_src))
+
+    # The retracted explanations must not survive anywhere reader-facing.
+    for doc, name in ((TEX, "cot_faith_iclr.tex"),
+                      (root / "DATASHEET.md", "DATASHEET.md")):
+        if not doc.exists():
+            continue
+        txt = doc.read_text()
+        a.check(sec, f"{name} no longer blames vocab_size / 1,152 added tokens",
+                [], [p for p in ("1{,}152 added tokens", "1,152 added tokens",
+                                 "excludes 1")
+                     if p in txt])
+        a.check(sec, f"{name} no longer claims the harness discovers the anchor",
+                [], [p for p in ("discovers the anchor",
+                                 "discover the anchor",
+                                 "candidate vocabularies") if p in txt])
+        a.check(sec, f"{name} no longer calls visual=0.0 a schema artifact",
+                [], [p for p in ("schema artifact",
+                                 "segmentation-schema artifact")
+                     if p in txt])
+        a.check(sec, f"{name} gives the real cause (prompt format) for visual=0",
+                True, ("Instruction:" in txt and "Task:" in txt))
+
+
+def audit_upstream_licenses(a: Audit) -> None:
+    """Assert LICENSE and DATASHEET.md against the resolved Hub metadata.
+
+    Reason this is a check and not prose: the previous LICENSE listed Bridge V2
+    and BC-Z as CC-BY 4.0 and named two Embodied-CoT bridge repos as the
+    cross-corpus sources. Neither survived contact with the Hub API -- the
+    sweeps load IPEC-COMMUNITY LeRobot re-hosts, which are Apache-2.0, and the
+    named repos 401. A license table written from memory is the same failure
+    class as a results table written from memory, so it gets the same treatment.
+    """
+    sec = "Upstream license provenance"
+    root = Path(__file__).resolve().parent.parent
+    rep_path = root / "results_v2" / "license_report.json"
+    a.check(sec, "machine-readable license report is released", True,
+            rep_path.exists(), source=str(rep_path))
+    if not rep_path.exists():
+        return
+    rep = json.loads(rep_path.read_text())
+    assets = rep["assets"]
+
+    a.check(sec, "15 upstream assets audited", 15, rep["n_assets"])
+    a.check(sec, "3 have no license we can verify (the DeepThinkVLA repos)",
+            3, rep["n_unresolved"])
+    a.check(sec, "the unverifiable 3 are exactly the DeepThinkVLA checkpoints",
+            ["yinchenghust/deepthinkvla_base",
+             "yinchenghust/deepthinkvla_libero_cot_rl",
+             "yinchenghust/deepthinkvla_libero_cot_sft"],
+            sorted(rep["unresolved"]))
+    a.check(sec, "every audited repo resolved to a pinned commit sha", [],
+            sorted(k for k, v in assets.items() if not v.get("sha")))
+
+    # The claims the two documents make, each keyed to the repo it describes.
+    lic_txt = (root / "LICENSE").read_text()
+    ds_txt = (root / "DATASHEET.md").read_text()
+    for repo, want in (
+        ("openvla/modified_libero_rlds", "mit"),
+        ("Embodied-CoT/embodied_features_and_demos_libero", "mit"),
+        ("Embodied-CoT/ecot-openvla-7b-bridge", "mit"),
+        ("IPEC-COMMUNITY/bridge_orig_lerobot", "apache-2.0"),
+        ("IPEC-COMMUNITY/fractal20220817_data_lerobot", "apache-2.0"),
+        ("IPEC-COMMUNITY/bc_z_lerobot", "apache-2.0"),
+    ):
+        a.check(sec, f"{repo} resolves to {want}", want,
+                assets.get(repo, {}).get("license"))
+        for doc, txt in (("LICENSE", lic_txt), ("DATASHEET.md", ds_txt)):
+            a.check(sec, f"{doc} names {repo}", True, repo in txt,
+                    source=doc)
+
+    # The LoRA base is the one factual claim a reader would most reasonably
+    # doubt, and the asset list got it wrong once already.
+    a.check(sec, "the LoRA base named in LICENSE is the MIT bridge checkpoint",
+            True,
+            "derivatives of Embodied-CoT/ecot-openvla-7b-bridge" in lic_txt
+            and assets["Embodied-CoT/ecot-openvla-7b-bridge"]["license"] == "mit",
+            source="every bolt/boltconfig-cotfaith-{lora-r*,data-50*,calib-*}"
+                   ".yaml sets BASE_MODEL to it")
+    a.check(sec, "no config sets a LoRA base other than that checkpoint", [],
+            sorted(_base_models(root, training_only=True)
+                   - {"Embodied-CoT/ecot-openvla-7b-bridge"}),
+            source="BASE_MODEL over the bolt configs whose command is a "
+                   "training script (in probe configs the same key names the "
+                   "model being probed, not a LoRA base)")
+    a.check(sec, "every checkpoint any config loads appears in the license "
+                 "report", [],
+            sorted((_base_models(root, training_only=False)
+                    | _config_values(root, "CKPT_HF_ID")
+                    | _config_values(root, "CKPT_PATH"))
+                   - set(assets)),
+            source="BASE_MODEL / CKPT_HF_ID / CKPT_PATH over "
+                   "bolt/boltconfig-*.yaml")
+
+    # Unverifiable licenses must be disclosed, not silently upgraded.
+    for doc, txt in (("LICENSE", lic_txt), ("DATASHEET.md", ds_txt)):
+        a.check(sec, f"{doc} discloses the missing DeepThinkVLA license "
+                     "verbatim", True, "NO LICENSE DECLARED UPSTREAM" in txt,
+                source=doc)
+        a.check(sec, f"{doc} still points at the Gemma terms for the "
+                     "PaliGemma base", True,
+                "ai.google.dev/gemma/terms" in txt, source=doc)
+    a.check(sec, "the retracted CC-BY claim for Bridge V2 / BC-Z is gone from "
+                 "LICENSE", True,
+            "CC BY 4.0" not in lic_txt.split("2. Measurement records")[-1]
+            .split("3. Third-party")[-1],
+            source="the Hub says Apache-2.0 for the re-hosts we load")
+    a.check(sec, "no config loads a cross-corpus repo the report does not "
+                 "cover", [],
+            sorted({ln.split(":", 1)[1].strip().strip("'\"")
+                    for f in (root / "bolt").glob("boltconfig-*.yaml")
+                    for ln in f.read_text().splitlines()
+                    if ln.strip().startswith("DATASET_REPO:")}
+                   - set(assets)),
+            source="grep DATASET_REPO over bolt/boltconfig-*.yaml")
+
+
 def audit_manuscript_hygiene(a: Audit) -> None:
     """Catch the defect class the reviewer found twice: prose left behind after
     a numbers revision, still contradicting the artifacts."""
@@ -767,6 +1008,8 @@ def main() -> int:
     audit_attention_seeds_and_depth(a, d)
     audit_training_replicate(a, d)
     audit_release(a)
+    audit_upstream_licenses(a)
+    audit_deepthink_decode(a)
     audit_manuscript_hygiene(a)
 
     # The manuscript states how many claims this script checks. Let the script

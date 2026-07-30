@@ -1,11 +1,21 @@
 """DeepThinkVLA rvis + causal-edit evaluation.
 
-DeepThinkVLA is PaliGemma-based (arch='OpenpiFastOft'), not OpenVLA.
-Requires transformers>=4.42 for PaliGemma. Different prompt format than
-ECoT (uses <think>...</think> tags per the paper).
+DeepThinkVLA is a PaliGemma checkpoint initialized from
+`physical-intelligence/pi0fast_base`. It is NOT OpenVLA, and the first version
+of this harness got that wrong in six independent ways at once -- action id
+range, bin count, id->bin direction, extraction method, output shape, and
+un-normalization scheme -- with the result that no sample ever decoded and all
+three runs wrote n=0 for every family while exiting 0. The corrected conventions
+and the evidence for each are documented in
+sharpguard/vendor/deepthinkvla/decode.py; the model class itself is vendored from
+upstream (MIT) rather than reimplemented, because the action block is decoded in
+a single forward pass under a hybrid causal/bidirectional attention mask that
+`generate()` does not reproduce.
 
-Strategy: use the same 4-bucket attention analyzer + same 10-edit
-causal metric, but adapt the prompt template to DeepThinkVLA's format.
+Both probes in this file use upstream's real prompt format. That matters for P1
+as well as P2: the earlier `"Instruction: ...\\nAction:"` template appears
+nowhere in this model's training distribution, and the segment markers derived
+from it are why the published DeepThinkVLA rows show `visual` identically 0.0.
 """
 from __future__ import annotations
 import argparse, json, os, sys, traceback
@@ -58,83 +68,20 @@ def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json,
         n += 1
 
 
-def dequantize(bin_ids, low=-1.0, high=1.0, bins=256):
-    return low + (bin_ids + 0.5) * (high - low) / bins
-
-
-def action_ids(a, vocab, bins=256):
-    a = np.clip(a, -1, 1)
-    idx = np.clip(np.floor((a + 1) / 2 * bins).astype(np.int64), 0, bins-1)
-    return vocab - 1 - idx
-
-
-# ---------------------------------------------------------------------------
-# Action-token vocabulary resolution
-# ---------------------------------------------------------------------------
-# The original decoder hardcoded OpenVLA's convention: action bins live in the
-# top 256 ids of `tokenizer.vocab_size`. DeepThinkVLA is PaliGemma-based, whose
-# tokenizer reports a `vocab_size` that excludes added tokens while the model's
-# embedding table is larger (PaliGemma adds 1024 <locNNNN> + 128 <segNNN>).
-# With the wrong anchor, ZERO generated ids land in [V-256, V), so
-# `_generate_action` returned None on every sample, `a_orig is None` skipped
-# the whole family loop, and the job wrote a report with n=0 for all 11
-# families while exiting 0. That silent-success path is why the paper had to
-# call DeepThinkVLA "attention-only".
-#
-# We now try every plausible anchor, pick the one that actually decodes, and
-# record which one won. If none decode we raise with the observed token ids
-# rather than emitting an empty report.
-
-def candidate_action_vocabs(model, tokenizer):
-    """Plausible upper bounds V such that action bins occupy [V-256, V).
-
-    Ordered most- to least-likely. Deduplicated, preserving order.
-    """
-    cands = []
-    def _add(v, why):
-        if isinstance(v, int) and v > 256 and all(v != c[0] for c in cands):
-            cands.append((v, why))
-    try:
-        emb = model.get_input_embeddings()
-        _add(int(emb.weight.shape[0]), "model input-embedding rows")
-    except Exception:
-        pass
-    _add(len(tokenizer), "len(tokenizer) incl. added tokens")
-    _add(int(getattr(tokenizer, "vocab_size", 0) or 0), "tokenizer.vocab_size")
-    try:
-        _add(int(model.config.text_config.vocab_size), "config.text_config.vocab_size")
-    except Exception:
-        pass
-    try:
-        _add(int(model.config.vocab_size), "config.vocab_size")
-    except Exception:
-        pass
-    return cands
-
-
-def decode_action_bins(gen_ids, vocab_candidates, bins=256, n_dims=7):
-    """Return (action, chosen_vocab, why) or (None, None, diagnostic_str).
-
-    A candidate wins if >= n_dims of `gen_ids` fall in [V-256, V).
-    """
-    for V, why in vocab_candidates:
-        lo = V - bins
-        hit = [V - 1 - t for t in gen_ids if lo <= t < V]
-        if len(hit) >= n_dims:
-            return dequantize(np.asarray(hit[:n_dims])), V, why
-    diag = (f"no candidate vocab decoded >= {n_dims} action bins. "
-            f"generated ids={list(gen_ids)}; "
-            f"candidates={[(v, w) for v, w in vocab_candidates]}")
-    return None, None, diag
-
-
 def build_deepthink_prompt(instruction, cot_text=None):
-    """DeepThinkVLA prompt format. Based on OpenpiFastOft architecture."""
-    p = f"Instruction: {instruction}\n"
-    if cot_text is not None:
-        p += f"<think>{cot_text}</think>\n"
-    p += "Action:"
-    return p
+    """Deprecated: kept only so the failure is loud if something still calls it.
+
+    The real prompt assembly lives in sharpguard/vendor/deepthinkvla/decode.py
+    (`build_prompt_text` + `build_input_cot_ids`), because the CoT delimiters are
+    special token IDs (257153/257154) rather than the literal text "<think>" this
+    function emitted, and the prompt prefix is upstream's THINK_PREFIX sentence
+    rather than "Instruction:".
+    """
+    raise RuntimeError(
+        "build_deepthink_prompt() emitted a prompt format this checkpoint was "
+        "never trained on ('Instruction: ...\\nAction:' with literal <think> "
+        "text). Use vendor.deepthinkvla.decode.build_prompt_text and "
+        "build_input_cot_ids instead.")
 
 
 def build_cot_text(reasoning):
@@ -152,9 +99,13 @@ def build_cot_text(reasoning):
 
 def run(args):
     import torch
-    from transformers import AutoModelForVision2Seq, AutoProcessor, AutoModel
-    from sharpguard.proguard import RVisHook, RVisConfig, CotAttentionAnalyzer
+    from transformers import AutoProcessor
+    from sharpguard.proguard import (RVisHook, RVisConfig, CotAttentionAnalyzer,
+                                     SegmentBoundaries)
     from sharpguard.attacks import EDIT_FAMILIES
+    from sharpguard.vendor.deepthinkvla import (ACTION_DIM, NUM_ACTIONS_CHUNK,
+                                                import_deepthinkvla)
+    from sharpguard.vendor.deepthinkvla import decode as dtdec
 
     dtype = {"float32": torch.float32, "float16": torch.float16,
               "bfloat16": torch.bfloat16}[args.dtype]
@@ -162,35 +113,45 @@ def run(args):
 
     print(f"[deepthink] loading {args.ckpt_path}")
     processor = AutoProcessor.from_pretrained(args.ckpt_path, trust_remote_code=True)
-    # Try Vision2Seq first, fall back to plain AutoModel.
-    try:
-        model = AutoModelForVision2Seq.from_pretrained(
-            args.ckpt_path, trust_remote_code=True, torch_dtype=dtype,
-            attn_implementation="eager", low_cpu_mem_usage=True,
-        ).to(device).eval()
-    except Exception as e:
-        print(f"[deepthink] Vision2Seq failed ({e}); trying AutoModel")
-        model = AutoModel.from_pretrained(
-            args.ckpt_path, trust_remote_code=True, torch_dtype=dtype,
-            attn_implementation="eager", low_cpu_mem_usage=True,
-        ).to(device).eval()
+    # The vendored upstream class, not AutoModelForVision2Seq: we need
+    # `prompt_cot_predict_action`, which applies the hybrid causal/bidirectional
+    # mask over the action block. Plain PaliGemma has no such method, and
+    # decoding the action positions under a purely causal mask would be a
+    # different model.
+    DeepThinkVLA = import_deepthinkvla()
+    model = DeepThinkVLA.from_pretrained(
+        args.ckpt_path, torch_dtype=dtype,
+        attn_implementation="eager", low_cpu_mem_usage=True,
+    ).to(device).eval()
 
-    hook = RVisHook(model, RVisConfig(
+    # Refuse to decode a checkpoint whose action space differs from the one
+    # these constants describe, rather than silently producing plausible numbers.
+    dtdec.assert_config_matches(model.config)
+    norm = dtdec.load_quantile_norm_stats(args.ckpt_path)
+    centers = dtdec.bin_centers()
+    print(f"[deepthink] action space verified: ids "
+          f"[{dtdec.ACTION_TOKEN_BEGIN}, {dtdec.ACTION_TOKEN_END}], "
+          f"{centers.shape[0]} bins, chunk {NUM_ACTIONS_CHUNK}x{ACTION_DIM}, "
+          f"QUANTILE un-normalization")
+
+    # Hook the language model, NOT the top-level module. PaliGemma's SigLIP
+    # vision tower also has `layers.{i}.self_attn`, so hooking the whole model
+    # captures 256x256 vision-tower maps into the same list. The analyzer
+    # happens to skip them (their T is shorter than action_end) but it does so
+    # silently, and a silent skip is not a guarantee.
+    hook = RVisHook(model.language_model, RVisConfig(
         layers=tuple(int(x) for x in args.rvis_layers.split(",")),
         n_visual_tokens=256,
     ))
-    analyzer = CotAttentionAnalyzer(hook, processor.tokenizer, n_visual=256,
-                                       instr_end_marker="Instruction:",
-                                       cot_end_marker="Action:")
+    # No text markers: segmentation is by token id via dtdec.segment_boundaries,
+    # so analyzer.compute_segments() is deliberately never called here. The old
+    # markers ("Instruction:" / "Action:") occur nowhere in this model's prompt,
+    # and their not-found fallback is why `visual` came out identically 0.0 for
+    # all three published DeepThinkVLA rows.
+    analyzer = CotAttentionAnalyzer(hook, processor.tokenizer, n_visual=256)
 
     per_sample_attn = []
     per_sample_edit = []
-    # Action-vocab resolution state. `chosen_vocab` records which anchor won so
-    # the report is self-describing; `decode_failures` and `n_orig_decode_fail`
-    # make a total decode failure loud instead of an all-zero report.
-    action_vocabs = candidate_action_vocabs(model, processor.tokenizer)
-    print(f"[deepthink] action-vocab candidates: {action_vocabs}")
-    chosen_vocab = {"V": None, "why": None}
     decode_failures = []
     n_orig_decode_fail = 0
 
@@ -200,25 +161,33 @@ def run(args):
     for si, (img, instr, gt, fbase, dem, gt_action) in enumerate(it):
         try:
             cot_text = build_cot_text(gt)
-            orig_prompt = build_deepthink_prompt(instr, cot_text)
-            # Attention probe — PaliGemma processor requires keyword args.
-            proc = processor(text=orig_prompt, images=img, return_tensors="pt")
-            input_ids = proc["input_ids"][0]
-            vocab = processor.tokenizer.vocab_size
-            a_ids = action_ids(gt_action, vocab)
-            eos = processor.tokenizer.eos_token_id or vocab-1
-            full_ids = torch.cat([input_ids,
-                                    torch.from_numpy(a_ids).to(input_ids.dtype),
-                                    torch.tensor([eos], dtype=input_ids.dtype)])
-            full_ids = full_ids.unsqueeze(0).to(device)
-            attn_mask = torch.ones_like(full_ids)
+            prompt_text = dtdec.build_prompt_text(instr, n_images=1)
+            proc = processor(text=[prompt_text], images=img, return_tensors="pt")
+            prompt_ids = proc["input_ids"].to(device)
             pixel = proc["pixel_values"].to(device, dtype=dtype)
-            hook.clear()
-            with torch.no_grad():
-                _ = model(input_ids=full_ids, attention_mask=attn_mask,
-                            pixel_values=pixel, output_attentions=True)
+
+            def _predict(cot_str, want_attn=False):
+                """Inject `cot_str` as the CoT and return its (10,7) chunk.
+
+                This IS the P2 intervention: the model receives a reasoning
+                trace it did not author and we read the action it emits.
+                """
+                cot_ids = processor.tokenizer(
+                    cot_str, add_special_tokens=False)["input_ids"]
+                ids = dtdec.build_input_cot_ids(prompt_ids, cot_ids, torch)
+                mask = torch.ones_like(ids)
+                if want_attn:
+                    hook.clear()
+                with torch.no_grad():
+                    logits, start = model.prompt_cot_predict_action(
+                        input_cot_ids=ids, pixel_values=pixel,
+                        attention_mask=mask, output_attentions=want_attn)
+                chunk = dtdec.decode_action_chunk(logits, start, torch, centers)
+                return dtdec.unnormalize(chunk, norm), ids
+
+            a_orig_chunk, orig_ids = _predict(cot_text, want_attn=True)
             try:
-                seg = analyzer.compute_segments(full_ids[0], action_len=7)
+                seg = SegmentBoundaries(**dtdec.segment_boundaries(orig_ids))
                 stats = analyzer.analyze(seg)
                 stats["sample_idx"] = si
                 stats["file_base"] = fbase
@@ -226,51 +195,33 @@ def run(args):
             except Exception as e:
                 print(f"[deepthink] attn sample {si} skipped: {str(e)[:200]}")
 
-            # Causal edit over all families.
-            def _generate_action(text_pre):
-                p = processor(text=text_pre, images=img, return_tensors="pt")
-                p = {k: v.to(device) if hasattr(v, 'to') else v for k, v in p.items()}
-                # cast pixel to dtype
-                if "pixel_values" in p:
-                    p["pixel_values"] = p["pixel_values"].to(dtype)
-                n_in = p["input_ids"].shape[1]
-                with torch.no_grad():
-                    out = model.generate(**p, max_new_tokens=12, do_sample=False)
-                # `generate` may or may not echo the prompt depending on the
-                # model class; slice off the prompt only when it is echoed.
-                seq = out[0].cpu().tolist()
-                gen_ids = seq[n_in:] if len(seq) > n_in else seq
-                act, V, why = decode_action_bins(gen_ids, action_vocabs)
-                if act is None:
-                    decode_failures.append(why)
-                    return None
-                chosen_vocab["V"], chosen_vocab["why"] = V, why
-                return act
-
-            a_orig = _generate_action(orig_prompt)
-            if a_orig is None:
-                n_orig_decode_fail += 1
-                continue
-
             for fname in ALL_FAMS:
                 fedit = EDIT_FAMILIES[fname]
                 edited = fedit(gt)
                 if edited is None: continue
                 edited.pop("__edit_meta__", None)
                 edited_cot = build_cot_text(edited)
-                edited_prompt = build_deepthink_prompt(instr, edited_cot)
-                a_edit = _generate_action(edited_prompt)
-                if a_edit is None: continue
-                d = a_edit - a_orig
+                a_edit_chunk, _ = _predict(edited_cot)
+                # The leaderboard metric is defined on a single 7-DoF action, and
+                # every other model in the paper is scored first-step. We keep
+                # that comparable by scoring chunk step 0, and record the
+                # chunk-wide delta beside it so the choice is checkable rather
+                # than buried.
+                d0 = a_edit_chunk[0] - a_orig_chunk[0]
+                dall = a_edit_chunk - a_orig_chunk
                 per_sample_edit.append({
                     "sample": si, "family": fname, "file_base": fbase,
-                    "delta_l1_mean": float(np.mean(np.abs(d))),
-                    "delta_linf":    float(np.max(np.abs(d))),
-                    "faithful":      float(np.max(np.abs(d))) > args.threshold,
+                    "delta_l1_mean": float(np.mean(np.abs(d0))),
+                    "delta_linf":    float(np.max(np.abs(d0))),
+                    "faithful":      float(np.max(np.abs(d0))) > args.threshold,
+                    "delta_linf_chunk": float(np.max(np.abs(dall))),
+                    "chunk_steps": int(a_edit_chunk.shape[0]),
                 })
             if (si + 1) % 10 == 0:
                 print(f"[deepthink] {si+1}/{args.n_samples} done")
         except Exception as e:
+            n_orig_decode_fail += 1
+            decode_failures.append(f"{type(e).__name__}: {e}")
             print(f"[deepthink] sample {si}: {e}\n{traceback.format_exc()[-400:]}")
 
     hook.close()
@@ -296,8 +247,11 @@ def run(args):
         raise RuntimeError(
             f"action decode failed on every one of {n_orig_decode_fail} samples "
             f"while the attention probe succeeded on {len(per_sample_attn)}. "
-            f"The action-token vocabulary anchor is wrong for this checkpoint; "
-            f"no edit report will be written. Diagnostics: {uniq}")
+            f"The decode conventions are asserted against config.json at load "
+            f"time, so this is not an action-range mismatch -- look at the "
+            f"per-sample traceback (tokenization of the injected CoT, or the "
+            f"norm_stats lookup) instead. No edit report will be written. "
+            f"Diagnostics: {uniq}")
 
     def _agg(rows):
         m, s, n = {}, {}, len(rows)
@@ -316,6 +270,7 @@ def run(args):
             edit_agg[fam] = {"n": 0}; continue
         l1 = [r["delta_l1_mean"] for r in rows]
         li = [r["delta_linf"] for r in rows]
+        lic = [r["delta_linf_chunk"] for r in rows]
         fr = [r["faithful"] for r in rows]
         edit_agg[fam] = {
             "n": len(rows),
@@ -323,15 +278,42 @@ def run(args):
             "delta_linf_mean": float(np.mean(li)),
             "delta_linf_median": float(np.median(li)),
             "faithful_rate": float(np.mean(fr)),
+            # Scored on chunk step 0 for comparability with the 7-DoF models;
+            # the chunk-wide figure is reported beside it so the reader can see
+            # whether the choice of step suppresses the effect.
+            "delta_linf_chunk_mean": float(np.mean(lic)),
+            "faithful_rate_chunk": float(np.mean(
+                [x > args.threshold for x in lic])),
         }
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
+    # Self-describing decode provenance. The previous version reported which of
+    # several *guessed* action vocabularies happened to win; there is nothing to
+    # guess -- the conventions below are asserted against config.json at load
+    # time, so recording them is recording what was verified.
     decode_meta = {
-        "action_vocab_candidates": [{"V": v, "why": w} for v, w in action_vocabs],
-        "action_vocab_chosen": chosen_vocab["V"],
-        "action_vocab_chosen_why": chosen_vocab["why"],
-        "n_orig_decode_fail": n_orig_decode_fail,
-        "decode_failure_examples": list(dict.fromkeys(decode_failures))[:3],
+        "source": "sharpguard/vendor/deepthinkvla (upstream MIT, commit "
+                   "4bbd0f4ea9010a421e4629e24177afc819f4b6d2)",
+        "action_token_begin_idx": dtdec.ACTION_TOKEN_BEGIN,
+        "action_token_end_idx": dtdec.ACTION_TOKEN_END,
+        "n_bins": int(centers.shape[0]),
+        "bin_index_reversed": True,
+        "extraction": "single forward pass, argmax over the action slice at 70 "
+                       "fixed positions under the hybrid causal/bidirectional mask",
+        "chunk_shape": [NUM_ACTIONS_CHUNK, ACTION_DIM],
+        "scored_chunk_step": 0,
+        "unnormalization": "QUANTILE (q01/q99)",
+        "q01": norm["q01"].tolist(),
+        "q99": norm["q99"].tolist(),
+        "config_asserted": True,
+        # Not comparable to the OpenVLA rows without this caveat: DeepThinkVLA's
+        # action block is BIDIRECTIONAL, so an action row attends to all 70
+        # action positions rather than only earlier ones. The bucket is still
+        # named "action->action_prev" for schema compatibility, but for this
+        # model it means "action -> action block".
+        "action_block_attention": "bidirectional",
+        "n_sample_failures": n_orig_decode_fail,
+        "failure_examples": list(dict.fromkeys(decode_failures))[:3],
     }
     (out / "deepthink_report.json").write_text(json.dumps({
         "action_decode": decode_meta,

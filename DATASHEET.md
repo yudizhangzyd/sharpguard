@@ -88,19 +88,35 @@ deliberately incomplete in ways the paper states as limitations:
   same two trainings differ by mean 0.024 / max 0.083 across 9 families — the
   error bar to attach to every single-run leaderboard cell.
 - **DeepThinkVLA has attention records but no edit records.** The edit harness
-  assumed OpenVLA's action-token vocabulary anchor, which is wrong for a
-  PaliGemma backbone whose reported `vocab_size` excludes 1,152 added tokens,
-  so zero generated tokens fell in the action range and every family recorded
-  n=0. The fixed harness discovers the anchor across candidate vocabularies and
-  **raises** instead of writing an empty report; the re-run is not in this
-  release. (A separate empty-report path had the same shape: jobs scheduled on
-  a B200 pool whose PyTorch lacked sm_100 kernels failed every sample, were
-  caught per-sample, and exited 0. `bolt/preflight_gpu.py` now fails such a job
-  at setup.)
-- **`visual` is identically 0.0 for all three DeepThinkVLA rows.** This is a
-  segmentation-schema artifact of applying a 4-bucket decomposition designed
-  for OpenVLA to PaliGemma, not a property of those models. Do not read it as
-  "DeepThinkVLA ignores the image".
+  was written against OpenVLA's conventions, and *every one* of them is wrong
+  for a checkpoint initialized from `physical-intelligence/pi0fast_base`: the
+  action ids are 2,048 slots inside PaliGemma's base vocabulary
+  (`254976..257023`, the `<loc####>` block) rather than the top 256; the bin
+  index is reversed relative to that window; the 70 action positions
+  (10 chunk steps x 7 DoF) are decoded in a single forward pass under a hybrid
+  causal/bidirectional mask rather than by `generate()`; the output is a (10,7)
+  chunk rather than one 7-vector; and LIBERO actions are QUANTILE-normalized
+  (q01/q99), not min/max. Zero generated tokens fell in the assumed range, so
+  every family recorded n=0. The fix does not guess: `sharpguard/vendor/deepthinkvla/`
+  vendors upstream's own MIT-licensed model class, asserts all six conventions
+  against the checkpoint's `config.json` at load time, and **raises** instead of
+  writing an empty report. The re-run is not in this release. (A separate
+  empty-report path had the same shape: jobs scheduled on a B200 pool whose
+  PyTorch lacked sm_100 kernels failed every sample, were caught per-sample, and
+  exited 0. `bolt/preflight_gpu.py` now fails such a job at setup.)
+- **`visual` is identically 0.0 for all three DeepThinkVLA rows.** The cause is
+  a prompt-format error on our side, not a property of those models and not, as
+  an earlier version of this datasheet claimed, a "segmentation-schema
+  artifact". We segmented the sequence by searching the decoded text for
+  `"Instruction:"` and `"Action:"`; neither string occurs anywhere in this
+  model's prompt, which is
+  `"<image>"*n + THINK_PREFIX + "Task: <instruction>;"`. The not-found fallback
+  collapsed the instruction span, and the visual bucket read 0.0 for reasons
+  having nothing to do with the model. The corrected harness segments on token
+  ids (image token 257152, the `[235289, 108]` prompt-end pair upstream's own
+  model class uses, and the `<think>`/`</think>`/`<action>` specials) and raises
+  if any boundary is missing. Do not read the released 0.0 as "DeepThinkVLA
+  ignores the image".
 - **No rollout-level records.** All measurements are first-step. A diagnostic
   rollout returned Task SR 0/20 on a public checkpoint with a published ~85%
   SR; that failure is disclosed, its cause (a scoring bug reading
@@ -138,22 +154,44 @@ annotation was collected and no crowdworkers were involved.
 
 **Source corpora**
 
-| corpus | role | upstream license |
+Every license below was read from the Hugging Face Hub API by
+`scripts/fetch_upstream_licenses.py`, not written from memory; the record with
+each repo's resolved commit sha is `results_v2/license_report.json` and
+`verify_paper_numbers.py` asserts this table against it. The repo id is the one
+the configs actually resolve, which matters: the cross-corpus sweeps load
+LeRobot **re-hosts**, whose license is Apache-2.0 and is not necessarily the
+original corpus's license.
+
+| repo actually loaded | role | license on the Hub |
 |---|---|---|
-| LIBERO-90 (`libero_lm_90`) | primary evaluation suite | MIT |
-| Bridge V2 | cross-corpus transfer (N=30) | CC-BY 4.0 |
-| RT-1 / Fractal | cross-corpus transfer (N=30) | Apache-2.0 |
-| BC-Z | cross-corpus transfer (N=30) | CC-BY 4.0 |
-| ECoT reasoning annotations (`embodied_features_and_demos_libero`) | CoT traces | MIT |
+| `openvla/modified_libero_rlds` | LIBERO-90, primary evaluation suite | MIT |
+| `Embodied-CoT/embodied_features_and_demos_libero` | CoT traces; our edited-CoT strings are derivative of this | MIT |
+| `IPEC-COMMUNITY/bridge_orig_lerobot` | cross-corpus transfer, Bridge V2 (N=30) | Apache-2.0 |
+| `IPEC-COMMUNITY/fractal20220817_data_lerobot` | cross-corpus transfer, RT-1/Fractal (N=30) | Apache-2.0 |
+| `IPEC-COMMUNITY/bc_z_lerobot` | cross-corpus transfer, BC-Z (N=30) | Apache-2.0 |
+| `Embodied-CoT/embodied_features_bridge` | Bridge CoT annotations for the F4-deconfound subset training (scaffolded; no reported number depends on it) | MIT |
+
+An earlier revision of this table listed Bridge V2 and BC-Z as CC-BY 4.0 and
+named two `Embodied-CoT` bridge repos that no config in this release loads. Both
+were wrong, and the audit above is what caught them.
 
 **Model checkpoints evaluated**
 
-| checkpoint | role | upstream license |
+| checkpoint | role | license on the Hub |
 |---|---|---|
-| `openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10}` | non-CoT baselines | MIT |
-| `Embodied-CoT/ecot-openvla-7b-bridge` | public CoT-VLA reference | MIT |
-| `yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}` | second architecture family | see upstream; PaliGemma base carries the Gemma Terms of Use |
+| `openvla/openvla-7b` | architecture reference | MIT |
+| `openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10}` | non-CoT baselines + decoder gate | MIT |
+| `Embodied-CoT/ecot-openvla-7b-bridge` | public CoT-VLA reference **and** the LoRA base for all 7 of our variants | MIT |
+| `yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}` | second architecture family | **NO LICENSE DECLARED UPSTREAM** (see below) |
 | our 7 LoRA fine-tunes of `ecot-openvla-7b-bridge` | rank / data / reasoning-target ablations | released under the code license below |
+
+**3 of 15 upstream assets have no license we can verify**, all three
+DeepThinkVLA checkpoints: no license tag, no `cardData` license, no license
+file on the Hub as of this release. We state that rather than assign one, and
+we grant no rights to them. They are PaliGemma derivatives, so the Google
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms) apply to the base model
+regardless. Only attention records exist for these three rows; anyone needing
+redistribution rights must obtain them from the upstream authors.
 
 Sampling is a deterministic pass over the TFDS shards at `seed=0` (seeds >0
 shuffle shard order); the seed is recorded in every report.
@@ -224,7 +262,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 158 claims, one of which is that this
+The audit script currently checks 218 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
@@ -245,6 +283,8 @@ release and we want to hear about it.
 ## Licensing
 
 See `LICENSE`. In brief: our code and the measurement records we produced are
-released permissively; the underlying corpora and third-party checkpoints
-remain under their own upstream licenses, which are listed above and are **not**
-relicensed by this release.
+released permissively (MIT / CC BY 4.0 respectively); the underlying corpora and
+third-party checkpoints remain under their own upstream licenses, which are
+listed above, were resolved from the Hub rather than asserted, and are **not**
+relicensed by this release. Three of the fifteen have no upstream license at
+all, and that is disclosed rather than papered over.

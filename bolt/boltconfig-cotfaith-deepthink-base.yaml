@@ -1,5 +1,5 @@
 name: 'CoT-Faith: DeepThinkVLA (base) rvis + edit'
-description: 'Cross-family evaluation: DeepThinkVLA is PaliGemma-based (OpenpiFastOft arch), not OpenVLA. Uses transformers>=4.45. Evaluates rvis + 3 edit families (subject_swap, direction_flip, gripper_flip).'
+description: 'Cross-family P2: DeepThinkVLA is a pi0fast-initialized PaliGemma, not OpenVLA. Actions decode in ONE forward pass under a hybrid causal/bidirectional mask over 70 positions (10 chunk steps x 7 DoF), ids 254976-257023 with a REVERSED bin index, un-normalized by q01/q99. Uses the vendored upstream MIT model class (sharpguard/vendor/deepthinkvla) and PINS transformers==4.48.1. Runs rvis (P1) plus all 11 edit families.'
 tags: ['cotfaith', 'deepthink', 'base']
 
 project_id: ads_algo_signal_qucacheoffline

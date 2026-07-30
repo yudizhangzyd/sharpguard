@@ -1,0 +1,261 @@
+{
+  "n_assets": 15,
+  "n_unresolved": 3,
+  "unresolved": [
+    "yinchenghust/deepthinkvla_base",
+    "yinchenghust/deepthinkvla_libero_cot_sft",
+    "yinchenghust/deepthinkvla_libero_cot_rl"
+  ],
+  "assets": {
+    "openvla/openvla-7b": {
+      "kind": "model",
+      "used_for": "OpenVLA base (arch reference)",
+      "license": "mit",
+      "url": "https://huggingface.co/openvla/openvla-7b",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+      "lastModified": "2026-02-17T03:43:23.000Z",
+      "downloads": 165625
+    },
+    "openvla/openvla-7b-finetuned-libero-spatial": {
+      "kind": "model",
+      "used_for": "non-CoT baseline + decoder gate",
+      "license": "mit",
+      "url": "https://huggingface.co/openvla/openvla-7b-finetuned-libero-spatial",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+      "lastModified": "2024-10-09T04:41:18.000Z",
+      "downloads": 13959
+    },
+    "openvla/openvla-7b-finetuned-libero-object": {
+      "kind": "model",
+      "used_for": "non-CoT baseline + decoder gate",
+      "license": "mit",
+      "url": "https://huggingface.co/openvla/openvla-7b-finetuned-libero-object",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "287d6cfdf12d07b1449505f66d9bf3550257e9b3",
+      "lastModified": "2024-10-09T04:41:45.000Z",
+      "downloads": 4096
+    },
+    "openvla/openvla-7b-finetuned-libero-goal": {
+      "kind": "model",
+      "used_for": "non-CoT baseline + decoder gate",
+      "license": "mit",
+      "url": "https://huggingface.co/openvla/openvla-7b-finetuned-libero-goal",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "fa5ae1e7509348889295bba8e08621d8b55e9baf",
+      "lastModified": "2024-10-09T04:42:19.000Z",
+      "downloads": 5358
+    },
+    "openvla/openvla-7b-finetuned-libero-10": {
+      "kind": "model",
+      "used_for": "non-CoT baseline + decoder gate",
+      "license": "mit",
+      "url": "https://huggingface.co/openvla/openvla-7b-finetuned-libero-10",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "80970322773f81baa2e22fe495d0487b93a05cfa",
+      "lastModified": "2024-10-09T04:42:43.000Z",
+      "downloads": 3989
+    },
+    "Embodied-CoT/ecot-openvla-7b-bridge": {
+      "kind": "model",
+      "used_for": "public ECoT CoT-VLA (flagship row, 3 seeds) AND the LoRA base for our 7 variants",
+      "license": "mit",
+      "url": "https://huggingface.co/Embodied-CoT/ecot-openvla-7b-bridge",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "492b3dbf3df380f6da333f86ce06dab028176166",
+      "lastModified": "2024-07-25T21:57:04.000Z",
+      "downloads": 786
+    },
+    "yinchenghust/deepthinkvla_base": {
+      "kind": "model",
+      "used_for": "DeepThinkVLA base (attention only)",
+      "license": "NO LICENSE DECLARED UPSTREAM",
+      "url": "https://huggingface.co/yinchenghust/deepthinkvla_base",
+      "license_cardData": null,
+      "license_tags": [],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "9dd8909a4f46342a2182550c19c38877d957cffe",
+      "lastModified": "2026-04-22T08:04:54.000Z",
+      "downloads": 44
+    },
+    "yinchenghust/deepthinkvla_libero_cot_sft": {
+      "kind": "model",
+      "used_for": "DeepThinkVLA SFT (attention only)",
+      "license": "NO LICENSE DECLARED UPSTREAM",
+      "url": "https://huggingface.co/yinchenghust/deepthinkvla_libero_cot_sft",
+      "license_cardData": null,
+      "license_tags": [],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "2edad551e95f0921a647f56b064f57d2c01d5474",
+      "lastModified": "2026-04-22T08:05:27.000Z",
+      "downloads": 93
+    },
+    "yinchenghust/deepthinkvla_libero_cot_rl": {
+      "kind": "model",
+      "used_for": "DeepThinkVLA RL (attention only)",
+      "license": "NO LICENSE DECLARED UPSTREAM",
+      "url": "https://huggingface.co/yinchenghust/deepthinkvla_libero_cot_rl",
+      "license_cardData": null,
+      "license_tags": [],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "9a11867463f65c7f5e172f6e66b745dbe5259eba",
+      "lastModified": "2026-04-22T08:06:07.000Z",
+      "downloads": 146
+    },
+    "openvla/modified_libero_rlds": {
+      "kind": "dataset",
+      "used_for": "LIBERO-90 observations (P1/P2 primary)",
+      "license": "mit",
+      "url": "https://huggingface.co/datasets/openvla/modified_libero_rlds",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "6ce6aaaaabdbe590b1eef5cd29c0d33f14a08551",
+      "lastModified": "2024-09-05T19:18:36.000Z",
+      "downloads": 11593
+    },
+    "Embodied-CoT/embodied_features_and_demos_libero": {
+      "kind": "dataset",
+      "used_for": "LIBERO CoT reasoning annotations -- our edited CoT strings are DERIVATIVE of this",
+      "license": "mit",
+      "url": "https://huggingface.co/datasets/Embodied-CoT/embodied_features_and_demos_libero",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "52e8a9caf92b81d665af679fac760f7740e3e3aa",
+      "lastModified": "2026-04-08T22:14:55.000Z",
+      "downloads": 1510
+    },
+    "IPEC-COMMUNITY/bridge_orig_lerobot": {
+      "kind": "dataset",
+      "used_for": "cross-corpus sweep, Bridge V2 (N=30); LeRobot re-host we actually load",
+      "license": "apache-2.0",
+      "url": "https://huggingface.co/datasets/IPEC-COMMUNITY/bridge_orig_lerobot",
+      "license_cardData": "apache-2.0",
+      "license_tags": [
+        "apache-2.0"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "0e9d76d07e9df3ea3eba257b2520d4913833fad2",
+      "lastModified": "2025-02-23T06:25:52.000Z",
+      "downloads": 216443
+    },
+    "IPEC-COMMUNITY/fractal20220817_data_lerobot": {
+      "kind": "dataset",
+      "used_for": "cross-corpus sweep, RT-1/Fractal (N=30); LeRobot re-host we actually load",
+      "license": "apache-2.0",
+      "url": "https://huggingface.co/datasets/IPEC-COMMUNITY/fractal20220817_data_lerobot",
+      "license_cardData": "apache-2.0",
+      "license_tags": [
+        "apache-2.0"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "91bf7d7f7ce50770a1ba5c6db14b8d1c0815122e",
+      "lastModified": "2025-02-23T06:35:48.000Z",
+      "downloads": 180105
+    },
+    "IPEC-COMMUNITY/bc_z_lerobot": {
+      "kind": "dataset",
+      "used_for": "cross-corpus sweep, BC-Z (N=30); LeRobot re-host we actually load",
+      "license": "apache-2.0",
+      "url": "https://huggingface.co/datasets/IPEC-COMMUNITY/bc_z_lerobot",
+      "license_cardData": "apache-2.0",
+      "license_tags": [
+        "apache-2.0"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "ddc4da6f3baa0196e42d22a177d038274b0ba8ae",
+      "lastModified": "2025-03-15T08:49:20.000Z",
+      "downloads": 103719
+    },
+    "Embodied-CoT/embodied_features_bridge": {
+      "kind": "dataset",
+      "used_for": "Bridge CoT annotations for the F4-deconfound subset training (scaffolded, no reported number depends on it)",
+      "license": "mit",
+      "url": "https://huggingface.co/datasets/Embodied-CoT/embodied_features_bridge",
+      "license_cardData": "mit",
+      "license_tags": [
+        "mit"
+      ],
+      "license_name_cardData": null,
+      "license_link": null,
+      "gated": false,
+      "private": false,
+      "sha": "854ee59c7c76868d63fac37c33e0f031ed678014",
+      "lastModified": "2024-07-10T19:37:10.000Z",
+      "downloads": 135
+    }
+  },
+  "note": "The CoT-Faith release redistributes NO upstream weights or observations. It ships code, our derived edited-CoT strings, and per-sample logs; users pull upstream assets themselves under the licenses recorded here. Assets marked UNRESOLVED or NO LICENSE DECLARED are disclosed as such in the datasheet rather than assigned a license we cannot verify."
+}
