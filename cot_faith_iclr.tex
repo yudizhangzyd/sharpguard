@@ -129,9 +129,9 @@ CoT-Faith organizes edits by \emph{semantic depth} of the intervention:
 
 \paragraph{Tier 1 -- word-level semantic ($\times 4$).} Single-token or short-phrase swaps that mutate one semantic axis at a time. \emph{direction\_flip:} left$\leftrightarrow$right, up$\leftrightarrow$down, in$\leftrightarrow$out within \texttt{MOVE}. \emph{gripper\_flip:} grasp$\leftrightarrow$release, open$\leftrightarrow$close within \texttt{PLAN}/\texttt{SUBTASK}. \emph{verb\_swap:} action verbs $\to$ unrelated verbs. \emph{negation:} prepend ``do not'' to \texttt{SUBTASK}/\texttt{MOVE}.
 
-\paragraph{Tier 2 -- object / causal-chain ($\times 3$).} Higher-order edits requiring cross-tag consistency. \emph{subject\_swap:} primary object referent $\to$ visible distractor across all reasoning tags. \emph{location\_swap:} 2-word location phrases within \texttt{PLAN}. \emph{adversarial\_plausible:} object $\to$ second-most visible object (visually plausible but wrong).
+\paragraph{Tier 2 -- object / causal-chain ($\times 3$).} Higher-order edits requiring cross-tag consistency. \emph{subject\_swap:} primary object referent $\to$ visible distractor across all reasoning tags. \emph{location\_swap:} spatial adverbs and 2-word location phrases within \texttt{PLAN}/\texttt{SUBTASK}/\texttt{TASK} (left/right, top/bottom, front/back, near/far, inside/outside, `left compartment' etc.). \emph{adversarial\_plausible:} object $\to$ second-most visible object (visually plausible but wrong).
 
-Total: $\mathbf{10}$ edit families across three tiers, applied to $N{=}12$--$100$ LIBERO samples each per model.
+Total: $\mathbf{10}$ non-null edit families across three tiers, plus one paraphrase-null control family that we introduce below (\S~\ref{sec:paraphrase_null}). Applied to $N{=}60$--$100$ LIBERO samples per model on Ours-r=32 and ECoT-bridge; $N{=}12$--$100$ on the other CoT-VLA variants (which used a smaller pre-expansion location list).
 
 \subsection{Faithfulness Score}
 
@@ -145,7 +145,10 @@ where $a_i$ is the $i$-th action dimension normalized to $[-1, 1]$. A sample is 
 \mathcal{F}(m, f) \;=\; \frac{1}{N} \sum_{s=1}^N \mathbf{1}\!\bigl[\Delta_\infty^{s,f}(m) > \tau\bigr].
 \label{eq:faith}
 \end{equation}
-The overall Faithfulness Score is $\bar{\mathcal{F}}(m) = \tfrac{1}{|F|}\sum_{f \in F}\mathcal{F}(m, f)$, averaged over the 7 non-control edit families. \textbf{Metric validation}: $\mathcal{F}(m, \text{selfsplice\_control}) = 0$ is required across all models and is empirically observed (Table~\ref{tab:leaderboard}, column ``ss'').
+The overall Faithfulness Score is $\bar{\mathcal{F}}(m) = \tfrac{1}{|F|}\sum_{f \in F}\mathcal{F}(m, f)$, averaged over the 7 non-control edit families.
+
+\paragraph{Null-control validation (two-fold, \S~\ref{sec:paraphrase_null}).}
+\emph{selfsplice\_control} (identity substitution X$\to$X) --- observed $\mathcal{F}\!=\!0.000$ on 8/8 CoT-VLAs. This validates only that the metric respects a deterministic tokenizer (a byte-identical string produces a byte-identical action). A stronger control, the \emph{paraphrase\_null} family, replaces verbs with meaning-preserving synonyms (\textit{move}$\to$\textit{shift}, \textit{grasp}$\to$\textit{seize}, etc.) without changing directions, objects, or arguments; a faithful model should also show $\mathcal{F}\!\approx\!0$ under this edit, since the semantic content is unchanged. We report $\mathcal{F}(\text{ECoT-bridge}, \text{paraphrase\_null})$ in Section~\ref{sec:paraphrase_null}.
 
 \subsection{Attention decomposition}
 For an action-token source position $t \in \{T-6, \dots, T\}$, the attention mass on each segment bucket $B \in \{\text{visual}, \text{instruction}, \text{cot}, \text{action-prev}\}$ is
@@ -225,7 +228,7 @@ Ours r=64      & 0.00 & 0.47 & 0.94 & 0.82 & 0.22 & 0.84 & 0.78 & 0.35 & 0.25 & 
 Ours no-CoT    & 0.00 & 0.11 & 0.24 & 0.23 & 0.07 & 0.14 & 0.14 & 0.13 & 0.25 & 0.12 \\
 Ours data-50A  & 0.00 & 0.44 & 0.74 & 0.72 & 0.14 & 0.69 & 0.60 & 0.30 & 0.17 & 0.35 \\
 Ours data-50B  & 0.00 & 0.38 & 0.73 & 0.66 & 0.14 & 0.52 & 0.52 & 0.33 & 0.08 & 0.30 \\
-\textbf{ECoT-bridge}    & 0.00 & \textbf{0.88} & \textbf{0.97} & \textbf{0.96} & \textbf{0.67} & \textbf{0.98} & \textbf{0.96} & \textbf{0.97} & \textbf{0.50} & \textbf{0.93} \\
+\textbf{ECoT-bridge}    & 0.00 & \textbf{0.88} & \textbf{0.97} & \textbf{0.96} & \textbf{0.67} & \textbf{0.98} & \textbf{0.96} & \textbf{0.97} & \textbf{0.61} & \textbf{0.93} \\
 \midrule
 \multicolumn{11}{l}{\emph{Wilson 95\% CI half-width on the ECoT-bridge vs no-CoT gap} (largest at $p{=}0.5$): $\pm 0.10$ (dir./verb./neg., $N{=}100$), $\pm 0.13$ (subj./adv., $N{=}60$), $\pm 0.28$ (loc., $N{=}12$).} \\
 \multicolumn{11}{l}{\emph{ECoT-bridge vs no-CoT direction\_flip gap:} 0.96 -- 0.23 $=$ 0.73, well outside both Wilson CIs (non-overlap $\Rightarrow$ significant at 95\%).} \\
@@ -336,6 +339,11 @@ Figure~\ref{fig:ablation} isolates two additional axes. Panel (a) shows the LoRA
     \caption{\textbf{Ablations.} (a) LoRA rank ($r \in \{8,16,64\}$) on 5 edit families — higher rank monotonically raises causal effect on 4/5 families. (b) 50\%-data split seed variance is $\leq 15$pp, confirming main-result gaps are not seed artifacts.}
     \label{fig:ablation}
 \end{figure}
+
+\subsection{Paraphrase-null control (strengthens metric validation beyond identity substitution)}
+\label{sec:paraphrase_null}
+
+The identity-substitution \emph{selfsplice\_control} ($\mathcal{F}\!=\!0.00$ on 8/8 models) validates only that the tokenizer is deterministic; a byte-identical string produces a byte-identical action by construction, so this null cannot fire. To strengthen the null validation we introduce \emph{paraphrase\_null}: verb synonyms that preserve directions, objects, and arguments (\textit{move}$\to$\textit{shift}, \textit{grasp}$\to$\textit{seize}, \textit{turn}$\to$\textit{rotate}, etc.\ --- 9 mappings applied to \texttt{TASK}, \texttt{SUBTASK}, \texttt{MOVE}, and \texttt{PLAN}). A model faithful to \emph{semantic content} should still show $\mathcal{F}\!\approx\!0$ under this edit, while a model faithful only to \emph{surface tokens} would exhibit $\mathcal{F}\!>\!0$. This distinguishes ``metric well-behaved on semantic content'' from ``metric trivially zero under determinism''. Reference result: $\mathcal{F}(\text{ECoT-bridge}, \text{paraphrase\_null})$ will be added to the leaderboard once the corresponding run completes; DeepThinkVLA and our LoRA variants will be added at the same time.
 
 \subsection{Ancillary: prompt-format ablation}
 
