@@ -18,7 +18,7 @@ nowhere in this model's training distribution, and the segment markers derived
 from it are why the published DeepThinkVLA rows show `visual` identically 0.0.
 """
 from __future__ import annotations
-import argparse, json, os, sys, traceback
+import argparse, json, os, random, sys, traceback
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -155,10 +155,18 @@ def run(args):
     decode_failures = []
     n_orig_decode_fail = 0
 
-    it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
-                              args.reasoning_json, args.n_samples,
-                              seed=args.seed)
-    for si, (img, instr, gt, fbase, dem, gt_action) in enumerate(it):
+    # Materialized rather than streamed because `cross_task_swap` needs a pool
+    # of *other* samples' reasoning to draw its donor from. 100 LIBERO frames is
+    # ~20 MB, and the alternative -- drawing only from samples seen so far --
+    # would make sample 0's donor set empty and bias the family toward the front
+    # of the shard order.
+    all_samples = list(load_libero_samples(
+        args.dataset_repo, args.tfds_subdir, args.reasoning_json,
+        args.n_samples, seed=args.seed))
+    rng = random.Random(args.seed + 7)   # same stream as cotfaith_edit.py, so
+                                         # DeepThinkVLA and ECoT draw the SAME
+                                         # donor index sequence for cross_task_swap
+    for si, (img, instr, gt, fbase, dem, gt_action) in enumerate(all_samples):
         try:
             cot_text = build_cot_text(gt)
             prompt_text = dtdec.build_prompt_text(instr, n_images=1)
@@ -197,8 +205,31 @@ def run(args):
 
             for fname in ALL_FAMS:
                 fedit = EDIT_FAMILIES[fname]
-                edited = fedit(gt)
-                if edited is None: continue
+                # Same argument conventions as experiments/cotfaith_edit.py, so
+                # a DeepThinkVLA row and an ECoT row are the same intervention.
+                # Getting these wrong is silent: `cross_task_swap` returns None
+                # without a donor, which is why the first DeepThinkVLA run
+                # recorded n=0 for it while every other family looked healthy.
+                if fname == "cross_task_swap":
+                    alt_idx = rng.randrange(len(all_samples))
+                    if alt_idx == si and len(all_samples) > 1:
+                        alt_idx = (alt_idx + 1) % len(all_samples)
+                    edited = fedit(gt, alt_reasoning=all_samples[alt_idx][2],
+                                   seed=args.seed)
+                elif fname in ("syntactic_scramble", "bbox_jitter_null",
+                               "instr_random_sub"):
+                    edited = fedit(gt, seed=args.seed + si)
+                else:
+                    edited = fedit(gt)
+                if edited is None:
+                    # Recorded, not dropped: an absent family and a family whose
+                    # edit was inapplicable are different facts, and F's
+                    # denominator has to stay recomputable from the release.
+                    per_sample_edit.append({
+                        "sample": si, "family": fname, "file_base": fbase,
+                        "skipped": True, "reason": "no plausible edit",
+                    })
+                    continue
                 edited.pop("__edit_meta__", None)
                 edited_cot = build_cot_text(edited)
                 a_edit_chunk, _ = _predict(edited_cot)
@@ -265,15 +296,20 @@ def run(args):
     attn_agg, n_attn = _agg(per_sample_attn)
     edit_agg = {}
     for fam in ALL_FAMS:
-        rows = [r for r in per_sample_edit if r["family"] == fam]
+        recs = [r for r in per_sample_edit if r["family"] == fam]
+        # `n` is the SCORED count -- the denominator of F -- and skipped records
+        # are counted separately so the two are never conflated.
+        rows = [r for r in recs if not r.get("skipped")]
+        n_skipped = len(recs) - len(rows)
         if not rows:
-            edit_agg[fam] = {"n": 0}; continue
+            edit_agg[fam] = {"n": 0, "n_skipped": n_skipped}; continue
         l1 = [r["delta_l1_mean"] for r in rows]
         li = [r["delta_linf"] for r in rows]
         lic = [r["delta_linf_chunk"] for r in rows]
         fr = [r["faithful"] for r in rows]
         edit_agg[fam] = {
             "n": len(rows),
+            "n_skipped": n_skipped,
             "delta_l1_mean": float(np.mean(l1)),
             "delta_linf_mean": float(np.mean(li)),
             "delta_linf_median": float(np.median(li)),
