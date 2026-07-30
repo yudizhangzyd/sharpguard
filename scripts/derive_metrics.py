@@ -68,6 +68,13 @@ NON_CONTROL = ["direction_flip", "gripper_flip", "verb_swap", "negation",
                "subject_swap", "location_swap", "adversarial_plausible"]
 TAU = 0.05
 
+# The 13-family calibration run (bolt uy6fmkwtzp) adds the two floors that the
+# 11-family seed runs lack.  It is ONE run at n=100, so every quantity derived
+# from it is compared only against families from the SAME run -- mixing runs is
+# what produced the 0.340-vs-0.354 discrepancy the audit now catches.
+CALIB_RUN = "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json"
+CALIB_FLOORS = ["paraphrase_null", "bbox_jitter_null", "instr_random_sub"]
+
 
 # In-repo mirror of every pinned /tmp path, so the pipeline reproduces on a
 # clean checkout with no /tmp state.  /tmp wins if present (fresher), otherwise
@@ -84,6 +91,7 @@ MIRROR = {
     "/tmp/cf_r3_all/ai3sg9h568/cotfaith-edit/cot_edit_report.json": "ecot_bridge_edit_seed0.json",
     "/tmp/cf_r3_all/xvz7z8eput/cotfaith-edit/cot_edit_report.json": "ecot_bridge_edit_seed1.json",
     "/tmp/cf_r3_all/bznf3vq5yu/cotfaith-edit/cot_edit_report.json": "ecot_bridge_edit_seed2.json",
+    "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json": "ecot_bridge_edit_13family_calibration.json",
     "/tmp/cf_full_sweep/lora-r8/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r8_rvis.json",
     "/tmp/cf_full_sweep/lora-r16/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r16_rvis.json",
     "/tmp/cf_done/bcihypv3gu/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r32_rvis.json",
@@ -372,6 +380,35 @@ def main():
         noise["cluster_spread_pp"] = (max(cots) - min(cots)) * 100
         noise["noise_as_frac_of_spread"] = noise["abs_diff_pp"] / noise["cluster_spread_pp"]
 
+    # -------- two-sided calibration floors (13-family run, ECoT-bridge) --------
+    calib = None
+    crep = load(CALIB_RUN)
+    if crep:
+        ag = crep["aggregate"]
+        fr = {f: ag[f]["faithful_rate"] for f in ag}
+        n = {f: ag[f]["n"] for f in ag}
+        f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
+        calib = {
+            "source": CALIB_RUN,
+            "n_families": len(ag),
+            "seed": crep.get("seed"),
+            "F_bar_non_control": f_bar,
+            "families": {f: {"F_mag": fr[f], "n": n[f],
+                             "wilson": wilson(round(fr[f] * n[f]), n[f])}
+                         for f in sorted(ag)},
+        }
+        for floor in CALIB_FLOORS:
+            if floor in fr:
+                calib[floor] = fr[floor]
+                calib[f"F_bar_diff_vs_{floor}"] = f_bar - fr[floor]
+        # How much of the CoT-edit response is CoT-SPECIFIC?  instr_random_sub
+        # perturbs the instruction, i.e. outside the CoT segment entirely, so it
+        # upper-bounds the share of F attributable to CoT->action routing.
+        if "instr_random_sub" in fr:
+            calib["cot_specificity_ratio"] = f_bar / fr["instr_random_sub"]
+            calib["n_families_above_out_of_cot_control"] = sum(
+                1 for f in NON_CONTROL if f in fr and fr[f] >= fr["instr_random_sub"])
+
     out = {
         "_provenance": {
             "generated_by": "scripts/derive_metrics.py",
@@ -386,6 +423,7 @@ def main():
         "attention_deepthink": dt,
         "cross_corpus_n30": cross,
         "attention_noise_floor": noise,
+        "calibration_floors": calib,
     }
     dest = os.path.join(ROOT, "results_v2", "derived_metrics.json")
     with open(dest, "w") as fh:
@@ -411,6 +449,17 @@ def main():
         print(f"{m:14s} lens={ {k:round(v,1) for k,v in a['seg_len'].items()} }")
         print(f"{'':14s} mass={ {k:round(v,4) for k,v in a['mass'].items()} }")
         print(f"{'':14s} /tok={ {k:round(v,5) for k,v in pt.items()} }  instr/cot={pt['instruction']/pt['cot']:.2f}x")
+    if calib:
+        print("\n=== two-sided calibration floors (13-family run) ===")
+        print(f"  F_bar (7 non-control)   = {calib['F_bar_non_control']:.4f}")
+        for floor in CALIB_FLOORS:
+            if floor in calib:
+                print(f"  {floor:20s} = {calib[floor]:.4f}   "
+                      f"F_bar_diff = {calib['F_bar_diff_vs_' + floor]:+.4f}")
+        if "cot_specificity_ratio" in calib:
+            print(f"  CoT-specificity ratio   = {calib['cot_specificity_ratio']:.4f} "
+                  f"({calib['n_families_above_out_of_cot_control']}/7 CoT families "
+                  f"reach the out-of-CoT control)")
     if noise:
         print("\n=== attention noise floor ===")
         print(json.dumps(noise, indent=1))

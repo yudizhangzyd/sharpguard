@@ -2987,5 +2987,125 @@
   "run_B": "/tmp/cf_sweep/ours-train/cotfaith-rvis/rvis_cot_report.json",
   "cluster_spread_pp": 2.3027343749999982,
   "noise_as_frac_of_spread": 0.630195080576761
+ },
+ "calibration_floors": {
+  "source": "/tmp/cf_r1_calib/cotfaith-edit/cot_edit_report.json",
+  "n_families": 13,
+  "seed": 0,
+  "F_bar_non_control": 0.8691836734693877,
+  "families": {
+   "adversarial_plausible": {
+    "F_mag": 0.9333333333333333,
+    "n": 60,
+    "wilson": [
+     0.8407442010623228,
+     0.973771725856802
+    ]
+   },
+   "bbox_jitter_null": {
+    "F_mag": 0.46,
+    "n": 100,
+    "wilson": [
+     0.36560643853331865,
+     0.5573531460647615
+    ]
+   },
+   "cross_task_swap": {
+    "F_mag": 0.97,
+    "n": 100,
+    "wilson": [
+     0.9154792191959729,
+     0.9897456617765852
+    ]
+   },
+   "direction_flip": {
+    "F_mag": 0.96,
+    "n": 100,
+    "wilson": [
+     0.9016278276739262,
+     0.984336949448152
+    ]
+   },
+   "gripper_flip": {
+    "F_mag": 0.67,
+    "n": 100,
+    "wilson": [
+     0.5730516033971139,
+     0.7543701620610456
+    ]
+   },
+   "instr_random_sub": {
+    "F_mag": 0.98989898989899,
+    "n": 99,
+    "wilson": [
+     0.944983344585968,
+     0.9982147386799481
+    ]
+   },
+   "location_swap": {
+    "F_mag": 0.6142857142857143,
+    "n": 70,
+    "wilson": [
+     0.49715520645630557,
+     0.7195248221454583
+    ]
+   },
+   "negation": {
+    "F_mag": 0.96,
+    "n": 100,
+    "wilson": [
+     0.9016278276739262,
+     0.984336949448152
+    ]
+   },
+   "paraphrase_null": {
+    "F_mag": 0.96,
+    "n": 100,
+    "wilson": [
+     0.9016278276739262,
+     0.984336949448152
+    ]
+   },
+   "selfsplice_control": {
+    "F_mag": 0.0,
+    "n": 60,
+    "wilson": [
+     0.0,
+     0.06017393047793289
+    ]
+   },
+   "subject_swap": {
+    "F_mag": 0.9666666666666667,
+    "n": 60,
+    "wilson": [
+     0.8863601247107462,
+     0.9908108735098498
+    ]
+   },
+   "syntactic_scramble": {
+    "F_mag": 0.88,
+    "n": 100,
+    "wilson": [
+     0.8018773199709163,
+     0.9300066263473222
+    ]
+   },
+   "verb_swap": {
+    "F_mag": 0.98,
+    "n": 100,
+    "wilson": [
+     0.9299868370580063,
+     0.9944981477650318
+    ]
+   }
+  },
+  "paraphrase_null": 0.96,
+  "F_bar_diff_vs_paraphrase_null": -0.09081632653061222,
+  "bbox_jitter_null": 0.46,
+  "F_bar_diff_vs_bbox_jitter_null": 0.4091836734693877,
+  "instr_random_sub": 0.98989898989899,
+  "F_bar_diff_vs_instr_random_sub": -0.1207153164296022,
+  "cot_specificity_ratio": 0.8780528946272386,
+  "n_families_above_out_of_cot_control": 0
  }
 }
