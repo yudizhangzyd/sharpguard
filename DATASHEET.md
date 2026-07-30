@@ -33,7 +33,7 @@ Anonymous for review. Compute was provided by the authors' institution.
 **What do the instances represent?**
 Three kinds of record, all keyed to a (model, observation, edit family) triple:
 
-1. **Edit records** (13,026 released; 10,906 scored) — for one image/instruction/CoT triple
+1. **Edit records** (16,326 released; 13,756 scored) — for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
    boolean `faithful = delta_linf > tau`.
@@ -45,15 +45,15 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-16,246 records in 13.6 MB of JSON across 15 models: 13,026 edit records, 3,020
+19,546 records in 16.0 MB of JSON across 15 models: 16,326 edit records, 3,020
 attention records, and 200 records behind the withdrawn P3 probe (retained so
 the withdrawal is checkable rather than asserted). Per-model edit runs are
-1,000 records (10 families x N=100); the three ECoT-bridge seeds are 1,100 each
-(11 families) and the calibration run is 1,300 (13 families); the three
-cross-corpus runs are 40-45 each.
+1,000 records (10 families x N=100); the three ECoT-bridge seeds and the three
+DeepThinkVLA runs are 1,100 each (11 families) and the calibration run is
+1,300 (13 families); the three cross-corpus runs are 40-45 each.
 
-Of the 13,026 edit records, **10,906 carry a scored action pair**. The other
-2,120 are retained with `skipped: true` and a machine-readable `reason` --- most
+Of the 16,326 edit records, **13,756 carry a scored action pair**. The other
+2,570 are retained with `skipped: true` and a machine-readable `reason` --- most
 often that the edit family's target object is not visible in the frame, which
 is a property of the observation, not a failure. They are released rather than
 filtered so that the denominator of every reported `F` is recomputable and no
@@ -65,14 +65,19 @@ asserts both counts.
 This is the section a reader should read most carefully. The release is
 deliberately incomplete in ways the paper states as limitations:
 
-- **Calibration floors exist for 2 of 8 CoT-VLAs.** ECoT-bridge and our
-  no-CoT variant have `paraphrase_null`, `bbox_jitter_null`, and
-  `instr_random_sub` at N=100. The other six "ours" LoRA variants have **no
-  measured floor**, so their `F` values are uncalibrated, no differential or
-  CoT-specificity statistic can be computed for them, and the ceiling-
-  normalized F2 table cannot be recomputed two-sided. On the one row where
-  both normalizations exist, the one-sided version overstates the model by
-  4.4x — so that table's ordering is **not** floor-corrected.
+- **All three calibration floors exist for 2 of 11 CoT-VLAs; the paraphrase
+  floor for 5 of 11.** ECoT-bridge and our no-CoT variant have
+  `paraphrase_null`, `bbox_jitter_null`, and `instr_random_sub` at N=100. The
+  three DeepThinkVLA checkpoints carry `paraphrase_null` (floor) and
+  `cross_task_swap` (ceiling) in the same run as their semantic families, so
+  `F_diff` and the two-sided score are defined for them — but **not**
+  `bbox_jitter_null` or `instr_random_sub`, so the out-of-CoT specificity
+  check, the one that decides whether `F` measures anything CoT-specific, is
+  still computable on 2 of 11 models. The other six "ours" LoRA variants have
+  **no measured floor of any kind**, so their `F` values are uncalibrated and
+  the ceiling-normalized F2 table cannot be recomputed two-sided. On the one
+  row where both normalizations exist, the one-sided version overstates the
+  model by 4.4x — so that table's ordering is **not** floor-corrected.
 - **All reported attention is averaged over layers 0-3, and the layer set
   changes the answer.** We now sweep five layer sets x 3 seeds. `cot` leads in
   **exactly one of the four four-layer blocks probed, and it is the block the
@@ -92,9 +97,10 @@ deliberately incomplete in ways the paper states as limitations:
   ordering, and two pairs are a magnitude, not a distribution. For `F`, the
   same two trainings differ by mean 0.024 / max 0.083 across 9 families — the
   error bar to attach to every single-run leaderboard cell.
-- **DeepThinkVLA has attention records but no edit records.** The edit harness
-  was written against OpenVLA's conventions, and *every one* of them is wrong
-  for a checkpoint initialized from `physical-intelligence/pi0fast_base`: the
+- **DeepThinkVLA now has edit records; an earlier release had none, for a
+  reason worth keeping on the record.** The edit harness was originally written
+  against OpenVLA's conventions, and *every one* of them is wrong for a
+  checkpoint initialized from `physical-intelligence/pi0fast_base`: the
   action ids are 2,048 slots inside PaliGemma's base vocabulary
   (`254976..257023`, the `<loc####>` block) rather than the top 256; the bin
   index is reversed relative to that window; the 70 action positions
@@ -105,14 +111,24 @@ deliberately incomplete in ways the paper states as limitations:
   every family recorded n=0. The fix does not guess: `sharpguard/vendor/deepthinkvla/`
   vendors upstream's own MIT-licensed model class, asserts all six conventions
   against the checkpoint's `config.json` at load time, and **raises** instead of
-  writing an empty report. The re-run is not in this release. (A separate
+  writing an empty report. The corrected runs **are** in this release
+  (`deepthink_{base,sft,rl}.json`, 1,100 records each, all 11 families, 100/100
+  observations decoded with zero failures), and they are what makes P2 a
+  two-architecture-family protocol. Two further bugs were found and fixed in
+  the same pass, both of which had silently produced healthy-looking output:
+  `cross_task_swap` recorded n=0 on all three models because the harness called
+  the edit function without a donor sample, and the records lacked the
+  `a_orig`/`a_edit` pair, which made the direction-aware score `F_dir` — the
+  statistic this paper argues is the load-bearing one — uncomputable for the
+  entire family. Both are asserted against now. (A separate
   empty-report path had the same shape: jobs scheduled on a B200 pool whose
   PyTorch lacked sm_100 kernels failed every sample, were caught per-sample, and
   exited 0. `bolt/preflight_gpu.py` now fails such a job at setup.)
-- **`visual` is identically 0.0 for all three DeepThinkVLA rows.** The cause is
-  a prompt-format error on our side, not a property of those models and not, as
-  an earlier version of this datasheet claimed, a "segmentation-schema
-  artifact". We segmented the sequence by searching the decoded text for
+- **RETRACTED: an earlier release reported `visual` as identically 0.0 for all
+  three DeepThinkVLA rows.** The cause was a prompt-format error on our side,
+  not a property of those models. An even earlier version of this datasheet
+  attributed it to our segmentation schema; that was also wrong, and the real
+  cause is one layer further up. We segmented the sequence by searching the decoded text for
   `"Instruction:"` and `"Action:"`; neither string occurs anywhere in this
   model's prompt, which is
   `"<image>"*n + THINK_PREFIX + "Task: <instruction>;"`. The not-found fallback
@@ -120,8 +136,13 @@ deliberately incomplete in ways the paper states as limitations:
   having nothing to do with the model. The corrected harness segments on token
   ids (image token 257152, the `[235289, 108]` prompt-end pair upstream's own
   model class uses, and the `<think>`/`</think>`/`<action>` specials) and raises
-  if any boundary is missing. Do not read the released 0.0 as "DeepThinkVLA
-  ignores the image".
+  if any boundary is missing. The corrected runs measure `visual` at 0.176
+  (base) and 0.186 (SFT/RL). Any 0.0 in an earlier copy of this release is our
+  bug, not a finding about these models. A second, adverse consequence of the
+  fix: with all four buckets measured, `cot` is **never** the largest bucket on
+  any DeepThinkVLA checkpoint (`action_prev` leads on base at 0.384, `instr` on
+  SFT and RL at 0.310), so the "CoT bucket is largest" observation is specific
+  to both the layer set and the architecture family.
 - **No rollout-level records.** All measurements are first-step. A diagnostic
   rollout returned Task SR 0/20 on a public checkpoint with a published ~85%
   SR; that failure is disclosed, its cause (a scoring bug reading
@@ -136,8 +157,9 @@ deliberately incomplete in ways the paper states as limitations:
   (skipped when the target object is not visible in frame); `location_swap` is
   N=70-74 for ECoT-bridge after an annotation fix but remains N=12 for the
   seven pre-fix "ours" rows.
-- **Seeds:** only ECoT-bridge has 3 seeds. All other rows are single-run point
-  estimates with Wilson 95% confidence intervals.
+- **Seeds:** only ECoT-bridge has 3 seeds. All other rows, including the three
+  DeepThinkVLA checkpoints, are single-run point estimates with Wilson 95%
+  confidence intervals.
 
 **Does the dataset contain confidential or offensive content?**
 No. Observations are tabletop manipulation frames from public robotics
@@ -187,7 +209,7 @@ were wrong, and the audit above is what caught them.
 | `openvla/openvla-7b` | architecture reference | MIT |
 | `openvla/openvla-7b-finetuned-libero-{spatial,object,goal,10}` | non-CoT baselines + decoder gate | MIT |
 | `Embodied-CoT/ecot-openvla-7b-bridge` | public CoT-VLA reference **and** the LoRA base for all 7 of our variants | MIT |
-| `yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}` | second architecture family | **NO LICENSE DECLARED UPSTREAM** (see below) |
+| `yinchenghust/deepthinkvla_{base,libero_cot_sft,libero_cot_rl}` | second architecture family (attention + full 11-family edit protocol) | **NO LICENSE DECLARED UPSTREAM** (see below) |
 | our 7 LoRA fine-tunes of `ecot-openvla-7b-bridge` | rank / data / reasoning-target ablations | released under the code license below |
 
 **3 of 15 upstream assets have no license we can verify**, all three
@@ -195,8 +217,8 @@ DeepThinkVLA checkpoints: no license tag, no `cardData` license, no license
 file on the Hub as of this release. We state that rather than assign one, and
 we grant no rights to them. They are PaliGemma derivatives, so the Google
 [Gemma Terms of Use](https://ai.google.dev/gemma/terms) apply to the base model
-regardless. Only attention records exist for these three rows; anyone needing
-redistribution rights must obtain them from the upstream authors.
+regardless. Anyone needing redistribution rights must obtain them from the
+upstream authors.
 
 Sampling is a deterministic pass over the TFDS shards at `seed=0` (seeds >0
 shuffle shard order); the seed is recorded in every report.
@@ -232,13 +254,20 @@ score is not interpretable in absolute terms without them.
 
 **What should it NOT be used for?**
 
-- Do **not** report `F` as an absolute faithfulness number. On the one model
+- Do **not** report `F` as an absolute faithfulness number. On the first model
   where we measured a floor, a meaning-preserving paraphrase scores 0.960
   against a maximum-effect ceiling of 0.970, and an out-of-CoT control that
   never touches the reasoning scores 0.99 — higher than all ten CoT families.
+  This is not specific to that model or that architecture: across all **four**
+  models with a measured floor that are not the no-CoT control (ECoT-bridge and
+  the three DeepThinkVLA checkpoints), the mean semantic `F` sits **below** the
+  model's own paraphrase floor, i.e. `F_diff < 0` on 4 of 4.
 - Do **not** rank models by magnitude `F`. The ranking inverts under the
   direction-aware score: ECoT-bridge goes from 0.963 to 0.120 on
-  `direction_flip` while the LoRA variants it outscored genuinely reverse.
+  `direction_flip` while the LoRA variants it outscored genuinely reverse. The
+  gap is wider on the second architecture family: DeepThinkVLA scores 0.64-0.97
+  magnitude on `direction_flip` and **at most 0.01** direction-aware, i.e. the
+  action moves nearly always and reverses at most once in 100 samples.
 - Do **not** read the four attention buckets as a salience ranking. It fails
   two independent robustness checks: per token the CoT bucket receives less
   attention than the instruction (3.9x) or the previous-action tokens (8.1x),
@@ -267,15 +296,17 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 250 claims, one of which is that this
+The audit script currently checks 290 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
 **Will it be maintained, and by whom?**
-Yes, by the authors. The first camera-ready deliverable is the calibration
-sweep across the remaining six CoT-VLAs — the check that would either
-establish or dissolve finding F2. Two of eight are done, and neither passes
-the CoT-specificity check (ratios 0.878 and 0.653, both below 1).
+Yes, by the authors. The first camera-ready deliverable is the 13-family
+calibration sweep across the remaining six "ours" CoT-VLAs — the check that
+would either establish or dissolve finding F2. Two of eleven models carry all
+three nulls, and neither passes the CoT-specificity check (ratios 0.878 and
+0.653, both below 1). Five of eleven carry the paraphrase floor, and
+`F_diff` is negative on all four of those that are not the no-CoT control.
 
 **How can users report errors?**
 Through the repository issue tracker after de-anonymization. During review,

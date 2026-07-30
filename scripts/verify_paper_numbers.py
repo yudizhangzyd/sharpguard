@@ -517,6 +517,108 @@ def audit_second_calibration(a: Audit, d: Optional[dict]) -> None:
             dig(d, "calibration_contrast", "n_degenerate"))
 
 
+def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
+    """F7. The reviewer's standing objection to P2 was that it ran on one
+    architecture family, so a protocol artifact and a property of CoT-VLAs were
+    indistinguishable. These checks bind the second family's numbers, and the
+    load-bearing ones are adverse: if F_diff ever comes out positive here, the
+    paper's central claim is wrong and this audit must fail rather than pass."""
+    sec = "F7: P2 on the DeepThinkVLA family (second architecture family)"
+    dt = dig(d, "deepthink_p2") or {}
+    su = dt.get("summary") or {}
+    if not su:
+        a.check(sec, "the DeepThinkVLA edit runs are derived", True, None,
+                source="derived_metrics.deepthink_p2")
+        return
+
+    a.check(sec, "3 DeepThinkVLA checkpoints have edit records", 3,
+            su.get("n_models"))
+    a.check(sec, "all 3 carry an in-run measured floor (paraphrase_null)", 3,
+            su.get("n_with_measured_floor"),
+            source="without an in-run floor the family adds nothing the paper "
+                   "argues for -- magnitude F alone is the statistic it rejects")
+
+    # Per-model table values, exactly as Table tab:crossfamily prints them.
+    for label, fbar, floor, ceil, rng, fdiff in (
+        ("DT-base", 0.925, 0.960, 0.980, 0.020, -0.035),
+        ("DT-SFT",  0.689, 0.810, 0.960, 0.150, -0.121),
+        ("DT-RL",   0.711, 0.820, 0.940, 0.120, -0.109),
+    ):
+        m = dt.get(label) or {}
+        a.check(sec, f"{label}: 11 families scored", 11, m.get("n_families_scored"))
+        a.check(sec, f"{label}: 0 decode failures", 0, m.get("n_decode_failures"))
+        a.check(sec, f"{label}: F_bar over the 7 non-control families = {fbar}",
+                fbar, r3(m.get("F_bar_non_control")), tol=0.0015)
+        a.check(sec, f"{label}: paraphrase_null floor = {floor}",
+                floor, r3(m.get("paraphrase_null")), tol=0.0015)
+        a.check(sec, f"{label}: cross_task_swap ceiling = {ceil}",
+                ceil, r3(m.get("ceiling_cross_task_swap")), tol=0.0015)
+        a.check(sec, f"{label}: dynamic range = {rng}",
+                rng, r3(m.get("dynamic_range")), tol=0.0015)
+        a.check(sec, f"{label}: F_diff = {fdiff}",
+                fdiff, r3(m.get("F_bar_diff_vs_paraphrase_null")), tol=0.0015)
+
+    # The replication itself. This is the check that could dissolve the finding.
+    a.check(sec, "F_diff is NEGATIVE on all 3 DeepThinkVLA checkpoints", 3,
+            sum(1 for k in ("DT-base", "DT-SFT", "DT-RL")
+                if (dt.get(k) or {}).get("F_bar_diff_vs_paraphrase_null", 0) < 0),
+            source="if this drops below 3 the cross-family replication in "
+                   "Section 6.8 is overstated and must be rewritten")
+    a.check(sec, "F_bar sits BELOW the model's own paraphrase floor on 3/3", 3,
+            su.get("n_models_with_F_bar_below_floor"))
+    n_neg = sum(1 for k in ("DT-base", "DT-SFT", "DT-RL")
+                if (dt.get(k) or {}).get("F_bar_two_sided_is_negative"))
+    a.check(sec, "the two-sided score is negative on the 2 checkpoints where "
+                 "it is defined at all", 2, n_neg,
+            source="a negative normalized score means 'no signal to "
+                   "normalize', not 'low faithfulness' -- the paper must not "
+                   "quote it as a faithfulness value")
+
+    # The degeneracy reappears on a different architecture, from its own floor.
+    a.check(sec, "exactly 1 of the 3 has a degenerate calibration (range "
+                 "< 0.05)", 1, su.get("n_degenerate"))
+    a.check(sec, "the degenerate one is the base checkpoint", ["DT-base"],
+            su.get("degenerate_models"))
+    a.check(sec, "the two CoT-tuned checkpoints have a REAL dynamic range",
+            [False, False],
+            [(dt.get("DT-SFT") or {}).get("calibration_is_degenerate"),
+             (dt.get("DT-RL") or {}).get("calibration_is_degenerate")])
+
+    # The magnitude/direction dissociation, sharper here than on ECoT.
+    for label, mag, dirn in (("DT-base", 0.970, 0.000),
+                             ("DT-SFT", 0.650, 0.010),
+                             ("DT-RL", 0.640, 0.010)):
+        a.check(sec, f"{label}: direction_flip magnitude F = {mag}", mag,
+                r3(dig(dt, label, "families", "direction_flip", "F_mag")),
+                tol=0.0015)
+        a.check(sec, f"{label}: direction_flip F_dir = {dirn}", dirn,
+                r3(dig(dt, label, "families", "direction_flip", "F_dir")),
+                tol=0.0015)
+    a.check(sec, "no DeepThinkVLA checkpoint reverses the action on more than "
+                 "1 sample in 100 under direction_flip", True,
+            (su.get("max_direction_flip_F_dir") or 0) <= 0.01,
+            source="paper: 'reverses it essentially never'")
+
+    # The identity invariant, which constrains everything above.
+    a.check(sec, "selfsplice_control (X->X) is EXACTLY 0.000 on all 3", True,
+            su.get("all_identity_edits_exactly_zero"),
+            source="a nonzero identity edit would mean the harness "
+                   "manufactures deltas and every number above is suspect")
+
+    # And the manuscript has to actually say all of this.
+    tex = TEX.read_text() if TEX.exists() else ""
+    a.check(sec, "the manuscript has the cross-family section", True,
+            "\\label{sec:cross_family}" in tex, source=str(TEX))
+    a.check(sec, "the manuscript no longer calls DeepThinkVLA attention-only",
+            False, "attention only" in tex, source=str(TEX))
+    a.check(sec, "the manuscript no longer says the corrected runs are in "
+                 "flight", False, "corrected runs are in flight" in tex,
+            source=str(TEX))
+    a.check(sec, "selfsplice is credited on 11/11 CoT-VLAs, not 8/8", True,
+            "8/8 CoT-VLAs" not in tex and "11/11 CoT-VLAs" in tex,
+            source=str(TEX) + ": 3 DeepThinkVLA rows now have the identity null")
+
+
 def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
     """R1 critical #5 items (c) and (6): the attention numbers were single-run
     and the layer set was unjustified. Both are now measured, and the layer
@@ -721,17 +823,34 @@ def audit_release(a: Audit) -> None:
             else:
                 acc("attn", ps)
 
-    a.check(sec, "13,026 per-sample edit records released", 13026, n["edit"][0],
+    # Read out of the manuscript rather than hardcoded, for the same reason the
+    # attention count below is: hardcoding here means that adding runs fails the
+    # audit on its own stale constant while the paper is equally stale, and the
+    # failure then points at the wrong document.
+    tex = TEX.read_text() if TEX.exists() else ""
+
+    def tex_int(pattern: str) -> Optional[int]:
+        m = re.search(pattern, tex)
+        return int(re.sub(r"[^\d]", "", m.group(1))) if m else None
+
+    want_edit = tex_int(r"\\textbf\{([\d{},]+)\} per-sample edit records")
+    want_scored = tex_int(r"\$([\d{},]+)\$ carry a scored action pair")
+    want_skipped = tex_int(r"\$([\d{},]+)\$ are recorded as skipped")
+    a.check(sec, "the per-sample edit-record count the manuscript quotes is "
+                 "the number released", want_edit, n["edit"][0],
             source=f"schema-classified over {can}/*.json")
-    a.check(sec, "10,906 of those carry a scored action pair "
-                 "(the rest are skipped: target object not in frame)",
-            10906, n["edit"][1])
+    a.check(sec, "the scored-pair count the manuscript quotes is the number "
+                 "released (the rest are skipped: target not in frame)",
+            want_scored, n["edit"][1])
+    a.check(sec, "scored + skipped = total, so no record is unaccounted for",
+            n["edit"][0], (want_scored + want_skipped)
+            if (want_scored is not None and want_skipped is not None) else None,
+            source="the two manuscript figures must partition the release")
     # Both of the next two are read OUT OF THE MANUSCRIPT rather than hardcoded.
     # They were hardcoded, and adding nine attention runs made the audit fail on
     # its own stale constants while the paper still quoted the old ones -- the
     # check pointed at the wrong document. Parsing the paper means the count can
     # only ever fail when the paper and the artifacts genuinely disagree.
-    tex = TEX.read_text() if TEX.exists() else ""
     m = re.search(r"\\textbf\{([\d{},]+)\} per-observation attention records", tex)
     want_attn = int(re.sub(r"[^\d]", "", m.group(1))) if m else None
     a.check(sec, "the attention-record count the manuscript quotes is the "
@@ -765,11 +884,17 @@ def audit_release(a: Audit) -> None:
             True, (root / "results_v2" / "superseded" / "README.md").exists())
 
     # --- the paper's own self-description must match ---
-    tex = TEX.read_text() if TEX.exists() else ""
+    # The three counts themselves are checked against disk above. What is left
+    # to verify here is that the paper states them at all, in a form the parser
+    # recognizes: an unparseable figure makes those checks compare None to None
+    # rather than fail, which is exactly the silent pass this script exists to
+    # prevent.
+    a.check(sec, "the paper states all three release counts (total, scored, "
+                 "skipped) where this script can parse them",
+            [True, True, True],
+            [v is not None for v in (want_edit, want_scored, want_skipped)],
+            source="cot_faith_iclr.tex, 'Public release' paragraph")
     for needle, label in (
-        ("13{,}026", "paper quotes the edit-record count"),
-        ("10{,}906", "paper quotes the scored-subset count"),
-        ("2{,}120", "paper quotes the attention-record count"),
         ("DATASHEET.md", "paper points readers at the datasheet"),
         ("LICENSE", "paper states the license"),
     ):
@@ -1089,6 +1214,7 @@ def main() -> int:
     audit_f6_directional(a, d)
     audit_decoder(a, da)
     audit_second_calibration(a, d)
+    audit_deepthink_p2(a, d)
     audit_attention_seeds_and_depth(a, d)
     audit_training_replicate(a, d)
     audit_release(a)

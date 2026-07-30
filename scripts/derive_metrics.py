@@ -106,9 +106,9 @@ MIRROR = {
     "/tmp/cf_sweep/baseline-object/cotfaith-rvis-baseline/rvis_baseline_report.json": "openvla_baseline_object_rvis.json",
     "/tmp/cf_sweep/baseline-goal/cotfaith-rvis-baseline/rvis_baseline_report.json": "openvla_baseline_goal_rvis.json",
     "/tmp/cf_sweep/baseline-10/cotfaith-rvis-baseline/rvis_baseline_report.json": "openvla_baseline_10_rvis.json",
-    "/tmp/cf_dt2/ymajxt52mf/cotfaith-deepthink/deepthink_report.json": "deepthink_base.json",
-    "/tmp/cf_dt2/9tdkdjsnar/cotfaith-deepthink/deepthink_report.json": "deepthink_sft.json",
-    "/tmp/cf_r3_all/8864qtg44h/cotfaith-deepthink/deepthink_report.json": "deepthink_rl.json",
+    "/tmp/dtfinal/xx2a3ztfgd/cotfaith-deepthink/deepthink_report.json": "deepthink_base.json",
+    "/tmp/dtfinal/j8x3v6g4nh/cotfaith-deepthink/deepthink_report.json": "deepthink_sft.json",
+    "/tmp/dtfinal/8t2n5ucjcd/cotfaith-deepthink/deepthink_report.json": "deepthink_rl.json",
     "/tmp/cf_r3_all/ik5n2thine/cotfaith-lerobot/bridge_report.json": "cross_corpus_bridge_v2_n30.json",
     "/tmp/cf_r3_all/c2saurubyx/cotfaith-lerobot/bridge_report.json": "cross_corpus_fractal_n30.json",
     "/tmp/cf_r3_all/kbb6g24nyg/cotfaith-lerobot/bridge_report.json": "cross_corpus_bcz_n30.json",
@@ -485,6 +485,10 @@ def derive_calibration(path, label):
     return c
 
 
+def dig_fam(model_block, fam, key):
+    return ((model_block.get("families") or {}).get(fam) or {}).get(key)
+
+
 DT_RUNS = {
     "DT-base": "deepthink_base.json",
     "DT-SFT":  "deepthink_sft.json",
@@ -562,6 +566,15 @@ def derive_deepthink_p2():
             m["dynamic_range"] = hi - lo
             m["calibration_is_degenerate"] = (hi - lo) < 0.05
             m["F_bar_two_sided"] = ((f_bar - lo) / (hi - lo)) if (hi - lo) >= 0.05 else None
+            # A two-sided score below 0 means F_bar sits BELOW the floor: the
+            # semantic edits move the action less than a meaning-preserving
+            # paraphrase does. The normalization still computes, but reporting
+            # the number alone would read as "scored low on faithfulness" when
+            # the actual finding is that the measurement has no signal to
+            # normalize. Flagged so the paper cannot quote it unqualified.
+            m["F_bar_is_below_floor"] = f_bar < lo
+            m["F_bar_two_sided_is_negative"] = (
+                m["F_bar_two_sided"] is not None and m["F_bar_two_sided"] < 0)
         # selfsplice_control replaces the CoT with itself, so a nonzero F here
         # would mean the harness manufactures deltas. It is the one family whose
         # expected value is exactly 0.
@@ -586,6 +599,16 @@ def derive_deepthink_p2():
                                 for k, v in out.items()},
         "any_model_with_negative_F_diff": any(
             (v.get("F_bar_diff_vs_paraphrase_null") or 0) < 0 for v in out.values()),
+        "n_models_with_F_bar_below_floor": sum(
+            1 for v in out.values() if v.get("F_bar_is_below_floor")),
+        # The F6 finding, on the second family: magnitude F says the edit landed,
+        # the direction-aware score says it landed the wrong way.
+        "direction_flip_F_mag_by_model": {
+            k: dig_fam(v, "direction_flip", "F_mag") for k, v in out.items()},
+        "direction_flip_F_dir_by_model": {
+            k: dig_fam(v, "direction_flip", "F_dir") for k, v in out.items()},
+        "max_direction_flip_F_dir": max(
+            (dig_fam(v, "direction_flip", "F_dir") or 0) for v in out.values()),
         "all_identity_edits_exactly_zero": all(
             v.get("identity_edit_is_exactly_zero") for v in out.values()),
     }
@@ -720,9 +743,9 @@ def main():
     # ---- DeepThinkVLA (PaliGemma; visual bucket outside the schema) ----
     dt = {}
     DT_PATHS = {
-        "DT-base": "/tmp/cf_dt2/ymajxt52mf/cotfaith-deepthink/deepthink_report.json",
-        "DT-SFT":  "/tmp/cf_dt2/9tdkdjsnar/cotfaith-deepthink/deepthink_report.json",
-        "DT-RL":   "/tmp/cf_r3_all/8864qtg44h/cotfaith-deepthink/deepthink_report.json",
+        "DT-base": "/tmp/dtfinal/xx2a3ztfgd/cotfaith-deepthink/deepthink_report.json",
+        "DT-SFT":  "/tmp/dtfinal/j8x3v6g4nh/cotfaith-deepthink/deepthink_report.json",
+        "DT-RL":   "/tmp/dtfinal/8t2n5ucjcd/cotfaith-deepthink/deepthink_report.json",
     }
     for name, dpath in DT_PATHS.items():
         rep = load(dpath)

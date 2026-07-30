@@ -78,8 +78,12 @@ ax1.set_title(r"(a) Raw bucket mass. $\alpha(\mathrm{cot}){=}0$ for OpenVLA is "
               r"DEFINITIONAL (no CoT segment exists).",
               fontsize=FONT_SIZE - 1, loc="left", style="italic")
 
-_bars(ax2, DT, ["cot", "instruction", "action_prev"], 0.70, dt=True)
-ax2.set_title("(b) DeepThinkVLA\n(image tokens outside schema)",
+# All four buckets, including visual. The earlier version of this panel dropped
+# the visual bar because our harness reported it as identically 0.0 -- which was a
+# prompt-format bug on our side, not a property of these checkpoints. The
+# corrected runs segment on token ids and measure visual at 0.18-0.19.
+_bars(ax2, DT, KEYS, 0.70, dt=True)
+ax2.set_title("(b) DeepThinkVLA\n" + r"$\alpha(\mathrm{cot})$ is never the largest bucket",
               fontsize=FONT_SIZE - 1, loc="left", style="italic")
 
 # Panel (c): per-token attention -- the headline "CoT bucket is largest" is a
