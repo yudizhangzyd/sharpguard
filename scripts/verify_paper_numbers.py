@@ -1334,6 +1334,106 @@ def audit_deepthink_tau_units(a: Audit) -> None:
 # ----------------------------------------------------------------------
 
 
+def audit_rollout_gate(a, d):
+    """Table "Four-suite rollout gate" and Section 6/limitation (v).
+
+    The gate is the one place where the paper reports a number that argues
+    against its own harness, so it is the one most likely to be quietly
+    improved later. Every cell of the table is asserted against the per-suite
+    reports, together with the two facts that make the table readable at all:
+    that libero_10 is excluded for a step budget below upstream's, and that
+    every episode ran on a canonical initial state (the defect that invalidated
+    the previous attempt).
+    """
+    sec = "Four-suite rollout gate (Table: it does not pass)"
+    g = (d.get("rollout_gate") or {})
+    suites, summary = g.get("suites") or {}, g.get("summary") or {}
+    if not suites:
+        a.check(sec, "the derived file carries a rollout_gate block", True,
+                False, source="results_v2/derived_metrics.json")
+        return
+
+    # --- the table body, exactly as printed ---
+    printed = {
+        "libero_spatial": (0.00, 0, 50, 0.844, 400, 220),
+        "libero_object":  (0.00, 0, 50, 0.881, 400, 280),
+        "libero_goal":    (0.10, 5, 50, 0.794, 400, 300),
+        "libero_10":      (0.00, 0, 50, 0.539, 400, 520),
+    }
+    for suite, (sr, nsucc, ntot, pub, steps, budget) in printed.items():
+        v = suites.get(suite) or {}
+        a.check(sec, f"{suite}: Task SR, successes, episodes as printed",
+                [sr, nsucc, ntot],
+                [round(v.get("SR"), 2) if v.get("SR") is not None else None,
+                 v.get("n_success"), v.get("n_total")],
+                source=v.get("source"))
+        a.check(sec, f"{suite}: published SR and step budgets as printed",
+                [pub, steps, budget],
+                [v.get("published_SR"), v.get("max_steps_run"),
+                 v.get("upstream_max_steps")],
+                source=v.get("source"))
+
+    # Wilson CIs printed in the table.
+    for suite, lo, hi in (("libero_spatial", 0.00, 0.07),
+                          ("libero_object", 0.00, 0.07),
+                          ("libero_goal", 0.04, 0.21)):
+        ci = (suites.get(suite) or {}).get("SR_wilson95") or [None, None]
+        a.check(sec, f"{suite}: Wilson 95% CI as printed", [lo, hi],
+                [round(ci[0], 2), round(ci[1], 2)], source="SR_wilson95")
+
+    # --- the two facts the table's readability rests on ---
+    a.check(sec, "libero_10 is the only suite excluded, and it is excluded "
+                 "because 400 steps is below upstream's 520",
+            ["libero_10"], summary.get("suites_excluded_for_step_budget"),
+            source="step_budget_below_upstream, computed from the two numbers")
+    a.check(sec, "libero_10 is flagged uninterpretable while the other three "
+                 "are not", [False, True, True, True],
+            [suites["libero_10"]["interpretable"],
+             suites["libero_spatial"]["interpretable"],
+             suites["libero_object"]["interpretable"],
+             suites["libero_goal"]["interpretable"]],
+            source="interpretable")
+    # The previous gate attempt was invalidated by silently falling back to
+    # random env.reset(). If this ever stops holding, the table is measuring
+    # something other than the suites' evaluation protocol.
+    a.check(sec, "all 200 episodes ran on canonical initial states", True,
+            summary.get("all_episodes_canonical_init"),
+            source="all_episodes_used_canonical_init, per suite")
+    a.check(sec, "200 episodes across 4 suites, 3 interpretable",
+            [200, 4, 3],
+            [summary.get("n_episodes_total"), summary.get("n_suites_run"),
+             summary.get("n_suites_interpretable")], source="summary")
+
+    # --- the claims the prose makes ABOUT the gate ---
+    a.check(sec, "the gate does not pass", False, summary.get("gate_passed"),
+            source="every interpretable suite is below half its published SR")
+    a.check(sec, "the best interpretable cell is libero_goal at 0.10",
+            ["libero_goal", 0.10],
+            [summary.get("best_interpretable_suite"),
+             round(summary.get("best_interpretable_SR"), 2)],
+            source="summary")
+    # The paper's diagnostic argument turns on this: a nonzero SR means the
+    # harness is degraded rather than that success is impossible, which is what
+    # pointed at an input-distribution mismatch instead of a wrong control
+    # channel. If it ever became all-zero the argument would have to change.
+    a.check(sec, "at least one interpretable suite is nonzero, which is what "
+                 "licenses the 'degraded, not impossible' diagnosis", True,
+            summary.get("any_interpretable_suite_nonzero"),
+            source="SR > 0 on libero_goal")
+
+    # --- the upstream budgets, against the copy the rollout actually uses ---
+    # derive_metrics keeps its own copy so it can run without torch; if the two
+    # drift, the table's validity column stops describing the code.
+    sim = ROOT / "sharpguard" / "libero_sim.py"
+    txt = sim.read_text() if sim.exists() else ""
+    for suite, budget in (("libero_spatial", 220), ("libero_object", 280),
+                          ("libero_goal", 300), ("libero_10", 520),
+                          ("libero_90", 400)):
+        a.check(sec, f"libero_sim pins upstream {suite} max_steps={budget}",
+                True, f'"{suite}": {budget},' in txt,
+                source="sharpguard/libero_sim.py UPSTREAM_MAX_STEPS")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -1446,6 +1546,7 @@ def main() -> int:
     audit_no_published_ranking(a)
     audit_edit_decode_is_unnorm_free(a)
     audit_deepthink_tau_units(a)
+    audit_rollout_gate(a, d)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script

@@ -30,6 +30,18 @@ disagreement on high-frequency content, against a threshold of 4 fixed before
 the measurement. So the resize is reimplemented here directly from the
 definition of a scaled Lanczos-3 kernel, which is what tf.image.resize's
 antialias path computes, and validated numerically instead of trusted.
+
+Measured result of that validation (bolt yp9ix9486w), with the JPEG step and the
+resize step deliberately separated so a single aggregate number could not hide
+which one was wrong:
+
+    resize kernel alone, identical input   worst 1 LSB   <- lanczos3_resize
+    JPEG round-trip alone                  worst 9 LSB   <- jpeg_roundtrip
+
+The kernel is therefore exact to within uint8 rounding. The residual lives
+entirely in the JPEG codec, where Pillow and tensorflow both call libjpeg but do
+not agree bit-for-bit; see jpeg_roundtrip for the subsampling sweep that
+established the setting, including the wrong default it caught.
 """
 from __future__ import annotations
 
@@ -111,17 +123,28 @@ def lanczos3_resize(img: np.ndarray, size: int = 224) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 def jpeg_roundtrip(img: np.ndarray, quality: int = 95,
-                   subsampling: int = 0) -> np.ndarray:
+                   subsampling: int = 2) -> np.ndarray:
     """Encode to JPEG and decode straight back, as upstream does.
 
     Upstream's comment is "Encode as JPEG, as done in RLDS dataset builder":
     the training frames were lossily compressed, so a pixel-exact simulator
-    render is itself slightly off-distribution. tf.image.encode_jpeg defaults
-    to quality=95 with chroma_downsampling=True; Pillow's `subsampling`
-    argument is the same control, and 0 means 4:4:4 (no downsampling) while 2
-    means 4:2:0. The default here is whichever value
-    experiments/resize_kernel_check.py measured closest to TF -- it is a
-    measured parameter, not a guess, and that script re-checks it.
+    render is itself slightly off-distribution.
+
+    `subsampling` is chroma subsampling: 0 is 4:4:4, 1 is 4:2:2, 2 is 4:2:0.
+    tf.image.encode_jpeg defaults to chroma_downsampling=True, so 2 is the
+    matching value -- but it is set here because it was *measured*, not because
+    the documentation implies it. bolt yp9ix9486w swept all three against
+    tf.image.encode_jpeg on identical inputs:
+
+        subsampling=0 (4:4:4)  worst 240 LSB
+        subsampling=1 (4:2:2)  worst 150 LSB
+        subsampling=2 (4:2:0)  worst   9 LSB
+
+    The first version of this function defaulted to 0 on the reasoning that
+    "no downsampling is closer to the original", which is true and irrelevant:
+    the target is not the original, it is what upstream produces.
+    experiments/resize_kernel_check.py asserts this default equals the
+    measured-best value, so the same mistake cannot be made silently again.
     """
     from PIL import Image
     buf = io.BytesIO()

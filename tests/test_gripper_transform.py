@@ -224,6 +224,19 @@ def main() -> int:
     ok("downscaling stretches the kernel support past the upscaling case",
        taps_down > taps_up, f"{taps_down} taps down vs {taps_up} up")
 
+    # The JPEG chroma-subsampling default is a *measured* parameter, not a
+    # stylistic choice: bolt yp9ix9486w swept it against tf.image.encode_jpeg
+    # and found 4:4:4 off by 240 LSB, 4:2:2 by 150, and 4:2:0 by 9. The first
+    # version of this code shipped 4:4:4 on the plausible-but-wrong reasoning
+    # that less downsampling is closer to the original -- the target is not the
+    # original, it is what upstream produces. Pinned here so a regression costs
+    # a CI second rather than a GPU job.
+    from sharpguard.image_preproc import jpeg_roundtrip
+    ok("the JPEG round-trip defaults to 4:2:0, matching tf's "
+       "chroma_downsampling=True",
+       jpeg_roundtrip.__defaults__ == (95, 2),
+       f"quality/subsampling defaults are {jpeg_roundtrip.__defaults__}")
+
     try:
         _preprocess_image(render, "lanzcos")
         ok("an unknown image_preproc raises", False, "it returned instead")

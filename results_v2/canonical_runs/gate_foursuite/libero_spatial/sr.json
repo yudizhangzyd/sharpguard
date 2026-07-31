@@ -1,0 +1,13 @@
+{
+  "n_total": 50,
+  "n_success": 0,
+  "n_asr": 0,
+  "n_episodes_canonical_init": 50,
+  "n_episodes_reset_init": 0,
+  "all_episodes_used_canonical_init": true,
+  "SR": 0.0,
+  "ASR": NaN,
+  "unnorm_key": "libero_spatial",
+  "suite": "libero_spatial",
+  "model": "openvla/openvla-7b-finetuned-libero-spatial"
+}

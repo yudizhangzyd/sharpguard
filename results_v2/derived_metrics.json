@@ -4566,5 +4566,103 @@
   "spread_over_training_run_cot": 1.5868102288,
   "within_family_ordering_supported": false,
   "caveat": "two replicate pairs give a magnitude, not a distribution; a 2.30pp spread against a 1.45pp same-config training difference does not establish any within-family ordering"
+ },
+ "rollout_gate": {
+  "suites": {
+   "libero_10": {
+    "model": "openvla/openvla-7b-finetuned-libero-10",
+    "unnorm_key": "libero_10",
+    "n_total": 50,
+    "n_success": 0,
+    "SR": 0.0,
+    "SR_wilson95": [
+     0.0,
+     0.0713500341743
+    ],
+    "published_SR": 0.539,
+    "max_steps_run": 400,
+    "upstream_max_steps": 520,
+    "step_budget_below_upstream": true,
+    "interpretable": false,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "dd8yxfi5ys",
+    "source": "results_v2/canonical_runs/gate_foursuite/libero_10/sr.json"
+   },
+   "libero_goal": {
+    "model": "openvla/openvla-7b-finetuned-libero-goal",
+    "unnorm_key": "libero_goal",
+    "n_total": 50,
+    "n_success": 5,
+    "SR": 0.1,
+    "SR_wilson95": [
+     0.0434751239916,
+     0.213604903348
+    ],
+    "published_SR": 0.794,
+    "max_steps_run": 400,
+    "upstream_max_steps": 300,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "y2fr3cxtxe",
+    "source": "results_v2/canonical_runs/gate_foursuite/libero_goal/sr.json"
+   },
+   "libero_object": {
+    "model": "openvla/openvla-7b-finetuned-libero-object",
+    "unnorm_key": "libero_object",
+    "n_total": 50,
+    "n_success": 0,
+    "SR": 0.0,
+    "SR_wilson95": [
+     0.0,
+     0.0713500341743
+    ],
+    "published_SR": 0.881,
+    "max_steps_run": 400,
+    "upstream_max_steps": 280,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "sqrapz9gvs",
+    "source": "results_v2/canonical_runs/gate_foursuite/libero_object/sr.json"
+   },
+   "libero_spatial": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "unnorm_key": "libero_spatial",
+    "n_total": 50,
+    "n_success": 0,
+    "SR": 0.0,
+    "SR_wilson95": [
+     0.0,
+     0.0713500341743
+    ],
+    "published_SR": 0.844,
+    "max_steps_run": 400,
+    "upstream_max_steps": 220,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "w5uavyq8e3",
+    "source": "results_v2/canonical_runs/gate_foursuite/libero_spatial/sr.json"
+   }
+  },
+  "summary": {
+   "n_suites_run": 4,
+   "n_episodes_total": 200,
+   "n_suites_interpretable": 3,
+   "suites_excluded_for_step_budget": [
+    "libero_10"
+   ],
+   "all_episodes_canonical_init": true,
+   "best_interpretable_SR": 0.1,
+   "best_interpretable_suite": "libero_goal",
+   "any_interpretable_suite_nonzero": true,
+   "gate_passed": false,
+   "note": "The gate does not pass. Three suites are interpretable and all three fall far below the published SR; libero_10 is excluded because it ran 400 steps against upstream's 520. A source-level diff against openvla/openvla (bolt htrg4uchwi) found two differences that were live in these runs: the gripper channel was passed through where upstream applies -sign(2g-1), and every frame skipped upstream's JPEG round-trip plus lanczos3 resize to 224. Both are now implemented and under test; these numbers are the pre-fix baseline the corrected runs are measured against."
+  }
  }
 }

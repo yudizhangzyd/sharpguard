@@ -676,6 +676,114 @@ def derive_deepthink_p2():
     return out
 
 
+# Upstream's own per-suite episode budgets, read off OpenVLA's
+# experiments/robot/libero/run_libero_eval.py by bolt task htrg4uchwi (a
+# source-level diff, not from memory). Duplicated from
+# sharpguard.libero_sim.UPSTREAM_MAX_STEPS rather than imported, because this
+# script must stay runnable with numpy alone -- importing sharpguard pulls
+# torch. tests/test_gripper_transform.py pins the values on the libero_sim
+# side, and audit_rollout_gate() asserts the two copies agree.
+GATE_UPSTREAM_MAX_STEPS = {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520,
+    "libero_90": 400,
+}
+
+# Published Task SR for the openvla-7b-finetuned-libero-* checkpoints, from the
+# OpenVLA paper's LIBERO table. The gate exists to reproduce these; the gap is
+# the finding, so the target has to be recorded next to the measurement.
+GATE_PUBLISHED_SR = {
+    "libero_spatial": 0.844,
+    "libero_object": 0.881,
+    "libero_goal": 0.794,
+    "libero_10": 0.539,
+}
+
+
+def derive_rollout_gate():
+    """Read the four-suite decoder gate reports as run, with validity flags.
+
+    Every number here is copied out of the per-suite sr.json that the bolt job
+    wrote; nothing is recomputed and nothing is averaged across suites. The
+    reason for the validity machinery: all four runs passed max_steps=400, which
+    is above upstream's budget for three suites and *below* it for libero_10
+    (520). A libero_10 episode can therefore be cut off mid-task and recorded as
+    a failure, so its 0/50 is not evidence about the policy and must not be
+    quoted or pooled as if it were. The flag is computed from the two numbers
+    rather than asserted in prose, so a future re-run with a corrected budget
+    flips it automatically instead of leaving a stale caveat behind.
+    """
+    base = os.path.join(ROOT, "results_v2", "canonical_runs", "gate_foursuite")
+    suites = {}
+    for suite in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        d = os.path.join(base, suite)
+        if not os.path.isdir(d):
+            continue
+        sr = load(os.path.join(d, "sr.json"))
+        args = load(os.path.join(d, "args.json"))
+        tid_path = os.path.join(d, "bolt_task_id.txt")
+        with open(tid_path) as fh:
+            tid = fh.read().strip()
+        steps = args.get("max_steps")
+        budget = GATE_UPSTREAM_MAX_STEPS.get(suite)
+        truncated = bool(budget and steps and steps < budget)
+        n_total, n_succ = sr.get("n_total"), sr.get("n_success")
+        suites[suite] = {
+            "model": sr.get("model"),
+            "unnorm_key": sr.get("unnorm_key"),
+            "n_total": n_total,
+            "n_success": n_succ,
+            "SR": sr.get("SR"),
+            "SR_wilson95": wilson(n_succ, n_total) if n_total else None,
+            "published_SR": GATE_PUBLISHED_SR.get(suite),
+            "max_steps_run": steps,
+            "upstream_max_steps": budget,
+            "step_budget_below_upstream": truncated,
+            # The single field a reader needs: is this row evidence at all?
+            "interpretable": not truncated,
+            "n_episodes_canonical_init": sr.get("n_episodes_canonical_init"),
+            "all_episodes_used_canonical_init": sr.get(
+                "all_episodes_used_canonical_init"),
+            "bolt_task": tid,
+            "source": rel(os.path.join(d, "sr.json")),
+        }
+
+    valid = {k: v for k, v in suites.items() if v["interpretable"]}
+    best = max(valid.values(), key=lambda v: v["SR"]) if valid else None
+    summary = {
+        "n_suites_run": len(suites),
+        "n_episodes_total": sum(v["n_total"] or 0 for v in suites.values()),
+        "n_suites_interpretable": len(valid),
+        "suites_excluded_for_step_budget": sorted(
+            k for k, v in suites.items() if not v["interpretable"]),
+        "all_episodes_canonical_init": all(
+            v["all_episodes_used_canonical_init"] for v in suites.values()),
+        "best_interpretable_SR": best["SR"] if best else None,
+        "best_interpretable_suite": (
+            [k for k, v in valid.items() if v is best][0] if best else None),
+        # The shape of the failure, which is what drove the diagnosis: a
+        # nonzero-but-degraded SR means the harness is degraded, not that
+        # success is impossible. That rules out a control channel which is
+        # simply inverted and points at an input-distribution mismatch.
+        "any_interpretable_suite_nonzero": any(v["SR"] > 0 for v in valid.values()),
+        "gate_passed": bool(valid) and all(
+            v["SR"] >= 0.5 * (v["published_SR"] or 1.0) for v in valid.values()),
+    }
+    summary["note"] = (
+        "The gate does not pass. Three suites are interpretable and all three "
+        "fall far below the published SR; libero_10 is excluded because it ran "
+        "400 steps against upstream's 520. A source-level diff against "
+        "openvla/openvla (bolt htrg4uchwi) found two differences that were live "
+        "in these runs: the gripper channel was passed through where upstream "
+        "applies -sign(2g-1), and every frame skipped upstream's JPEG "
+        "round-trip plus lanczos3 resize to 224. Both are now implemented and "
+        "under test; these numbers are the pre-fix baseline the corrected runs "
+        "are measured against.")
+    return {"suites": suites, "summary": summary}
+
+
 def main():
     models = {}
     for name, paths in EDIT_RUNS.items():
@@ -923,6 +1031,7 @@ def main():
         "attention_seed_repeats": attn_seeds,
         "training_replicate": train_rep,
         "noise_hierarchy": hierarchy,
+        "rollout_gate": derive_rollout_gate(),
     }
     dest = os.path.join(ROOT, "results_v2", "derived_metrics.json")
     with open(dest, "w") as fh:

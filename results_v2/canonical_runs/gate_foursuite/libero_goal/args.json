@@ -1,0 +1,10 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-goal",
+  "suite": "libero_goal",
+  "unnorm_key": "libero_goal",
+  "n_eps_per_task": 5,
+  "max_steps": 400,
+  "out": "/mnt/task_wrapper/user_output/artifacts/rollout-baseline",
+  "dtype": "bfloat16",
+  "attn": "eager"
+}

@@ -1,0 +1,13 @@
+{
+  "n_total": 50,
+  "n_success": 0,
+  "n_asr": 0,
+  "n_episodes_canonical_init": 50,
+  "n_episodes_reset_init": 0,
+  "all_episodes_used_canonical_init": true,
+  "SR": 0.0,
+  "ASR": NaN,
+  "unnorm_key": "libero_10",
+  "suite": "libero_10",
+  "model": "openvla/openvla-7b-finetuned-libero-10"
+}
