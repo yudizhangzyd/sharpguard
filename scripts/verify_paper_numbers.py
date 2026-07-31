@@ -1815,6 +1815,28 @@ def audit_rollout_gate(a, d):
                  "licenses the 'degraded, not impossible' diagnosis", True,
             summary.get("any_interpretable_suite_nonzero"),
             source="SR > 0 on libero_goal")
+    # The gate's failure COUNT, which is prose and therefore drifts. It read
+    # "failed twice" in limitation (v) for several revisions after Section 6 had
+    # started saying "four gate attempts" -- an internal contradiction no numeric
+    # check could catch, since neither number is derived from an artifact. Both
+    # sites are pinned to each other here, and the paragraph has to substantiate
+    # its own count by describing each attempt.
+    tex_l = TEX.read_text() if TEX.exists() else ""
+    a.check(sec, "limitation (v) and Section 6 agree on how many times the gate "
+                 "has failed", [1, 1],
+            [tex_l.count("the decoder gate has now failed four times"),
+             tex_l.count("four gate attempts")], source="cot_faith_iclr.tex")
+    a.check(sec, "and limitation (v) states how many of those causes are known, "
+                 "rather than implying all of them are", True,
+            "with only two of the causes found" in tex_l,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "the paragraph accounts for all four attempts, including the "
+                 "third that had correct init states and still scored zero", True,
+            "A third attempt then had verified canonical initial states" in tex_l,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "the superseded 'failed twice' phrasing is gone", 0,
+            tex_l.count("gate has now failed twice"),
+            source="cot_faith_iclr.tex")
 
     # --- the upstream budgets, against the copy the rollout actually uses ---
     # derive_metrics keeps its own copy so it can run without torch; if the two
