@@ -601,11 +601,18 @@ CoT-Faith is the first standardized benchmark for chain-of-thought faithfulness 
 % where the registry gives 7, 7, 7, 11 and 14 -- and one carried our own shorthand
 % "(OpenVLA-OFT)" inside the registered title. All six are corrected below.
 %
-% 10 of 15 entries CONFIRM on title, author-surname order and year against
-% export.arxiv.org. The other 5 (datasheets, cotvla, turpin2023, libero, colosseum) are
-% venue-only citations with no arXiv id, so they need DBLP or CrossRef, and both return
-% "CONNECT tunnel failed, 403" from the authoring network; bolt/boltconfig-citation-check
-% .yaml re-runs the same script from a networked host to close them.
+% All 15 of 15 entries now CONFIRM on title, author-surname order and year against
+% export.arxiv.org. Closing the last five took removing an accidental precondition
+% rather than finding a new registry: the check only queried arXiv when the entry
+% itself printed an arXiv id, and the five venue-only citations (datasheets, cotvla,
+% turpin2023, libero, colosseum) print only the venue -- so their verifiability was a
+% property of our formatting, not of the citation. They are now resolved by an
+% exact-title search of arXiv, which is the registry that answers: DBLP returns
+% "CONNECT tunnel failed, 403" from the authoring network and times out on the TLS
+% handshake from bolt task qrpd3f8z58, so falling back to it resolved nothing from
+% anywhere. The title search accepts a hit only on an exact normalized-title match,
+% never on arXiv's relevance rank, because confirming a citation against a
+% neighbouring paper is worse than leaving it unconfirmed.
 %
 % [VERIFY] datasheets: arXiv 1803.09010 confirms the title, all seven authors in order,
 % and the comment "Published in CACM in December, 2021" (consistent with volume 64(12)).

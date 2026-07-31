@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# Resolve the bibliography entries the authoring environment cannot reach.
+# Re-verify the bibliography against a live registry, from a networked host.
 #
-# experiments/verify_citations.py confirms 10 of the 15 entries locally against
-# export.arxiv.org, which is reachable. The other five are venue-only citations
-# (CACM, CVPR, NeurIPS x2, RSS) with no arXiv id in the entry, so they need DBLP
-# or CrossRef -- and both return "CONNECT tunnel failed, 403" from the authoring
-# network. This job runs the same script from a networked host so those five
-# stop being UNVERIFIED.
+# History, because it changed what this job is for. The first run (qrpd3f8z58)
+# existed to reach DBLP for the five venue-only citations that print no arXiv id,
+# since DBLP 403s from the authoring network. It failed at that: DBLP times out
+# on the TLS handshake from bolt too. What it did establish is that the fallback
+# chain was wrong -- those five needed an arXiv TITLE search, not a different
+# registry, because the check had only ever queried arXiv when the entry itself
+# printed an id. With that fixed all 15 entries confirm.
+#
+# So this job is now the independent re-run: same script, same manuscript,
+# different host and different network path. If it returns anything other than
+# 15/15 CONFIRMED, the local result depended on something about the authoring
+# machine and is not a property of the bibliography.
 #
 # Nothing here is a model, a GPU or a simulator: it is fifteen HTTP GETs. It runs
 # on bolt because that is where this project's network egress lives, and because

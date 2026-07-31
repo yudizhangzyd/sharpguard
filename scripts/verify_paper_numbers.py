@@ -1483,19 +1483,32 @@ def audit_citations(a):
     a.check(sec, "the manuscript's 15 entries are all accounted for", 15,
             len(keys_tex), source="cot_faith_iclr.tex")
 
-    # The confirmed/unverified split, and the reason each unverified one is.
-    a.check(sec, "10 of 15 entries confirm against a reachable registry",
-            [10, 5], [(r.get("status_counts") or {}).get("CONFIRMED"),
-                      (r.get("status_counts") or {}).get("UNVERIFIED")],
+    # The confirmed/unverified split. All 15 now resolve, which took removing an
+    # accidental precondition rather than finding a new registry: the check only
+    # queried arXiv when the bibitem itself printed an id, so the five venue-only
+    # entries were unverifiable because of OUR formatting, not because of theirs.
+    # DBLP was never the answer -- it times out from the authoring network and
+    # from bolt qrpd3f8z58 alike.
+    a.check(sec, "all 15 entries confirm against a reachable registry",
+            [15, None], [(r.get("status_counts") or {}).get("CONFIRMED"),
+                         (r.get("status_counts") or {}).get("UNVERIFIED")],
             source=src)
-    a.check(sec, "the unverified entries are exactly the five venue-only ones "
-                 "with no arXiv id",
-            ["colosseum", "cotvla", "datasheets", "libero", "turpin2023"],
+    a.check(sec, "nothing is left unverified, so 'unverified' is not a parking "
+                 "space for an inconvenient entry", [],
             r.get("unverified_keys"), source=src)
-    a.check(sec, "each unverified entry genuinely lacks an arXiv id, so it is "
-                 "unreachability and not a skipped lookup", True,
-            all(e.get("arxiv_id") is None for e in (r.get("entries") or [])
-                if e.get("status") == "UNVERIFIED"), source=src)
+    a.check(sec, "the five venue-only entries were resolved by title search, "
+                 "not by an id the manuscript does not print", True,
+            all(any(c.get("registry") == "arxiv_title_search"
+                    for c in (e.get("checks") or []))
+                for e in (r.get("entries") or [])
+                if e.get("key") in ("colosseum", "cotvla", "datasheets",
+                                    "libero", "turpin2023")), source=src)
+    a.check(sec, "every entry was compared on all three of title, author-surname "
+                 "order and year, so a CONFIRMED is not one field passing", True,
+            all({"title", "authors", "year"} <=
+                set((c.get("fields") or {}).keys())
+                for e in (r.get("entries") or [])
+                for c in (e.get("checks") or [])), source=src)
     a.check(sec, "the report records that arXiv was reachable, so a CONFIRMED "
                  "is a real lookup rather than an absent registry", "reachable",
             dig(r, "registry_reachability", "arxiv"), source=src)

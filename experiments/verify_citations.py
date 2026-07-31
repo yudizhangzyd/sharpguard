@@ -212,6 +212,77 @@ def arxiv_lookup(arxiv_id: str) -> tuple[dict | None, str]:
     }, ""
 
 
+def arxiv_title_search(title: str) -> tuple[dict | None, str]:
+    """Resolve an entry that prints no arXiv id, by searching arXiv for its title.
+
+    Why this exists. The five venue-only entries (CACM, CVPR, NeurIPS x2, RSS)
+    were UNVERIFIED for one reason: this script only queried arXiv when the
+    bibitem itself printed an id, and it printed none for them. That made
+    verifiability a property of our own formatting rather than of the citation,
+    which is backwards -- and it was expensive, because DBLP is unreachable both
+    from the authoring network (403 CONNECT tunnel) and from bolt task
+    qrpd3f8z58 (SSL handshake timeout), so "fall back to DBLP" resolved nothing
+    from anywhere. Most robotics and NLP venue papers have an arXiv preprint,
+    and arXiv IS reachable, so searching it by title is the fallback that
+    actually works.
+
+    The match is exact on the normalized title, never on rank. arXiv's relevance
+    ordering will happily return a related paper for a query that has no true
+    hit, and confirming a citation against a different paper is a worse outcome
+    than leaving it unverified.
+
+    Two queries, not one. The phrase query is tried first and is the precise
+    one, but it fails on any title containing punctuation that normalization
+    splits and arXiv's index does not: turpin2023's "Language Models Don't
+    Always Say..." normalizes to "... don t always ...", which matches nothing.
+    The second query ANDs the title's long words instead, which skips the broken
+    short token ("dont") and keeps the discriminative ones. Loosening the query
+    is safe precisely because the accept test is unchanged -- a looser query can
+    only surface more candidates for the same exact-title check to reject.
+    """
+    want = norm_title(title)
+    long_words = [w for w in want.split() if len(w) >= 6][:6]
+    queries = [f"ti:%22{urllib.parse.quote(want)}%22"]
+    if long_words:
+        queries.append("+AND+".join(f"ti:{urllib.parse.quote(w)}"
+                                    for w in long_words))
+
+    errs = []
+    for query in queries:
+        body, err = fetch(f"{ARXIV_API}?search_query={query}&max_results=20")
+        if body is None:
+            return None, err
+        entries = re.findall(r"<entry>(.*?)</entry>", body, re.S)
+        if not entries:
+            errs.append("no arXiv hit for this title")
+            continue
+        for e in entries:
+            m = re.search(r"<title[^>]*>(.*?)</title>", e, re.S)
+            got = " ".join(m.group(1).split()) if m else ""
+            if norm_title(got) != want:
+                continue
+
+            def one(tag, blk=e):
+                mm = re.search(rf"<{tag}[^>]*>(.*?)</{tag}>", blk, re.S)
+                return " ".join(mm.group(1).split()) if mm else None
+
+            aid = one("id") or ""
+            return {
+                "title": got,
+                "authors": re.findall(r"<name>(.*?)</name>", e, re.S),
+                "published": one("published"),
+                "updated": one("updated"),
+                "comment": one("arxiv:journal_ref") or one("arxiv:comment"),
+                "doi": one("arxiv:doi"),
+                # Recorded so a reader can check the match themselves; the entry
+                # in the manuscript deliberately still cites the venue, not this.
+                "resolved_arxiv_id": aid.rsplit("/", 1)[-1] if aid else None,
+            }, ""
+        errs.append(f"arXiv returned {len(entries)} hit(s), none with a "
+                    f"title-exact match")
+    return None, "; ".join(errs)
+
+
 def crossref_lookup(doi: str) -> tuple[dict | None, str]:
     body, err = fetch(CROSSREF_API + urllib.parse.quote(doi))
     if body is None:
@@ -333,6 +404,18 @@ def main() -> int:
                 results.append(compare(e, rec, "crossref"))
             else:
                 errors["crossref"] = err
+        if not results:
+            # Title-search arXiv before DBLP, because it is the registry that
+            # answers: DBLP times out from the authoring network and from bolt
+            # alike (qrpd3f8z58), so ordering it first only spent 15 timeouts to
+            # learn nothing. DBLP is still tried afterwards -- a venue-only
+            # entry with no preprint has nowhere else to go.
+            rec, err = arxiv_title_search(e["title"])
+            if rec:
+                reachability["arxiv"] = "reachable"
+                results.append(compare(e, rec, "arxiv_title_search"))
+            else:
+                errors["arxiv_title_search"] = err
         if not results:
             rec, err = dblp_lookup(e["title"])
             reachability["dblp"] = "reachable" if rec else err
