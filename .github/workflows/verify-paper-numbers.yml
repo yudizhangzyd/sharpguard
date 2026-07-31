@@ -28,7 +28,17 @@ jobs:
       - name: Fail if derive_metrics.py changed derived_metrics.json
         # The committed derived file must already be what the raw reports imply.
         # A diff here means the release and the manuscript's input disagree.
-        run: git diff --exit-code -- results_v2/derived_metrics.json
+        # The diff itself is printed: this gate spent several pushes failing for
+        # a reason invisible from the exit code alone (absolute paths, not
+        # numbers), and it cannot be reproduced on a machine that still has the
+        # authors' /tmp scratch runs lying around.
+        run: |
+          if ! git diff --quiet -- results_v2/derived_metrics.json; then
+            echo "::error::derived_metrics.json drifted on a clean checkout"
+            git diff --stat -- results_v2/derived_metrics.json
+            git diff -U0 -- results_v2/derived_metrics.json | head -300
+            exit 1
+          fi
       - name: Assert every number quoted in the manuscript
         run: python scripts/verify_paper_numbers.py
       # Pure numpy, and deliberately written to run without torch so it belongs
