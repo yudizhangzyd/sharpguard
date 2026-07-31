@@ -1,0 +1,33 @@
+# The reviewer's critical #5 was manuscript-vs-artifact drift, and its fix asked
+# for the audit to run in CI rather than only when someone remembers. Every
+# number in the manuscript is derivable from results_v2/ with no network and no
+# GPU, so this is a ~30-second job on the free runner.
+name: verify-paper-numbers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # numpy is the only dependency of the derive/audit path. Deliberately not
+      # installing torch or transformers: if the audit ever needs them, a number
+      # is being recomputed from a model instead of read from a released record,
+      # which is the thing this check exists to prevent.
+      - run: pip install --quiet numpy
+      - name: Re-derive metrics from the released per-sample records
+        run: python scripts/derive_metrics.py
+      - name: Fail if derive_metrics.py changed derived_metrics.json
+        # The committed derived file must already be what the raw reports imply.
+        # A diff here means the release and the manuscript's input disagree.
+        run: git diff --exit-code -- results_v2/derived_metrics.json
+      - name: Assert every number quoted in the manuscript
+        run: python scripts/verify_paper_numbers.py

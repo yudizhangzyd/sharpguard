@@ -280,6 +280,10 @@ score is not interpretable in absolute terms without them.
   gap is wider on the second architecture family: DeepThinkVLA scores 0.64-0.97
   magnitude on `direction_flip` and **at most 0.01** direction-aware, i.e. the
   action moves nearly always and reverses at most once in 100 samples.
+- Do **not** read OpenVLA's `alpha(cot) = 0.000` as an architecture floor. It is
+  **definitional**: a non-CoT prompt has no CoT segment, so the bucket has no
+  tokens and the value is 0 by construction. The OpenVLA-vs-ECoT bucket gap is
+  arithmetic, not a measurement, and no claim in the paper rests on it.
 - Do **not** read the four attention buckets as a salience ranking. It fails
   two independent robustness checks: per token the CoT bucket receives less
   attention than the instruction (3.9x) or the previous-action tokens (8.1x),
