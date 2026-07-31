@@ -1,0 +1,29 @@
+name: 'CoT-Faith: can tensorflow coexist with the OpenVLA eval env?'
+description: 'Tests an assumption this repo has carried untested. setup-openvla.sh:41 says tensorflow must not be installed into the eval env because it clobbers the numpy<2 pin and breaks transformers lazy TF detection. That is why the decoder gate reimplements upstream lanczos3 in numpy rather than calling tf.image.resize, and bolt 5df7cdeicj measured the cost: the kernel is exact to 1/255 LSB, but Pillow-vs-tensorflow libjpeg leaves the full frame path 8 LSB from upstream, which no PIL flag closes. Both blockers look addressable and neither was tried: tf 2.16 accepts numpy 1.26, and transformers honours USE_TF=0. This job builds the eval env unchanged, adds tensorflow-cpu, restores numpy<2, then probes five stages separately so a failure names the real blocker: numpy pin held and arithmetic works, torch imports with CUDA intact, transformers reports is_tf_available False, tf encode/decode/resize run, and both preproc modes run in one process. Exits 0 only if all five pass. CPU only.'
+tags: ['cotfaith', 'decoder-gate', 'tf-env-probe', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  # 1gpu so torch.cuda.is_available() is a meaningful check: the whole question
+  # is whether the eval environment still works, and on a CPU-only shape a
+  # False would be uninformative rather than a regression.
+  task_type: 1gpu
+  disk_gb: 128
+  timeout: 1h
+  cluster: aws_2
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  HF_HOME: /tmp/hf
+  USE_TF: '0'
+  TRANSFORMERS_NO_TF: '1'
+
+command: bash bolt/run_tf_env_probe.sh
