@@ -1,0 +1,25 @@
+name: 'CoT-Faith reference diff: our LIBERO harness vs the OpenVLA eval script'
+description: 'The decoder gate has failed four times and every cause so far was an eval-harness detail, not the policy. The fifth diagnostic reads upstream instead of guessing it: clone openvla/openvla and extract the four implicated quantities -- the gripper pipeline (does upstream call normalize_gripper_action(binarize=True) and then invert_gripper_action, which we call neither?), the image path (does it resize the 256px render to 224 with tf.image.resize lanczos3+antialias rather than a default bilinear?), NUM_STEPS_WAIT, and the per-suite max_steps table -- then diff each against sharpguard/libero_sim.py. Motivation from the four-suite gate just completed: libero_goal scored 5/50 = 0.10, not 0, so the harness is degraded rather than impossible, which is the signature of an input-distribution mismatch. Source-level only: no GPU, no model download, no simulator, needs network only. Raw source snippets are printed so the extraction can be checked by eye.'
+tags: ['cotfaith', 'decoder-gate', 'reference-diff', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
+  disk_gb: 64
+  timeout: 30m
+  cluster: aws_2
+
+environment_variables:
+  # No HF access, no model, no LIBERO install: the whole job is `git clone` plus
+  # stdlib regex over the reference source, so setup_command is deliberately absent.
+  GIT_TERMINAL_PROMPT: '0'
+
+command: bash bolt/run_reference_diff.sh
