@@ -1,0 +1,43 @@
+name: 'CoT-Faith gripper A/B: which gripper convention does LIBERO want?'
+description: 'Reviewer critical #2, fourth attempt. The decoder gate has returned Task SR=0 three times against a published ~85%. Causes 1 and 2 are fixed and verified (success read from info["success"], a key LIBERO never sets; .pruned_init read with np.load so every episode fell back to a random env.reset()). The third run had canonical init states on 50/50 episodes and still scored 0/50 on both libero_object and libero_spatial, so there is a third independent harness bug. Evidence points at the gripper channel: it has mask=False in every OpenVLA norm_stats so it bypasses un-normalization entirely (unnorm_key cannot be the cause), and results_v2/decoder_audit.json records gripper_sign_agreement=0.02 against ~0.50 chance -- near-systematic inversion. An inverted gripper cannot grasp, and cannot-grasp yields exactly 0/50 on pick-and-place rather than a degraded SR. Rather than guess the correction from memory (which is what produced the first three failures), this job measures: four transforms under one model load, 4 episodes each, on libero_object because every task there is a pick-and-place that is impossible without a working gripper. Exit 0 iff exactly one arm clears SR>=0.5.'
+tags: ['cotfaith', 'decoder-gate', 'gripper-ab', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 3h   # 4 arms x 4 episodes x <=400 steps; ~40 min expected
+  cluster: aws_2  # A100. NOT aws_10: its B200s are sm_100 and this image's torch caps at sm_90, plus MuJoCo EGL has no device platform there.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-object'
+  LIBERO_SUITE: 'libero_object'
+  # Verified against the checkpoint's own dataset_statistics.json: 'libero_object'
+  # is the only key present. The third gate run confirmed it resolves (the log
+  # printed "[norm_stats] libero_object"), so un-normalization is NOT the
+  # remaining bug.
+  UNNORM_KEY: 'libero_object'
+
+  N_EPISODES: '4'    # per arm; enough to separate 0 from ~0.85
+  MAX_STEPS: '400'   # upstream uses 280 for libero_object; 400 is generous
+  ARMS: 'none,invert,binvert,openvla'
+  WIN_THRESHOLD: '0.5'
+
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_gripper_ab.sh

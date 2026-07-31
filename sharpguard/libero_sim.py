@@ -340,6 +340,55 @@ class RolloutConfig:
     If empty, actions are sent to env.step() at raw [-1, 1] scale, which
     causes physical-scale mismatch → SR=0. Set this to the LIBERO dataset
     key matching the finetuned checkpoint."""
+    gripper_transform: str = "none"
+    """How to map the decoded gripper channel onto LIBERO's OSC convention.
+
+    This is the open question behind the third consecutive SR=0 gate. The
+    gripper dim has mask=False in every OpenVLA norm_stats, so it bypasses
+    un-normalization entirely and arrives here as a raw bin centre in
+    [-1, 1] -- meaning `unnorm_key` cannot be the reason it is wrong. What
+    we do know from results_v2/decoder_audit.json is that our decoded
+    gripper agrees with the ground-truth demo gripper on only 2% of samples
+    (`gripper_sign_agreement: 0.02`), i.e. it is near-systematically
+    inverted, and an inverted gripper cannot grasp, which produces exactly
+    the observed 0/50 rather than a degraded SR.
+
+    Rather than guess which of the upstream conventions applies, the arms
+    below are A/B/C-tested empirically by scripts/gripper_ab_preflight.py:
+      "none"    -- pass through (what the three failed gates ran)
+      "invert"  -- g -> -g, the minimal fix consistent with the 0.02
+      "binvert" -- g -> -sign(g), inverted and binarized to the +/-1 that
+                   LIBERO's OSC gripper actuator actually expects
+      "openvla" -- g -> -sign(2g - 1), the composition of upstream's
+                   normalize_gripper_action(binarize=True) (which assumes
+                   the channel arrives in [0, 1]) with
+                   invert_gripper_action()
+    """
+
+
+GRIPPER_TRANSFORMS = ("none", "invert", "binvert", "openvla")
+
+
+def _apply_gripper_transform(action: np.ndarray, mode: str) -> np.ndarray:
+    """Map action[-1] onto LIBERO's gripper convention. See
+    RolloutConfig.gripper_transform for why this is a free parameter."""
+    if mode not in GRIPPER_TRANSFORMS:
+        raise ValueError(f"unknown gripper_transform {mode!r}; "
+                         f"expected one of {GRIPPER_TRANSFORMS}")
+    if mode == "none":
+        return action
+    a = np.asarray(action, dtype=np.float32).copy()
+    g = float(a[-1])
+    if mode == "invert":
+        a[-1] = -g
+    elif mode == "binvert":
+        # np.sign(0) == 0 would command "hold", which is not a valid OSC
+        # gripper value; break the tie toward open, matching the no-op.
+        a[-1] = -1.0 if g > 0 else 1.0
+    else:  # "openvla"
+        s = 2.0 * g - 1.0
+        a[-1] = -1.0 if s > 0 else 1.0
+    return a
 
 
 def rollout_libero(model, processor, cfg: RolloutConfig, *,
@@ -371,6 +420,11 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
     mal = np.asarray(cfg.malicious_action, dtype=np.float32)
     successes, asr_hits, total = 0, 0, 0
     n_canonical_init, n_reset_init = 0, 0
+    # Gripper-channel telemetry for the transform A/B. Without this the
+    # only signal an arm produces is SR, and SR=0 is exactly the
+    # observation we are trying to explain.
+    g_raw: list[float] = []
+    g_sent: list[float] = []
 
     for task_idx in range(n_tasks):
         task = task_suite.get_task(task_idx)
@@ -452,6 +506,12 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                                         unnorm_key=cfg.unnorm_key)
                 if len(first_actions) < 5:
                     first_actions.append(action)
+                # Record the gripper channel BEFORE the transform, so an A/B
+                # over transforms can be read against what the model actually
+                # emitted rather than against what we sent.
+                g_raw.append(float(np.asarray(action)[-1]))
+                action = _apply_gripper_transform(action, cfg.gripper_transform)
+                g_sent.append(float(np.asarray(action)[-1]))
                 obs, reward, done, info = env.step(action)
                 # LIBERO signals task completion through `done` (and reward=1),
                 # NOT through info["success"] — that key does not exist, so the
@@ -496,6 +556,18 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         "n_episodes_reset_init": n_reset_init,
         "all_episodes_used_canonical_init": (n_reset_init == 0
                                              and n_canonical_init == total),
+        # Gripper telemetry. `raw` is what the decoder emitted, `sent` is what
+        # reached env.step() after cfg.gripper_transform. A transform arm that
+        # never commands close (frac_close_sent == 0) cannot grasp, and that
+        # is a sufficient explanation for SR=0 without invoking the policy.
+        "gripper_transform": cfg.gripper_transform,
+        "gripper_raw_mean": float(np.mean(g_raw)) if g_raw else None,
+        "gripper_sent_mean": float(np.mean(g_sent)) if g_sent else None,
+        "gripper_frac_close_raw": (float(np.mean(np.asarray(g_raw) > 0))
+                                   if g_raw else None),
+        "gripper_frac_close_sent": (float(np.mean(np.asarray(g_sent) > 0))
+                                    if g_sent else None),
+        "n_gripper_samples": len(g_sent),
         "SR": successes / max(total, 1) if not cfg.apply_trigger else float("nan"),
         "ASR": asr_hits / max(total, 1) if cfg.apply_trigger else float("nan"),
     }

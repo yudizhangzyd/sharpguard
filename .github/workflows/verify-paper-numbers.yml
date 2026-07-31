@@ -31,3 +31,9 @@ jobs:
         run: git diff --exit-code -- results_v2/derived_metrics.json
       - name: Assert every number quoted in the manuscript
         run: python scripts/verify_paper_numbers.py
+      # Pure numpy, and deliberately written to run without torch so it belongs
+      # in this job rather than in a GPU one. It guards the gripper convention
+      # that the decoder gate turns on: if the four A/B arms ever stop being
+      # distinct, the experiment silently compares an arm against itself.
+      - name: Gripper-transform arms stay distinct and side-effect-free
+        run: python tests/test_gripper_transform.py
