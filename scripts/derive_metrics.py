@@ -46,6 +46,40 @@ def rel(path: str) -> str:
     return (os.path.relpath(ap, ROOT).replace(os.sep, "/")
             if ap.startswith(ROOT + os.sep) else path)
 
+
+SIG_DIGITS = 12
+
+
+def quantize(node):
+    """Round every float in the output to SIG_DIGITS significant digits.
+
+    Not cosmetic. The CI gate re-derives this file on a clean x86-64 checkout
+    and diffs it against the committed copy, which was produced on arm64, and
+    that diff was never empty: values like cos_xyz differed in the last one or
+    two bits (0.928937235617497 vs 0.9289372356174972, a relative difference
+    near 1e-16). Chasing bit-identical doubles across two instruction sets is
+    not a reproducibility property worth having, and the alternative -- letting
+    the gate stay red -- means the one check that guards against
+    manuscript-vs-artifact drift gets ignored.
+
+    12 significant digits is three to four orders of magnitude finer than any
+    value this paper quotes (nothing is reported beyond 3 significant digits)
+    and still three digits short of a double's ~15-17, so it absorbs
+    last-bit platform noise without touching anything a reader can see. Ints
+    and bools pass through untouched, so counts and Ns stay exact.
+    """
+    if isinstance(node, bool) or isinstance(node, int):
+        return node
+    if isinstance(node, float):
+        if node != node or node in (float("inf"), float("-inf")):
+            return node          # NaN/inf: json.dump emits these as-is
+        return float(f"{node:.{SIG_DIGITS}g}")
+    if isinstance(node, dict):
+        return {k: quantize(v) for k, v in node.items()}
+    if isinstance(node, (list, tuple)):
+        return [quantize(v) for v in node]
+    return node
+
 # ---------------------------------------------------------------------------
 # ONE canonical run pinned per model.  (v6 mixed two r=32 runs: attention from
 # /tmp/cf_sweep/ours-train, edits from /tmp/cf_done/bcihypv3gu.  We now pin
@@ -892,7 +926,7 @@ def main():
     }
     dest = os.path.join(ROOT, "results_v2", "derived_metrics.json")
     with open(dest, "w") as fh:
-        json.dump(out, fh, indent=1)
+        json.dump(quantize(out), fh, indent=1)
     print(f"wrote {dest}")
 
     # -------- human-readable summary --------

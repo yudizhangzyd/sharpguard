@@ -1377,6 +1377,35 @@ def audit_derived_paths_are_portable(a):
             True, checked > 0,
             source="zero would mean the rel() rewrite silently stopped firing")
 
+    # Cross-ISA float stability. The gate above re-derives on x86-64 and diffs
+    # against a file produced on arm64, and values like cos_xyz differed in the
+    # last one or two bits (~1e-16 relative). derive_metrics.py quantizes every
+    # float to 12 significant digits, which is far finer than the 3 digits this
+    # paper ever quotes; this asserts the quantizer still fires, because if it
+    # silently stopped the gate would go red again for a reason with no bearing
+    # on any claim.
+    over = []
+    def widest(node, path="$"):
+        if isinstance(node, bool) or isinstance(node, int):
+            return
+        if isinstance(node, float):
+            if node == node and abs(node) not in (float("inf"),):
+                if float(f"{node:.12g}") != node:
+                    over.append(path)
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                widest(v, f"{path}.{k}")
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                widest(v, f"{path}[{i}]")
+    widest(derived)
+    a.check(sec, "every float in the derived file is quantized to 12 "
+                 "significant digits",
+            0, len(over),
+            source=f"first offenders: {over[:3]}" if over else
+                   "cross-ISA last-bit noise cannot reopen the CI drift gate")
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Audit cot_faith_iclr.tex against results_v2/*.json.")
