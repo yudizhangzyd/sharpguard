@@ -17,7 +17,11 @@ Covered:
     plain bilinear resize;
   * `UPSTREAM_MAX_STEPS` -- pinned to what upstream's run_libero_eval.py
     actually contains, because a flat 400 is what made the gate's libero_10
-    zero uninterpretable.
+    zero uninterpretable;
+  * `ACTION_DECODERS` -- both arms registered, "ours" still the default (else
+    every published number in this repo changes meaning on re-run), and the
+    "upstream" decoder raising rather than falling back to ours on a checkpoint
+    that cannot provide it.
 """
 
 import os
@@ -57,12 +61,16 @@ except ModuleNotFoundError:  # pragma: no cover - depends on environment
           "test is pure numpy)")
 
 from sharpguard.libero_sim import (  # noqa: E402
+    ACTION_DECODERS,
     GRIPPER_TRANSFORMS,
     IMAGE_PREPROCS,
     UPSTREAM_MAX_STEPS,
+    RolloutConfig,
     _apply_gripper_transform as tf,
     _preprocess_image,
     episode_budget,
+    predict_action,
+    predict_action_upstream,
 )
 
 
@@ -280,6 +288,31 @@ def main() -> int:
     ok("n_tasks=0 does not raise (the suite lookup already rejects that, but a "
        "ZeroDivisionError in the budget line would be a worse error message)",
        episode_budget(4, 0) == (4, 0), str(episode_budget(4, 0)))
+
+    # ---------------- action decoder registry ----------------
+    # The fifth candidate cause. Three properties are checkable without a GPU
+    # and all three are ways the experiment could silently not be the experiment.
+    ok("both action decoders are registered",
+       tuple(ACTION_DECODERS) == ("ours", "upstream"), str(ACTION_DECODERS))
+    # 'ours' must stay the default, or every previously published number in this
+    # repo would silently change meaning on the next re-run.
+    ok("'ours' is still the default decoder, so old runs stay comparable",
+       RolloutConfig().action_decoder == "ours",
+       RolloutConfig().action_decoder)
+    # The upstream decoder must refuse a checkpoint that cannot provide it rather
+    # than quietly decoding with ours: an arm labelled 'upstream' that ran ours
+    # would report a spurious tie, which is exactly the conclusion this
+    # experiment is trying to establish or refute.
+    try:
+        predict_action_upstream(object(), None, render, "pick up the cup",
+                                device=None, unnorm_key="libero_object")
+        ok("the upstream decoder refuses a checkpoint without predict_action",
+           False, "it returned instead of raising")
+    except RuntimeError as e:
+        ok("the upstream decoder refuses a checkpoint without predict_action",
+           "predict_action" in str(e), str(e)[:60] + "...")
+    ok("the two decoders are different functions",
+       predict_action is not predict_action_upstream)
 
     print()
     if fails:

@@ -1,0 +1,52 @@
+name: 'CoT-Faith action decode: ours vs the checkpoint own predict_action'
+description: 'Reviewer critical #2, fifth attempt. Three of four candidate causes for the decoder gate are now measured and none is sufficient: gripper convention (viyhc4kpft, four arms, all 0/10), frame preprocessing (i55ww23d5n and mmmnxeehda, 2x2 twice, approximate AND exact, all 0/10), step budget (excluded by construction; those runs used upstream 280 for libero_object). What remains is the action de-quantization, the only quantity in this harness validated against our own offline audit rather than upstream code. This job stops arguing from source diffs and measures. Stage 1: 24 frames along real trajectories (ours drives, both decoders asked at each step) decoded by our predict_action and by the checkpoint own shipped predict_action; reports per-dimension max abs diff, gripper sign agreement, and drift by timestep. Stage 2: 2-arm rollout over action_decoder on libero_object at upstream own step budget. Exit 0 iff the decoders agree AND both arms score the same.'
+tags: ['cotfaith', 'decoder-gate', 'action-decode', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  # Stage 1 is 24 frames x 2 decoders = seconds. Stage 2 is 2 arms x 10 episodes
+  # x <=280 steps, the same shape as each factorial cell, which ran in ~25 min.
+  timeout: 3h
+  cluster: aws_2  # A100. NOT aws_10: its B200s are sm_100 and this image's torch caps at sm_90, plus MuJoCo EGL has no device platform there.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-object'
+  LIBERO_SUITE: 'libero_object'
+  UNNORM_KEY: 'libero_object'
+
+  # Stage 1 sizing: 3 tasks x 8 steps. Spread over tasks AND timesteps because
+  # every episode starts from the same canonical pose, so a t=0-only comparison
+  # would miss a decoder that agrees at the start and drifts -- which is the
+  # failure shape the gate measured (libero_goal 5/50, not a clean 0/50).
+  N_OBS: '24'
+  TRAJ_STEPS: '8'
+  # bf16 logits make bit-equality the wrong test; 1e-4 is far below one
+  # de-quantization bin (2/255 = 7.8e-3) so a single-bin disagreement still trips.
+  TOL: '1e-4'
+  # Held identical between the two stages, and 'none' is what all four failed
+  # gates and both factorial anchors ran, so the arms stay comparable to them.
+  IMAGE_PREPROC: 'none'
+
+  N_EPISODES: '10'
+  MAX_STEPS: '0'     # 0 = upstream's own per-suite budget (280 for libero_object)
+
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_action_decode.sh

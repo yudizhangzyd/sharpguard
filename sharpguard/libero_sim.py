@@ -314,6 +314,59 @@ def predict_action(model, processor, image: np.ndarray, instruction: str,
     return normalized
 
 
+ACTION_DECODERS = ("ours", "upstream")
+
+
+def predict_action_upstream(model, processor, image: np.ndarray,
+                            instruction: str, *, device: torch.device,
+                            pixel_dtype: torch.dtype = torch.bfloat16,
+                            unnorm_key: str = "") -> np.ndarray:
+    """Decode an action by calling the checkpoint's OWN predict_action.
+
+    Why this exists. Three source-level differences from upstream have now been
+    found and measured (gripper convention, frame preprocessing, per-suite step
+    budget), and none of them explains the gate. The last candidate is the one
+    quantity in this harness still validated only against our own offline audit:
+    the action de-quantization. `predict_action` above reimplements it -- greedy
+    argmax over a masked 256-token window, then bin_centers of linspace(-1, 1,
+    256) -- and every detail of that reimplementation is a place to be wrong in
+    a way that degrades rather than breaks, which is the signature we measured.
+
+    So rather than diff the reimplementation against upstream's source and argue
+    about it, this calls the method the checkpoint ships in its own remote code.
+    If the two disagree, upstream's is right by definition: it is what the
+    published SR was measured with. The point of the whole exercise is to stop
+    reimplementing decisions that the checkpoint already encodes.
+
+    Deliberately NOT reimplemented here, because reimplementing it is the thing
+    under suspicion: prompt construction is left to upstream too, since
+    OpenVLA's predict_action does its own input-id surgery (it appends the
+    SentencePiece empty token when absent) and doing that ourselves would put
+    the same class of bug back in.
+    """
+    from PIL import Image
+    if not hasattr(model, "predict_action"):
+        raise RuntimeError(
+            "this checkpoint exposes no predict_action, so the 'upstream' "
+            "action decoder is not available for it. Load it with "
+            "trust_remote_code=True (OpenVLA ships predict_action in "
+            "modeling_prismatic.py), or use action_decoder='ours' and read the "
+            "result as decoded by our reimplementation.")
+    prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
+    pil = Image.fromarray(np.asarray(image, dtype=np.uint8)).convert("RGB")
+    proc = processor(images=pil, text=prompt, return_tensors="pt")
+    inputs = {"input_ids": proc["input_ids"].to(device),
+              "pixel_values": proc["pixel_values"].to(device).to(pixel_dtype)}
+    if "attention_mask" in proc:
+        inputs["attention_mask"] = proc["attention_mask"].to(device)
+    # unnorm_key="" is not the same as omitting it: upstream treats a falsy key
+    # as "use the single registered dataset if there is exactly one", and raises
+    # otherwise. Pass it only when we have one.
+    act = model.predict_action(**inputs, unnorm_key=unnorm_key or None,
+                               do_sample=False)
+    return np.asarray(act, dtype=np.float32).reshape(-1)[:7]
+
+
 # -----------------------------------------------------------------------
 # LIBERO rollout
 # -----------------------------------------------------------------------
@@ -419,6 +472,27 @@ class RolloutConfig:
     shipped function rather than a transcription of it.
     """
 
+    action_decoder: str = "ours"
+    """Which code turns generated tokens into a 7-DoF action.
+
+      "ours"     -- sharpguard.libero_sim.predict_action, our reimplementation
+                    of OpenVLA's decode. Every number published before this
+                    option existed was produced by it, so it stays the default:
+                    changing the default would silently make old and new runs
+                    incomparable, which is the defect class this project keeps
+                    catching.
+      "upstream" -- the checkpoint's own predict_action, from the remote code it
+                    ships. Right by definition when the two disagree, since it
+                    is what the published SR was measured with.
+
+    This is the last of the four candidate causes for the gate failure that had
+    not been measured. The other three are now measured and none is sufficient:
+    the gripper convention (bolt viyhc4kpft, four conventions all 0/10), frame
+    preprocessing (i55ww23d5n and mmmnxeehda, 2x2 all 0/10 with both the
+    approximate and the exact resize), and the per-suite step budget (excluded by
+    construction, since those runs used upstream's own 280 for libero_object).
+    """
+
 
 GRIPPER_TRANSFORMS = ("none", "invert", "binvert", "openvla")
 
@@ -513,6 +587,16 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                        f"available: {list(bench_dict)}")
     task_suite = bench_dict[cfg.suite]()
     n_tasks = task_suite.n_tasks
+    # Resolve the decoder before the first env is built, not at first use: an
+    # unavailable decoder must fail in seconds rather than after a model load
+    # and a simulator spin-up, and it must never fall back to the other one --
+    # a run that reports 'upstream' while decoding with ours is the same defect
+    # as a run that misreports its init states.
+    if cfg.action_decoder not in ACTION_DECODERS:
+        raise ValueError(f"unknown action_decoder '{cfg.action_decoder}'; "
+                         f"expected one of {ACTION_DECODERS}")
+    decode = (predict_action_upstream if cfg.action_decoder == "upstream"
+              else predict_action)
     eps_per_task, n_planned = episode_budget(cfg.n_episodes_per_suite, n_tasks)
     if n_planned != cfg.n_episodes_per_suite:
         print(f"[rollout] NOTE: asked for {cfg.n_episodes_per_suite} episodes "
@@ -621,9 +705,8 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                 # number, and so image_preproc="none" is bit-identical to the
                 # behaviour those numbers were measured with.
                 img = _preprocess_image(img, cfg.image_preproc)
-                action = predict_action(model, processor, img, instruction,
-                                        device=device,
-                                        unnorm_key=cfg.unnorm_key)
+                action = decode(model, processor, img, instruction,
+                                device=device, unnorm_key=cfg.unnorm_key)
                 if len(first_actions) < 5:
                     first_actions.append(action)
                 # Record the gripper channel BEFORE the transform, so an A/B
@@ -696,6 +779,10 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         # is a sufficient explanation for SR=0 without invoking the policy.
         "gripper_transform": cfg.gripper_transform,
         "image_preproc": cfg.image_preproc,
+        # Which decode produced these actions. Recorded because "SR = 0" means
+        # something different depending on whether the decoder was ours or the
+        # checkpoint's own, and a report that does not say which is not a report.
+        "action_decoder": cfg.action_decoder,
         "max_steps": max_steps,
         "upstream_max_steps": upstream_steps,
         "max_steps_below_upstream": bool(upstream_steps and max_steps < upstream_steps),
