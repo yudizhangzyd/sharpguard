@@ -158,23 +158,37 @@ deliberately incomplete in ways the paper states as limitations:
   any DeepThinkVLA checkpoint (`action_prev` leads on base at 0.384, `instr` on
   SFT and RL at 0.310), so the "CoT bucket is largest" observation is specific
   to both the layer set and the architecture family.
-- **No rollout-level records, and the decoder gate has failed twice.** All
-  measurements are first-step. The first diagnostic rollout returned Task SR
-  0/20 on a public checkpoint with a published ~85% SR; cause, a scoring bug
-  reading `info["success"]`, a key LIBERO never sets. With that fixed the
-  four-suite gate returned 0.08 (libero_goal) and 0.00 (libero_object) — also
-  not the policy: LIBERO's `.pruned_init` files are `torch.save` archives, our
-  loader read them with `np.load` (which opens the zip and returns raw `bytes`),
-  so every episode fell back to a random `env.reset()` instead of the suite's
-  canonical evaluation initial state. **Both runs exited 0 and wrote a
-  well-formed `sr.json`**, which is the failure mode this release now guards
-  against specifically: the loader raises instead of falling back
-  (`tests/test_init_states_loader.py` asserts that on garbage input), and every
-  rollout report records `n_episodes_canonical_init` /
-  `all_episodes_used_canonical_init` so an SR cannot be read without its
-  provenance. The corrected gate is running; it is not in this release. **No
-  number in the paper is conditioned on a rollout, and we do not claim the
-  decoder is validated at the rollout level.**
+- **No rollout-level records in the leaderboard, and the decoder gate failed
+  four times before it passed.** All published measurements are first-step. The
+  first diagnostic rollout returned Task SR 0/20 on a public checkpoint with a
+  published ~85% SR; cause, a scoring bug reading `info["success"]`, a key
+  LIBERO never sets. With that fixed the four-suite gate returned 0.08
+  (libero_goal) and 0.00 (libero_object) — also not the policy: LIBERO's
+  `.pruned_init` files are `torch.save` archives, our loader read them with
+  `np.load` (which opens the zip and returns raw `bytes`), so every episode fell
+  back to a random `env.reset()` instead of the suite's canonical evaluation
+  initial state. **Both runs exited 0 and wrote a well-formed `sr.json`**, which
+  is the failure mode this release now guards against specifically: the loader
+  raises instead of falling back (`tests/test_init_states_loader.py` asserts
+  that on garbage input), and every rollout report records
+  `n_episodes_canonical_init` / `all_episodes_used_canonical_init` so an SR
+  cannot be read without its provenance. A third attempt then ran 50/50 on
+  canonical init states and still scored 0/50 on two suites
+  (`results_v2/canonical_runs/gate_foursuite/`, released as the pre-fix
+  baseline), and a source-level diff against `openvla/openvla` produced two
+  candidate causes that both measured null (`gate_factorial_pil/`,
+  `gate_factorial_tf/`, `gripper_ab_null/` — all released, all 0/10). The third
+  cause was our action decode itself. With the checkpoint's own
+  `predict_action` in place of our masked-argmax loop, plus upstream's
+  `g -> -sign(2g-1)` gripper convention, the gate passes at upstream's own
+  per-suite step budgets: 0.74 / 0.90 / 0.74 on libero_spatial / libero_object /
+  libero_goal against published 0.844 / 0.881 / 0.794, all 50/50 on canonical
+  init states (`results_v2/canonical_runs/gate_foursuite_winning/`). Each job's
+  anchor arm keeps the corrected decoder and drops only the gripper convention
+  and scores 0.00 / 0.00 / 0.12, so the release lets a reader check that both
+  corrections are necessary rather than take it on our word. **No number in the
+  paper is conditioned on a rollout** — the gate validates the harness, it does
+  not turn the leaderboard into a rollout metric.
 - **Probe P3 (attention->action-error AUROC) is withdrawn**, not merely
   caveated: a decoder audit showed it was computed cross-domain. The
   implementation and the audit that killed it are both released
@@ -336,7 +350,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 591 claims, one of which is that this
+The audit script currently checks 624 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
@@ -355,8 +369,8 @@ control by more than the 0.021-0.030 that retraining one configuration moves
 `F_bar`. F2 therefore survives as an absolute-effect-size claim with a
 measured floor under it, and no stronger. The remaining deliverables are
 `bbox_jitter_null` and `instr_random_sub` on the three DeepThinkVLA
-checkpoints, per-model retraining replicates beyond the two we have, and a
-rollout gate that passes.
+checkpoints, and per-model retraining replicates beyond the two we have. The
+rollout gate is no longer on that list: it passes (see the gate entry above).
 
 **How can users report errors?**
 Through the repository issue tracker after de-anonymization. During review,

@@ -2269,11 +2269,13 @@ def audit_gate_factorial(a):
             True, "nor their conjunction, is what the gate is failing on" in tex,
             source="cot_faith_iclr.tex")
     # The remaining-work sentence has moved as the investigation closed
-    # candidates: it now names P2's token selection, which is the one part of
-    # the decode question that a replay cannot settle. What matters is that
-    # Section 6 names a next measurement rather than ending on the null.
-    a.check(sec, "Section 6 names what is left rather than stopping at the null",
-            True, "What is still open, stated as open" in tex
+    # candidates. It used to name P2's token selection as still open; that has
+    # now been measured, so what this check enforces is that Section 6 does not
+    # end on the null -- it has to say which measurement resolved it and point
+    # at the artifact, rather than leaving the three nulls as the last word.
+    a.check(sec, "Section 6 says which measurement closed the investigation "
+                 "rather than stopping at the null", True,
+            "replacing it is what closed the gate" in tex
             and r"p2\_decode\_equivalence" in tex,
             source="cot_faith_iclr.tex")
     a.check(sec, "Section 6 points at the released artifact", True,
@@ -2435,23 +2437,27 @@ def audit_rollout_gate(a, d):
     # started saying "four gate attempts" -- an internal contradiction no numeric
     # check could catch, since neither number is derived from an artifact. Both
     # sites are pinned to each other here, and the paragraph has to substantiate
-    # its own count by describing each attempt.
+    # its own count by describing each attempt. The count survives the gate
+    # passing: four attempts failed before the fifth composition cleared it, and
+    # dropping the four once the news got good is exactly the edit this pins.
     tex_l = TEX.read_text() if TEX.exists() else ""
     a.check(sec, "limitation (v) and Section 6 agree on how many times the gate "
-                 "has failed", [1, 1],
-            [tex_l.count("the decoder gate has now failed four times"),
+                 "failed before it passed", [1, 1],
+            [tex_l.count("the decoder gate failed four times before it passed"),
              tex_l.count("four gate attempts")], source="cot_faith_iclr.tex")
-    a.check(sec, "and limitation (v) states how many of those causes are known, "
-                 "rather than implying all of them are", True,
-            "with only two of the causes found" in tex_l,
+    a.check(sec, "limitation (v) names the third cause rather than leaving the "
+                 "count of found causes short", True,
+            "The third cause was the action decode itself" in tex_l,
             source="cot_faith_iclr.tex")
     a.check(sec, "the paragraph accounts for all four attempts, including the "
                  "third that had correct init states and still scored zero", True,
             "A third attempt then had verified canonical initial states" in tex_l,
             source="cot_faith_iclr.tex")
-    a.check(sec, "the superseded 'failed twice' phrasing is gone", 0,
-            tex_l.count("gate has now failed twice"),
-            source="cot_faith_iclr.tex")
+    for stale in ("gate has now failed twice",
+                  "the decoder gate has now failed four times",
+                  "with only two of the causes found"):
+        a.check(sec, f"the superseded phrasing {stale!r} is gone", 0,
+                tex_l.count(stale), source="cot_faith_iclr.tex")
 
     # --- the upstream budgets, against the copy the rollout actually uses ---
     # derive_metrics keeps its own copy so it can run without torch; if the two
@@ -2464,6 +2470,142 @@ def audit_rollout_gate(a, d):
         a.check(sec, f"libero_sim pins upstream {suite} max_steps={budget}",
                 True, f'"{suite}": {budget},' in txt,
                 source="sharpguard/libero_sim.py UPSTREAM_MAX_STEPS")
+
+
+def audit_rollout_gate_winning(a, d):
+    """Table "the rollout gate passes" and the Section 6 / limitation (v) restatement.
+
+    This is the mirror of audit_rollout_gate and it exists for the opposite
+    reason. That table reports a number arguing against our own harness, so the
+    risk is that it gets quietly improved. This one reports the harness finally
+    working, so the risk is the reverse: that a passing cell drifts upward, or
+    that the conditions which make it a *gate* rather than a demo get dropped.
+    Three of those conditions are load-bearing and each is asserted separately:
+    every suite ran at upstream's own step budget (so no cell is a truncation
+    artifact and none was given extra time), every episode ran on the suite's
+    canonical initial state (the defect that invalidated attempt two), and each
+    job carries its own anchor arm with the corrected decoder but *without* the
+    gripper convention -- which is what makes "jointly necessary" a measurement
+    instead of an argument.
+    """
+    sec = "Four-suite rollout gate on the winning composition (Table: it passes)"
+    g = (d.get("rollout_gate_winning") or {})
+    suites, summary = g.get("suites") or {}, g.get("summary") or {}
+    if not suites:
+        a.check(sec, "the derived file carries a rollout_gate_winning block",
+                True, False, source="results_v2/derived_metrics.json")
+        return
+
+    # --- the table body, exactly as printed. Steps are (requested, run,
+    #     upstream): requested 0 means "use the suite's upstream budget", which
+    #     is the whole point -- the pre-fix table hard-coded 400 everywhere.
+    printed = {
+        "libero_spatial": (0.74, 37, 50, 0.844, 0.877, 0.00, 220),
+        "libero_object":  (0.90, 45, 50, 0.881, 1.022, 0.00, 280),
+        "libero_goal":    (0.74, 37, 50, 0.794, 0.932, 0.12, 300),
+    }
+    for suite, (sr, nsucc, ntot, pub, frac, anchor, budget) in printed.items():
+        v = suites.get(suite) or {}
+        a.check(sec, f"{suite}: Task SR, successes, episodes as printed",
+                [sr, nsucc, ntot],
+                [round(v.get("SR"), 2) if v.get("SR") is not None else None,
+                 v.get("n_success"), v.get("n_total")],
+                source=v.get("source"))
+        a.check(sec, f"{suite}: published SR and fraction of it as printed",
+                [pub, frac],
+                [v.get("published_SR"), v.get("SR_frac_of_published")],
+                source=v.get("source"))
+        a.check(sec, f"{suite}: anchor arm (corrected decoder, no gripper "
+                     f"convention) as printed", anchor,
+                v.get("SR_anchor_no_gripper_transform"),
+                source="gripper=none cell of the same job, same model load")
+        # max_steps_requested=0 is the sentinel for "upstream's own budget".
+        # If a future run hard-codes a number here the cell stops being
+        # comparable to the published SR it is quoted against.
+        a.check(sec, f"{suite}: ran at upstream's own step budget, requested as "
+                     f"the sentinel rather than hard-coded", [0, budget, budget],
+                [v.get("max_steps_requested"), v.get("max_steps_run"),
+                 v.get("upstream_max_steps")], source=v.get("source"))
+        a.check(sec, f"{suite}: the winning composition is upstream decoder + "
+                     f"openvla gripper, with image preprocessing off",
+                ["upstream", "openvla", "none"],
+                [v.get("action_decoder"), v.get("gripper_transform"),
+                 v.get("image_preproc")], source=v.get("source"))
+
+    # Wilson CIs printed in the table.
+    for suite, lo, hi in (("libero_spatial", 0.60, 0.84),
+                          ("libero_object", 0.79, 0.96),
+                          ("libero_goal", 0.60, 0.84)):
+        ci = (suites.get(suite) or {}).get("SR_wilson95") or [None, None]
+        a.check(sec, f"{suite}: Wilson 95% CI as printed", [lo, hi],
+                [round(ci[0], 2), round(ci[1], 2)], source="SR_wilson95")
+
+    # --- the conditions that make it a gate ---
+    a.check(sec, "every suite ran at upstream's own step budget, so no cell is "
+                 "a truncation artifact and none got extra time", True,
+            summary.get("all_suites_at_upstream_step_budget"),
+            source="step_budget_below_upstream is false on every suite")
+    a.check(sec, "every episode ran on its suite's canonical initial state",
+            True, summary.get("all_episodes_canonical_init"),
+            source="all_episodes_used_canonical_init, per suite")
+    a.check(sec, "the gate passes: SR is at least half the published SR on "
+                 "every suite run", True, summary.get("gate_passed"),
+            source=summary.get("gate_criterion"))
+    a.check(sec, "the weakest cell as quoted in the prose", [0.74, 0.877],
+            [summary.get("min_SR"), summary.get("min_SR_frac_of_published")],
+            source="summary")
+
+    # --- joint necessity, which the prose states as a measurement ---
+    # Both corrections are needed: the anchor arms hold the corrected decoder
+    # and drop only the gripper convention, and every one of them lands far
+    # below its paired winning cell. If an anchor ever came up to the winning
+    # arm, the gripper factor would have stopped mattering and the paper's
+    # "jointly necessary" sentence would be wrong.
+    anchors = [v.get("SR_anchor_no_gripper_transform") for v in suites.values()]
+    wins = [v.get("SR") for v in suites.values()]
+    a.check(sec, "every anchor arm sits below half its own winning cell, which "
+                 "is what makes the two corrections jointly necessary", True,
+            all(an is not None and w is not None and an < 0.5 * w
+                for an, w in zip(anchors, wins)),
+            source="SR_anchor_no_gripper_transform vs SR, per suite")
+    a.check(sec, "the anchor arms are at most 0.12", True,
+            max(a_ for a_ in anchors if a_ is not None) <= 0.12,
+            source="SR_anchor_no_gripper_transform")
+
+    # --- the prose the table replaces must actually be gone ---
+    # The manuscript carried "The gate does not pass" for several revisions.
+    # Leaving it in place while this table prints 0.74 would be the single worst
+    # internal contradiction in the paper. The 5/50 = 0.10 cell is NOT pinned to
+    # zero: limitation (v) still quotes it, correctly, as what the third attempt
+    # measured, and deleting the history is not the fix.
+    tex_l = TEX.read_text() if TEX.exists() else ""
+    for stale in ("\\textbf{The gate does not pass.}",
+                  "\\textbf{no number in this paper is conditioned on a rollout, "
+                  "and we do not claim the decoder is validated at the rollout "
+                  "level.}",
+                  "It still does not reproduce the published SR"):
+        a.check(sec, f"the superseded phrasing {stale[:52]!r}... is gone from "
+                     f"the manuscript", 0, tex_l.count(stale),
+                source="cot_faith_iclr.tex")
+    # Retiring a hedge silently is the failure mode here: a reader who read the
+    # submitted version should be told the sentence was withdrawn, not left to
+    # notice its absence. The paper has to name it.
+    a.check(sec, "the retired hedge is named as retired rather than deleted", 1,
+            tex_l.count("``we do not claim the decoder is validated at the "
+                        "rollout level'' hedge"),
+            source="cot_faith_iclr.tex")
+    a.check(sec, "both Section 6 and limitation (v) name the third cause as the "
+                 "action decode rather than leaving it open", 2,
+            tex_l.count("The third cause was the action decode itself"),
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and the pre-fix table is still present as the baseline this "
+                 "one is measured against", True,
+            "\\label{tab:gate}" in tex_l and "\\label{tab:gate_pass}" in tex_l,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and the pre-fix table is still present as the baseline this "
+                 "one is measured against", True,
+            "\\label{tab:gate}" in tex_l and "\\label{tab:gate_pass}" in tex_l,
+            source="cot_faith_iclr.tex")
 
 
 def audit_derived_paths_are_portable(a):
@@ -2582,6 +2724,7 @@ def main() -> int:
     audit_dequant_convention(a, d)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
+    audit_rollout_gate_winning(a, d)
     audit_resize_check(a)
     audit_citations(a)
     audit_tf_env_probe(a)
