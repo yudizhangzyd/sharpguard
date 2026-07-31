@@ -20,6 +20,8 @@ from typing import Callable, Dict, Optional, Sequence
 import numpy as np
 import torch
 
+from . import image_preproc as _image_preproc
+
 
 # -----------------------------------------------------------------------
 # capability check
@@ -390,25 +392,30 @@ class RolloutConfig:
       "none"        -- hand the raw flipped 256x256 render to the processor
                        (what the four failed gates ran)
       "tf_upstream" -- upstream-exact, requires tensorflow
-      "pil_lanczos" -- the same three steps with Pillow instead of
-                       tensorflow. This is the mode the gate actually runs,
-                       because bolt/setup-openvla.sh documents that
-                       installing tensorflow clobbers the numpy<2 pin and
-                       breaks transformers' lazy TF detection -- so buying
-                       kernel exactness would cost the eval environment.
-                       It is kept as a separate named mode rather than
-                       silently standing in for "tf_upstream" because PIL's
-                       LANCZOS and TF's lanczos3+antialias are not verified
-                       to be bit-identical; experiments/resize_kernel_check.py
-                       measures the gap in an isolated venv so the size of
-                       the approximation is a number rather than an
-                       assumption.
+      "np_lanczos"  -- upstream's three steps with the Lanczos-3 kernel
+                       reimplemented in numpy. This is the mode the gate
+                       runs: bolt/setup-openvla.sh documents that installing
+                       tensorflow clobbers the eval environment's numpy<2
+                       pin, so exactness has to be bought without the
+                       dependency. experiments/resize_kernel_check.py
+                       measures this mode against "tf_upstream" in an
+                       isolated tf venv, so the claim of exactness is a
+                       measured number and not an assumption.
+      "pil_lanczos" -- the same steps using Pillow's LANCZOS. Kept only as a
+                       diagnostic contrast: bolt q5z79humta measured it up to
+                       23/255 LSB from tensorflow, past the 4-LSB ceiling
+                       fixed before that measurement, so it must not be
+                       described as reproducing upstream.
+
+    See sharpguard/image_preproc.py, which holds the implementation and is
+    importable without torch precisely so the tf comparison can validate the
+    shipped function rather than a transcription of it.
     """
 
 
 GRIPPER_TRANSFORMS = ("none", "invert", "binvert", "openvla")
 
-IMAGE_PREPROCS = ("none", "tf_upstream", "pil_lanczos")
+IMAGE_PREPROCS = _image_preproc.MODES
 
 # Read off upstream's run_libero_eval.py by bolt task htrg4uchwi, not from
 # memory. Our four-suite gate ran 400 steps everywhere, which silently
@@ -448,50 +455,14 @@ def _apply_gripper_transform(action: np.ndarray, mode: str) -> np.ndarray:
 def _preprocess_image(img: np.ndarray, mode: str, resize: int = 224) -> np.ndarray:
     """Prepare the (already 180-degree-flipped) render for the processor.
 
-    See RolloutConfig.image_preproc. `img` must be uint8 HxWx3 and is never
-    modified in place. Raises rather than falling back if the requested
-    backend is missing: a silent fallback would report "ran upstream-exact
-    preprocessing" for a run that did something else, and mislabelled arms
-    are how this gate came to fail four times.
+    Thin delegate to sharpguard.image_preproc.preprocess; see
+    RolloutConfig.image_preproc for what each mode is and why. `img` must be
+    uint8 HxWx3 and is never modified in place. Unknown modes and missing
+    backends raise rather than falling back: a silent fallback would report
+    "ran upstream-exact preprocessing" for a run that did something else, and
+    mislabelled arms are how this gate came to fail four times.
     """
-    if mode not in IMAGE_PREPROCS:
-        raise ValueError(f"unknown image_preproc {mode!r}; "
-                         f"expected one of {IMAGE_PREPROCS}")
-    arr = np.asarray(img, dtype=np.uint8)
-    if mode == "none":
-        return arr
-
-    if mode == "tf_upstream":
-        try:
-            import tensorflow as tf
-        except ImportError as e:  # pragma: no cover - depends on environment
-            raise RuntimeError(
-                "image_preproc='tf_upstream' reproduces upstream's resize_image "
-                "exactly and needs tensorflow. Install it, or run the "
-                "'pil_lanczos' arm and label the result as an approximation."
-            ) from e
-        # Upstream experiments/robot/libero/libero_utils.py:resize_image, in
-        # order: JPEG round-trip ("as done in RLDS dataset builder"), then a
-        # lanczos3 antialiased resize, then round/clip/uint8.
-        t = tf.image.encode_jpeg(arr)
-        t = tf.io.decode_image(t, expand_animations=False, dtype=tf.uint8)
-        t = tf.image.resize(t, (resize, resize), method="lanczos3",
-                            antialias=True)
-        t = tf.cast(tf.clip_by_value(tf.round(t), 0, 255), tf.uint8)
-        return t.numpy()
-
-    # "pil_lanczos": same three steps, Pillow kernels. Not upstream-exact.
-    import io
-
-    from PIL import Image
-    buf = io.BytesIO()
-    # tf.image.encode_jpeg defaults to quality=95; match it so the two arms
-    # differ only in the resize kernel, not in the compression strength.
-    Image.fromarray(arr).convert("RGB").save(buf, format="JPEG", quality=95)
-    buf.seek(0)
-    pil = Image.open(buf).convert("RGB").resize((resize, resize),
-                                                Image.LANCZOS)
-    return np.asarray(pil, dtype=np.uint8)
+    return _image_preproc.preprocess(img, mode, resize)
 
 
 def rollout_libero(model, processor, cfg: RolloutConfig, *,

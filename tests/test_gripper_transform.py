@@ -146,12 +146,16 @@ def main() -> int:
        not mismatch, f"{len(mismatch)} mismatches" if mismatch else "81 points")
 
     # ---------------- image preprocessing ----------------
-    # Only 'none' and 'pil_lanczos' are exercised: 'tf_upstream' needs
-    # tensorflow, which this CI job deliberately does not install. The A/B
+    # 'tf_upstream' is not exercised here: it needs tensorflow, which this CI
+    # job deliberately does not install (it clobbers the numpy<2 pin). The A/B
     # script checks for tensorflow before the model load instead, so a missing
     # backend fails fast there rather than silently choosing another kernel.
-    ok("all three image modes are registered",
-       tuple(IMAGE_PREPROCS) == ("none", "tf_upstream", "pil_lanczos"),
+    # 'np_lanczos' is checked for structure here and for numerical agreement
+    # with tensorflow by experiments/resize_kernel_check.py, which runs in an
+    # isolated tf venv on bolt.
+    ok("all four image modes are registered",
+       tuple(IMAGE_PREPROCS) == ("none", "np_lanczos", "pil_lanczos",
+                                 "tf_upstream"),
        str(IMAGE_PREPROCS))
 
     rng = np.random.default_rng(0)
@@ -162,27 +166,63 @@ def main() -> int:
        out_none.shape == (256, 256, 3) and np.array_equal(out_none, render),
        str(out_none.shape))
 
-    try:
-        out_pil = _preprocess_image(render, "pil_lanczos")
-        ok("'pil_lanczos' returns 224x224x3 uint8",
-           out_pil.shape == (224, 224, 3) and out_pil.dtype == np.uint8,
-           f"{out_pil.shape} {out_pil.dtype}")
-        # The JPEG round-trip plus a resize must actually change the pixels,
-        # otherwise the arm is a no-op wearing a different name and the
-        # factorial has a duplicate cell.
-        ok("'pil_lanczos' is not a no-op",
-           not np.array_equal(out_pil, render[:224, :224]),
-           "differs from a naive crop")
-        # And it must not silently be doing the processor's default resize:
-        # compare against a plain bilinear resize with no JPEG step.
-        from PIL import Image
-        plain = np.asarray(Image.fromarray(render).resize((224, 224),
-                                                          Image.BILINEAR))
-        ok("'pil_lanczos' differs from a plain bilinear resize",
-           not np.array_equal(out_pil, plain),
-           f"max abs diff {int(np.abs(out_pil.astype(int) - plain.astype(int)).max())}")
-    except ImportError:  # pragma: no cover - Pillow is a hard dep of the repo
-        ok("'pil_lanczos' runs", False, "Pillow missing")
+    for mode in ("np_lanczos", "pil_lanczos"):
+        try:
+            out = _preprocess_image(render, mode)
+            ok(f"'{mode}' returns 224x224x3 uint8",
+               out.shape == (224, 224, 3) and out.dtype == np.uint8,
+               f"{out.shape} {out.dtype}")
+            # The JPEG round-trip plus a resize must actually change the pixels,
+            # otherwise the arm is a no-op wearing a different name and the
+            # factorial has a duplicate cell.
+            ok(f"'{mode}' is not a no-op",
+               not np.array_equal(out, render[:224, :224]),
+               "differs from a naive crop")
+            # And it must not silently be doing the processor's default resize:
+            # compare against a plain bilinear resize with no JPEG step.
+            from PIL import Image
+            plain = np.asarray(Image.fromarray(render).resize((224, 224),
+                                                              Image.BILINEAR))
+            ok(f"'{mode}' differs from a plain bilinear resize",
+               not np.array_equal(out, plain),
+               f"max abs diff {int(np.abs(out.astype(int) - plain.astype(int)).max())}")
+        except ImportError:  # pragma: no cover - Pillow is a hard dep of the repo
+            ok(f"'{mode}' runs", False, "Pillow missing")
+
+    # The two lanczos arms must not collapse into each other, or the factorial
+    # cannot distinguish "upstream's kernel" from "a kernel that failed the
+    # 4-LSB ceiling" -- which is the only reason both modes exist.
+    a = _preprocess_image(render, "np_lanczos")
+    b = _preprocess_image(render, "pil_lanczos")
+    ok("'np_lanczos' and 'pil_lanczos' are distinguishable",
+       not np.array_equal(a, b),
+       f"max abs diff {int(np.abs(a.astype(int) - b.astype(int)).max())}")
+
+    # Properties of the kernel itself, checkable without tensorflow. If the
+    # resampling weights did not sum to 1 the image would be uniformly darkened
+    # or brightened, which is a large off-distribution shift that a max-abs-diff
+    # spot check against a reference could still miss on textured inputs.
+    from sharpguard.image_preproc import _weights, lanczos3_resize
+    w = _weights(256, 224)
+    ok("resize weights sum to 1 on every output row",
+       bool(np.allclose(w.sum(axis=1), 1.0, atol=1e-12)),
+       f"max deviation {float(np.abs(w.sum(axis=1) - 1.0).max()):.2e}")
+    ok("resize weights have the (224, 256) shape of a 256->224 reduction",
+       w.shape == (224, 256), str(w.shape))
+    # A constant image must survive exactly: any normalisation or centring bug
+    # shows up here as a shifted grey level.
+    flat = np.full((256, 256, 3), 137, np.uint8)
+    ok("a constant image resizes to the same constant",
+       bool(np.all(lanczos3_resize(flat, 224) == 137)),
+       f"got range [{int(lanczos3_resize(flat, 224).min())}, "
+       f"{int(lanczos3_resize(flat, 224).max())}]")
+    # Downscaling must engage the antialias stretch; upscaling must not. The
+    # 3-tap radius means a non-antialiased 256->224 reduction would touch ~7
+    # input pixels per output pixel, an antialiased one ~9.
+    taps_down = int((_weights(256, 224) != 0).sum(axis=1).max())
+    taps_up = int((_weights(224, 256) != 0).sum(axis=1).max())
+    ok("downscaling stretches the kernel support past the upscaling case",
+       taps_down > taps_up, f"{taps_down} taps down vs {taps_up} up")
 
     try:
         _preprocess_image(render, "lanzcos")
