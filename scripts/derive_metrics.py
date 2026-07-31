@@ -248,6 +248,73 @@ def l2(u):
     return math.sqrt(sum(x * x for x in u))
 
 
+# ---------------------------------------------------------------------------
+# action grid: restate the stored actions on the checkpoint's own de-quantization
+# ---------------------------------------------------------------------------
+# experiments/cotfaith_edit.py de-quantizes a bin index b with
+#     -1 + (b + 0.5) * 2/256                        spacing 2/256
+# but the checkpoint's own action tokenizer -- and sharpguard/libero_sim.py,
+# whose grid was confirmed against the live checkpoint's predict_action to
+# 4.7e-07 by bolt 7vpp28qfsk -- uses the midpoints of linspace(-1, 1, 256):
+#     bin_centers[b]                                spacing 2/255
+# The two differ by up to 0.007797, which is 15.6% of tau = 0.05, so the
+# published numbers are stated on the checkpoint's grid rather than on P2's.
+#
+# F_mag does not care: experiments/p2_dequant_recompute.py replayed all 10,780
+# scored records and not one faithful flag moved, because a delta is always an
+# integer number of bins and tau falls strictly between the 6-bin and 7-bin
+# quantum under both spacings. F_dir and cos_xyz do care -- their predicates test
+# a cosine against -0.5, a sign, and an L2 ordering, none of which survives a
+# shift of the grid -- so this conversion is what makes those numbers the
+# checkpoint's rather than our reimplementation's.
+P2_BINS = 256
+_GRID_EDGES = [-1.0 + i * (2.0 / 255.0) for i in range(256)]
+UP_CENTERS = [(_GRID_EDGES[i] + _GRID_EDGES[i + 1]) / 2.0 for i in range(255)]
+
+# Counted, not silenced: a report from a checkpoint with a different action
+# tokenizer (e.g. DeepThinkVLA's FAST) would not sit on P2's bin grid, and
+# forcing it onto this one would corrupt it. Such rows pass through untouched
+# and the count is published in the artifact.
+GRID_PASSTHROUGH = {"rows": 0, "converted": 0}
+
+
+def _to_checkpoint_grid(a):
+    """P2-de-quantized action -> the same bins on the checkpoint's grid.
+
+    Returns the input unchanged if it is not on P2's grid, since then it was not
+    produced by cotfaith_edit.dequantize_action and there is no bin to restate.
+    """
+    out = []
+    for x in a:
+        raw = (x + 1.0) * P2_BINS / 2.0 - 0.5
+        b = int(round(raw))
+        if abs(raw - b) > 1e-6 or b < 0 or b > P2_BINS - 1:
+            GRID_PASSTHROUGH["rows"] += 1
+            return list(a)
+        out.append(UP_CENTERS[min(b, len(UP_CENTERS) - 1)])
+    GRID_PASSTHROUGH["converted"] += 1
+    return out
+
+
+def _regrid_rows(rows):
+    """Restate a list of edit records on the checkpoint's grid, in place-safe."""
+    out = []
+    for r in rows:
+        if "a_orig" not in r or "a_edit" not in r:
+            out.append(r)
+            continue
+        ao = _to_checkpoint_grid(r["a_orig"])
+        ae = _to_checkpoint_grid(r["a_edit"])
+        d = [e - o for o, e in zip(ao, ae)]
+        r2 = dict(r)
+        r2["a_orig"], r2["a_edit"] = ao, ae
+        r2["delta_per_dim"] = d
+        r2["delta_l1_mean"] = sum(abs(x) for x in d) / len(d)
+        r2["delta_linf"] = max(abs(x) for x in d)
+        out.append(r2)
+    return out
+
+
 def mean(xs):
     xs = [x for x in xs if x is not None]
     return sum(xs) / len(xs) if xs else None
@@ -294,7 +361,7 @@ DIRECTIONAL_FAMILIES = ["direction_flip", "gripper_flip", "negation"]
 def per_run_stats(rep):
     """Compute all per-family stats for one edit report."""
     by_fam = defaultdict(list)
-    for s in rep.get("per_sample", []):
+    for s in _regrid_rows(rep.get("per_sample", [])):
         if s.get("skipped"):
             continue
         by_fam[s["family"]].append(s)

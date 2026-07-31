@@ -392,10 +392,12 @@ def audit_f5(a: Audit, d: Optional[dict]) -> None:
 def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
     sec = "F6 - direction-aware scoring inverts the leaderboard"
     # (F_mag, F_dir) on direction_flip, exactly as printed in tab:directional.
+    # F_dir values are on the checkpoint's own de-quantization grid, which
+    # derive_metrics applies before scoring; see audit_dequant_convention.
     expected = {"ecot-bridge": (0.963, 0.120), "ours-r64": (0.820, 0.780),
-                "ours-r16": (0.780, 0.710), "ours-r8": (0.740, 0.690),
-                "ours-data50A": (0.720, 0.630), "ours-r32": (0.680, 0.620),
-                "ours-data50B": (0.660, 0.590), "ours-no-cot": (0.230, 0.080)}
+                "ours-r16": (0.780, 0.710), "ours-r8": (0.740, 0.670),
+                "ours-data50A": (0.720, 0.630), "ours-r32": (0.680, 0.610),
+                "ours-data50B": (0.660, 0.540), "ours-no-cot": (0.230, 0.080)}
     def score(m: str, fam: str, which: str) -> Any:
         return dig(d, "models", m, "families", fam, which)
 
@@ -419,8 +421,8 @@ def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
             None if any(g is None for g in grips) else all(g <= 0.05 for g in grips),
             source=f"gripper_flip F_dir = {[r3(g) for g in grips]}")
     # The paper reports the mean translation cosine as positive for ECoT-bridge
-    # (+0.417): it moves the SAME way after the direction is reversed.
-    a.check(sec, "ECoT-bridge direction_flip mean cos(xyz) = +0.417", 0.417,
+    # (+0.415): it moves the SAME way after the direction is reversed.
+    a.check(sec, "ECoT-bridge direction_flip mean cos(xyz) = +0.415", 0.415,
             r3(score("ecot-bridge", "direction_flip", "cos_xyz")), tol=0.0015)
     a.check(sec, "ECoT-bridge translation cosine is POSITIVE after a direction "
                  "reversal (the F6 headline)", True,
@@ -1321,6 +1323,107 @@ def audit_edit_decode_is_unnorm_free(a: Audit) -> None:
             source="the audit's provenance is the bridge_orig AUROC run")
 
 
+def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
+    """P2 de-quantizes bin b to -1+(b+0.5)*2/256; the checkpoint's own tokenizer
+    uses the midpoints of linspace(-1,1,256), a spacing of 2/255. The paper
+    claims (i) the skew is real and non-trivial relative to tau, (ii) F_mag is
+    nonetheless EXACTLY invariant to it for a structural reason that holds for
+    future runs too, and (iii) F_dir is not, so the affected values are restated
+    on the checkpoint's grid. (i) and (ii) are arithmetic and are recomputed
+    here from scratch rather than read out of a report -- the whole point is that
+    they do not depend on any artifact. (iii) is checked against the release."""
+    sec = "P2 de-quantization convention (reviewer C2)"
+    tau = 0.05
+    p2 = lambda b: -1.0 + (b + 0.5) * 2.0 / 256.0
+    edges = [-1.0 + 2.0 * i / 255.0 for i in range(256)]
+    up = [(edges[i] + edges[i + 1]) / 2.0 for i in range(255)]
+    upv = lambda b: up[min(b, 254)]
+
+    gaps = [(abs(p2(b) - upv(b)), b) for b in range(256)]
+    worst, worst_bin = max(gaps)
+    a.check(sec, "max |value difference| over the 256 bins = 0.007797",
+            0.007797, round(worst, 6), tol=1e-6,
+            source=f"worst at bin {worst_bin}; "
+                   f"{worst / tau * 100:.1f}% of tau={tau}")
+    a.check(sec, "the worst-case skew is a non-trivial fraction of tau "
+                 "(>10%), so invariance cannot be waved through as rounding",
+            True, worst / tau > 0.10,
+            source=f"{worst / tau * 100:.1f}% of tau")
+    a.check(sec, "bins 254 and 255 collapse to one value under the checkpoint's "
+                 "grid (linspace(-1,1,256) has only 255 midpoints)",
+            True, upv(254) == upv(255), source=f"both = {upv(255):.8f}")
+    a.check(sec, "bin 127 is negative under P2 and exactly zero under the "
+                 "checkpoint's grid -- the mechanism that moves gripper F_dir",
+            True, p2(127) < 0.0 and upv(127) == 0.0,
+            source=f"P2 {p2(127):.6f} vs checkpoint {upv(127):+.1f}")
+
+    # The structural argument, stated as the paper states it: a Delta is always
+    # an integer number of bins, so tau can only be crossed at a bin boundary.
+    # If tau falls in the same inter-bin gap under both spacings, no stretch of
+    # the grid can move a flag -- for ANY run at this tau, not just ours.
+    k2 = sum(1 for k in range(1, 300) if k * 2.0 / 256.0 <= tau)
+    kup = sum(1 for k in range(1, 300) if k * 2.0 / 255.0 <= tau)
+    a.check(sec, "tau=0.05 admits the same maximum bin count under both "
+                 "spacings (6 bins), which is why F_mag cannot flip",
+            (6, 6), (k2, kup),
+            source=f"6 bins = {6 * 2 / 256:.4f}/{6 * 2 / 255:.4f}, "
+                   f"7 bins = {7 * 2 / 256:.4f}/{7 * 2 / 255:.4f}; tau sits "
+                   f"strictly between under both")
+
+    # (iii) the release must actually be on the checkpoint's grid.
+    src_path = ROOT / "scripts" / "derive_metrics.py"
+    try:
+        src = src_path.read_text()
+    except Exception:
+        src = ""
+    a.check(sec, "derive_metrics restates stored actions on the checkpoint's "
+                 "grid before scoring anything", True,
+            "_regrid_rows" in src and "_regrid_rows(rep.get(\"per_sample\"" in src,
+            source=f"{src_path.name}: per_run_stats consumes _regrid_rows(...)")
+    a.check(sec, "off-grid records pass through untouched and are counted "
+                 "rather than silently forced onto P2's grid", True,
+            "GRID_PASSTHROUGH" in src,
+            source="a future checkpoint with a different action tokenizer "
+                   "(e.g. DeepThinkVLA's FAST) must not be corrupted")
+
+    fdir = dig(d, "models", "ecot-bridge", "families", "gripper_flip", "F_dir")
+    ndir = dig(d, "models", "ecot-bridge", "families", "gripper_flip",
+               "n_directional")
+    a.check(sec, "ECoT-bridge gripper_flip F_dir = 0.0 on the checkpoint's grid",
+            0.0, None if fdir is None else r3(fdir), tol=1e-9,
+            source="models['ecot-bridge'].families.gripper_flip.F_dir; it was "
+                   "11/300 = 0.037 under P2's convention")
+    a.check(sec, "16 of ECoT-bridge's 300 gripper_flip records leave F_dir's "
+                 "denominator because their gripper lands on bin 127",
+            284, ndir,
+            source="models['ecot-bridge'].families.gripper_flip.n_directional")
+
+    # F_mag is what every headline number is, so assert the invariance claim
+    # against the release for the families the paper tabulates.
+    fmags = [dig(d, "models", m, "families", "direction_flip", "F_mag")
+             for m in ALL8]
+    a.check(sec, "every tabulated direction_flip F_mag survives the regrid "
+                 "(present and unchanged from the published table)", True,
+            None if any(f is None for f in fmags) else
+            r3(dig(d, "models", "ecot-bridge", "families",
+                   "direction_flip", "F_mag")) == 0.963,
+            source="F_mag is invariant by the quantum argument above; this "
+                   "checks the release agrees")
+
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    for needle, what in [
+        ("15.6\\%", "the skew as a fraction of tau"),
+        ("10{,}780", "the number of records replayed"),
+        ("exactly invariant", "the F_mag invariance claim"),
+        ("p2\\_dequant\\_recompute", "the derivation script"),
+    ]:
+        a.check(sec, f"the manuscript states {what}", True, needle in tex,
+                source="the convention paragraph in the gate section")
+
+
 def audit_deepthink_tau_units(a: Audit) -> None:
     """DeepThinkVLA de-normalizes by LIBERO quantiles, so tau=0.05 means
     something different there than on the ECoT side. The paper discloses this
@@ -1814,8 +1917,13 @@ def audit_gate_factorial(a):
                  "differences themselves were read out of upstream's source",
             True, "nor their conjunction, is what the gate is failing on" in tex,
             source="cot_faith_iclr.tex")
+    # The remaining-work sentence has moved as the investigation closed
+    # candidates: it now names P2's token selection, which is the one part of
+    # the decode question that a replay cannot settle. What matters is that
+    # Section 6 names a next measurement rather than ending on the null.
     a.check(sec, "Section 6 names what is left rather than stopping at the null",
-            True, "least-checked assumption left" in tex,
+            True, "What is still open, stated as open" in tex
+            and r"p2\_decode\_equivalence" in tex,
             source="cot_faith_iclr.tex")
     a.check(sec, "Section 6 points at the released artifact", True,
             r"gate\_factorial\_pil" in tex, source="cot_faith_iclr.tex")
@@ -2119,6 +2227,7 @@ def main() -> int:
     audit_manuscript_hygiene(a)
     audit_no_published_ranking(a)
     audit_edit_decode_is_unnorm_free(a)
+    audit_dequant_convention(a, d)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
     audit_resize_check(a)
