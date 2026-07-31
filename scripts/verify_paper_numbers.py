@@ -1410,6 +1410,35 @@ def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
             source="F_mag is invariant by the quantum argument above; this "
                    "checks the release agrees")
 
+    # The released Bolt artifact must carry the numbers the paragraph quotes.
+    rel = ROOT / "results_v2" / "canonical_runs" / "p2_decode_equivalence"
+    rep = load(rel / "p2_dequant_recompute.json")
+    tot = dig(rep, "totals") or {}
+    for key, claim, exp in [
+        ("n_scored", "10,780 scored records replayed", 10780),
+        ("n_recover_failed", "0 records failed to invert back to bins", 0),
+        ("n_delta_mismatch", "0 replays disagreed with their own stored delta", 0),
+        ("n_flip_to_faithful", "0 records flip TO faithful", 0),
+        ("n_flip_to_unfaithful", "0 records flip AWAY from faithful", 0),
+        ("n_linf_changed", "6,306 records do get a different L-inf", 6306),
+        ("n_bin255_present", "4,393 records sit at bin 255", 4393),
+        ("n_dir_verdict_changed", "12 records change F_dir verdict", 12),
+        ("n_dir_applicability_changed",
+         "24 records change F_dir admissibility", 24),
+    ]:
+        a.check(sec, claim, exp, tot.get(key),
+                source=f"{rel.name}/p2_dequant_recompute.json:totals.{key}")
+    a.check(sec, "the released report's own verdict is that no F_mag moves",
+            0.0, dig(rep, "worst_delta_F_mag"), tol=1e-12,
+            source="worst_delta_F_mag over every family in every artifact")
+    a.check(sec, "the released report names gripper_flip as the worst F_dir mover",
+            True, "gripper_flip" in (dig(rep, "worst_delta_F_dir_where") or ""),
+            source=f"worst_delta_F_dir_where = "
+                   f"{dig(rep, 'worst_delta_F_dir_where')!r}")
+    for fn in ("README.md", "bolt_task_id.txt"):
+        a.check(sec, f"the release ships {fn} for this artifact", True,
+                (rel / fn).exists(), source=str(rel / fn))
+
     try:
         tex = TEX.read_text()
     except Exception:
