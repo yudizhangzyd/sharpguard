@@ -84,3 +84,31 @@ What changed, and why it is not a re-measurement:
 Retained rather than deleted because the manuscript's limitation (ii) names the
 `F = 0.000` artifact explicitly as its own prior error, and that statement should
 be checkable against the file that contained it.
+
+## Superseded by the N=100 cross-corpus replication (F5)
+
+| file | why superseded | replaced by |
+|---|---|---|
+| `cross_corpus_bridge_v2_n30.json` | N=30 pilot | `canonical_runs/cross_corpus_bridge_v2_n100.json` (bolt `qzvywaxg6u`) |
+| `cross_corpus_fractal_n30.json` | N=30 pilot | `canonical_runs/cross_corpus_fractal_n100.json` (bolt `ae8ikp2zv7`) |
+| `cross_corpus_bcz_n30.json` | N=30 pilot | `canonical_runs/cross_corpus_bcz_n100.json` (bolt `q27nbyr3w8`) |
+
+Unlike the DeepThinkVLA rows above, **nothing here was wrong**. Same generators,
+same checkpoint, same three LeRobot corpora, same buckets — only N moved, from
+30 to 100 per corpus. The pilot is retained because the paper's claim about it
+is a *stability* claim, and a stability claim is only checkable against both
+measurements:
+
+- every attention bucket mean moves **≤ 0.3 pp** from the pilot (asserted by
+  `audit_f5`, not by the prose, precisely so this file cannot be deleted without
+  the audit failing);
+- the max cross-corpus deviation *tightens* from 2.7 pp to 2.07 pp, so the
+  headline bound is not an artifact of the smaller sample;
+- per-family edit `N` rises from 15–26 to 51–92, and the `direction_flip` range
+  across corpora narrows from 0.08 to 0.06.
+
+The pilot was never published on its own; the manuscript quoted N=30 for one
+revision and now quotes N=100 everywhere. What did *not* change is the honest
+limit: the calibration nulls were never run on these three corpora, so F5 is
+evidence that the *pipeline* ports, not that the CoT drives the action on any of
+them. That gap is the same size at N=100 as it was at N=30.

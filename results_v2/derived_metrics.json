@@ -4677,107 +4677,107 @@
  },
  "cross_corpus_n30": {
   "bridge_v2": {
-   "source": "/tmp/cf_r3_all/ik5n2thine/cotfaith-lerobot/bridge_report.json",
+   "source": "/tmp/cc100/qzvywaxg6u/cotfaith-lerobot/bridge_report.json",
    "dataset": "IPEC-COMMUNITY/bridge_orig_lerobot",
-   "n_samples_used": 30,
-   "n_attn": 30,
+   "n_samples_used": 100,
+   "n_attn": 100,
    "mass": {
-    "cot": 0.337630208333,
-    "visual": 0.295247395833,
-    "instr": 0.301171875,
-    "action_prev": 0.06591796875
+    "cot": 0.3384765625,
+    "visual": 0.29564453125,
+    "instr": 0.29884765625,
+    "action_prev": 0.0671264648437
    },
    "mass_std": {
-    "cot": 0.016151082816,
-    "visual": 0.00951612707636,
-    "instr": 0.00979682515936,
-    "action_prev": 0.00426745893951
+    "cot": 0.0174572668122,
+    "visual": 0.0104328873544,
+    "instr": 0.0116616283618,
+    "action_prev": 0.00411119691907
    },
    "edit": {
     "subject_swap": {
      "n": 0
     },
     "direction_flip": {
-     "n": 26,
-     "delta_linf_mean": 0.836237980769,
-     "delta_linf_median": 0.765625,
-     "faithful_rate": 1.0
+     "n": 92,
+     "delta_linf_mean": 0.787364130435,
+     "delta_linf_median": 0.8046875,
+     "faithful_rate": 0.913043478261
     },
     "gripper_flip": {
-     "n": 15,
-     "delta_linf_mean": 0.363541666667,
+     "n": 51,
+     "delta_linf_mean": 0.325980392157,
      "delta_linf_median": 0.265625,
-     "faithful_rate": 0.8
+     "faithful_rate": 0.803921568627
     }
    }
   },
   "fractal": {
-   "source": "/tmp/cf_r3_all/c2saurubyx/cotfaith-lerobot/bridge_report.json",
+   "source": "/tmp/cc100/ae8ikp2zv7/cotfaith-lerobot/bridge_report.json",
    "dataset": "IPEC-COMMUNITY/fractal20220817_data_lerobot",
-   "n_samples_used": 30,
-   "n_attn": 30,
+   "n_samples_used": 100,
+   "n_attn": 100,
    "mass": {
-    "cot": 0.335677083333,
-    "visual": 0.291080729167,
-    "instr": 0.30078125,
-    "action_prev": 0.0724446614583
+    "cot": 0.33455078125,
+    "visual": 0.29083984375,
+    "instr": 0.30166015625,
+    "action_prev": 0.0729541015625
    },
    "mass_std": {
-    "cot": 0.0128445092622,
-    "visual": 0.00752199691267,
-    "instr": 0.00870547638044,
-    "action_prev": 0.00436637998033
+    "cot": 0.014225120375,
+    "visual": 0.00787133606947,
+    "instr": 0.0100139330121,
+    "action_prev": 0.00389897699388
    },
    "edit": {
     "subject_swap": {
      "n": 0
     },
     "direction_flip": {
-     "n": 25,
-     "delta_linf_mean": 0.9371875,
+     "n": 77,
+     "delta_linf_mean": 1.02374188312,
      "delta_linf_median": 1.0,
-     "faithful_rate": 0.92
+     "faithful_rate": 0.974025974026
     },
     "gripper_flip": {
-     "n": 20,
-     "delta_linf_mean": 0.573828125,
-     "delta_linf_median": 0.421875,
-     "faithful_rate": 0.8
+     "n": 74,
+     "delta_linf_mean": 0.458826013514,
+     "delta_linf_median": 0.35546875,
+     "faithful_rate": 0.77027027027
     }
    }
   },
   "bcz": {
-   "source": "/tmp/cf_r3_all/kbb6g24nyg/cotfaith-lerobot/bridge_report.json",
+   "source": "/tmp/cc100/q27nbyr3w8/cotfaith-lerobot/bridge_report.json",
    "dataset": "IPEC-COMMUNITY/bc_z_lerobot",
-   "n_samples_used": 30,
-   "n_attn": 30,
+   "n_samples_used": 100,
+   "n_attn": 99,
    "mass": {
-    "cot": 0.321744791667,
-    "visual": 0.296419270833,
-    "instr": 0.310807291667,
-    "action_prev": 0.0710123697917
+    "cot": 0.322699652778,
+    "visual": 0.296973642677,
+    "instr": 0.309935290404,
+    "action_prev": 0.0703938802083
    },
    "mass_std": {
-    "cot": 0.0235075631022,
-    "visual": 0.00989090646267,
-    "instr": 0.0149830135664,
-    "action_prev": 0.00337511107964
+    "cot": 0.0220858464072,
+    "visual": 0.00952543047791,
+    "instr": 0.0141214700733,
+    "action_prev": 0.00440780057719
    },
    "edit": {
     "subject_swap": {
      "n": 0
     },
     "direction_flip": {
-     "n": 25,
-     "delta_linf_mean": 0.830625,
-     "delta_linf_median": 0.796875,
-     "faithful_rate": 0.92
+     "n": 81,
+     "delta_linf_mean": 0.878858024691,
+     "delta_linf_median": 0.953125,
+     "faithful_rate": 0.950617283951
     },
     "gripper_flip": {
-     "n": 15,
-     "delta_linf_mean": 0.3328125,
-     "delta_linf_median": 0.28125,
-     "faithful_rate": 0.666666666667
+     "n": 63,
+     "delta_linf_mean": 0.386036706349,
+     "delta_linf_median": 0.328125,
+     "faithful_rate": 0.746031746032
     }
    }
   }
@@ -7997,6 +7997,39 @@
  },
  "rollout_gate_winning": {
   "suites": {
+   "libero_10": {
+    "model": "openvla/openvla-7b-finetuned-libero-10",
+    "unnorm_key": "libero_10",
+    "action_decoder": "upstream",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "n_total": 50,
+    "n_success": 23,
+    "SR": 0.46,
+    "SR_wilson95": [
+     0.329694346018,
+     0.596013656716
+    ],
+    "published_SR": 0.539,
+    "SR_frac_of_published": 0.853,
+    "SR_anchor_no_gripper_transform": 0.0,
+    "SR_gain_from_gripper_transform": 0.46,
+    "max_steps_requested": 0,
+    "max_steps_run": 520,
+    "upstream_max_steps": 520,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "gripper_raw_mean": 0.587,
+    "gripper_sent_mean": -0.179,
+    "gripper_sent_equals_raw_in_anchor": true,
+    "n_gripper_samples": 20577,
+    "n_gripper_samples_anchor": 26000,
+    "episodes_shorter_than_anchor": true,
+    "bolt_task": "be5c89htvb",
+    "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_10/gripper_ab.json"
+   },
    "libero_goal": {
     "model": "openvla/openvla-7b-finetuned-libero-goal",
     "unnorm_key": "libero_goal",
@@ -8098,16 +8131,16 @@
    }
   },
   "summary": {
-   "n_suites_run": 3,
-   "n_episodes_total": 150,
-   "n_suites_interpretable": 3,
+   "n_suites_run": 4,
+   "n_episodes_total": 200,
+   "n_suites_interpretable": 4,
    "all_suites_at_upstream_step_budget": true,
    "all_episodes_canonical_init": true,
-   "min_SR": 0.74,
-   "min_SR_frac_of_published": 0.877,
+   "min_SR": 0.46,
+   "min_SR_frac_of_published": 0.853,
    "gate_criterion": "SR >= 0.5 x published SR on every suite run, every suite at upstream's own step budget",
    "gate_passed": true,
-   "gate_passed_on_all_four_suites": false,
+   "gate_passed_on_all_four_suites": true,
    "note": "Retires the pre-fix table above. The third cause the earlier runs could not find was the action decode itself: replacing our masked-argmax loop with the checkpoint's own predict_action, and applying upstream's -sign(2g-1) gripper convention on top of it, moves SR from near zero to within half of published on every suite measured. The anchor arm in each job holds the corrected decoder and drops only the gripper convention, so the two corrections are shown to be jointly necessary rather than argued to be."
   }
  }

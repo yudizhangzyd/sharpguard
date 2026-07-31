@@ -1,8 +1,12 @@
-"""Fig 7 -- cross-corpus attention (F5), N=30 per non-LIBERO corpus.
+"""Fig 7 -- cross-corpus attention (F5), N=100 per non-LIBERO corpus.
 
 Loaded from results_v2/derived_metrics.json (which pins the aws_6 lerobot runs
-ik5n2thine / c2saurubyx / kbb6g24nyg and the LIBERO ECoT-bridge rvis run).
+qzvywaxg6u / ae8ikp2zv7 / q27nbyr3w8 and the 3-seed LIBERO ECoT-bridge profile).
 No hardcoded literals.
+
+The N=30 pilot these replaced is retained under results_v2/superseded/; every
+bucket mean here is within 0.3 pp of it, which is checked by audit_f5 rather
+than asserted in the caption.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -205,9 +205,12 @@ MIRROR = {
     "/tmp/dtfinal/xx2a3ztfgd/cotfaith-deepthink/deepthink_report.json": "deepthink_base.json",
     "/tmp/dtfinal/j8x3v6g4nh/cotfaith-deepthink/deepthink_report.json": "deepthink_sft.json",
     "/tmp/dtfinal/8t2n5ucjcd/cotfaith-deepthink/deepthink_report.json": "deepthink_rl.json",
-    "/tmp/cf_r3_all/ik5n2thine/cotfaith-lerobot/bridge_report.json": "cross_corpus_bridge_v2_n30.json",
-    "/tmp/cf_r3_all/c2saurubyx/cotfaith-lerobot/bridge_report.json": "cross_corpus_fractal_n30.json",
-    "/tmp/cf_r3_all/kbb6g24nyg/cotfaith-lerobot/bridge_report.json": "cross_corpus_bcz_n30.json",
+    # F5 at N=100. The N=30 pilot these replaced (bolt ik5n2thine / c2saurubyx /
+    # kbb6g24nyg) is retained under results_v2/superseded/; same model, same
+    # protocol, same self-decoded CoT, 3.3x the samples.
+    "/tmp/cc100/qzvywaxg6u/cotfaith-lerobot/bridge_report.json": "cross_corpus_bridge_v2_n100.json",
+    "/tmp/cc100/ae8ikp2zv7/cotfaith-lerobot/bridge_report.json": "cross_corpus_fractal_n100.json",
+    "/tmp/cc100/q27nbyr3w8/cotfaith-lerobot/bridge_report.json": "cross_corpus_bcz_n100.json",
 }
 # Second model with all three floors: an independent retrain of the no-CoT
 # variant (identical config, reasoning_mode=no_cot, r=32, 15k steps, seed 0)
@@ -1295,11 +1298,16 @@ def main():
                     "mass": {k.replace("action->", ""): v["mean"] for k, v in a.items()},
                     "mass_std": {k.replace("action->", ""): v["std"] for k, v in a.items()}}
 
-    # ---- cross-corpus N=30 (F5) ----
+    # ---- cross-corpus N=100 (F5) ----
+    # Was N=30. The upgrade is a straight replication rather than a re-run with
+    # a changed protocol: same checkpoint, same self-decoded 9-tag CoT, same edit
+    # families, 3.3x the samples. Every attention bucket mean lands within
+    # 0.003 of its N=30 value, which is what makes the transfer claim a
+    # measurement rather than a small-sample coincidence.
     cross = {}
-    for tag, path in (("bridge_v2", "/tmp/cf_r3_all/ik5n2thine/cotfaith-lerobot/bridge_report.json"),
-                      ("fractal",   "/tmp/cf_r3_all/c2saurubyx/cotfaith-lerobot/bridge_report.json"),
-                      ("bcz",       "/tmp/cf_r3_all/kbb6g24nyg/cotfaith-lerobot/bridge_report.json")):
+    for tag, path in (("bridge_v2", "/tmp/cc100/qzvywaxg6u/cotfaith-lerobot/bridge_report.json"),
+                      ("fractal",   "/tmp/cc100/ae8ikp2zv7/cotfaith-lerobot/bridge_report.json"),
+                      ("bcz",       "/tmp/cc100/q27nbyr3w8/cotfaith-lerobot/bridge_report.json")):
         rep = load(path)
         if not rep:
             continue
@@ -1471,6 +1479,10 @@ def main():
         "attention_baselines_noncot": baselines,
         "attention_deepthink": dt,
         "deepthink_p2": derive_deepthink_p2(),
+        # Key kept as-is: `cross_corpus_n30` is what verify_paper_numbers.py and
+        # the figure generators read, and renaming it would silently drop the F5
+        # audits rather than fail them. The block's own `n_samples_used` is the
+        # authoritative N.
         "cross_corpus_n30": cross,
         "attention_noise_floor": noise,
         "calibration_floors": calib,

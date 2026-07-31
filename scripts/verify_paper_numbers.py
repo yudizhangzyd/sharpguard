@@ -457,29 +457,148 @@ def audit_calibration_floors(a: Audit, d: Optional[dict]) -> None:
 
 
 def audit_f5(a: Audit, d: Optional[dict]) -> None:
-    sec = "F5 - cross-corpus transfer at N=30"
+    """F5's every printed cell, not just its summary bound.
+
+    This audit used to assert two loose things -- n >= 25 per corpus and a
+    <= 2.7 pp deviation bound -- and that looseness is exactly how the printed
+    LIBERO reference row came to disagree with the 3-seed `ecot-bridge` profile
+    the rest of the paper quotes: a max-deviation check cannot notice that the
+    row it is measuring against is stale. Every mean, std and per-family F is
+    now pinned to the digits in the manuscript.
+    """
+    sec = "F5 - cross-corpus transfer at N=100"
     cc = dig(d, "cross_corpus_n30")
     if not cc:
         a.check(sec, "cross_corpus_n30 block present in the release", True, None,
                 source=str(DERIVED))
         return
     ns = {k: dig(cc, k, "n_samples_used") for k in cc}
-    a.check(sec, "every non-LIBERO corpus has n >= 25 (paper claims an N=30 "
-                 "sweep, not the withdrawn N=1 pilot)", True,
-            all(n is not None and n >= 25
-                for k, n in ns.items() if "libero" not in k.lower()),
+    a.check(sec, "all three non-LIBERO corpora ran at N=100, which is what "
+                 "replaced the N=30 pilot", [100, 100, 100],
+            [ns.get("bridge_v2"), ns.get("fractal"), ns.get("bcz")],
             source=f"n per corpus = {ns}")
+    a.check(sec, "and the corpora are the three the paper names, by their "
+                 "upstream repo ids",
+            ["IPEC-COMMUNITY/bc_z_lerobot",
+             "IPEC-COMMUNITY/bridge_orig_lerobot",
+             "IPEC-COMMUNITY/fractal20220817_data_lerobot"],
+            sorted(v for v in (dig(cc, k, "dataset") for k in cc) if v),
+            source="dataset field of each run")
+
     # Cross-corpus records name the instruction bucket "instr"; the LIBERO
     # reference profile lives in the main attention block as "instruction".
     buckets = {"visual": "visual", "instr": "instruction",
                "cot": "cot", "action_prev": "action_prev"}
     lib = dig(d, "attention", "ecot-bridge", "mass")
-    devs = [abs(dig(cc, k, "mass", cb) - lib[lb]) * 100
+    lib_sd = dig(d, "attention", "ecot-bridge", "mass_std")
+
+    # The LIBERO reference row, as printed. It must be the SAME profile the rest
+    # of the paper quotes for ecot-bridge -- if this row is ever allowed to come
+    # from a different run, the whole cross-corpus comparison is measuring a
+    # deviation from a number that appears nowhere else.
+    a.check(sec, "LIBERO reference row (visual, instr, cot, prev) as printed",
+            [0.290, 0.301, 0.343, 0.065],
+            [r3(lib.get(b)) if lib else None
+             for b in ("visual", "instruction", "cot", "action_prev")],
+            source="attention['ecot-bridge'].mass -- the 3-seed profile "
+                   "Section 5 quotes, not a separate run")
+    a.check(sec, "LIBERO reference row stds as printed",
+            [0.006, 0.009, 0.009, 0.002],
+            [r3(lib_sd.get(b)) if lib_sd else None
+             for b in ("visual", "instruction", "cot", "action_prev")],
+            source="attention['ecot-bridge'].mass_std")
+
+    printed = {
+        "bridge_v2": ((0.296, 0.299, 0.338, 0.067),
+                      (0.010, 0.012, 0.017, 0.004)),
+        "fractal":   ((0.291, 0.302, 0.335, 0.073),
+                      (0.008, 0.010, 0.014, 0.004)),
+        "bcz":       ((0.297, 0.310, 0.323, 0.070),
+                      (0.010, 0.014, 0.022, 0.004)),
+    }
+    order = ("visual", "instr", "cot", "action_prev")
+    for tag, (means, stds) in printed.items():
+        a.check(sec, f"{tag}: (visual, instr, cot, prev) means as printed",
+                list(means),
+                [r3(dig(cc, tag, "mass", b)) for b in order],
+                source=dig(cc, tag, "source"))
+        a.check(sec, f"{tag}: (visual, instr, cot, prev) stds as printed",
+                list(stds),
+                [r3(dig(cc, tag, "mass_std", b)) for b in order],
+                source=dig(cc, tag, "source"))
+
+    devs = {f"{k}.{cb}": (dig(cc, k, "mass", cb) - lib[lb]) * 100
             for k in cc for cb, lb in buckets.items()
-            if lib and dig(cc, k, "mass", cb) is not None and lb in lib]
-    a.check(sec, "max cross-corpus deviation on any attention bucket <= 2.7 pp",
-            True, None if not devs else max(devs) <= 2.7 + 1e-6,
-            source=None if not devs else f"max deviation = {max(devs):.2f} pp")
+            if lib and dig(cc, k, "mass", cb) is not None and lb in lib}
+    worst = max(devs, key=lambda k: abs(devs[k])) if devs else None
+    a.check(sec, "max cross-corpus deviation on any attention bucket <= 2.1 pp",
+            True, None if not devs else max(abs(v) for v in devs.values()) <= 2.1,
+            source=None if not devs
+            else f"largest is {worst} at {devs[worst]:+.2f} pp")
+    a.check(sec, "and the largest one is BC-Z's CoT bucket, which the prose "
+                 "names", "bcz.cot", worst,
+            source="every other bucket on every corpus is within 0.9 pp")
+    a.check(sec, "every bucket other than BC-Z's CoT is within 0.9 pp", True,
+            None if not devs else all(abs(v) <= 0.9 for k, v in devs.items()
+                                      if k != "bcz.cot"),
+            source="deviation from the LIBERO reference profile, per bucket")
+
+    # Per-family magnitude responses and their N, exactly as printed. The N here
+    # is the visibility gate's yield, not the sample count, so it is quoted per
+    # cell in the prose and has to be pinned per cell too.
+    lib_fams = dig(d, "models", "ecot-bridge", "families") or {}
+    a.check(sec, "LIBERO direction_flip / gripper_flip as printed",
+            [0.963, 0.697],
+            [r3(dig(lib_fams, "direction_flip", "F_mag")),
+             r3(dig(lib_fams, "gripper_flip", "F_mag"))],
+            source="models['ecot-bridge'].families")
+    for tag, dF, dN, gF, gN in (("bridge_v2", 0.913, 92, 0.804, 51),
+                                ("fractal",   0.974, 77, 0.770, 74),
+                                ("bcz",       0.951, 81, 0.746, 63)):
+        e = dig(cc, tag, "edit") or {}
+        a.check(sec, f"{tag}: direction_flip F and N as printed", [dF, dN],
+                [r3(dig(e, "direction_flip", "faithful_rate")),
+                 dig(e, "direction_flip", "n")],
+                source=dig(cc, tag, "source"))
+        a.check(sec, f"{tag}: gripper_flip F and N as printed", [gF, gN],
+                [r3(dig(e, "gripper_flip", "faithful_rate")),
+                 dig(e, "gripper_flip", "n")],
+                source=dig(cc, tag, "source"))
+        # subject_swap yields nothing on any external corpus: these are
+        # self-decoded CoTs and the visibility gate admits no sample. Recorded
+        # rather than dropped, so the empty cell is a stated fact.
+        a.check(sec, f"{tag}: subject_swap yields n=0 (self-decoded CoT, "
+                     f"visibility gate admits nothing)", 0,
+                dig(e, "subject_swap", "n"), source=dig(cc, tag, "source"))
+
+    # The N=30 pilot is superseded, not deleted, and the paper says the two agree
+    # to within 0.3 pp. That is the claim that makes the upgrade meaningful, so
+    # it is checked against the retained pilot rather than asserted in prose.
+    pilot_dir = ROOT / "results_v2" / "superseded"
+    pilot = {}
+    for tag in ("bridge_v2", "fractal", "bcz"):
+        f = pilot_dir / f"cross_corpus_{tag}_n30.json"
+        try:
+            pilot[tag] = json.loads(f.read_text())
+        except Exception:
+            pass
+    a.check(sec, "the superseded N=30 pilot is retained for all three corpora",
+            3, len(pilot), source=str(pilot_dir))
+    if len(pilot) == 3:
+        gaps = {}
+        for tag, rep in pilot.items():
+            ag = rep.get("attention_aggregate") or {}
+            for cb in order:
+                old_m = (ag.get(f"action->{cb}") or {}).get("mean")
+                new_m = dig(cc, tag, "mass", cb)
+                if old_m is not None and new_m is not None:
+                    gaps[f"{tag}.{cb}"] = abs(new_m - old_m) * 100
+        w = max(gaps, key=lambda k: gaps[k]) if gaps else None
+        a.check(sec, "every bucket mean reproduces the N=30 pilot to within "
+                     "0.3 pp, so the stability was not a small-sample artifact",
+                True, None if not gaps else max(gaps.values()) <= 0.3,
+                source=None if not gaps
+                else f"largest gap is {w} at {gaps[w]:.2f} pp")
 
 
 def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
@@ -1610,7 +1729,13 @@ def audit_manuscript_hygiene(a: Audit) -> None:
         r"N{=}1$ pilot": "stale N=1 cross-corpus pilot text (F5 is now N=30)",
         "in progress and will populate": "stale 'in progress' promise",
         r"AUROC is $\leq 0.65$": "withdrawn P3 AUROC value still asserted",
-        "0.853": "stale F_bar upper bound (correct value 0.860)",
+        # Was a bare "0.853" guard. It had to be narrowed once the rollout
+        # gate's libero_10 row began quoting 0.853 as its fraction of published
+        # SR: a bare-substring guard on a three-digit number cannot tell the two
+        # apart, and the version that could not would have blocked a real
+        # measurement. The stale value only ever appeared as an F_bar range.
+        r"$0.853$ across": "stale F_bar upper bound (correct value 0.860)",
+        r"to $0.853$ on our": "stale F_bar upper bound (correct value 0.860)",
         r"5.5\times$ spread": "stale F_bar spread (correct value 5.6x)",
         "natural strengthening we plan": "stale paraphrase-null promise",
         "none is marked ``---''": "false full-population claim (the para "
@@ -2595,6 +2720,11 @@ def audit_rollout_gate_winning(a, d):
         "libero_spatial": (0.74, 37, 50, 0.844, 0.877, 0.00, 220),
         "libero_object":  (0.90, 45, 50, 0.881, 1.022, 0.00, 280),
         "libero_goal":    (0.74, 37, 50, 0.794, 0.932, 0.12, 300),
+        # libero_10 was excluded from the pre-fix table as uninterpretable: we
+        # ran a flat 400 steps where upstream allots 520, so its 0/50 could have
+        # been truncation. It is in the gate now at the sentinel budget, which is
+        # what retires that caveat by measurement rather than by argument.
+        "libero_10":      (0.46, 23, 50, 0.539, 0.853, 0.00, 520),
     }
     for suite, (sr, nsucc, ntot, pub, frac, anchor, budget) in printed.items():
         v = suites.get(suite) or {}
@@ -2627,7 +2757,8 @@ def audit_rollout_gate_winning(a, d):
     # Wilson CIs printed in the table.
     for suite, lo, hi in (("libero_spatial", 0.60, 0.84),
                           ("libero_object", 0.79, 0.96),
-                          ("libero_goal", 0.60, 0.84)):
+                          ("libero_goal", 0.60, 0.84),
+                          ("libero_10", 0.33, 0.60)):
         ci = (suites.get(suite) or {}).get("SR_wilson95") or [None, None]
         a.check(sec, f"{suite}: Wilson 95% CI as printed", [lo, hi],
                 [round(ci[0], 2), round(ci[1], 2)], source="SR_wilson95")
@@ -2643,8 +2774,18 @@ def audit_rollout_gate_winning(a, d):
     a.check(sec, "the gate passes: SR is at least half the published SR on "
                  "every suite run", True, summary.get("gate_passed"),
             source=summary.get("gate_criterion"))
-    a.check(sec, "the weakest cell as quoted in the prose", [0.74, 0.877],
+    a.check(sec, "the weakest cell as quoted in the prose", [0.46, 0.853],
             [summary.get("min_SR"), summary.get("min_SR_frac_of_published")],
+            source="summary")
+    # The four-suite flag is a separate claim from gate_passed and the paper
+    # makes it: upstream publishes exactly four LIBERO checkpoints, so four
+    # suites is the whole gate rather than a subset of a five-suite one.
+    a.check(sec, "the gate passes on all four suites, which is every suite "
+                 "upstream publishes a LIBERO checkpoint for", True,
+            summary.get("gate_passed_on_all_four_suites"),
+            source="summary")
+    a.check(sec, "four suites ran, 200 episodes in the winning arms", [4, 200],
+            [summary.get("n_suites_run"), summary.get("n_episodes_total")],
             source="summary")
 
     # --- joint necessity, which the prose states as a measurement ---
@@ -2670,7 +2811,8 @@ def audit_rollout_gate_winning(a, d):
     # under a different label and the whole comparison would be vacuous.
     for suite, raw, sent in (("libero_spatial", 0.447, 0.102),
                              ("libero_object", 0.441, 0.115),
-                             ("libero_goal", 0.717, -0.440)):
+                             ("libero_goal", 0.717, -0.440),
+                             ("libero_10", 0.587, -0.179)):
         v = suites.get(suite) or {}
         a.check(sec, f"{suite}: mean gripper command, raw then delivered, as "
                      f"quoted", [raw, sent],
@@ -2686,7 +2828,8 @@ def audit_rollout_gate_winning(a, d):
     # episode could terminate on completion and still be scored a failure.
     for suite, win, anch in (("libero_spatial", 7025, 11000),
                              ("libero_object", 7864, 14000),
-                             ("libero_goal", 7931, 13897)):
+                             ("libero_goal", 7931, 13897),
+                             ("libero_10", 20577, 26000)):
         v = suites.get(suite) or {}
         a.check(sec, f"{suite}: per-step gripper samples, winning then anchor "
                      f"arm, as quoted", [win, anch],

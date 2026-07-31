@@ -1,4 +1,4 @@
-"""Fig 10 -- cross-corpus causal-edit response (F5), N=30 per non-LIBERO corpus.
+"""Fig 10 -- cross-corpus causal-edit response (F5), N=100 per non-LIBERO corpus.
 
 Loaded from results_v2/derived_metrics.json.  No hardcoded literals.
 NOTE: these are magnitude-F values; the directional caveat of Fig. 12 applies

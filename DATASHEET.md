@@ -33,7 +33,7 @@ Anonymous for review. Compute was provided by the authors' institution.
 **What do the instances represent?**
 Three kinds of record, all keyed to a (model, observation, edit family) triple:
 
-1. **Edit records** (45,526 released; 39,928 scored) — for one image/instruction/CoT triple
+1. **Edit records** (45,838 released; 40,240 scored) — for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
    boolean `faithful = delta_linf > tau`.
@@ -45,7 +45,7 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-48,999 records in 43.3 MB of JSON across 15 models: 45,526 edit records, 3,120
+49,311 records in 43.3 MB of JSON across 15 models: 45,838 edit records, 3,120
 attention records, and 353 records behind the P3 probe (200 from the withdrawn
 cross-domain run, retained so the withdrawal is checkable rather than asserted,
 plus the 153 of the in-domain re-run that replaced it). The edit release is 40
@@ -59,7 +59,7 @@ partner for the retraining-variance measurement), and 3 cross-corpus runs of
 the 3-seed 13-family re-runs that replaced the submission's single-run point
 estimates.
 
-Of the 45,526 edit records, **39,928 carry a scored action pair**. The other
+Of the 45,838 edit records, **40,240 carry a scored action pair**. The other
 5,598 are retained with `skipped: true` and a machine-readable `reason` --- most
 often that the edit family's target object is not visible in the frame, which
 is a property of the observation, not a failure. They are released rather than
@@ -191,12 +191,20 @@ deliberately incomplete in ways the paper states as limitations:
   cause was our action decode itself. With the checkpoint's own
   `predict_action` in place of our masked-argmax loop, plus upstream's
   `g -> -sign(2g-1)` gripper convention, the gate passes at upstream's own
-  per-suite step budgets: 0.74 / 0.90 / 0.74 on libero_spatial / libero_object /
-  libero_goal against published 0.844 / 0.881 / 0.794, all 50/50 on canonical
-  init states (`results_v2/canonical_runs/gate_foursuite_winning/`). Each job's
-  anchor arm keeps the corrected decoder and drops only the gripper convention
-  and scores 0.00 / 0.00 / 0.12, so the release lets a reader check that both
-  corrections are necessary rather than take it on our word. **No number in the
+  per-suite step budgets **on all four suites**: 0.74 / 0.90 / 0.74 / 0.46 on
+  libero_spatial / libero_object / libero_goal / libero_10 against published
+  0.844 / 0.881 / 0.794 / 0.539 (0.877 to 1.022 of published, weakest cell
+  0.853), all 50/50 on canonical init states
+  (`results_v2/canonical_runs/gate_foursuite_winning/`). libero_10 was the one
+  suite the pre-fix baseline had to exclude as uninterpretable — we ran a flat
+  400 steps where upstream allots 520 — and it now runs at 520 and scores 23/50,
+  so that caveat is retired by measurement rather than by argument. Four suites
+  is the **whole** gate, not a subset: upstream publishes exactly four LIBERO
+  checkpoints and no libero_90 checkpoint, so there is no fifth suite with a
+  published SR to gate against. Each job's anchor arm keeps the corrected
+  decoder and drops only the gripper convention and scores 0.00 / 0.00 / 0.12 /
+  0.00, so the release lets a reader check that both corrections are necessary
+  rather than take it on our word. **No number in the
   paper is conditioned on a rollout** — the gate validates the harness, it does
   not turn the leaderboard into a rollout metric.
 - **Probe P3 (attention->action-error AUROC) is withdrawn**, not merely
@@ -360,7 +368,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 694 claims, one of which is that this
+The audit script currently checks 728 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
