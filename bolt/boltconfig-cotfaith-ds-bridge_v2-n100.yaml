@@ -1,0 +1,31 @@
+name: 'CoT-Faith cross-dataset: bridge_v2 at N=100 (F5 sample-size strengthening)'
+description: 'CoT-Faith evaluation on IPEC-COMMUNITY/bridge_orig_lerobot: self-generated CoT attention + 3-family causal edit (subject/direction/gripper), threshold=0.05.'
+tags: ['cotfaith', 'multi-dataset', 'lerobot', 'bridge_v2']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_PATH: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'IPEC-COMMUNITY/bridge_orig_lerobot'
+  N_SAMPLES: '100'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_lerobot.sh
