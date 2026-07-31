@@ -18,11 +18,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      # numpy is the only dependency of the derive/audit path. Deliberately not
-      # installing torch or transformers: if the audit ever needs them, a number
-      # is being recomputed from a model instead of read from a released record,
-      # which is the thing this check exists to prevent.
-      - run: pip install --quiet numpy
+      # numpy is the only dependency of the derive/audit path; pillow and tqdm
+      # are needed because importing sharpguard.libero_sim for the transform
+      # test pulls sharpguard/__init__, which reaches tqdm through
+      # measurement.py. Deliberately still NOT installing torch or
+      # transformers: if the audit ever needs those, a number is being
+      # recomputed from a model instead of read from a released record, which
+      # is the thing this check exists to prevent. libero, robosuite, mujoco and
+      # tensorflow are reachable from libero_sim but only inside functions, so
+      # they never load here.
+      - run: pip install --quiet numpy pillow tqdm
       - name: Re-derive metrics from the released per-sample records
         run: python scripts/derive_metrics.py
       - name: Fail if derive_metrics.py changed derived_metrics.json
