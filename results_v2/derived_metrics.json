@@ -2875,7 +2875,7 @@
  "deepthink_p2": {
   "DT-base": {
    "label": "DT-base",
-   "source": "/Users/yudizhang/Documents/sharpguard/results_v2/canonical_runs/deepthink_base.json",
+   "source": "results_v2/canonical_runs/deepthink_base.json",
    "model": "yinchenghust/deepthinkvla_base",
    "seed": 0,
    "n_families_scored": 11,
@@ -3070,7 +3070,7 @@
   },
   "DT-SFT": {
    "label": "DT-SFT",
-   "source": "/Users/yudizhang/Documents/sharpguard/results_v2/canonical_runs/deepthink_sft.json",
+   "source": "results_v2/canonical_runs/deepthink_sft.json",
    "model": "yinchenghust/deepthinkvla_libero_cot_sft",
    "seed": 0,
    "n_families_scored": 11,
@@ -3265,7 +3265,7 @@
   },
   "DT-RL": {
    "label": "DT-RL",
-   "source": "/Users/yudizhang/Documents/sharpguard/results_v2/canonical_runs/deepthink_rl.json",
+   "source": "results_v2/canonical_runs/deepthink_rl.json",
    "model": "yinchenghust/deepthinkvla_libero_cot_rl",
    "seed": 0,
    "n_families_scored": 11,
@@ -3861,7 +3861,7 @@
   },
   "ours-no-cot": {
    "label": "ours-no-cot",
-   "source": "/Users/yudizhang/Documents/sharpguard/results_v2/canonical_runs/ours_no-cot_edit_13family_calibration.json",
+   "source": "results_v2/canonical_runs/ours_no-cot_edit_13family_calibration.json",
    "n_families": 13,
    "seed": 0,
    "F_bar_non_control": 0.12401360544217688,

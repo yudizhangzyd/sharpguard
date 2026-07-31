@@ -26,6 +26,26 @@ from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
+def rel(path: str) -> str:
+    """Make an in-repo path repo-relative for the `source` provenance fields.
+
+    Absolute paths under ROOT used to be written verbatim, which baked the
+    author's home directory into a released artifact and made the CI
+    reproducibility check ("re-derive, then `git diff --exit-code`")
+    unpassable anywhere but that one laptop -- the check failed on paths while
+    every number matched. Paths outside ROOT (the /tmp/... run directories on
+    the compute cluster) are left alone: they are provenance for where a run
+    happened, they are constant strings, and rewriting them would claim the
+    artifacts live in this repo when they do not.
+    """
+    try:
+        ap = os.path.abspath(path)
+    except TypeError:
+        return path
+    return (os.path.relpath(ap, ROOT).replace(os.sep, "/")
+            if ap.startswith(ROOT + os.sep) else path)
+
 # ---------------------------------------------------------------------------
 # ONE canonical run pinned per model.  (v6 mixed two r=32 runs: attention from
 # /tmp/cf_sweep/ours-train, edits from /tmp/cf_done/bcihypv3gu.  We now pin
@@ -460,7 +480,7 @@ def derive_calibration(path, label):
     n = {f: ag[f]["n"] for f in ag}
     f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
     c = {
-        "label": label, "source": path, "n_families": len(ag),
+        "label": label, "source": rel(path), "n_families": len(ag),
         "seed": crep.get("seed"), "F_bar_non_control": f_bar,
         "families": {f: {"F_mag": fr[f], "n": n[f],
                          "wilson": wilson(round(fr[f] * n[f]), n[f])}
@@ -548,7 +568,7 @@ def derive_deepthink_p2():
 
         fr = {f: v["F_mag"] for f, v in fams.items()}
         f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
-        m = {"label": label, "source": os.path.join(CANON, fname),
+        m = {"label": label, "source": rel(os.path.join(CANON, fname)),
              "model": rep.get("model"), "seed": rep.get("seed"),
              "n_families_scored": len(fams),
              "n_attn_ok": rep.get("n_attn_ok"),
@@ -695,7 +715,7 @@ def main():
         rows = rep["per_sample"]
         buckets = {"visual": "action->visual", "instruction": "action->instr",
                    "cot": "action->cot", "action_prev": "action->action_prev"}
-        rec = {"n": len(rows), "source": p, "mass": {}, "mass_std": {},
+        rec = {"n": len(rows), "source": rel(p), "mass": {}, "mass_std": {},
                "seg_len": {}, "per_token": {}}
         for b, key in buckets.items():
             vs = [r[key] for r in rows]
@@ -752,7 +772,7 @@ def main():
         if not rep or not rep.get("n_attn_ok"):
             continue
         a = rep["attention_aggregate"]
-        dt[name] = {"n": rep.get("n_attn_ok"), "source": dpath, "model": rep.get("model"),
+        dt[name] = {"n": rep.get("n_attn_ok"), "source": rel(dpath), "model": rep.get("model"),
                     "mass": {k.replace("action->", ""): v["mean"] for k, v in a.items()},
                     "mass_std": {k.replace("action->", ""): v["std"] for k, v in a.items()}}
 
@@ -766,7 +786,7 @@ def main():
             continue
         a = rep["attention_aggregate"]
         cross[tag] = {
-            "source": path, "dataset": rep.get("dataset"),
+            "source": rel(path), "dataset": rep.get("dataset"),
             "n_samples_used": rep.get("n_samples_used"),
             "n_attn": rep.get("n_attn_ok"),
             "mass": {k.replace("action->", ""): v["mean"] for k, v in a.items()},

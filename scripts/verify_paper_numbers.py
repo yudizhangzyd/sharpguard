@@ -1333,6 +1333,50 @@ def audit_deepthink_tau_units(a: Audit) -> None:
 
 # ----------------------------------------------------------------------
 
+
+def audit_derived_paths_are_portable(a):
+    """The released derived file must not name anybody's home directory.
+
+    This check exists because the CI reproducibility gate -- re-derive, then
+    `git diff --exit-code results_v2/derived_metrics.json` -- failed on every
+    push while every number in it matched. The whole diff was four `source`
+    fields holding absolute paths under the author's home directory, so the
+    gate could only ever pass on one laptop, and a released artifact was
+    advertising a filesystem nobody else has. Numbers were never affected;
+    the check was.
+    """
+    sec = "derived-file portability"
+    raw = DERIVED.read_text()
+    for bad in ("/Users/", "/home/", r"C:\\"):   # JSON escapes a Windows path as C:\\
+        a.check(sec, f"derived_metrics.json contains no {bad!r} path",
+                0, raw.count(bad),
+                source="an absolute home path makes the CI re-derive check "
+                       "unpassable off the authoring machine")
+    # The in-repo provenance that replaced them must actually resolve, or
+    # "portable" would just mean "wrong everywhere equally".
+    derived = json.loads(raw)
+    checked, missing = 0, []
+    def walk(node):
+        nonlocal checked
+        if isinstance(node, dict):
+            src = node.get("source")
+            if isinstance(src, str) and not src.startswith("/"):
+                checked += 1
+                if not (ROOT / src).exists():
+                    missing.append(src)
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+    walk(derived)
+    a.check(sec, "every repo-relative `source` in the derived file resolves",
+            [], missing,
+            source=f"checked {checked} repo-relative source paths")
+    a.check(sec, "the derived file records at least one repo-relative source",
+            True, checked > 0,
+            source="zero would mean the rel() rewrite silently stopped firing")
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Audit cot_faith_iclr.tex against results_v2/*.json.")
@@ -1373,6 +1417,7 @@ def main() -> int:
     audit_no_published_ranking(a)
     audit_edit_decode_is_unnorm_free(a)
     audit_deepthink_tau_units(a)
+    audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script
     # verify its own advertised size, so adding a check cannot silently make
