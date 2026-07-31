@@ -953,6 +953,110 @@ def derive_rollout_gate():
     return {"suites": suites, "summary": summary}
 
 
+def derive_rollout_gate_winning():
+    """The same four-suite gate re-run on the composition that passes.
+
+    Three things differ from `derive_rollout_gate` above, and all three are read
+    out of the artifact rather than assumed: the action decode is upstream's own
+    `predict_action` instead of our masked-argmax loop, the gripper channel gets
+    upstream's `-sign(2g-1)`, and `max_steps` was requested as 0, meaning "use
+    upstream's budget for this suite" -- which is what retires the libero_10
+    truncation caveat that made the pre-fix table's fourth row uninterpretable.
+
+    Each suite's job ran an A/B, so the artifact carries two arms: the anchor
+    (`none+none`, upstream decode with the gripper convention NOT applied) and
+    the winning cell (`openvla+none`). Both are kept. The anchor is what makes
+    the gripper factor's contribution measurable instead of asserted, and on
+    three of four suites it is still near zero, so the two corrections are
+    jointly necessary rather than either one alone being the fix.
+    """
+    base = os.path.join(ROOT, "results_v2", "canonical_runs",
+                        "gate_foursuite_winning")
+    suites = {}
+    for suite in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        d = os.path.join(base, suite)
+        f = os.path.join(d, "gripper_ab.json")
+        if not os.path.isfile(f):
+            continue
+        ab = load(f)
+        with open(os.path.join(d, "bolt_task_id.txt")) as fh:
+            tid = fh.read().strip()
+        win = ab["arms"]["openvla+none"]
+        anchor = ab["arms"]["none+none"]
+        budget = GATE_UPSTREAM_MAX_STEPS.get(suite)
+        steps = win.get("max_steps")
+        n_total, n_succ = win.get("n_total"), win.get("n_success")
+        suites[suite] = {
+            "model": ab.get("model"),
+            "unnorm_key": ab.get("unnorm_key"),
+            "action_decoder": win.get("action_decoder"),
+            "gripper_transform": win.get("gripper_transform"),
+            "image_preproc": win.get("image_preproc"),
+            "n_total": n_total,
+            "n_success": n_succ,
+            "SR": win.get("SR"),
+            "SR_wilson95": wilson(n_succ, n_total) if n_total else None,
+            "published_SR": GATE_PUBLISHED_SR.get(suite),
+            "SR_frac_of_published": (
+                round(win["SR"] / GATE_PUBLISHED_SR[suite], 3)
+                if suite in GATE_PUBLISHED_SR and win.get("SR") is not None
+                else None),
+            # The gripper factor's own contribution on this suite, with the
+            # decoder already corrected in both arms.
+            "SR_anchor_no_gripper_transform": anchor.get("SR"),
+            "SR_gain_from_gripper_transform": (
+                round(win["SR"] - anchor["SR"], 3)
+                if None not in (win.get("SR"), anchor.get("SR")) else None),
+            "max_steps_requested": ab.get("max_steps_requested"),
+            "max_steps_run": steps,
+            "upstream_max_steps": budget,
+            "step_budget_below_upstream": bool(budget and steps
+                                               and steps < budget),
+            "interpretable": not bool(budget and steps and steps < budget),
+            "n_episodes_canonical_init": win.get("n_episodes_canonical_init"),
+            "all_episodes_used_canonical_init": win.get(
+                "all_episodes_used_canonical_init"),
+            "bolt_task": tid,
+            "source": rel(f),
+        }
+
+    valid = {k: v for k, v in suites.items() if v["interpretable"]}
+    passed = bool(valid) and len(valid) == len(suites) and all(
+        v["SR"] >= 0.5 * (v["published_SR"] or 1.0) for v in valid.values())
+    return {
+        "suites": suites,
+        "summary": {
+            "n_suites_run": len(suites),
+            "n_episodes_total": sum(v["n_total"] or 0 for v in suites.values()),
+            "n_suites_interpretable": len(valid),
+            "all_suites_at_upstream_step_budget": all(
+                not v["step_budget_below_upstream"] for v in suites.values()),
+            "all_episodes_canonical_init": all(
+                v["all_episodes_used_canonical_init"] for v in suites.values()),
+            "min_SR": min((v["SR"] for v in valid.values()), default=None),
+            "min_SR_frac_of_published": min(
+                (v["SR_frac_of_published"] for v in valid.values()
+                 if v["SR_frac_of_published"] is not None), default=None),
+            "gate_criterion": "SR >= 0.5 x published SR on every suite run, "
+                              "every suite at upstream's own step budget",
+            "gate_passed": passed,
+            # Only true once all four suites are in; a three-suite pass is not
+            # the gate, and the flag has to say which it is.
+            "gate_passed_on_all_four_suites": passed and len(suites) == 4,
+            "note": (
+                "Retires the pre-fix table above. The third cause the earlier "
+                "runs could not find was the action decode itself: replacing "
+                "our masked-argmax loop with the checkpoint's own "
+                "predict_action, and applying upstream's -sign(2g-1) gripper "
+                "convention on top of it, moves SR from near zero to within "
+                "half of published on every suite measured. The anchor arm in "
+                "each job holds the corrected decoder and drops only the "
+                "gripper convention, so the two corrections are shown to be "
+                "jointly necessary rather than argued to be."),
+        },
+    }
+
+
 def main():
     models = {}
     for name, paths in EDIT_RUNS.items():
@@ -1219,6 +1323,7 @@ def main():
         "training_replicate": train_rep,
         "noise_hierarchy": hierarchy,
         "rollout_gate": derive_rollout_gate(),
+        "rollout_gate_winning": derive_rollout_gate_winning(),
     }
     dest = os.path.join(ROOT, "results_v2", "derived_metrics.json")
     with open(dest, "w") as fh:

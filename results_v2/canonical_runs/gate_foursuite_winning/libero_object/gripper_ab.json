@@ -1,0 +1,82 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-object",
+  "suite": "libero_object",
+  "unnorm_key": "libero_object",
+  "gripper_arms": [
+    "none",
+    "openvla"
+  ],
+  "image_preprocs": [
+    "none"
+  ],
+  "action_decoders": [
+    "upstream"
+  ],
+  "cell_key_format": "gripper+image",
+  "anchor_cell": "none+none",
+  "n_episodes_requested_per_arm": 50,
+  "n_episodes_actually_run_per_arm": 50,
+  "all_arms_same_episode_count": true,
+  "max_steps_requested": 0,
+  "max_steps": 280,
+  "win_threshold": 0.5,
+  "arms": {
+    "none+none": {
+      "n_total": 50,
+      "n_success": 0,
+      "n_asr": 0,
+      "n_episodes_requested": 50,
+      "n_episodes_per_task": 5,
+      "n_tasks": 10,
+      "n_episodes_rounded_up": false,
+      "n_episodes_canonical_init": 50,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "none",
+      "image_preproc": "none",
+      "action_decoder": "upstream",
+      "max_steps": 280,
+      "upstream_max_steps": 280,
+      "max_steps_below_upstream": false,
+      "gripper_raw_mean": 0.6071809525234358,
+      "gripper_sent_mean": 0.6071809525234358,
+      "gripper_frac_close_raw": 0.6095714285714285,
+      "gripper_frac_close_sent": 0.6095714285714285,
+      "n_gripper_samples": 14000,
+      "SR": 0.0,
+      "ASR": NaN
+    },
+    "openvla+none": {
+      "n_total": 50,
+      "n_success": 45,
+      "n_asr": 0,
+      "n_episodes_requested": 50,
+      "n_episodes_per_task": 5,
+      "n_tasks": 10,
+      "n_episodes_rounded_up": false,
+      "n_episodes_canonical_init": 50,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "openvla",
+      "image_preproc": "none",
+      "action_decoder": "upstream",
+      "max_steps": 280,
+      "upstream_max_steps": 280,
+      "max_steps_below_upstream": false,
+      "gripper_raw_mean": 0.440787505339509,
+      "gripper_sent_mean": 0.11495422177009156,
+      "gripper_frac_close_raw": 0.44252288911495424,
+      "gripper_frac_close_sent": 0.5574771108850458,
+      "n_gripper_samples": 7864,
+      "SR": 0.9,
+      "ASR": NaN
+    }
+  },
+  "sr_by_arm": {
+    "none+none": 0.0,
+    "openvla+none": 0.9
+  },
+  "winners": [
+    "openvla+none"
+  ]
+}

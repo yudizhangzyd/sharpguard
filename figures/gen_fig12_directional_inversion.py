@@ -4,8 +4,11 @@ version of its own flagship edit.
 (a) magnitude-F vs directional-F on direction_flip, per model.
 (b) signed cosine of the xyz translation before vs after direction_flip.
     A CoT-faithful model must move the OPPOSITE way (cos -> -1).
-(c) F_diff = F(f) - F(paraphrase_null): the differential leaderboard for the
-    one model where the paraphrase floor has been measured.
+(c) F_diff = F(f) - F(paraphrase_null): the differential leaderboard for
+    ours-no-cot. Every model now carries a measured paraphrase floor, but this
+    is the only one whose floor (0.19) is far enough below its ceiling for the
+    per-family differential to be legible; on the full-CoT variants the floors
+    sit at 0.45-0.66 and the bars collapse toward zero.
 
 All values from results_v2/derived_metrics.json.
 """

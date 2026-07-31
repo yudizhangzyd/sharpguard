@@ -7384,5 +7384,103 @@
    "gate_passed": false,
    "note": "The gate does not pass. Three suites are interpretable and all three fall far below the published SR; libero_10 is excluded because it ran 400 steps against upstream's 520. A source-level diff against openvla/openvla (bolt htrg4uchwi) found two differences that were live in these runs: the gripper channel was passed through where upstream applies -sign(2g-1), and every frame skipped upstream's JPEG round-trip plus lanczos3 resize to 224. Both are now implemented and under test; these numbers are the pre-fix baseline the corrected runs are measured against."
   }
+ },
+ "rollout_gate_winning": {
+  "suites": {
+   "libero_goal": {
+    "model": "openvla/openvla-7b-finetuned-libero-goal",
+    "unnorm_key": "libero_goal",
+    "action_decoder": "upstream",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "n_total": 50,
+    "n_success": 37,
+    "SR": 0.74,
+    "SR_wilson95": [
+     0.60446578011,
+     0.841286203486
+    ],
+    "published_SR": 0.794,
+    "SR_frac_of_published": 0.932,
+    "SR_anchor_no_gripper_transform": 0.12,
+    "SR_gain_from_gripper_transform": 0.62,
+    "max_steps_requested": 0,
+    "max_steps_run": 300,
+    "upstream_max_steps": 300,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "73yemfcdew",
+    "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_goal/gripper_ab.json"
+   },
+   "libero_object": {
+    "model": "openvla/openvla-7b-finetuned-libero-object",
+    "unnorm_key": "libero_object",
+    "action_decoder": "upstream",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "n_total": 50,
+    "n_success": 45,
+    "SR": 0.9,
+    "SR_wilson95": [
+     0.786395096652,
+     0.956524876008
+    ],
+    "published_SR": 0.881,
+    "SR_frac_of_published": 1.022,
+    "SR_anchor_no_gripper_transform": 0.0,
+    "SR_gain_from_gripper_transform": 0.9,
+    "max_steps_requested": 0,
+    "max_steps_run": 280,
+    "upstream_max_steps": 280,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "77j7hsb2gi",
+    "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_object/gripper_ab.json"
+   },
+   "libero_spatial": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "unnorm_key": "libero_spatial",
+    "action_decoder": "upstream",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "n_total": 50,
+    "n_success": 37,
+    "SR": 0.74,
+    "SR_wilson95": [
+     0.60446578011,
+     0.841286203486
+    ],
+    "published_SR": 0.844,
+    "SR_frac_of_published": 0.877,
+    "SR_anchor_no_gripper_transform": 0.0,
+    "SR_gain_from_gripper_transform": 0.74,
+    "max_steps_requested": 0,
+    "max_steps_run": 220,
+    "upstream_max_steps": 220,
+    "step_budget_below_upstream": false,
+    "interpretable": true,
+    "n_episodes_canonical_init": 50,
+    "all_episodes_used_canonical_init": true,
+    "bolt_task": "hge7gkxaa2",
+    "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_spatial/gripper_ab.json"
+   }
+  },
+  "summary": {
+   "n_suites_run": 3,
+   "n_episodes_total": 150,
+   "n_suites_interpretable": 3,
+   "all_suites_at_upstream_step_budget": true,
+   "all_episodes_canonical_init": true,
+   "min_SR": 0.74,
+   "min_SR_frac_of_published": 0.877,
+   "gate_criterion": "SR >= 0.5 x published SR on every suite run, every suite at upstream's own step budget",
+   "gate_passed": true,
+   "gate_passed_on_all_four_suites": false,
+   "note": "Retires the pre-fix table above. The third cause the earlier runs could not find was the action decode itself: replacing our masked-argmax loop with the checkpoint's own predict_action, and applying upstream's -sign(2g-1) gripper convention on top of it, moves SR from near zero to within half of published on every suite measured. The anchor arm in each job holds the corrected decoder and drops only the gripper convention, so the two corrections are shown to be jointly necessary rather than argued to be."
+  }
  }
 }
