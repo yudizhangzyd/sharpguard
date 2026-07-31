@@ -1,0 +1,679 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-object",
+  "suite": "libero_object",
+  "unnorm_key": "libero_object",
+  "checkpoint_exposes_predict_action": true,
+  "decoders": [
+    "ours",
+    "upstream"
+  ],
+  "tol": 0.0001,
+  "equivalence": {
+    "n_obs": 24,
+    "n_tasks_covered": 3,
+    "traj_steps_per_task": 8,
+    "image_preproc": "none",
+    "n_agree": 0,
+    "n_differ": 24,
+    "frac_agree": 0.0,
+    "max_linf": 1.121569,
+    "mean_linf": 0.719099,
+    "per_dim_max_abs_diff": {
+      "x": 0.532206,
+      "y": 0.593445,
+      "z": 0.507353,
+      "roll": 0.047987,
+      "pitch": 0.105244,
+      "yaw": 0.086008,
+      "gripper": 1.121569
+    },
+    "gripper_sign_agreement": 0.75,
+    "identical": false,
+    "linf_by_timestep": {
+      "0": 0.723427,
+      "1": 0.870588,
+      "2": 0.744281,
+      "3": 0.581111,
+      "4": 0.847059,
+      "5": 0.828758,
+      "6": 0.362799,
+      "7": 0.794771
+    },
+    "per_obs": [
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 0,
+        "ours": [
+          0.072558,
+          -0.002584,
+          -0.352941,
+          -0.048019,
+          -0.075626,
+          0.000294,
+          0.996078
+        ],
+        "upstream": [
+          0.197463,
+          -0.353256,
+          -0.022059,
+          -3.2e-05,
+          0.016071,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.350672,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 1,
+        "ours": [
+          0.072558,
+          -0.198151,
+          0.169118,
+          -3.2e-05,
+          -0.008937,
+          -0.043193,
+          0.188235
+        ],
+        "upstream": [
+          0.197463,
+          -0.353256,
+          -0.022059,
+          -3.2e-05,
+          0.016071,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.807843,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 2,
+        "ours": [
+          0.072558,
+          -0.002584,
+          -0.529412,
+          -0.010695,
+          -0.038113,
+          0.000294,
+          0.705882
+        ],
+        "upstream": [
+          0.197463,
+          -0.353256,
+          -0.022059,
+          -0.033208,
+          0.000441,
+          0.086303,
+          0.996078
+        ],
+        "linf": 0.507353,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 3,
+        "ours": [
+          0.197463,
+          -0.353256,
+          0.080882,
+          -3.2e-05,
+          0.105685,
+          0.000294,
+          0.996078
+        ],
+        "upstream": [
+          0.197463,
+          -0.265588,
+          0.0,
+          -0.029061,
+          0.000441,
+          -0.027731,
+          0.996078
+        ],
+        "linf": 0.105244,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 4,
+        "ours": [
+          0.197463,
+          0.024391,
+          0.0,
+          -0.006548,
+          0.000441,
+          0.000294,
+          0.258824
+        ],
+        "upstream": [
+          0.197463,
+          -0.569055,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.010336,
+          0.996078
+        ],
+        "linf": 0.737255,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 5,
+        "ours": [
+          0.197463,
+          -0.265588,
+          0.0,
+          -3.2e-05,
+          0.000441,
+          0.000294,
+          0.298039
+        ],
+        "upstream": [
+          0.268062,
+          -0.690441,
+          0.0,
+          -3.2e-05,
+          0.000441,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 6,
+        "ours": [
+          0.197463,
+          -0.23187,
+          0.0,
+          -0.020174,
+          0.005651,
+          0.000294,
+          0.298039
+        ],
+        "upstream": [
+          0.268062,
+          -0.643235,
+          0.0,
+          -3.2e-05,
+          0.007735,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the alphabet soup and place it in the basket",
+        "t": 7,
+        "ours": [
+          0.197463,
+          -0.23187,
+          0.0,
+          -0.020174,
+          0.005651,
+          0.041849,
+          0.298039
+        ],
+        "upstream": [
+          0.268062,
+          -0.643235,
+          0.0,
+          -3.2e-05,
+          0.007735,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 0,
+        "ours": [
+          0.143157,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.050924,
+          -0.12549
+        ],
+        "upstream": [
+          0.219186,
+          -0.022815,
+          0.0,
+          -3.2e-05,
+          0.000441,
+          -0.014202,
+          0.996078
+        ],
+        "linf": 1.121569,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 1,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.04416,
+          0.298039
+        ],
+        "upstream": [
+          0.08885,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.000441,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 2,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          -0.003727,
+          -0.050924,
+          -0.031373
+        ],
+        "upstream": [
+          0.447274,
+          -0.002584,
+          -0.080882,
+          -3.2e-05,
+          0.004609,
+          -0.025798,
+          0.996078
+        ],
+        "linf": 1.027451,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 3,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.004609,
+          -0.038361,
+          0.94902
+        ],
+        "upstream": [
+          0.534165,
+          -0.04979,
+          -0.102941,
+          -3.2e-05,
+          0.013987,
+          -0.038361,
+          0.996078
+        ],
+        "linf": 0.532206,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 4,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.004609,
+          -0.03063,
+          0.298039
+        ],
+        "upstream": [
+          0.154018,
+          -0.002584,
+          -0.051471,
+          -3.2e-05,
+          0.000441,
+          -0.051891,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 5,
+        "ours": [
+          0.132295,
+          -0.002584,
+          0.0,
+          -0.005363,
+          0.005651,
+          -0.050924,
+          -0.031373
+        ],
+        "upstream": [
+          0.154018,
+          -0.002584,
+          -0.051471,
+          -3.2e-05,
+          0.000441,
+          -0.051891,
+          0.996078
+        ],
+        "linf": 1.027451,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 6,
+        "ours": [
+          0.219186,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.000441,
+          -0.017101,
+          0.996078
+        ],
+        "upstream": [
+          0.534165,
+          -0.04979,
+          -0.102941,
+          -3.2e-05,
+          0.013987,
+          -0.038361,
+          0.996078
+        ],
+        "linf": 0.314979,
+        "agrees": false
+      },
+      {
+        "task": "pick up the cream cheese and place it in the basket",
+        "t": 7,
+        "ours": [
+          0.148587,
+          -0.002584,
+          -0.051471,
+          -3.2e-05,
+          0.000441,
+          -0.032563,
+          0.047059
+        ],
+        "upstream": [
+          0.154018,
+          -0.002584,
+          -0.051471,
+          -3.2e-05,
+          0.000441,
+          -0.051891,
+          0.996078
+        ],
+        "linf": 0.94902,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 0,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.050924,
+          0.298039
+        ],
+        "upstream": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.007735,
+          0.000294,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 1,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.050924,
+          -0.109804
+        ],
+        "upstream": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.010861,
+          0.000294,
+          0.996078
+        ],
+        "linf": 1.105882,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 2,
+        "ours": [
+          0.316938,
+          -0.198151,
+          0.0,
+          0.013002,
+          0.005651,
+          -0.050924,
+          0.298039
+        ],
+        "upstream": [
+          0.175741,
+          -0.002584,
+          0.0,
+          -0.026691,
+          0.000441,
+          -0.025798,
+          0.996078
+        ],
+        "linf": 0.698039,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 3,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.050924,
+          -0.109804
+        ],
+        "upstream": [
+          0.001959,
+          -0.002584,
+          -0.022059,
+          -3.2e-05,
+          0.000441,
+          0.000294,
+          0.996078
+        ],
+        "linf": 1.105882,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 4,
+        "ours": [
+          0.001959,
+          -0.002584,
+          0.0,
+          -3.2e-05,
+          0.005651,
+          -0.050924,
+          -0.109804
+        ],
+        "upstream": [
+          0.126865,
+          -0.002584,
+          0.0,
+          -0.005363,
+          0.019197,
+          0.000294,
+          0.996078
+        ],
+        "linf": 1.105882,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 5,
+        "ours": [
+          0.126865,
+          -0.002584,
+          0.0,
+          -0.000624,
+          0.005651,
+          -0.050924,
+          0.235294
+        ],
+        "upstream": [
+          0.186602,
+          -0.002584,
+          0.0,
+          -0.014842,
+          0.000441,
+          -0.032563,
+          0.996078
+        ],
+        "linf": 0.760784,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 6,
+        "ours": [
+          0.186602,
+          -0.002584,
+          0.0,
+          -0.010695,
+          0.004609,
+          0.042815,
+          0.996078
+        ],
+        "upstream": [
+          0.186602,
+          -0.002584,
+          0.0,
+          -0.014842,
+          0.000441,
+          -0.032563,
+          0.996078
+        ],
+        "linf": 0.075378,
+        "agrees": false
+      },
+      {
+        "task": "pick up the salad dressing and place it in the basket",
+        "t": 7,
+        "ours": [
+          0.099711,
+          -0.002584,
+          0.0,
+          -0.005363,
+          0.008777,
+          -0.018067,
+          0.258824
+        ],
+        "upstream": [
+          0.409259,
+          -0.117227,
+          0.0,
+          -0.002994,
+          0.000441,
+          -0.004538,
+          0.996078
+        ],
+        "linf": 0.737255,
+        "agrees": false
+      }
+    ]
+  },
+  "rollout": {
+    "arms": {
+      "ours": {
+        "n_total": 10,
+        "n_success": 0,
+        "n_asr": 0,
+        "n_episodes_requested": 10,
+        "n_episodes_per_task": 1,
+        "n_tasks": 10,
+        "n_episodes_rounded_up": false,
+        "n_episodes_canonical_init": 10,
+        "n_episodes_reset_init": 0,
+        "all_episodes_used_canonical_init": true,
+        "gripper_transform": "none",
+        "image_preproc": "none",
+        "action_decoder": "ours",
+        "max_steps": 280,
+        "upstream_max_steps": 280,
+        "max_steps_below_upstream": false,
+        "gripper_raw_mean": 0.21904482249104018,
+        "gripper_sent_mean": 0.21904482249104018,
+        "gripper_frac_close_raw": 0.7,
+        "gripper_frac_close_sent": 0.7,
+        "n_gripper_samples": 2800,
+        "SR": 0.0,
+        "ASR": NaN
+      },
+      "upstream": {
+        "n_total": 10,
+        "n_success": 0,
+        "n_asr": 0,
+        "n_episodes_requested": 10,
+        "n_episodes_per_task": 1,
+        "n_tasks": 10,
+        "n_episodes_rounded_up": false,
+        "n_episodes_canonical_init": 10,
+        "n_episodes_reset_init": 0,
+        "all_episodes_used_canonical_init": true,
+        "gripper_transform": "none",
+        "image_preproc": "none",
+        "action_decoder": "upstream",
+        "max_steps": 280,
+        "upstream_max_steps": 280,
+        "max_steps_below_upstream": false,
+        "gripper_raw_mean": 0.5820476191863417,
+        "gripper_sent_mean": 0.5820476191863417,
+        "gripper_frac_close_raw": 0.5846428571428571,
+        "gripper_frac_close_sent": 0.5846428571428571,
+        "n_gripper_samples": 2800,
+        "SR": 0.0,
+        "ASR": NaN
+      }
+    },
+    "sr_by_decoder": {
+      "ours": 0.0,
+      "upstream": 0.0
+    }
+  }
+}

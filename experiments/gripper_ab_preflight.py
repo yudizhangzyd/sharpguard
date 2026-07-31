@@ -57,18 +57,29 @@ def main() -> int:
                         "the four failed gates as an anchor")
     p.add_argument("--win-threshold", type=float, default=0.5,
                    help="an arm wins if its SR is at least this")
+    p.add_argument("--action-decoders", default="ours",
+                   help="comma-separated action_decoder modes, crossed with the "
+                        "other two axes. Added because bolt 7vpp28qfsk measured "
+                        "that our decode and the checkpoint's own predict_action "
+                        "disagree on 24/24 frames -- so every earlier cell in "
+                        "this script ran a decode that is not upstream's, and in "
+                        "particular the gripper channel that the 'openvla' arm "
+                        "transforms is not the channel upstream's transform was "
+                        "written for. Crossing the two axes is the only way to "
+                        "see whether the corrections interact.")
     p.add_argument("--out", default="gripper_ab.json")
     args = p.parse_args()
 
     import torch
     from transformers import AutoModelForVision2Seq, AutoProcessor
 
-    from sharpguard.libero_sim import (GRIPPER_TRANSFORMS, IMAGE_PREPROCS,
-                                       RolloutConfig, is_available,
-                                       rollout_libero)
+    from sharpguard.libero_sim import (ACTION_DECODERS, GRIPPER_TRANSFORMS,
+                                       IMAGE_PREPROCS, RolloutConfig,
+                                       is_available, rollout_libero)
 
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     imgs = [i.strip() for i in args.image_preprocs.split(",") if i.strip()]
+    decs = [d.strip() for d in args.action_decoders.split(",") if d.strip()]
     unknown = [a for a in arms if a not in GRIPPER_TRANSFORMS]
     if unknown:
         sys.exit(f"[ab] unknown arm(s) {unknown}; expected {GRIPPER_TRANSFORMS}")
@@ -76,6 +87,10 @@ def main() -> int:
     if unknown:
         sys.exit(f"[ab] unknown image_preproc(s) {unknown}; "
                  f"expected {IMAGE_PREPROCS}")
+    unknown = [d for d in decs if d not in ACTION_DECODERS]
+    if unknown:
+        sys.exit(f"[ab] unknown action_decoder(s) {unknown}; "
+                 f"expected {ACTION_DECODERS}")
     if not is_available():
         sys.exit("[ab] libero/robosuite/mujoco not importable; cannot run")
 
@@ -93,13 +108,25 @@ def main() -> int:
                      "'np_lanczos' and read the result as 8/255 LSB from "
                      "upstream's kernel rather than a bit-exact match.")
 
-    cells = [(g, i) for i in imgs for g in arms]
+    cells = [(d, g, i) for d in decs for i in imgs for g in arms]
+
+    # The cell key keeps its two-factor form when the decoder axis is degenerate,
+    # so a re-run of any published configuration produces the same key it did
+    # before and the anchor lookup below keeps working against it. A silently
+    # renamed anchor would make the new run non-comparable to the ones it exists
+    # to be compared against.
+    def cell_key(d, g, i):
+        return f"{g}+{i}" if len(decs) == 1 else f"{d}|{g}+{i}"
+
+    anchor_key = cell_key(decs[0], "none", "none")
 
     print(f"[ab] model      : {args.model}")
     print(f"[ab] suite      : {args.suite}  unnorm_key={args.unnorm_key}")
     print(f"[ab] gripper    : {arms}")
     print(f"[ab] image      : {imgs}")
-    print(f"[ab] cells      : {len(cells)} = {len(arms)} x {len(imgs)}")
+    print(f"[ab] decoder    : {decs}")
+    print(f"[ab] cells      : {len(cells)} = {len(decs)} x {len(arms)} x "
+          f"{len(imgs)}")
     print(f"[ab] budget     : {args.n_episodes} episodes (requested) x "
           f"{args.max_steps} steps per cell; episodes-per-task floors at 1, so "
           f"a request below the suite's task count runs more\n")
@@ -111,9 +138,10 @@ def main() -> int:
         trust_remote_code=True).to(device).eval()
 
     results = {}
-    for arm, img in cells:
-        key = f"{arm}+{img}"
-        print(f"\n{'=' * 62}\n[ab] cell: gripper={arm} image={img}\n{'=' * 62}")
+    for dec, arm, img in cells:
+        key = cell_key(dec, arm, img)
+        print(f"\n{'=' * 62}\n[ab] cell: decoder={dec} gripper={arm} "
+              f"image={img}\n{'=' * 62}")
         cfg = RolloutConfig(
             suite=args.suite,
             n_episodes_per_suite=args.n_episodes,
@@ -121,6 +149,7 @@ def main() -> int:
             unnorm_key=args.unnorm_key,
             gripper_transform=arm,
             image_preproc=img,
+            action_decoder=dec,
         )
         try:
             r = rollout_libero(model, processor, cfg, device=device)
@@ -141,8 +170,8 @@ def main() -> int:
     print(f"\n{'=' * 62}\n[ab] VERDICT\n{'=' * 62}")
     print(f"{'cell':<24} {'SR':>7} {'succ/tot':>10} {'close_sent':>11}")
     scored = {}
-    for arm, img in cells:
-        key = f"{arm}+{img}"
+    for dec, arm, img in cells:
+        key = cell_key(dec, arm, img)
         r = results.get(key) or {}
         if "error" in r:
             print(f"{key:<24} {'ERROR':>7} {r['error'][:40]:>10}")
@@ -170,6 +199,13 @@ def main() -> int:
         "model": args.model, "suite": args.suite,
         "unnorm_key": args.unnorm_key,
         "gripper_arms": arms, "image_preprocs": imgs,
+        "action_decoders": decs,
+        # Named explicitly because the key format depends on it: a reader who
+        # assumes "gripper+image" on a three-factor report would silently
+        # misattribute every cell.
+        "cell_key_format": ("gripper+image" if len(decs) == 1
+                            else "decoder|gripper+image"),
+        "anchor_cell": anchor_key,
         "n_episodes_requested_per_arm": args.n_episodes,
         "n_episodes_actually_run_per_arm": n_ran[0] if len(n_ran) == 1 else n_ran,
         # Every cell must get the same budget or the comparison is not a
@@ -185,27 +221,32 @@ def main() -> int:
         json.dump(payload, fh, indent=2)
     print(f"\n[ab] wrote {args.out}")
 
-    anchor = scored.get("none+none")
+    anchor = scored.get(anchor_key)
     if len(winners) == 1:
-        g, i = winners[0].split("+", 1)
-        print(f"\n[ab] CONCLUSION: gripper_transform='{g}' with "
-              f"image_preproc='{i}' is the fix (SR {scored[winners[0]]:.3f} "
-              f"against the none+none anchor {anchor}). Run the four-suite gate "
-              f"with that cell and with max_steps left at 0 so each suite gets "
-              f"upstream's own budget.")
+        print(f"\n[ab] CONCLUSION: cell '{winners[0]}' is the fix (SR "
+              f"{scored[winners[0]]:.3f} against the {anchor_key} anchor "
+              f"{anchor}). Cell format is "
+              f"{payload['cell_key_format']}. Run the four-suite gate with that "
+              f"cell and with max_steps left at 0 so each suite gets upstream's "
+              f"own budget.")
         return 0
     if not winners:
         print(f"\n[ab] CONCLUSION: NO cell clears {args.win_threshold}. Do not "
               f"ship any of these as 'the fix'. Note what this does and does "
-              f"not rule out: the gripper pipeline and the image resize are "
-              f"both known from upstream's source (bolt htrg4uchwi) to differ "
-              f"from ours, so a null here means they are real differences that "
+              f"not rule out: the gripper pipeline, the image resize and the "
+              f"action decode are all known to differ from upstream -- the first "
+              f"two from its source (bolt htrg4uchwi), the third by direct "
+              f"measurement (bolt 7vpp28qfsk: 24/24 frames disagree, max "
+              f"L-inf 1.12, and upstream holds the gripper at a constant open "
+              f"while ours emits 11 different values over the same 24 early "
+              f"frames). So a null here means these are real differences that "
               f"are not sufficient, not that they are non-differences. "
               f"Remaining candidates: (a) the per-suite step budget -- this run "
-              f"used {args.max_steps}; (b) the action de-quantization bin "
-              f"convention, which is the one quantity still validated only by "
-              f"our own offline audit; (c) the checkpoint's norm_stats key "
-              f"resolving to a different action space than this suite.")
+              f"used {args.max_steps}; (b) the checkpoint's norm_stats key "
+              f"resolving to a different action space than this suite; (c) no "
+              f"single-factor candidate at all, in which case the next step is "
+              f"instrumenting one episode against a known-good reference "
+              f"trajectory rather than adding a sixth factor to this grid.")
         return 1
     print(f"\n[ab] CONCLUSION: {len(winners)} cells tie ({winners}). Raise "
           f"--n-episodes to separate them before running the full gate.")

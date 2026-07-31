@@ -1,0 +1,54 @@
+name: 'CoT-Faith decoder x gripper: does the decode fix interact with the gripper fix?'
+description: 'Reviewer critical #2, sixth attempt, and the first prompted by a positive result rather than a null. bolt 7vpp28qfsk measured that our action decode and the checkpoint own predict_action disagree on 24 of 24 frames (max L-inf 1.12, near-zero per-dimension correlation). On early frames, where the correct command is a constant hold-open, upstream emits one value on all 24 (top bin 0.9961, std 0) while ours emits 11 spanning -0.13 to +0.996. The image does reach upstream (18 distinct actions over 24 frames), so this is the checkpoint and not our plumbing. So gripper A/B viyhc4kpft applied upstream g -> -sign(2g-1) to a channel it was never written for, and both factorials ran a non-upstream decode. That job upstream arm scored 0/10 only because it ran gripper=none, sending constant +0.9961 to an actuator reading positive as CLOSE. The composition upstream actually uses has never been run. This runs the 2x3 decoder x gripper grid. Exit 0 iff one cell clears SR>=0.5.'
+tags: ['cotfaith', 'decoder-gate', 'decoder-gripper', 'interaction']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  # 6 cells. 7vpp28qfsk did 2 rollout arms of the same shape plus setup in 46
+  # min, so ~15 min/cell puts this near 2h; 5h leaves room for a slow puller.
+  timeout: 5h
+  cluster: aws_2  # A100. NOT aws_10: its B200s are sm_100 and this image's torch caps at sm_90, plus MuJoCo EGL has no device platform there.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-object'
+  LIBERO_SUITE: 'libero_object'
+  UNNORM_KEY: 'libero_object'
+
+  # The interaction under test. 'ours' is kept as a marginal so the grid can
+  # attribute any effect to the decode rather than merely observe it, and so the
+  # ours|none+none cell reproduces the four failed gates as an anchor.
+  ACTION_DECODERS: 'ours,upstream'
+  # 'openvla' is upstream's own composition. 'binvert' is kept because it agrees
+  # with 'openvla' at the top bin but disagrees for g<0.5, which is where the two
+  # readings of the channel's range come apart -- and upstream's decode pins the
+  # gripper at the top bin on precisely the frames measured so far, so the two
+  # arms have not yet been separated on the input that matters.
+  ARMS: 'none,openvla,binvert'
+  # Held at 'none': both marginals were already shown insufficient, and it keeps
+  # the grid at 6 cells instead of 18.
+  IMAGE_PREPROCS: 'none'
+
+  N_EPISODES: '10'
+  MAX_STEPS: '0'     # 0 = upstream's own per-suite budget (280 for libero_object)
+  WIN_THRESHOLD: '0.5'
+
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_decoder_gripper.sh
