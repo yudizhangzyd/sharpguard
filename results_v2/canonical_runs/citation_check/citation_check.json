@@ -1,0 +1,876 @@
+{
+  "n_entries": 15,
+  "entries": [
+    {
+      "key": "datasheets",
+      "label": "Gebru et~al.(2021)",
+      "year": 2021,
+      "authors": [
+        "T.~Gebru",
+        "J.~Morgenstern",
+        "B.~Vecchione",
+        "J.~Wortman~Vaughan",
+        "H.~Wallach",
+        "H.~Daum\\'e~III",
+        "and K.~Crawford"
+      ],
+      "authors_truncated": false,
+      "title": "Datasheets for datasets",
+      "arxiv_id": null,
+      "doi": null,
+      "status": "UNVERIFIED",
+      "checks": [],
+      "errors": {
+        "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    {
+      "key": "ecot",
+      "label": "Zawalski et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "M.~Zawalski",
+        "W.~Chen",
+        "K.~Pertsch",
+        "O.~Mees",
+        "C.~Finn",
+        "and S.~Levine"
+      ],
+      "authors_truncated": false,
+      "title": "Robotic control via embodied chain-of-thought reasoning",
+      "arxiv_id": "2407.08693",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Robotic control via embodied chain-of-thought reasoning",
+              "registry": "Robotic Control via Embodied Chain-of-Thought Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "zawalski",
+                "chen",
+                "pertsch",
+                "mees",
+                "finn",
+                "levine"
+              ],
+              "registry": [
+                "zawalski",
+                "chen",
+                "pertsch",
+                "mees",
+                "finn",
+                "levine"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Robotic Control via Embodied Chain-of-Thought Reasoning",
+            "authors": [
+              "Micha\u0142 Zawalski",
+              "William Chen",
+              "Karl Pertsch",
+              "Oier Mees",
+              "Chelsea Finn",
+              "Sergey Levine"
+            ],
+            "published": "2024-07-11T17:31:01Z",
+            "updated": "2025-03-06T19:29:03Z",
+            "comment": "Project Website: https://embodied-cot.github.io. Updated funding information",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "ecotlite",
+      "label": "Chen et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "W.~Chen",
+        "S.~Belkhale",
+        "S.~Mirchandani",
+        "O.~Mees",
+        "D.~Driess"
+      ],
+      "authors_truncated": true,
+      "title": "Training Strategies for Efficient Embodied Reasoning",
+      "arxiv_id": "2505.08243",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Training Strategies for Efficient Embodied Reasoning",
+              "registry": "Training Strategies for Efficient Embodied Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "chen",
+                "belkhale",
+                "mirchandani",
+                "mees",
+                "driess"
+              ],
+              "registry": [
+                "chen",
+                "belkhale",
+                "mirchandani",
+                "mees",
+                "driess",
+                "pertsch",
+                "levine"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2025,
+              "registry": 2025,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Training Strategies for Efficient Embodied Reasoning",
+            "authors": [
+              "William Chen",
+              "Suneel Belkhale",
+              "Suvir Mirchandani",
+              "Oier Mees",
+              "Danny Driess",
+              "Karl Pertsch",
+              "Sergey Levine"
+            ],
+            "published": "2025-05-13T05:35:00Z",
+            "updated": "2025-05-17T21:04:22Z",
+            "comment": "Updated figure layout, added project page link",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "deepthinkvla",
+      "label": "Yin et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "C.~Yin",
+        "Y.~Lin",
+        "W.~Xu",
+        "S.~Tam",
+        "X.~Zeng"
+      ],
+      "authors_truncated": true,
+      "title": "DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models",
+      "arxiv_id": "2511.15669",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models",
+              "registry": "DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "yin",
+                "lin",
+                "xu",
+                "tam",
+                "zeng"
+              ],
+              "registry": [
+                "yin",
+                "lin",
+                "xu",
+                "tam",
+                "zeng",
+                "liu",
+                "yin"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2025,
+              "registry": 2025,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models",
+            "authors": [
+              "Cheng Yin",
+              "Yankai Lin",
+              "Wang Xu",
+              "Sikyuen Tam",
+              "Xiangrui Zeng",
+              "Zhiyuan Liu",
+              "Zhouping Yin"
+            ],
+            "published": "2025-10-31T05:26:16Z",
+            "updated": "2026-04-20T12:58:10Z",
+            "comment": "19 pages, 6 figures, conference",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "cotvla",
+      "label": "Zhao et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "Q.~Zhao",
+        "Y.~Lu",
+        "M.~J.~Kim",
+        "Z.~Fu"
+      ],
+      "authors_truncated": true,
+      "title": "{CoT-VLA}: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models",
+      "arxiv_id": null,
+      "doi": null,
+      "status": "UNVERIFIED",
+      "checks": [],
+      "errors": {
+        "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    {
+      "key": "openvlaoft",
+      "label": "Kim et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "M.~J.~Kim",
+        "C.~Finn",
+        "and P.~Liang"
+      ],
+      "authors_truncated": false,
+      "title": "Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success",
+      "arxiv_id": "2502.19645",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success",
+              "registry": "Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "kim",
+                "finn",
+                "liang"
+              ],
+              "registry": [
+                "kim",
+                "finn",
+                "liang"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2025,
+              "registry": 2025,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success",
+            "authors": [
+              "Moo Jin Kim",
+              "Chelsea Finn",
+              "Percy Liang"
+            ],
+            "published": "2025-02-27T00:30:29Z",
+            "updated": "2025-04-28T07:49:39Z",
+            "comment": "Accepted to Robotics: Science and Systems (RSS) 2025. Project website: https://openvla-oft.github.io/",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "turpin2023",
+      "label": "Turpin et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "M.~Turpin",
+        "J.~Michael",
+        "E.~Perez",
+        "and S.~R.~Bowman"
+      ],
+      "authors_truncated": false,
+      "title": "Language models don't always say what they think: unfaithful explanations in chain-of-thought prompting",
+      "arxiv_id": null,
+      "doi": null,
+      "status": "UNVERIFIED",
+      "checks": [],
+      "errors": {
+        "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    {
+      "key": "lanham2023",
+      "label": "Lanham et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "T.~Lanham "
+      ],
+      "authors_truncated": true,
+      "title": "Measuring faithfulness in chain-of-thought reasoning",
+      "arxiv_id": "2307.13702",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Measuring faithfulness in chain-of-thought reasoning",
+              "registry": "Measuring Faithfulness in Chain-of-Thought Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "lanham"
+              ],
+              "registry": [
+                "lanham",
+                "chen",
+                "radhakrishnan",
+                "steiner",
+                "denison",
+                "hernandez",
+                "li",
+                "durmus",
+                "hubinger",
+                "kernion",
+                "lukosiute",
+                "nguyen",
+                "cheng",
+                "joseph",
+                "schiefer",
+                "rausch",
+                "larson",
+                "mccandlish",
+                "kundu",
+                "kadavath",
+                "yang",
+                "henighan",
+                "maxwell",
+                "telleen-lawton",
+                "hume",
+                "hatfield-dodds",
+                "kaplan",
+                "brauner",
+                "bowman",
+                "perez"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Measuring Faithfulness in Chain-of-Thought Reasoning",
+            "authors": [
+              "Tamera Lanham",
+              "Anna Chen",
+              "Ansh Radhakrishnan",
+              "Benoit Steiner",
+              "Carson Denison",
+              "Danny Hernandez",
+              "Dustin Li",
+              "Esin Durmus",
+              "Evan Hubinger",
+              "Jackson Kernion",
+              "Kamil\u0117 Luko\u0161i\u016bt\u0117",
+              "Karina Nguyen",
+              "Newton Cheng",
+              "Nicholas Joseph",
+              "Nicholas Schiefer",
+              "Oliver Rausch",
+              "Robin Larson",
+              "Sam McCandlish",
+              "Sandipan Kundu",
+              "Saurav Kadavath",
+              "Shannon Yang",
+              "Thomas Henighan",
+              "Timothy Maxwell",
+              "Timothy Telleen-Lawton",
+              "Tristan Hume",
+              "Zac Hatfield-Dodds",
+              "Jared Kaplan",
+              "Jan Brauner",
+              "Samuel R. Bowman",
+              "Ethan Perez"
+            ],
+            "published": "2023-07-17T01:08:39Z",
+            "updated": "2023-07-17T01:08:39Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "vladrivebench",
+      "label": "Nguyen et~al.(2026)",
+      "year": 2026,
+      "authors": [
+        "T.~Nguyen",
+        "D.~Guo",
+        "T.~Lampo",
+        "F.~Wu",
+        "and B.~Yaman"
+      ],
+      "authors_truncated": false,
+      "title": "{VLADriveBench}: Evaluating CoT-Action Relationship in VLA for Autonomous Driving",
+      "arxiv_id": "2606.12706",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "{VLADriveBench}: Evaluating CoT-Action Relationship in VLA for Autonomous Driving",
+              "registry": "VLADriveBench: Evaluating CoT-Action Relationship in VLA for Autonomous Driving"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "nguyen",
+                "guo",
+                "lampo",
+                "wu",
+                "yaman"
+              ],
+              "registry": [
+                "nguyen",
+                "guo",
+                "lampo",
+                "wu",
+                "yaman"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2026,
+              "registry": 2026,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "VLADriveBench: Evaluating CoT-Action Relationship in VLA for Autonomous Driving",
+            "authors": [
+              "Thach Nguyen",
+              "Danhua Guo",
+              "Tom Lampo",
+              "Fei Wu",
+              "Burhan Yaman"
+            ],
+            "published": "2026-06-10T21:53:33Z",
+            "updated": "2026-06-10T21:53:33Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "pinocchio",
+      "label": "Foutter et~al.(2026)",
+      "year": 2026,
+      "authors": [
+        "M.~Foutter",
+        "M.~Cercola",
+        "L.~Wild",
+        "Y.~Wang",
+        "M.~Li"
+      ],
+      "authors_truncated": true,
+      "title": "Do vision-language-action models mean what they say? On the role of faithfulness in embodied reasoning",
+      "arxiv_id": "2607.04681",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Do vision-language-action models mean what they say? On the role of faithfulness in embodied reasoning",
+              "registry": "Do Vision-Language-Action Models Mean What They Say? On the Role of Faithfulness in Embodied Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "foutter",
+                "cercola",
+                "wild",
+                "wang",
+                "li"
+              ],
+              "registry": [
+                "foutter",
+                "cercola",
+                "wild",
+                "wang",
+                "li",
+                "gammelli",
+                "pavone"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2026,
+              "registry": 2026,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Do Vision-Language-Action Models Mean What They Say? On the Role of Faithfulness in Embodied Reasoning",
+            "authors": [
+              "Matthew Foutter",
+              "Matteo Cercola",
+              "Lena Wild",
+              "Yunshan Wang",
+              "Michelle Li",
+              "Daniele Gammelli",
+              "Marco Pavone"
+            ],
+            "published": "2026-07-06T05:10:27Z",
+            "updated": "2026-07-06T05:10:27Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "doubleedged",
+      "label": "Trinh et~al.(2026)",
+      "year": 2026,
+      "authors": [
+        "T.~D.~Trinh",
+        "N.~Akhtar",
+        "and B.~Azam"
+      ],
+      "authors_truncated": false,
+      "title": "Reasoning as a double-edged sword: architecture and cross-stage robustness in vision-language-action models",
+      "arxiv_id": "2607.17786",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Reasoning as a double-edged sword: architecture and cross-stage robustness in vision-language-action models",
+              "registry": "Reasoning as a Double-Edged Sword: Architecture and Cross-Stage Robustness in Vision-Language-Action Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "trinh",
+                "akhtar",
+                "azam"
+              ],
+              "registry": [
+                "trinh",
+                "akhtar",
+                "azam"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2026,
+              "registry": 2026,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Reasoning as a Double-Edged Sword: Architecture and Cross-Stage Robustness in Vision-Language-Action Models",
+            "authors": [
+              "Tuan Duong Trinh",
+              "Naveed Akhtar",
+              "Basim Azam"
+            ],
+            "published": "2026-07-20T10:20:32Z",
+            "updated": "2026-07-20T10:20:32Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "libero",
+      "label": "Liu et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "B.~Liu",
+        "Y.~Zhu",
+        "C.~Gao",
+        "Y.~Feng",
+        "Q.~Liu",
+        "Y.~Zhu",
+        "and P.~Stone"
+      ],
+      "authors_truncated": false,
+      "title": "{LIBERO}: Benchmarking Knowledge Transfer for Lifelong Robot Learning",
+      "arxiv_id": null,
+      "doi": null,
+      "status": "UNVERIFIED",
+      "checks": [],
+      "errors": {
+        "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    {
+      "key": "colosseum",
+      "label": "Pumacay et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "W.~Pumacay "
+      ],
+      "authors_truncated": true,
+      "title": "The Colosseum: a benchmark for evaluating generalization for robotic manipulation",
+      "arxiv_id": null,
+      "doi": null,
+      "status": "UNVERIFIED",
+      "checks": [],
+      "errors": {
+        "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    {
+      "key": "vlabench",
+      "label": "Zhang et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "S.~Zhang",
+        "Z.~Xu",
+        "P.~Liu",
+        "X.~Yu",
+        "Y.~Li"
+      ],
+      "authors_truncated": true,
+      "title": "{VLABench}: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks",
+      "arxiv_id": "2412.18194",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "{VLABench}: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks",
+              "registry": "VLABench: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "zhang",
+                "xu",
+                "liu",
+                "yu",
+                "li"
+              ],
+              "registry": [
+                "zhang",
+                "xu",
+                "liu",
+                "yu",
+                "li",
+                "gao",
+                "fei",
+                "yin",
+                "wu",
+                "jiang",
+                "qiu"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "VLABench: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks",
+            "authors": [
+              "Shiduo Zhang",
+              "Zhe Xu",
+              "Peiju Liu",
+              "Xiaopeng Yu",
+              "Yuan Li",
+              "Qinghui Gao",
+              "Zhaoye Fei",
+              "Zhangyue Yin",
+              "Zuxuan Wu",
+              "Yu-Gang Jiang",
+              "Xipeng Qiu"
+            ],
+            "published": "2024-12-24T06:03:42Z",
+            "updated": "2024-12-24T06:03:42Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "liberosafety",
+      "label": "Cui et~al.(2026)",
+      "year": 2026,
+      "authors": [
+        "R.~Cui",
+        "Z.~Zhang",
+        "J.~Pang",
+        "H.~Chi",
+        "J.~Guo"
+      ],
+      "authors_truncated": true,
+      "title": "{LIBERO-Safety}: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models",
+      "arxiv_id": "2606.23686",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "{LIBERO-Safety}: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models",
+              "registry": "LIBERO-Safety: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "cui",
+                "zhang",
+                "pang",
+                "chi",
+                "guo"
+              ],
+              "registry": [
+                "cui",
+                "zhang",
+                "pang",
+                "chi",
+                "guo",
+                "zhang",
+                "xie",
+                "jin",
+                "mu",
+                "yang",
+                "yao",
+                "zhan",
+                "zhang",
+                "zhao"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2026,
+              "registry": 2026,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "LIBERO-Safety: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models",
+            "authors": [
+              "Rongxu Cui",
+              "Zongzheng Zhang",
+              "Jingrui Pang",
+              "Haohan Chi",
+              "Jinbang Guo",
+              "Saining Zhang",
+              "Shaoxuan Xie",
+              "Xin Jin",
+              "Yao Mu",
+              "Jiaolong Yang",
+              "Guocai Yao",
+              "Xianyuan Zhan",
+              "Ya-Qin Zhang",
+              "Hao Zhao"
+            ],
+            "published": "2026-06-22T17:59:53Z",
+            "updated": "2026-06-26T07:29:00Z",
+            "comment": "Accepted by ECCV 2026, Project Page: https://libero-safety.github.io/",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    }
+  ],
+  "status_counts": {
+    "UNVERIFIED": 5,
+    "CONFIRMED": 10
+  },
+  "registry_reachability": {
+    "dblp": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>",
+    "arxiv": "reachable"
+  },
+  "unverified_keys": [
+    "colosseum",
+    "cotvla",
+    "datasheets",
+    "libero",
+    "turpin2023"
+  ],
+  "mismatch_keys": []
+}

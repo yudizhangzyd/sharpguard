@@ -1,0 +1,23 @@
+name: 'CoT-Faith: verify all 15 bibliography entries against a live registry'
+description: 'A fabricated reference is grounds for rejection on its own, and it is the easiest mistake for an LLM-assisted workflow to make: a plausible BibTeX entry costs nothing to emit and reads like a real one. So the bibliography is checked against registries rather than trusted. Run locally against export.arxiv.org (the one registry this network reaches), the check already found six real defects in 15 entries: five printed exactly five authors joined by "and", reading as complete lists where arXiv gives 7, 7, 7, 11 and 14, and one had our own shorthand "(OpenVLA-OFT)" inside the registered title. All six are fixed and 10 of 15 now confirm on title, author-surname order and year. The other five are venue-only (CACM, CVPR, NeurIPS x2, RSS) with no arXiv id, so they need DBLP or CrossRef, and both 403 from the authoring network. This job runs the same script from a networked host. Fifteen HTTP GETs, stdlib only. Exits nonzero only if a registry CONTRADICTS the manuscript.'
+tags: ['cotfaith', 'citations', 'paper-audit', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
+  disk_gb: 16
+  timeout: 20m
+  cluster: aws_2
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+command: bash bolt/run_citation_check.sh

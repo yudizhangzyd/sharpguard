@@ -1439,6 +1439,76 @@ def audit_resize_check(a):
             True, bool(r.get("tf_version")), source=src)
 
 
+def audit_citations(a):
+    """The bibliography, against the registry report.
+
+    A fabricated reference is grounds for rejection on its own, and it is the
+    single cheapest error for an LLM-assisted workflow to produce: a plausible
+    entry costs nothing to emit and reads exactly like a real one. So the
+    bibliography is checked against a registry rather than proofread, and this
+    audit holds that check to three things. No entry may be CONTRADICTED by a
+    registry. Every entry the manuscript prints must appear in the report, so
+    adding a reference without re-running the check fails here rather than
+    passing silently. And the number of entries that could not be resolved must
+    match the number the manuscript's provenance note admits to -- otherwise
+    "unverified" quietly becomes a place to park anything inconvenient.
+    """
+    sec = "Bibliography provenance (registry check)"
+    path = ROOT / "results_v2" / "canonical_runs" / "citation_check" / \
+        "citation_check.json"
+    r = load(path)
+    if not r:
+        a.check(sec, "the citation-check report is released", True, False,
+                source=str(path))
+        return
+    src = "results_v2/canonical_runs/citation_check/citation_check.json"
+    tex = TEX.read_text() if TEX.exists() else ""
+
+    a.check(sec, "no entry is contradicted by a registry on title, "
+                 "author-surname order or year", [], r.get("mismatch_keys"),
+            source=src)
+    a.check(sec, "no entry failed to parse out of the manuscript, which would "
+                 "mean it went unchecked rather than checked and passed", 0,
+            (r.get("status_counts") or {}).get("PARSE_ERROR", 0), source=src)
+
+    # Report coverage against the manuscript itself, not against the report's
+    # own idea of how many entries there are.
+    keys_tex = set(re.findall(r"\\bibitem\[[^\]]*\]\{(\w+)\}", tex))
+    keys_rep = {e.get("key") for e in (r.get("entries") or [])}
+    a.check(sec, "every \\bibitem in the manuscript appears in the report, so a "
+                 "reference added after the last check cannot slip through",
+            [], sorted(keys_tex - keys_rep), source=src)
+    a.check(sec, "and the report contains no entry the manuscript dropped", [],
+            sorted(keys_rep - keys_tex), source=src)
+    a.check(sec, "the manuscript's 15 entries are all accounted for", 15,
+            len(keys_tex), source="cot_faith_iclr.tex")
+
+    # The confirmed/unverified split, and the reason each unverified one is.
+    a.check(sec, "10 of 15 entries confirm against a reachable registry",
+            [10, 5], [(r.get("status_counts") or {}).get("CONFIRMED"),
+                      (r.get("status_counts") or {}).get("UNVERIFIED")],
+            source=src)
+    a.check(sec, "the unverified entries are exactly the five venue-only ones "
+                 "with no arXiv id",
+            ["colosseum", "cotvla", "datasheets", "libero", "turpin2023"],
+            r.get("unverified_keys"), source=src)
+    a.check(sec, "each unverified entry genuinely lacks an arXiv id, so it is "
+                 "unreachability and not a skipped lookup", True,
+            all(e.get("arxiv_id") is None for e in (r.get("entries") or [])
+                if e.get("status") == "UNVERIFIED"), source=src)
+    a.check(sec, "the report records that arXiv was reachable, so a CONFIRMED "
+                 "is a real lookup rather than an absent registry", "reachable",
+            dig(r, "registry_reachability", "arxiv"), source=src)
+
+    # And the manuscript has to disclose all of this where a reader looks.
+    a.check(sec, "the bibliography carries the provenance note naming the "
+                 "checking script", True,
+            "experiments/verify_citations.py" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "the one remaining [VERIFY] marker is the datasheets page "
+                 "range, and it is the only one", 1, tex.count("[VERIFY]"),
+            source="cot_faith_iclr.tex")
+
+
 def audit_tf_env_probe(a):
     """The measurement that retired an untested constraint.
 
@@ -1754,6 +1824,7 @@ def main() -> int:
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
     audit_resize_check(a)
+    audit_citations(a)
     audit_tf_env_probe(a)
     audit_derived_paths_are_portable(a)
 
