@@ -32,9 +32,9 @@ record ordering — all four reported attention buckets agree to the last digit
 
 | file | canonical copy |
 |---|---|
-| `dt_base.json` | `canonical_runs/deepthink_base.json` |
-| `dt_sft.json` | `canonical_runs/deepthink_sft.json` |
-| `dt_rl.json` | `canonical_runs/deepthink_rl.json` |
+| `dt_base.json` | `deepthink_base_11family.json` (below; itself superseded) |
+| `dt_sft.json` | `deepthink_sft_11family.json` (below; itself superseded) |
+| `dt_rl.json` | `deepthink_rl_11family.json` (below; itself superseded) |
 | `openvla_spatial.json` | `canonical_runs/openvla_baseline_spatial_rvis.json` |
 | `openvla_object.json` | `canonical_runs/openvla_baseline_object_rvis.json` |
 | `openvla_goal.json` | `canonical_runs/openvla_baseline_goal_rvis.json` |
@@ -47,3 +47,40 @@ record ordering — all four reported attention buckets agree to the last digit
 | file | why superseded | replaced by |
 |---|---|---|
 | `ecot_edit_10families.json` | N=30 per family, no seed recorded | `canonical_runs/ecot_bridge_edit_seed{0,1,2}.json` (N=100, 3 seeds) and `canonical_runs/ecot_bridge_edit_13family_calibration.json` (N=100, 13 families) |
+
+## Superseded by the CoT-rendering admissibility guard
+
+The three DeepThinkVLA 11-family runs. These are the **same checkpoints at the
+same seed** as the canonical files that replaced them: the `attention_aggregate`
+and `action_decode` blocks are byte-identical, and `n_attn_ok = 100` in both. Only
+two families move, and both moves are the guard doing its job.
+
+| file | why superseded | replaced by |
+|---|---|---|
+| `deepthink_base_11family.json` | pre-guard admissibility; no calibration nulls beyond `paraphrase_null` | `canonical_runs/deepthink_base_13family.json` |
+| `deepthink_sft_11family.json` | same | `canonical_runs/deepthink_sft_13family.json` |
+| `deepthink_rl_11family.json` | same | `canonical_runs/deepthink_rl_13family.json` |
+
+What changed, and why it is not a re-measurement:
+
+- **`bbox_jitter_null`**: absent from the 11-family protocol, and in the first
+  13-family attempt it scored `n = 100`, `faithful_rate = 0.000`, with every
+  delta identically zero. That is not robustness. DeepThinkVLA's CoT renderer
+  (`build_cot_text`) emits plan/subtask/movement/move and **no bounding boxes**,
+  so perturbing bbox coordinates returns a byte-identical trace and no
+  perturbation ever reached the model — a number indistinguishable from
+  `selfsplice_control`, reported as a passing null. The guard in
+  `experiments/cotfaith_deepthink.py` now refuses to score an edit whose
+  rendered CoT equals the original, and records `n = 0` /
+  `n_skipped = 100` / reason `"edit not represented in the rendered CoT"`.
+  `scripts/derive_metrics.py` carries this as `families_inapplicable` rather
+  than averaging a zero into `F_bar`.
+- **`location_swap`**: `N = 70` here, `N = 58` in the replacements, for the same
+  reason — 12 of the 70 swaps did not survive rendering.
+- **`instr_random_sub`**: not run here; measured in the replacements, which is
+  what makes the CoT-specificity ratio defined on all 11 models in the
+  benchmark rather than 9.
+
+Retained rather than deleted because the manuscript's limitation (ii) names the
+`F = 0.000` artifact explicitly as its own prior error, and that statement should
+be checkable against the file that contained it.

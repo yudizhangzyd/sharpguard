@@ -92,14 +92,14 @@
       "faithful_rate_chunk": 1.0
     },
     "location_swap": {
-      "n": 70,
-      "n_skipped": 30,
-      "delta_l1_mean": 0.03142692113485301,
-      "delta_linf_mean": 0.2023669213316547,
-      "delta_linf_median": 0.014543059341605852,
-      "faithful_rate": 0.38571428571428573,
-      "delta_linf_chunk_mean": 0.6851461701628069,
-      "faithful_rate_chunk": 0.8
+      "n": 58,
+      "n_skipped": 42,
+      "delta_l1_mean": 0.03792904274896052,
+      "delta_linf_mean": 0.24423593953820397,
+      "delta_linf_median": 0.04241577361523377,
+      "faithful_rate": 0.46551724137931033,
+      "delta_linf_chunk_mean": 0.826900550196491,
+      "faithful_rate_chunk": 0.9655172413793104
     },
     "verb_swap": {
       "n": 100,
@@ -172,14 +172,8 @@
       "faithful_rate_chunk": 1.0
     },
     "bbox_jitter_null": {
-      "n": 100,
-      "n_skipped": 0,
-      "delta_l1_mean": 0.0,
-      "delta_linf_mean": 0.0,
-      "delta_linf_median": 0.0,
-      "faithful_rate": 0.0,
-      "delta_linf_chunk_mean": 0.0,
-      "faithful_rate_chunk": 0.0
+      "n": 0,
+      "n_skipped": 100
     },
     "instr_random_sub": {
       "n": 100,
@@ -967,33 +961,12 @@
       "sample": 0,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.34111483883554894,
-        0.43701476995748134,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.34111483883554894,
-        0.43701476995748134,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 0,
@@ -1304,33 +1277,12 @@
       "sample": 1,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.16787653006922643,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.06344171240379826,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.16787653006922643,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.06344171240379826,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 1,
@@ -1641,33 +1593,12 @@
       "sample": 2,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.21758650686604608,
-        -0.3953221806183524,
-        0.011907669760625295,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.21758650686604608,
-        -0.3953221806183524,
-        0.011907669760625295,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 2,
@@ -2055,33 +1986,12 @@
       "sample": 3,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.28737199310855743,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.28737199310855743,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 3,
@@ -2217,32 +2127,11 @@
       "sample": 4,
       "family": "location_swap",
       "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.36758519568615666,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 4,
@@ -2469,33 +2358,12 @@
       "sample": 4,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.36758519568615666,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 4,
@@ -2782,33 +2650,12 @@
       "sample": 5,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.0788176664067991,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.006524882020458811,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.0788176664067991,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.006524882020458811,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 5,
@@ -3196,33 +3043,12 @@
       "sample": 6,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.36758519568615666,
-        0.4182647700914244,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        0.4182647700914244,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.054378274611630084,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 6,
@@ -3610,33 +3436,12 @@
       "sample": 7,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.12373705985025474,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.12373705985025474,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 7,
@@ -4000,33 +3805,12 @@
       "sample": 8,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE6_close_the_microwave_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2977997094436453,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.009312587551332213,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.2977997094436453,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.009312587551332213,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 8,
@@ -4414,33 +4198,12 @@
       "sample": 9,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.20475239445363025,
-        -0.3798330502942183,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.20475239445363025,
-        -0.3798330502942183,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 9,
@@ -4828,33 +4591,12 @@
       "sample": 10,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3250721983200291,
-        -0.26977870325431863,
-        0.129152418172936,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3250721983200291,
-        -0.26977870325431863,
-        0.129152418172936,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 10,
@@ -5165,33 +4907,12 @@
       "sample": 11,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.40528540089762854,
-        -0.26162652939951136,
-        0.18869076697606268,
-        0.00014446448656657562,
-        0.005575148038416883,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.40528540089762854,
-        -0.26162652939951136,
-        0.18869076697606268,
-        0.00014446448656657562,
-        0.005575148038416883,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 11,
@@ -5555,33 +5276,12 @@
       "sample": 12,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2288163552269099,
-        0.0008734687252864859,
-        0.08701758671226179,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.2288163552269099,
-        0.0008734687252864859,
-        0.08701758671226179,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 12,
@@ -5892,33 +5592,12 @@
       "sample": 13,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.011907669760625295,
-        0.00014446448656657562,
-        0.06344171240379826,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.011907669760625295,
-        0.00014446448656657562,
-        0.06344171240379826,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 13,
@@ -6229,33 +5908,12 @@
       "sample": 14,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06553327497122166,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06553327497122166,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 14,
@@ -6643,33 +6301,12 @@
       "sample": 15,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3379063107324449,
-        0.14516694595537705,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3379063107324449,
-        0.14516694595537705,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 15,
@@ -7057,33 +6694,12 @@
       "sample": 16,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3250721983200291,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.3250721983200291,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 16,
@@ -7447,33 +7063,12 @@
       "sample": 17,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.5392414492022193,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.5392414492022193,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 17,
@@ -7784,33 +7379,12 @@
       "sample": 18,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2817570689281256,
-        0.04326477277028484,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.004529366754705194,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2817570689281256,
-        0.04326477277028484,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.004529366754705194,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 18,
@@ -8198,33 +7772,12 @@
       "sample": 19,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.0010108599065278279,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.0010108599065278279,
-        -0.49233304949056006,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 19,
@@ -8588,33 +8141,12 @@
       "sample": 20,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.24485899574242975,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.24485899574242975,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 20,
@@ -9002,33 +8534,12 @@
       "sample": 21,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3707937237892607,
-        -0.3178765289976822,
-        0.01923546653639463,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3707937237892607,
-        -0.3178765289976822,
-        0.01923546653639463,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 21,
@@ -9392,33 +8903,12 @@
       "sample": 22,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE7_put_the_white_bowl_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.30582102970140523,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.30582102970140523,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 22,
@@ -9782,33 +9272,12 @@
       "sample": 23,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE6_put_the_red_mug_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.07079634614903929,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.07079634614903929,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 23,
@@ -10172,33 +9641,12 @@
       "sample": 24,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.14692991822011653,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.14692991822011653,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 24,
@@ -10562,33 +10010,12 @@
       "sample": 25,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.09726670299964701,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.09726670299964701,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 25,
@@ -10698,32 +10125,11 @@
       "sample": 26,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.7453893798266495,
-        -0.31543087684123994,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.0057146296043423805,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.7453893798266495,
-        -0.31543087684123994,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.0057146296043423805,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 26,
@@ -10899,33 +10305,12 @@
       "sample": 26,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.7453893798266495,
-        -0.31543087684123994,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.0057146296043423805,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.7453893798266495,
-        -0.31543087684123994,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.0057146296043423805,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 26,
@@ -11313,33 +10698,12 @@
       "sample": 27,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.40528540089762854,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.40528540089762854,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 27,
@@ -11475,32 +10839,11 @@
       "sample": 28,
       "family": "location_swap",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.011498364592157612,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.011498364592157612,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 28,
@@ -11727,33 +11070,12 @@
       "sample": 28,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.011498364592157612,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        -0.011498364592157612,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 28,
@@ -12064,33 +11386,12 @@
       "sample": 29,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 29,
@@ -12454,33 +11755,12 @@
       "sample": 30,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_alphabet_soup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.08122406248412717,
-        -0.3447787027185465,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.08122406248412717,
-        -0.3447787027185465,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 30,
@@ -12791,33 +12071,12 @@
       "sample": 31,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.40528540089762854,
-        0.0008734687252864859,
-        0.17220322423058132,
-        0.00014446448656657562,
-        0.025967883070795228,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.40528540089762854,
-        0.0008734687252864859,
-        0.17220322423058132,
-        0.00014446448656657562,
-        0.025967883070795228,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 31,
@@ -13205,33 +12464,12 @@
       "sample": 32,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4854986034752278,
-        -0.4654308757696958,
-        0.18594284318514887,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00981296155589001,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4854986034752278,
-        -0.4654308757696958,
-        0.18594284318514887,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00981296155589001,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 32,
@@ -13367,32 +12605,11 @@
       "sample": 33,
       "family": "location_swap",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 33,
@@ -13619,33 +12836,12 @@
       "sample": 33,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.12935198403068682,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 33,
@@ -13956,33 +13152,12 @@
       "sample": 34,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_put_the_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.45902824662461983,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.45902824662461983,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 34,
@@ -14370,33 +13545,12 @@
       "sample": 35,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE4_close_the_bottom_drawer_of_the_cabinet_and_open_the_top_drawer_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.36758519568615666,
-        -0.2534743555447039,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.07843124413699945,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        -0.2534743555447039,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.07843124413699945,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 35,
@@ -14707,33 +13861,12 @@
       "sample": 36,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 36,
@@ -14843,32 +13976,11 @@
       "sample": 37,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE3_put_the_frying_pan_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.08122406248412717,
-        0.260927814693642,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.08122406248412717,
-        0.260927814693642,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 37,
@@ -15044,33 +14156,12 @@
       "sample": 37,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_put_the_frying_pan_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.08122406248412717,
-        0.260927814693642,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.08122406248412717,
-        0.260927814693642,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 37,
@@ -15206,32 +14297,11 @@
       "sample": 38,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE9_put_the_frying_pan_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.27373574867036554,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.27373574867036554,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 38,
@@ -15458,33 +14528,12 @@
       "sample": 38,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE9_put_the_frying_pan_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.27373574867036554,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.27373574867036554,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 38,
@@ -15795,33 +14844,12 @@
       "sample": 39,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_stack_the_left_bowl_on_the_right_bowl_and_place_them_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.26330803233527766,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.26330803233527766,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 39,
@@ -15957,32 +14985,11 @@
       "sample": 40,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.3515425551706368,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06448749368750997,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3515425551706368,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06448749368750997,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 40,
@@ -16209,33 +15216,12 @@
       "sample": 40,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3515425551706368,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06448749368750997,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3515425551706368,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06448749368750997,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 40,
@@ -16623,33 +15609,12 @@
       "sample": 41,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE4_put_the_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.46945596295970793,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.03659999278853099,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.46945596295970793,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.03659999278853099,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 41,
@@ -16960,33 +15925,12 @@
       "sample": 42,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_stack_the_middle_black_bowl_on_the_back_black_bowl_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.26330803233527766,
-        0.0921778158991291,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.26330803233527766,
-        0.0921778158991291,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 42,
@@ -17374,33 +16318,12 @@
       "sample": 43,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_red_mug_and_place_it_to_the_right_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        -0.20513707071790238,
-        -0.26407218155595336,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        -0.20513707071790238,
-        -0.26407218155595336,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 43,
@@ -17764,33 +16687,12 @@
       "sample": 44,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_pick_up_the_chocolate_pudding_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.21758650686604608,
-        0.7508734633675656,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.21758650686604608,
-        0.7508734633675656,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 44,
@@ -18101,33 +17003,12 @@
       "sample": 45,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.43977707800599597,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.43977707800599597,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 45,
@@ -18515,33 +17396,12 @@
       "sample": 46,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE6_put_the_chocolate_pudding_to_the_right_of_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.30582102970140523,
-        0.2177212932631627,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.30582102970140523,
-        0.2177212932631627,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 46,
@@ -18905,33 +17765,12 @@
       "sample": 47,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.27694427677346956,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.27694427677346956,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 47,
@@ -19295,33 +18134,12 @@
       "sample": 48,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_put_the_moka_pot_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.20154386635052612,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.20154386635052612,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 48,
@@ -19685,33 +18503,12 @@
       "sample": 49,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE7_open_the_microwave_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 49,
@@ -20022,33 +18819,12 @@
       "sample": 50,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2817570689281256,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2817570689281256,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 50,
@@ -20359,33 +19135,12 @@
       "sample": 51,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_left_and_place_it_on_top_of_the_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.4279308760375819,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.4279308760375819,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 51,
@@ -20749,33 +19504,12 @@
       "sample": 52,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_cream_cheese_box_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.18790762191233423,
-        -0.023583052839135754,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.18790762191233423,
-        -0.023583052839135754,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 52,
@@ -21163,33 +19897,12 @@
       "sample": 53,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2713293525930375,
-        0.35956911833681127,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.022307648577804262,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2713293525930375,
-        0.35956911833681127,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.022307648577804262,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 53,
@@ -21500,33 +20213,12 @@
       "sample": 54,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_stack_the_middle_black_bowl_on_the_back_black_bowl_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2151801107887179,
-        0.43701476995748134,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2151801107887179,
-        0.43701476995748134,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 54,
@@ -21914,33 +20606,12 @@
       "sample": 55,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE7_put_the_white_bowl_to_the_right_of_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.42694296559358014,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.42694296559358014,
-        0.35956911833681127,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 55,
@@ -22328,33 +20999,12 @@
       "sample": 56,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        0.4182647700914244,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.015161476472440899,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        0.4182647700914244,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.015161476472440899,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 56,
@@ -22641,33 +21291,12 @@
       "sample": 57,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE8_turn_off_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.0010108599065278279,
-        0.5340256388296893,
-        0.0009159745969711253,
-        0.013988766682747816,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.0010108599065278279,
-        0.5340256388296893,
-        0.0009159745969711253,
-        0.013988766682747816,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 57,
@@ -23055,33 +21684,12 @@
       "sample": 58,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE9_put_the_white_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.26330803233527766,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.26330803233527766,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 58,
@@ -23469,33 +22077,12 @@
       "sample": 59,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE8_put_the_right_moka_pot_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.05141694662509233,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.05141694662509233,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 59,
@@ -23806,33 +22393,12 @@
       "sample": 60,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4293493616709083,
-        -0.2885287031203756,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4293493616709083,
-        -0.2885287031203756,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 60,
@@ -24220,33 +22786,12 @@
       "sample": 61,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        0.35956911833681127,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        0.35956911833681127,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 61,
@@ -24557,33 +23102,12 @@
       "sample": 62,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4293493616709083,
-        -0.2298330513657625,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 62,
@@ -24971,33 +23495,12 @@
       "sample": 63,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE6_put_the_chocolate_pudding_to_the_right_of_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3467297630159809,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3467297630159809,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 63,
@@ -25284,33 +23787,12 @@
       "sample": 64,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE8_turn_off_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.01962346859134345,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.01962346859134345,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 64,
@@ -25621,33 +24103,12 @@
       "sample": 65,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_pick_up_the_black_bowl_on_the_left_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.1534159448039667,
-        0.1720691196762414,
-        0.07327796775769424,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.1534159448039667,
-        0.1720691196762414,
-        0.07327796775769424,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 65,
@@ -25958,33 +24419,12 @@
       "sample": 66,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_put_the_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.06867061882235681,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.06867061882235681,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 66,
@@ -26295,33 +24735,12 @@
       "sample": 67,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.12457254518808014,
-        0.00014446448656657562,
-        0.006620929322128599,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.12457254518808014,
-        0.00014446448656657562,
-        0.006620929322128599,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 67,
@@ -26608,33 +25027,12 @@
       "sample": 68,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.03790893309222343,
-        0.0620147726363417,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.03790893309222343,
-        0.0620147726363417,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 68,
@@ -26945,33 +25343,12 @@
       "sample": 69,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.16787653006922643,
-        0.1025891548607718,
-        0.00014446448656657562,
-        0.006620929322128599,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.16787653006922643,
-        0.1025891548607718,
-        0.00014446448656657562,
-        0.006620929322128599,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 69,
@@ -27359,33 +25736,12 @@
       "sample": 70,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE2_put_the_black_bowl_at_the_back_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3379063107324449,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3379063107324449,
-        0.2715256407048916,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 70,
@@ -27495,32 +25851,11 @@
       "sample": 71,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_frying_pan_on_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.3840256399012334,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.3840256399012334,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 71,
@@ -27696,33 +26031,12 @@
       "sample": 71,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_frying_pan_on_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.3840256399012334,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.3840256399012334,
-        0.0009159745969711253,
-        0.010858750534045947,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 71,
@@ -28009,33 +26323,12 @@
       "sample": 72,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.0788176664067991,
-        0.05467781616701506,
-        0.0009159745969711253,
-        0.03445425688579831,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.0788176664067991,
-        0.05467781616701506,
-        0.0009159745969711253,
-        0.03445425688579831,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 72,
@@ -28346,33 +26639,12 @@
       "sample": 73,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3756065159439166,
-        -0.16787653006922643,
-        0.17495114802149492,
-        0.00014446448656657562,
-        0.09237499458648896,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3756065159439166,
-        -0.16787653006922643,
-        0.17495114802149492,
-        0.00014446448656657562,
-        0.09237499458648896,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 73,
@@ -28736,33 +27008,12 @@
       "sample": 74,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_orange_juice_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.10528802325740683,
-        -0.3203221811541245,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.10528802325740683,
-        -0.3203221811541245,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 74,
@@ -29150,33 +27401,12 @@
       "sample": 75,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE5_put_the_yellow_and_white_mug_on_the_right_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.1109029474378389,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.1109029474378389,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.032242570773065554,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 75,
@@ -29312,32 +27542,11 @@
       "sample": 76,
       "family": "location_swap",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.12373705985025474,
-        -0.5567352229435385,
-        0.0329750854909624,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.12373705985025474,
-        -0.5567352229435385,
-        0.0329750854909624,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 76,
@@ -29564,33 +27773,12 @@
       "sample": 76,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.12373705985025474,
-        -0.5567352229435385,
-        0.0329750854909624,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.12373705985025474,
-        -0.5567352229435385,
-        0.0329750854909624,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 76,
@@ -29877,33 +28065,12 @@
       "sample": 77,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_put_the_frying_pan_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06758781804593528,
-        0.21201477156479753,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06758781804593528,
-        0.21201477156479753,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 77,
@@ -30013,32 +28180,11 @@
       "sample": 78,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.36758519568615666,
-        0.0008734687252864859,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        0.0008734687252864859,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 78,
@@ -30214,33 +28360,12 @@
       "sample": 78,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.36758519568615666,
-        0.0008734687252864859,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.36758519568615666,
-        0.0008734687252864859,
-        0.09434538348803123,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 78,
@@ -30628,33 +28753,12 @@
       "sample": 79,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2713293525930375,
-        0.6139169426068016,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.2713293525930375,
-        0.6139169426068016,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 79,
@@ -30790,32 +28894,11 @@
       "sample": 80,
       "family": "location_swap",
       "file_base": "KITCHEN_SCENE1_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.2288163552269099,
-        0.19081911954229835,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2288163552269099,
-        0.19081911954229835,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 80,
@@ -31042,33 +29125,12 @@
       "sample": 80,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_put_the_black_bowl_on_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2288163552269099,
-        0.19081911954229835,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2288163552269099,
-        0.19081911954229835,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 80,
@@ -31355,33 +29417,12 @@
       "sample": 81,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_frying_pan_on_it_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.06277502589127926,
-        0.21201477156479753,
-        0.0009159745969711253,
-        0.0012279316149633873,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.06277502589127926,
-        0.21201477156479753,
-        0.0009159745969711253,
-        0.0012279316149633873,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 81,
@@ -31769,33 +29810,12 @@
       "sample": 82,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE7_put_the_white_bowl_to_the_right_of_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.33309351857778924,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.33309351857778924,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.02056467977161805,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 82,
@@ -32183,33 +30203,12 @@
       "sample": 83,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE6_put_the_chocolate_pudding_to_the_left_of_the_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3467297630159809,
-        0.2764169450177758,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3467297630159809,
-        0.2764169450177758,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 83,
@@ -32573,33 +30572,12 @@
       "sample": 84,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.12935198403068682,
-        -0.26162652939951136,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.12935198403068682,
-        -0.26162652939951136,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 84,
@@ -32963,33 +30941,12 @@
       "sample": 85,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_tomato_sauce_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.021866292576703583,
-        -0.11407218262749752,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.021866292576703583,
-        -0.11407218262749752,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 85,
@@ -33377,33 +31334,12 @@
       "sample": 86,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE8_put_the_right_moka_pot_on_the_stove_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.14539462454620666,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.14539462454620666,
-        0.0008734687252864859,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 86,
@@ -33714,33 +31650,12 @@
       "sample": 87,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE1_put_the_black_bowl_on_top_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4189216453358202,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4189216453358202,
-        0.0008734687252864859,
-        0.05953834880312647,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 87,
@@ -34051,33 +31966,12 @@
       "sample": 88,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.05594694653719767,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.4076917969749563,
-        -0.23798522522056975,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.05594694653719767,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 88,
@@ -34441,33 +32335,12 @@
       "sample": 89,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2151801107887179,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.2151801107887179,
-        -0.38472435460710264,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 89,
@@ -34603,32 +32476,11 @@
       "sample": 90,
       "family": "location_swap",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "location_swap"
-      },
-      "a_orig": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 90,
@@ -34855,33 +32707,12 @@
       "sample": 90,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 90,
@@ -35192,33 +33023,12 @@
       "sample": 91,
       "family": "bbox_jitter_null",
       "file_base": "KITCHEN_SCENE10_close_the_top_drawer_of_the_cabinet_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3379063107324449,
-        0.0008734687252864859,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.04618632122255503,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3379063107324449,
-        0.0008734687252864859,
-        0.07877381533952144,
-        0.00014446448656657562,
-        0.04618632122255503,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 91,
@@ -35529,33 +33339,12 @@
       "sample": 92,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_stack_the_left_bowl_on_the_right_bowl_and_place_them_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.2288163552269099,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.2288163552269099,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 92,
@@ -35919,33 +33708,12 @@
       "sample": 93,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE2_pick_up_the_orange_juice_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.10528802325740683,
-        -0.4279308760375819,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.10528802325740683,
-        -0.4279308760375819,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 93,
@@ -36309,33 +34077,12 @@
       "sample": 94,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_pick_up_the_chocolate_pudding_and_put_it_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.3138423499591654,
-        0.7696234632336225,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.3138423499591654,
-        0.7696234632336225,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 94,
@@ -36622,33 +34369,12 @@
       "sample": 95,
       "family": "bbox_jitter_null",
       "file_base": "STUDY_SCENE4_pick_up_the_book_in_the_middle_and_place_it_on_the_cabinet_shelf_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.21758650686604608,
-        -0.4091808761715249,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06867061882235681,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "a_edit": [
-        0.21758650686604608,
-        -0.4091808761715249,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.06867061882235681,
-        0.00025018700227888435,
-        -0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 95,
@@ -37012,33 +34738,12 @@
       "sample": 96,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.30582102970140523,
-        0.0008734687252864859,
-        0.043966780654616455,
-        0.00014446448656657562,
-        0.021610461055329794,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 96,
@@ -37349,33 +35054,12 @@
       "sample": 97,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE4_stack_the_left_bowl_on_the_right_bowl_and_place_them_in_the_tray_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.19913747027319828,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.030151008205642094,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.19913747027319828,
-        0.1720691196762414,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.030151008205642094,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 97,
@@ -37739,33 +35423,12 @@
       "sample": 98,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE1_pick_up_the_cream_cheese_box_and_put_it_in_the_basket_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.18790762191233423,
-        -0.4654308757696958,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.18790762191233423,
-        -0.4654308757696958,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 98,
@@ -38153,33 +35816,12 @@
       "sample": 99,
       "family": "bbox_jitter_null",
       "file_base": "LIVING_ROOM_SCENE5_put_the_red_mug_on_the_right_plate_demo.hdf5",
+      "skipped": true,
+      "reason": "edit not represented in the rendered CoT",
       "edit_meta": {
         "family": "bbox_jitter_null",
         "delta_px": 1
-      },
-      "a_orig": [
-        0.07079634614903929,
-        -0.4067352240150826,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "a_edit": [
-        0.07079634614903929,
-        -0.4067352240150826,
-        0.0009159745969711253,
-        0.00014446448656657562,
-        0.00017194473923967668,
-        0.00025018700227888435,
-        0.9995114802149487
-      ],
-      "delta_l1_mean": 0.0,
-      "delta_linf": 0.0,
-      "faithful": false,
-      "delta_linf_chunk": 0.0,
-      "chunk_steps": 10
+      }
     },
     {
       "sample": 99,

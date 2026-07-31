@@ -675,25 +675,53 @@ CALIB_TABLE = (
     ("ours-data50A",        0.537, 0.067, 0.433, 0.730, 0.193, -0.743, 0.907, 3),
     ("ours-data50B",        0.447, 0.053, 0.270, 0.733, 0.287, -0.327, 1.307, 4),
     ("ecot-bridge",         0.960, 0.460, 0.990, 0.970, 0.010,   None, 0.878, 0),
+    # The second architecture family. bbox_jitter_null is None here and that is
+    # a MEASUREMENT, not a gap: DeepThinkVLA's CoT renderer emits no bboxes, so
+    # the edit produces a byte-identical CoT and the harness refuses to score
+    # it. The committed artifacts previously carried it as n=100, F=0.000 with
+    # every delta exactly 0.0 -- a vacuous identity edit printed as a
+    # robustness result -- which is the defect these three rows correct.
+    ("DT-base",             0.960,  None, 0.950, 0.980, 0.020,   None, 0.996, 5),
+    ("DT-SFT",              0.810,  None, 0.870, 0.960, 0.150, -0.728, 0.806, 2),
+    ("DT-RL",               0.820,  None, 0.890, 0.940, 0.120, -0.796, 0.814, 1),
 )
+# The two architecture families, so the counted claims below can be stated
+# per-family as well as pooled.
+CALIB_DT = ("DT-base", "DT-SFT", "DT-RL")
+# Rows that are neither the saturated public checkpoint nor a no-CoT variant:
+# the models where a floor-corrected statistic is supposed to be readable.
+CALIB_FULL_COT = ("ours-r8", "ours-r16", "ours-r32", "ours-r64",
+                  "ours-data50A", "ours-data50B", "DT-SFT", "DT-RL")
 
 
 def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
-    """tab:calibration, cell by cell, plus the four counted claims the section
-    is built on. Two of those counts are adverse to the submission's wording
-    (the specificity ratio exceeds 1 on 5 of 9, contradicting 'neither
+    """tab:calibration, cell by cell, plus the counted claims the section is
+    built on. Two of those counts are adverse to the submission's wording
+    (the specificity ratio exceeds 1 on 5 of 12, contradicting 'neither
     calibrated model passes'), so this audit has to fail if anyone quietly
     restores the stronger claim.
+
+    The set is 12 calibration entries over 11 distinct checkpoints in 2
+    architecture families -- `ours-no-cot` appears twice by design, once as the
+    checkpoint every other leaderboard row uses and once as the independent
+    retraining. The three DeepThinkVLA rows were the last coverage gap: until
+    they existed, cot_specificity_ratio was an ECoT-only statistic and the
+    paper said so.
     """
-    sec = "Two-sided calibration on 9 models (tab:calibration)"
+    sec = "Two-sided calibration on 11 models, 2 architecture families (tab:calibration)"
     by = dig(d, "calibration_by_model") or {}
+    su = dig(d, "calibration_summary") or {}
     if not by:
         a.check(sec, "the 13-family sweep has run", True, None,
                 source="derived_metrics.calibration_by_model")
         return
 
-    a.check(sec, "all 9 ECoT-family models are calibrated",
-            9, len(by), source=f"labels={sorted(by)}")
+    a.check(sec, "12 calibration entries over 11 distinct checkpoints",
+            12, len(by), source=f"labels={sorted(by)}")
+    a.check(sec, "they span 2 architecture families (ECoT + DeepThinkVLA)",
+            2, su.get("n_architecture_families"))
+    a.check(sec, "every row's set of labels matches the audit table",
+            sorted(r[0] for r in CALIB_TABLE), sorted(by))
     for label, floor, bbox, instr, ceil, rng, two, ratio, n_ab in CALIB_TABLE:
         e = by.get(label)
         if e is None:
@@ -702,13 +730,29 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
             continue
         for name, want, got in (
                 ("paraphrase_null floor", floor, e.get("paraphrase_null")),
-                ("bbox_jitter_null",      bbox,  e.get("bbox_jitter_null")),
                 ("instr_random_sub",      instr, e.get("instr_random_sub")),
                 ("ceiling",  ceil, e.get("ceiling_cross_task_swap")),
                 ("range",    rng,  e.get("dynamic_range")),
                 ("ratio",    ratio, e.get("cot_specificity_ratio"))):
             a.check(sec, f"[{label}] {name} = {want}", want, r3(got),
                     tol=0.0015)
+        if bbox is None:
+            # Asserting the ABSENCE. A number in this cell would mean the
+            # vacuous identity edit came back: F=0.000 over n=100 with every
+            # delta exactly 0.0, indistinguishable from selfsplice_control and
+            # reportable as "the model ignores a meaning-preserving numeric
+            # perturbation" when in fact no perturbation reached the model.
+            a.check(sec, f"[{label}] bbox_jitter_null is inapplicable by "
+                         f"construction, not scored as a zero",
+                    ["bbox_jitter_null"], e.get("families_inapplicable"))
+            a.check(sec, f"[{label}] and all 100 of its samples are recorded "
+                         f"as skipped", 100,
+                    (e.get("families_inapplicable_n_skipped") or {}).get(
+                        "bbox_jitter_null"),
+                    source="edit not represented in the rendered CoT")
+        else:
+            a.check(sec, f"[{label}] bbox_jitter_null = {bbox}", bbox,
+                    r3(e.get("bbox_jitter_null")), tol=0.0015)
         if two is None:
             # ECoT-bridge: dynamic range 0.010 makes the two-sided statistic
             # undefined, and the table prints "degen." rather than a number.
@@ -728,7 +772,8 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
                 e.get("n_families_above_out_of_cot_control"))
         a.check(sec, f"[{label}] every quantity comes from ONE run of that "
                      f"checkpoint", True,
-                bool(e.get("source")) and e.get("n_families") == 13,
+                bool(e.get("source"))
+                and e.get("n_families") == (12 if label in CALIB_DT else 13),
                 source=str(e.get("source")))
 
     # The seven leaderboard rows must carry 3 sampling seeds; the other two
@@ -740,39 +785,63 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
     for label in ("ecot-bridge", "ours-no-cot-retrain"):
         a.check(sec, f"[{label}] is single-seed and the paper marks it",
                 1, (by.get(label) or {}).get("n_runs"))
+    for label in CALIB_DT:
+        a.check(sec, f"[{label}] is a single n=100 run at seed 0", 1,
+                (by.get(label) or {}).get("n_runs"))
+        a.check(sec, f"[{label}] is labelled as the second architecture family",
+                "deepthinkvla", (by.get(label) or {}).get("architecture_family"))
 
-    # The four counted claims of the section.
+    # The counted claims of the section.
     vals = [by[k] for k in by]
     below = [v for v in vals if (v.get("F_bar_diff_vs_paraphrase_null") or 0) < 0]
     neg = [v for v in vals if (v.get("F_bar_two_sided") or 0) < 0]
     gt1 = [v for v in vals if (v.get("cot_specificity_ratio") or 0) > 1]
     degen = [v for v in vals if v.get("calibration_is_degenerate")]
-    a.check(sec, "F_bar is BELOW its own paraphrase floor on 8 of 9 models",
-            8, len(below), source="the paper's central negative result")
-    a.check(sec, "the two-sided statistic is negative on 7 of 9 models",
-            7, len(neg))
-    a.check(sec, "the two-sided statistic is negative on ALL SIX "
-                 "non-degenerate full-CoT variants", 6,
-            sum(1 for k, v in by.items()
-                if k not in ("ecot-bridge", "ours-no-cot",
-                             "ours-no-cot-retrain")
-                and (v.get("F_bar_two_sided") or 0) < 0))
-    a.check(sec, "the CoT-specificity ratio exceeds 1 on 5 of 9 models -- "
+    a.check(sec, "F_bar is BELOW its own paraphrase floor on 11 of 12 entries",
+            11, len(below), source="the paper's central negative result")
+    a.check(sec, "the two-sided statistic is negative on 9 of the 10 entries "
+                 "where it is defined at all", 9, len(neg))
+    a.check(sec, "the two-sided statistic is negative on ALL EIGHT "
+                 "non-degenerate full-CoT variants, in BOTH architecture "
+                 "families", 8,
+            sum(1 for k in CALIB_FULL_COT
+                if (by.get(k, {}).get("F_bar_two_sided") or 0) < 0),
+            source="6 of these were ECoT-only at the previous revision; the "
+                   "DeepThinkVLA pair is what makes it a cross-architecture "
+                   "statement rather than a property of one CoT format")
+    a.check(sec, "the CoT-specificity ratio exceeds 1 on 5 of 12 entries -- "
                  "which CONTRADICTS the submission's 'neither calibrated "
                  "model passes' and must be reported as a correction",
             5, len(gt1), source=f"passing={sorted(v['label'] for v in gt1)}")
-    a.check(sec, "exactly 1 of the 9 calibrations is degenerate", 1,
+    a.check(sec, "and it is below 1 on ALL THREE DeepThinkVLA checkpoints, so "
+                 "the out-of-CoT control is not cleared anywhere in the second "
+                 "architecture family", 3,
+            sum(1 for k in CALIB_DT
+                if (by.get(k, {}).get("cot_specificity_ratio") or 9) < 1.0))
+    a.check(sec, "exactly 2 of the 12 calibrations are degenerate", 2,
             len(degen), source=f"degenerate={[v['label'] for v in degen]}")
-    a.check(sec, "the degenerate one is the saturated model, not a full-CoT "
-                 "variant", "ecot-bridge",
-            degen[0]["label"] if len(degen) == 1 else None)
+    a.check(sec, "the degenerate ones are the two saturated checkpoints -- one "
+                 "in each architecture family -- and no full-CoT trained "
+                 "variant", ["DT-base", "ecot-bridge"],
+            sorted(v["label"] for v in degen),
+            source="this is what localizes the collapse to the saturated "
+                   "regime rather than to the protocol")
     nd = [v["dynamic_range"] for v in vals
           if not v.get("calibration_is_degenerate")]
     a.check(sec, "non-degenerate dynamic ranges span 0.067 to 0.337",
             [0.067, 0.337], [r3(min(nd)), r3(max(nd))] if nd else None)
-    bb = [v["bbox_jitter_null"] for k, v in by.items() if k != "ecot-bridge"]
-    a.check(sec, "the numeric null is 0.047-0.087 on the 8 trained variants",
-            [0.047, 0.087], [r3(min(bb)), r3(max(bb))] if bb else None)
+    # bbox_jitter_null is defined only on the ECoT family; the DeepThinkVLA
+    # rows are excluded here by construction, not by choice, and the audit
+    # above asserts that exclusion rather than letting this range absorb it.
+    bb = [v["bbox_jitter_null"] for k, v in by.items()
+          if k != "ecot-bridge" and k not in CALIB_DT]
+    a.check(sec, "the numeric null is 0.047-0.087 on the 8 trained ECoT "
+                 "variants", [0.047, 0.087],
+            [r3(min(bb)), r3(max(bb))] if bb else None)
+    a.check(sec, "bbox_jitter_null is inapplicable on exactly the 3 "
+                 "DeepThinkVLA rows and on no ECoT row",
+            sorted(CALIB_DT),
+            sorted((su.get("families_inapplicable_by_model") or {})))
 
     # Only 2 of the 5 passing models clear the control by more than the
     # 0.021-0.030 that retraining alone moves F_bar. That bound is what keeps
@@ -788,8 +857,8 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
 
     tex = TEX.read_text()
     for frag in (r"\label{tab:calibration}",
-                 r"$\mathbf{8}$ of $\mathbf{9}$",
-                 r"the ratio exceeds $1$ on $\mathbf{5}$ of the $9$ models"):
+                 r"$\mathbf{11}$ of $\mathbf{12}$",
+                 r"the ratio exceeds $1$ on $\mathbf{5}$ of the $12$ entries"):
         a.check(sec, f"the manuscript states it ({frag!r})", True, frag in tex,
                 source=str(TEX))
 
@@ -817,12 +886,18 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
 
     # Per-model table values, exactly as Table tab:crossfamily prints them.
     for label, fbar, floor, ceil, rng, fdiff in (
-        ("DT-base", 0.925, 0.960, 0.980, 0.020, -0.035),
-        ("DT-SFT",  0.689, 0.810, 0.960, 0.150, -0.121),
-        ("DT-RL",   0.711, 0.820, 0.940, 0.120, -0.109),
+        ("DT-base", 0.947, 0.960, 0.980, 0.020, -0.013),
+        ("DT-SFT",  0.701, 0.810, 0.960, 0.150, -0.109),
+        ("DT-RL",   0.724, 0.820, 0.940, 0.120, -0.095),
     ):
         m = dt.get(label) or {}
-        a.check(sec, f"{label}: 11 families scored", 11, m.get("n_families_scored"))
+        # 12, not 13: bbox_jitter_null is inapplicable by construction on this
+        # architecture (its CoT renderer emits no bboxes), and the harness
+        # records it as n=0/n_skipped=100 rather than scoring an identity edit.
+        a.check(sec, f"{label}: 12 families scored", 12, m.get("n_families_scored"))
+        a.check(sec, f"{label}: the out-of-CoT control IS measured here, which "
+                     f"is what puts this family in tab:calibration at all",
+                True, "instr_random_sub" in (m.get("families") or {}))
         a.check(sec, f"{label}: 0 decode failures", 0, m.get("n_decode_failures"))
         a.check(sec, f"{label}: F_bar over the 7 non-control families = {fbar}",
                 fbar, r3(m.get("F_bar_non_control")), tol=0.0015)
@@ -1798,13 +1873,13 @@ def audit_deepthink_tau_units(a: Audit) -> None:
     with the checkpoint's own q01/q99, so those digits must match the artifact
     and the stated direction of the bias must be the conservative one."""
     sec = "DeepThinkVLA tau units (cross-family comparability)"
-    run_path = ROOT / "results_v2" / "canonical_runs" / "deepthink_sft.json"
+    run_path = ROOT / "results_v2" / "canonical_runs" / "deepthink_sft_13family.json"
     try:
         run = json.loads(run_path.read_text())
     except Exception:
         run = None
     if not run:
-        a.check(sec, "deepthink_sft.json present", True, None,
+        a.check(sec, "deepthink_sft_13family.json present", True, None,
                 source=str(run_path))
         return
     dec = run.get("action_decode") or {}

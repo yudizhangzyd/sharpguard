@@ -670,9 +670,29 @@ def derive_calibration(path, label):
             creps.append(r)
     if not creps:
         return None
+    return _calibration_from_reports(creps, label, paths)
+
+
+def _calibration_from_reports(creps, label, paths, agg_key="aggregate"):
+    """The body of derive_calibration, once the reports are in hand.
+
+    Split out so the DeepThinkVLA harness -- whose report names the same
+    records `edit_aggregate` because it also carries `per_sample_attn` -- goes
+    through ONE estimator rather than a parallel reimplementation. A
+    cross-architecture calibration claim assembled from two different
+    estimators would not be a cross-architecture claim.
+    """
     crep = creps[0]
-    ags = [r["aggregate"] for r in creps]
-    fams = sorted(set.intersection(*[set(a) for a in ags]))
+    ags = [r[agg_key] for r in creps]
+    # A family with n == 0 was not measured on this model and has no rate to
+    # average. It is dropped here rather than carried as a zero, because the
+    # zero is what the committed DeepThinkVLA artifacts used to contain for
+    # bbox_jitter_null: an edit that did not survive the CoT renderer, reported
+    # as a robustness result. `families_inapplicable` records the drop.
+    inapplicable = sorted({f for a in ags for f in a
+                           if not (a[f].get("n") or 0)
+                           or a[f].get("faithful_rate") is None})
+    fams = sorted(set.intersection(*[set(a) for a in ags]) - set(inapplicable))
     fr = {f: mean([a[f]["faithful_rate"] for a in ags]) for f in fams}
     fr_std = {f: std([a[f]["faithful_rate"] for a in ags]) for f in fams}
     n = {f: int(round(mean([a[f]["n"] for a in ags]))) for f in fams}
@@ -684,6 +704,11 @@ def derive_calibration(path, label):
         "label": label, "source": [rel(p) for p in paths], "n_families": len(fams),
         "n_runs": len(creps), "seeds": [r.get("seed") for r in creps],
         "seed": crep.get("seed"), "F_bar_non_control": f_bar,
+        # Not "missing": measured, and the measurement was that the edit does
+        # not survive rendering on this model. See _calibration_from_reports.
+        "families_inapplicable": inapplicable,
+        "families_inapplicable_n_skipped": {
+            f: max(a[f].get("n_skipped") or 0 for a in ags) for f in inapplicable},
         "families": {f: {"F_mag": fr[f], "F_mag_std": fr_std[f], "n": n[f],
                          "n_pooled": n_pooled[f],
                          "wilson": wilson(k_pooled[f], n_pooled[f])}
@@ -713,10 +738,68 @@ def dig_fam(model_block, fam, key):
 
 
 DT_RUNS = {
-    "DT-base": "deepthink_base.json",
-    "DT-SFT":  "deepthink_sft.json",
-    "DT-RL":   "deepthink_rl.json",
+    "DT-base": "deepthink_base_13family.json",
+    "DT-SFT":  "deepthink_sft_13family.json",
+    "DT-RL":   "deepthink_rl_13family.json",
 }
+# The 11-family DeepThinkVLA runs these replaced are retained under
+# results_v2/superseded/. They are the SAME checkpoints at the SAME seed with
+# byte-identical attention and action_decode blocks; the only family that moves
+# is location_swap (n=70 -> n=58), because the newer runs postdate the
+# admissibility guard in experiments/cotfaith_deepthink.py that refuses to score
+# an edit which does not survive CoT rendering. Repointed rather than kept
+# alongside: quoting the 11-family runs in the cross-family table while quoting
+# the 13-family runs in the calibration table would put two different
+# admissibility rules on one model family in one paper.
+# Paths are relative to results_v2/superseded/, not CANON: these were moved out
+# of canonical_runs/ when DT_RUNS was repointed, so that exactly one
+# admissibility rule for this model family is reachable from the paper.
+DT_RUNS_SUPERSEDED = {
+    "DT-base": "deepthink_base_11family.json",
+    "DT-SFT":  "deepthink_sft_11family.json",
+    "DT-RL":   "deepthink_rl_11family.json",
+}
+
+# The same three checkpoints, read for the 13-family calibration table.
+# Identical files to DT_RUNS; the two names exist because the two consumers ask
+# different questions of them and one of the questions is only answerable on the
+# full 13-family set.
+DT_RUNS_13FAMILY = dict(DT_RUNS)
+
+
+def derive_calibration_deepthink(label):
+    """13-family calibration for one DeepThinkVLA checkpoint.
+
+    These three rows are what close the coverage gap limitations (ii)/(ix)
+    named: with them, `instr_random_sub` -- and so the CoT-specificity ratio --
+    is defined on all 11 models rather than on the 9 in the ECoT family.
+
+    `bbox_jitter_null` is NOT defined on them, and not because it was skipped.
+    DeepThinkVLA's CoT renderer emits only plan/subtask/movement/move, so
+    perturbing `bboxes` produces a byte-identical CoT; the harness refuses to
+    score an edit that does not survive rendering, and the family arrives as
+    n=0, n_skipped=100. The committed artifacts previously carried it as n=100,
+    F=0.000 with every delta exactly 0.0 -- a vacuous identity edit presented as
+    a robustness result, and indistinguishable from selfsplice_control.
+    Inapplicable-by-construction is both the stronger and the true statement.
+
+    Goes through _calibration_from_reports so every quantity in the
+    cross-architecture calibration table (F_diff, the two-sided statistic, the
+    CoT-specificity ratio, the Wilson intervals) is computed by the same code
+    on both architecture families.
+    """
+    fname = DT_RUNS_13FAMILY.get(label)
+    if not fname:
+        return None
+    rep = _canon(fname)
+    if not rep or not rep.get("edit_aggregate"):
+        return None
+    c = _calibration_from_reports([rep], label, [os.path.join(CANON, fname)],
+                                 agg_key="edit_aggregate")
+    if c:
+        c["architecture_family"] = "deepthinkvla"
+        c["model"] = rep.get("model")
+    return c
 
 
 def derive_deepthink_p2():
@@ -732,10 +815,13 @@ def derive_deepthink_p2():
     definitions (`derive_calibration`). A cross-family claim built from two
     different estimators would not be a cross-family claim.
 
-    What is NOT available here: `bbox_jitter_null` and `instr_random_sub` are in
-    the 13-family calibration set, not the 11-family protocol these runs use, so
-    the out-of-CoT control and the CoT-specificity ratio are undefined for
-    DeepThinkVLA. Stated, not silently omitted.
+    What is NOT available here: `bbox_jitter_null`. It is in the 13-family set
+    these runs use, but DeepThinkVLA's CoT renderer emits no bboxes, so the edit
+    produces a byte-identical CoT and the harness refuses to score it (n=0,
+    n_skipped=100). That is a per-model applicability fact, recorded as such;
+    `instr_random_sub` IS measured here, so the out-of-CoT control and the
+    CoT-specificity ratio are defined for DeepThinkVLA and appear in
+    calibration_by_model beside the ECoT rows.
     """
     out = {}
     for label, fname in DT_RUNS.items():
@@ -1262,6 +1348,59 @@ def main():
         c = derive_calibration(EDIT_RUNS[name], name)
         if c:
             calib_by_model[name] = c
+    # The second architecture family. Adding these takes the calibrated set
+    # from the 9 ECoT-family models to all 11 models in the benchmark, which
+    # is what makes cot_specificity_ratio a cross-architecture statistic
+    # instead of an ECoT-only one. They carry `families_inapplicable ==
+    # ["bbox_jitter_null"]`; see DT_RUNS_13FAMILY for why that is a
+    # measurement rather than a gap.
+    for name in DT_RUNS_13FAMILY:
+        c = derive_calibration_deepthink(name)
+        if c:
+            calib_by_model[name] = c
+
+    # The counts the paper quotes, computed here rather than hand-counted in
+    # prose. Every one of them moved when the second architecture family was
+    # added, and a hand-counted "4 of 9" surviving into a table of 11 rows is
+    # exactly the kind of stale number the audit exists to catch.
+    calib_summary = None
+    if calib_by_model:
+        cm = calib_by_model
+        spec = {k: v.get("cot_specificity_ratio") for k, v in cm.items()
+                if v.get("cot_specificity_ratio") is not None}
+        diff = {k: v.get("F_bar_diff_vs_paraphrase_null") for k, v in cm.items()
+                if v.get("F_bar_diff_vs_paraphrase_null") is not None}
+        two = {k: v.get("F_bar_two_sided") for k, v in cm.items()
+               if v.get("F_bar_two_sided") is not None}
+        calib_summary = {
+            "n_models_calibrated": len(cm),
+            "models": sorted(cm),
+            "n_architecture_families": len({v.get("architecture_family", "ecot")
+                                            for v in cm.values()}),
+            "cot_specificity_ratio_by_model": spec,
+            "n_with_specificity_ratio": len(spec),
+            "n_specificity_below_1": sum(1 for v in spec.values() if v < 1.0),
+            "n_specificity_above_1": sum(1 for v in spec.values() if v >= 1.0),
+            "models_specificity_below_1": sorted(k for k, v in spec.items() if v < 1.0),
+            "F_bar_diff_vs_paraphrase_null_by_model": diff,
+            "n_F_bar_below_paraphrase_floor": sum(1 for v in diff.values() if v < 0),
+            "F_bar_two_sided_by_model": two,
+            "n_two_sided_negative": sum(1 for v in two.values() if v < 0),
+            "n_degenerate": sum(1 for v in cm.values()
+                                if v.get("calibration_is_degenerate")),
+            "degenerate_models": sorted(k for k, v in cm.items()
+                                        if v.get("calibration_is_degenerate")),
+            # Reported so "the 13-family set is complete on 11 models" cannot be
+            # read as "13 families were scored on 11 models".
+            "families_inapplicable_by_model": {
+                k: v.get("families_inapplicable") for k, v in cm.items()
+                if v.get("families_inapplicable")},
+            "note": ("bbox_jitter_null is inapplicable by construction on the "
+                     "three DeepThinkVLA checkpoints: their CoT renderer emits "
+                     "no bboxes, so the edit produces a byte-identical CoT and "
+                     "the harness refuses to score it (n=0, n_skipped=100). "
+                     "Every other family is measured on all 11 models."),
+        }
     # The headline of the calibration story is the CONTRAST: on the saturated
     # model the floor rises to within 0.010 of the ceiling and F is
     # uninterpretable; on the low-F model the same protocol has a real dynamic
@@ -1336,6 +1475,7 @@ def main():
         "attention_noise_floor": noise,
         "calibration_floors": calib,
         "calibration_by_model": calib_by_model,
+        "calibration_summary": calib_summary,
         "calibration_contrast": calib_contrast,
         "attention_seed_repeats": attn_seeds,
         "training_replicate": train_rep,
