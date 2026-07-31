@@ -32,7 +32,13 @@ ALL_FAMS = ["subject_swap", "direction_flip", "gripper_flip",
             "location_swap", "verb_swap", "negation",
             "adversarial_plausible", "selfsplice_control",
             "syntactic_scramble", "cross_task_swap",
-            "paraphrase_null"]
+            "paraphrase_null",
+            # The two out-of-CoT calibration floors. F_diff is defined as
+            # F(family) - F(null), so a model without them has no calibrated
+            # column at all -- which is why the leaderboard could only calibrate
+            # 2 of 11 rows. Order matches experiments/cotfaith_edit.py so the
+            # two harnesses aggregate the same 13 keys.
+            "bbox_jitter_null", "instr_random_sub"]
 
 
 def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json,
@@ -174,21 +180,37 @@ def run(args):
             prompt_ids = proc["input_ids"].to(device)
             pixel = proc["pixel_values"].to(device, dtype=dtype)
 
-            def _predict(cot_str, want_attn=False):
+            def _predict(cot_str, want_attn=False, instr_override=None):
                 """Inject `cot_str` as the CoT and return its (10,7) chunk.
 
                 This IS the P2 intervention: the model receives a reasoning
                 trace it did not author and we read the action it emits.
+
+                `instr_override` re-tokenizes the *prompt* instead of the CoT.
+                Only `instr_random_sub` uses it, and it is not optional for that
+                family: that edit returns the reasoning dict byte-identical and
+                asks the harness to perturb the instruction. Reusing the cached
+                `prompt_ids` would feed the model an input identical to the
+                original, and the family would report F=0 for every model --
+                indistinguishable from a genuine floor, and wrong.
                 """
+                if instr_override is None:
+                    p_ids, pix = prompt_ids, pixel
+                else:
+                    p_text = dtdec.build_prompt_text(instr_override, n_images=1)
+                    p_proc = processor(text=[p_text], images=img,
+                                       return_tensors="pt")
+                    p_ids = p_proc["input_ids"].to(device)
+                    pix = p_proc["pixel_values"].to(device, dtype=dtype)
                 cot_ids = processor.tokenizer(
                     cot_str, add_special_tokens=False)["input_ids"]
-                ids = dtdec.build_input_cot_ids(prompt_ids, cot_ids, torch)
+                ids = dtdec.build_input_cot_ids(p_ids, cot_ids, torch)
                 mask = torch.ones_like(ids)
                 if want_attn:
                     hook.clear()
                 with torch.no_grad():
                     logits, start = model.prompt_cot_predict_action(
-                        input_cot_ids=ids, pixel_values=pixel,
+                        input_cot_ids=ids, pixel_values=pix,
                         attention_mask=mask, output_attentions=want_attn)
                 chunk = dtdec.decode_action_chunk(logits, start, torch, centers)
                 return dtdec.unnormalize(chunk, norm), ids
@@ -230,9 +252,21 @@ def run(args):
                         "skipped": True, "reason": "no plausible edit",
                     })
                     continue
-                edited.pop("__edit_meta__", None)
+                edit_meta = edited.pop("__edit_meta__", {}) or {}
+                # Out-of-CoT calibrator: the CoT stays byte-identical and the
+                # instruction is perturbed instead. Same helper, same seed
+                # stream and same nonce vocabulary as cotfaith_edit.py, so a
+                # DeepThinkVLA floor and an ECoT floor are the same edit.
+                instr_override = None
+                if "instr_random_sub" in edit_meta:
+                    from sharpguard.attacks import apply_instr_random_sub
+                    instr_override = apply_instr_random_sub(
+                        instr.lower(), seed=args.seed + si,
+                        n_tokens=int(edit_meta["instr_random_sub"]))
+                    edit_meta["instruction_perturbed"] = instr_override[:200]
                 edited_cot = build_cot_text(edited)
-                a_edit_chunk, _ = _predict(edited_cot)
+                a_edit_chunk, _ = _predict(edited_cot,
+                                           instr_override=instr_override)
                 # The leaderboard metric is defined on a single 7-DoF action, and
                 # every other model in the paper is scored first-step. We keep
                 # that comparable by scoring chunk step 0, and record the
@@ -242,6 +276,7 @@ def run(args):
                 dall = a_edit_chunk - a_orig_chunk
                 per_sample_edit.append({
                     "sample": si, "family": fname, "file_base": fbase,
+                    "edit_meta": edit_meta,
                     # The scored action pair, stored in full. Without it the
                     # direction-aware score F_dir and the signed cos_xyz -- the
                     # two statistics that reverse the magnitude ranking -- are

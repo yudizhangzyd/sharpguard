@@ -1,0 +1,32 @@
+name: 'CoT-Faith 13-family x 3-seed edit: ours-r8 (no retrain)'
+description: 'Closes two limitations for the LoRA r=8 row without retraining. (1) Calibration: the seven ours rows were scored on 10 families, so bbox_jitter_null and instr_random_sub -- the out-of-CoT floors F_diff subtracts against -- exist for only 2 of 11 models. This runs all 13. (2) Limitation viii: seeds 0/1/2 give this row its first inference error bars. Weights come from the cotfaith-train/merged_model of training task u6gvfqeew9, so these are the SAME weights the published row was scored on. That matters: f2d55rbcpd, an independent r=32 retrain on an identical config, moved verb_swap 0.60 -> 0.78, so retraining would confound family coverage with training-seed noise. Exit 4 if a seed fails, after writing the seeds that succeeded.'
+tags: ['cotfaith', 'edit', 'calibration', 'seeds', 'ours-r8']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 12h
+  cluster: aws_6                # NOT aws_10: p6-b200 is sm_100, this image's torch stops at sm_90
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_TASK_ID: 'u6gvfqeew9'
+  SEEDS: '0 1 2'
+  N_SAMPLES: '100'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_s3ckpt.sh

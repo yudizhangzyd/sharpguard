@@ -1,23 +1,31 @@
 """CoT-Faith rollout AUROC: attention pattern as failure predictor.
 
-Extended version of cotfaith_rvis.py: for each LIBERO offline sample,
-also predicts the action (greedy decode) and compares to the GT demo
-action. Reports whether attention distribution predicts *action-error
-magnitude* — a proxy for downstream task success.
+For each sample, greedy-decode an action conditioned on the CoT, compare it to
+the corpus's ground-truth action, and ask whether the attention distribution
+separates high-error from low-error samples.
 
 Metric of interest:
-  1. For each sample: compute (attn_action_to_cot, attn_action_to_visual,
-     attn_action_to_instr) + (L1 action error vs GT)
-  2. Binarize error at median → 'high-error' vs 'low-error' labels
+  1. Per sample: (attn_action_to_cot, ->visual, ->instr) + L1 action error vs GT
+  2. Binarize error at the median -> 'high-error' vs 'low-error'
   3. AUROC of each attention feature as failure predictor.
 
 If action->cot attention distinguishes high-error from low-error samples
-(AUROC > 0.6), attention IS predictive of failure — SAFE/FIPER-style
-downstream utility claim. If AUROC ~= 0.5, attention doesn't help
-predict per-step action error.
+(AUROC > 0.6), attention IS predictive of failure -- SAFE/FIPER-style
+downstream utility claim. If AUROC ~= 0.5, attention doesn't help predict
+per-step action error. This mimics SAFE (2506.09937) / FIPER (2510.09459),
+restricted to CoT-VLAs.
 
-This mimics the SAFE (2506.09937) / FIPER (2510.09459) methodology of
-using internal signals as failure predictors, restricted to CoT-VLAs.
+PROTOCOL NOTE (this is why P3 was withdrawn and re-run). The first version made
+two errors that compound. It compared a NORMALIZED prediction against a
+ground-truth action in the robot's own units, so the residual it thresholded was
+dominated by a per-dimension constant offset rather than by model error. And it
+scored a Bridge-trained checkpoint on LIBERO, where no correct normalization
+exists on the checkpoint at all. Both are fixed here: the prediction is
+un-normalized with the checkpoint's own q01/q99 for `--unnorm-key`, the run
+aborts if that key is absent, and `--corpus bridge_v2` puts the checkpoint on
+the corpus its statistics describe. The withdrawn quantity is recomputed on the
+same forward passes and reported under `legacy_mixed_space` so the size of the
+defect is readable from the artifact.
 """
 
 from __future__ import annotations
@@ -129,6 +137,77 @@ def compute_auroc(scores, labels):
     return wins / (len(pos) * len(neg))
 
 
+# ---------------------------------------------------------------------------
+# Action normalization. This is the protocol fix, and it is the whole reason
+# the first P3 run was withdrawn rather than reported.
+#
+# `dequantize` returns a NORMALIZED action in [-1, 1]: that is the space the
+# action tokens live in. A dataset's GT action is in the robot's own units. The
+# first version of this script subtracted one from the other. Because the
+# missing map is a per-dimension affine, the residual is dominated by a
+# CONSTANT offset, and the AUROC labels here are a median split on that
+# residual -- so the labels were mostly reporting which dimension had the
+# largest offset, not which sample the model got wrong.
+#
+# The map is only defined if the checkpoint carries statistics for the corpus
+# being evaluated. `ecot-openvla-7b-bridge` carries Bridge statistics and the
+# first run scored it on LIBERO, so no correct map existed at all. Hence
+# --corpus bridge_v2: evaluate the checkpoint on the corpus its own statistics
+# describe. Scoring on LIBERO now requires --allow-cross-domain and says so in
+# the report.
+# ---------------------------------------------------------------------------
+
+def action_norm_stats(model, unnorm_key):
+    """(q01, q99, mask) for `unnorm_key`, or a hard failure naming the keys the
+    checkpoint actually has. A silent fallback here is what produced a
+    published number in the wrong units."""
+    stats = getattr(model, "norm_stats", None) or {}
+    if unnorm_key not in stats:
+        raise RuntimeError(
+            f"checkpoint has no action statistics for unnorm_key="
+            f"{unnorm_key!r}. Without them the predicted action cannot be put "
+            f"in the same units as the ground-truth action, and the error this "
+            f"script thresholds is not an error. Available keys: "
+            f"{sorted(stats)[:24]}")
+    s = stats[unnorm_key]
+    s = s["action"] if isinstance(s, dict) and "action" in s else s
+    q01 = np.asarray(s["q01"], dtype=np.float64).reshape(-1)
+    q99 = np.asarray(s["q99"], dtype=np.float64).reshape(-1)
+    m = s.get("mask")
+    mask = (np.ones_like(q01, dtype=bool) if m is None
+            else np.asarray(m, dtype=bool).reshape(-1))
+    return q01, q99, mask
+
+
+def unnormalize_action(a_norm, q01, q99, mask):
+    """OpenVLA's own convention, verbatim: masked dimensions (the gripper) are
+    passed through rather than rescaled."""
+    return np.where(mask, 0.5 * (np.asarray(a_norm, dtype=np.float64) + 1.0)
+                    * (q99 - q01) + q01, a_norm)
+
+
+def normalize_action(a_raw, q01, q99, mask):
+    """Inverse of the above, clipped to the token grid's range. Used to build
+    the teacher-forced action tokens for the attention probe -- which the first
+    version quantized directly from the raw action, i.e. off the grid."""
+    span = np.where((q99 - q01) == 0.0, 1.0, q99 - q01)
+    a = np.asarray(a_raw, dtype=np.float64)
+    return np.clip(np.where(mask, 2.0 * (a - q01) / span - 1.0, a), -1.0, 1.0)
+
+
+def load_bridge_v2(dataset_repo, n_samples, seed=0):
+    """In-domain corpus for the Bridge-trained ECoT checkpoint. Bridge carries
+    no ground-truth CoT, so the CoT is self-generated -- which is also the only
+    setting a deployed failure predictor ever sees."""
+    sys.path.insert(0, str(_ROOT / "experiments"))
+    from cotfaith_bridge import load_bridge_v2_samples
+    for s in load_bridge_v2_samples(n_samples, seed=seed,
+                                    dataset_repo=dataset_repo):
+        yield (s["image"], s["instruction"], None,
+               np.asarray(s["action"], dtype=np.float32),
+               f"bridge_ep{s.get('episode')}", s.get("episode"))
+
+
 def run(args):
     import torch
     from transformers import AutoModelForVision2Seq, AutoProcessor
@@ -151,15 +230,49 @@ def run(args):
     ))
     analyzer = CotAttentionAnalyzer(hook, processor.tokenizer, n_visual=256)
 
+    # ---- protocol preflight, before a single sample is scored ----
+    q01, q99, mask = action_norm_stats(model, args.unnorm_key)
+    print(f"[auroc] corpus={args.corpus}  unnorm_key={args.unnorm_key}")
+    print(f"[auroc]   q01  = {np.round(q01, 4).tolist()}")
+    print(f"[auroc]   q99  = {np.round(q99, 4).tolist()}")
+    print(f"[auroc]   mask = {mask.tolist()}")
+    cross_domain = (args.corpus == "libero" and "libero" not in args.unnorm_key)
+    if cross_domain and not args.allow_cross_domain:
+        raise RuntimeError(
+            f"refusing to score corpus={args.corpus} with unnorm_key="
+            f"{args.unnorm_key!r}: the normalization is from a different "
+            f"corpus, so the un-normalized prediction and the ground-truth "
+            f"action are in different units and the AUROC labels would be a "
+            f"median split on that offset. This is the defect that withdrew "
+            f"P3. Use --corpus bridge_v2 for a Bridge checkpoint, or pass "
+            f"--allow-cross-domain to reproduce the withdrawn run on purpose.")
+
     per_sample = []
-    it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
-                              args.reasoning_json, args.n_samples,
-                              seed=args.seed)
+    if args.corpus == "bridge_v2":
+        it = load_bridge_v2(args.bridge_repo, args.n_samples, seed=args.seed)
+    else:
+        it = load_libero_samples(args.dataset_repo, args.tfds_subdir,
+                                 args.reasoning_json, args.n_samples,
+                                 seed=args.seed)
+    n_cot_selfgen = 0
     for si, (img, instr, gt, gt_action, fbase, dem) in enumerate(it):
         try:
             prompt = (f"{ECOT_SYSTEM_PROMPT} USER: What action should the "
                        f"robot take to {instr.lower()}? ASSISTANT: ")
-            cot_body = build_target_text(gt)
+            if gt:
+                cot_body = build_target_text(gt)
+            else:
+                # No ground-truth CoT (Bridge). Let the model author its own,
+                # then score the action it emits conditioned on it.
+                from cotfaith_bridge import (build_prompt as _bp,
+                                             parse_generated_cot as _pc)
+                with torch.no_grad():
+                    g = model.generate(
+                        **processor(_bp(instr), img).to(device, dtype=dtype),
+                        max_new_tokens=args.cot_max_new_tokens, do_sample=False)
+                txt = processor.tokenizer.decode(g[0], skip_special_tokens=True)
+                cot_body = build_target_text(_pc("TASK:" + txt.split("TASK:")[-1]))
+                n_cot_selfgen += 1
 
             # Predict action via greedy generation.
             infer_txt = prompt + cot_body + " ACTION:"
@@ -171,14 +284,23 @@ def run(args):
             action_lo = vocab - 256
             bins = [vocab - 1 - t for t in gen_ids if action_lo <= t < vocab][:7]
             if len(bins) < 7: continue
-            pred_action = dequantize(np.asarray(bins))
+            pred_norm = dequantize(np.asarray(bins))
+            pred_action = unnormalize_action(pred_norm, q01, q99, mask)
 
-            # Action error vs GT.
+            # Action error vs GT, in the robot's own units.
             error_l1 = float(np.mean(np.abs(pred_action - gt_action)))
             error_linf = float(np.max(np.abs(pred_action - gt_action)))
+            # The withdrawn run's quantity, kept so the withdrawal is checkable
+            # from this artifact rather than only from the prose.
+            legacy_l1 = float(np.mean(np.abs(pred_norm - gt_action)))
 
-            # Capture attention via teacher-forced forward on cot+action.
-            a_ids = np.clip(np.floor((gt_action + 1) / 2 * 256).astype(np.int64), 0, 255)
+            # Capture attention via teacher-forced forward on cot+action. The
+            # GT action has to be mapped ONTO the token grid first; quantizing
+            # the raw action, as the first version did, put most dimensions in
+            # the clipped end bins and made the probe's action block nearly
+            # constant across samples.
+            gt_norm = normalize_action(gt_action, q01, q99, mask)
+            a_ids = np.clip(np.floor((gt_norm + 1) / 2 * 256).astype(np.int64), 0, 255)
             a_ids = vocab - 1 - a_ids
             input_ids = proc["input_ids"][0].to("cpu")
             eos = processor.tokenizer.eos_token_id
@@ -198,10 +320,15 @@ def run(args):
             per_sample.append({
                 "sample": si,
                 "instruction": instr[:200],
+                "file_base": fbase,
+                "cot_self_generated": not bool(gt),
                 "action_error_l1":   error_l1,
                 "action_error_linf": error_linf,
+                "action_error_l1_mixed_space_LEGACY": legacy_l1,
+                "action_pred_normalized": [float(x) for x in pred_norm],
                 "action_pred":  [float(x) for x in pred_action],
                 "action_gt":    [float(x) for x in gt_action],
+                "action_gt_normalized": [float(x) for x in gt_norm],
                 "action->cot":         stats.get("action->cot"),
                 "action->visual":      stats.get("action->visual"),
                 "action->instr":       stats.get("action->instr"),
@@ -214,12 +341,28 @@ def run(args):
 
     hook.close()
 
+    # An empty run is a harness failure, not a null result. The withdrawn P3
+    # row exists because a report was written from whatever survived.
+    if len(per_sample) < 20:
+        raise RuntimeError(
+            f"only {len(per_sample)} of {args.n_samples} samples scored. An "
+            f"AUROC over a median split needs both classes populated; below ~20 "
+            f"samples the statistic is noise. No report written.")
+
     # Compute AUROC of each attention feature as high-error predictor.
     errors = [s["action_error_l1"] for s in per_sample]
     median_err = float(np.median(errors))
     labels = [1 if s["action_error_l1"] > median_err else 0 for s in per_sample]
 
+    # The same split on the withdrawn run's mixed-space error, so the two
+    # protocols can be compared inside one artifact instead of across runs.
+    legacy = [s["action_error_l1_mixed_space_LEGACY"] for s in per_sample]
+    legacy_median = float(np.median(legacy))
+    legacy_labels = [1 if e > legacy_median else 0 for e in legacy]
+    n_label_disagree = sum(1 for a, b in zip(labels, legacy_labels) if a != b)
+
     aurocs = {}
+    legacy_aurocs = {}
     for feat in ["action->cot", "action->visual", "action->instr",
                   "action->action_prev"]:
         scores = [s[feat] for s in per_sample if s.get(feat) is not None]
@@ -231,21 +374,54 @@ def run(args):
             "abs_auroc": float(max(raw, 1.0 - raw)),
             "direction": "high-score → high-error" if raw > 0.5 else "low-score → high-error",
         }
+        lraw = compute_auroc(scores, legacy_labels)
+        legacy_aurocs[feat] = {"raw_auroc": float(lraw),
+                               "abs_auroc": float(max(lraw, 1.0 - lraw))}
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     (out / "cot_auroc_report.json").write_text(json.dumps({
         "n_samples": len(per_sample),
         "seed": args.seed,
+        "ckpt_path": args.ckpt_path,
+        "protocol": {
+            "corpus": args.corpus,
+            "unnorm_key": args.unnorm_key,
+            "in_domain": not cross_domain,
+            "cross_domain_override": bool(args.allow_cross_domain),
+            "error_space": "robot units (prediction un-normalized with the "
+                           "checkpoint's own q01/q99 for unnorm_key)",
+            "q01": q01.tolist(), "q99": q99.tolist(), "mask": mask.tolist(),
+            "cot_source": ("self-generated" if n_cot_selfgen else
+                           "ground-truth annotations"),
+            "n_cot_self_generated": n_cot_selfgen,
+        },
         "median_error_l1": median_err,
         "aurocs": aurocs,
+        # The withdrawn protocol, recomputed on the same forward passes.
+        "legacy_mixed_space": {
+            "why": "prediction left in normalized [-1,1] space and subtracted "
+                   "from a ground-truth action in robot units; this is the "
+                   "defect that withdrew P3",
+            "median_error_l1": legacy_median,
+            "n_samples_whose_label_flips_vs_corrected": n_label_disagree,
+            "aurocs": legacy_aurocs,
+        },
         "per_sample": per_sample,
     }, indent=2, default=str))
 
     print(f"\n===== ROLLOUT-STYLE AUROC DONE  seed={args.seed} =====")
-    print(f"  n_samples used: {len(per_sample)}")
-    print(f"  median action L1 error: {median_err:.4f}")
+    print(f"  corpus={args.corpus}  unnorm_key={args.unnorm_key}  "
+          f"in_domain={not cross_domain}")
+    print(f"  n_samples used: {len(per_sample)}  "
+          f"(CoT self-generated on {n_cot_selfgen})")
+    print(f"  median action L1 error: {median_err:.4f}  (robot units)")
     for feat, a in aurocs.items():
         print(f"  {feat:22s}  AUROC={a['raw_auroc']:.3f}  abs={a['abs_auroc']:.3f}  ({a['direction']})")
+    print(f"  --- withdrawn mixed-space protocol, same forward passes ---")
+    print(f"  median mixed-space L1: {legacy_median:.4f}; "
+          f"{n_label_disagree}/{len(per_sample)} labels flip vs corrected")
+    for feat, a in legacy_aurocs.items():
+        print(f"  {feat:22s}  AUROC={a['raw_auroc']:.3f}  abs={a['abs_auroc']:.3f}")
     print(f"  report -> {out / 'cot_auroc_report.json'}")
     sys.stdout.flush(); os._exit(0)
 
@@ -257,6 +433,18 @@ def main():
     p.add_argument("--n-samples", type=int, default=200)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--rvis-layers", default="0,1,2,3")
+    p.add_argument("--corpus", default="bridge_v2",
+                     choices=["bridge_v2", "libero"],
+                     help="Evaluation corpus. Default bridge_v2: the in-domain "
+                          "corpus for a Bridge-trained ECoT checkpoint.")
+    p.add_argument("--unnorm-key", default="bridge_orig",
+                     help="Which of the checkpoint's action statistics to "
+                          "un-normalize with. Must exist or the run aborts.")
+    p.add_argument("--allow-cross-domain", action="store_true",
+                     help="Score a corpus the unnorm_key does not describe. "
+                          "Only for reproducing the withdrawn P3 run.")
+    p.add_argument("--bridge-repo", default="IPEC-COMMUNITY/bridge_orig_lerobot")
+    p.add_argument("--cot-max-new-tokens", type=int, default=1024)
     p.add_argument("--dataset-repo",
                      default="Embodied-CoT/embodied_features_and_demos_libero")
     p.add_argument("--tfds-subdir", default="libero_lm_90/1.0.0")

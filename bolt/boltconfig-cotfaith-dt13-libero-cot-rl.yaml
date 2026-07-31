@@ -1,0 +1,32 @@
+name: 'CoT-Faith DT-libero-cot-rl 13-family edit (vendored decode)'
+description: 'First DeepThinkVLA (libero-cot-rl) run of the full 13-family causal-edit protocol. Two things had to be fixed first, both in code, both already committed. (a) The action decode: three earlier attempts guessed the action-token anchor from vocab sizes and decoded fewer than 7 bins on 100/100 samples, so the report was written with n=0 for every family. sharpguard/vendor/deepthinkvla/decode.py now vendors upstreams own convention (ids 254976-257023, quantile un-normalization) and asserts it against config.json at load time. (b) instr_random_sub returns the reasoning dict byte-identical and asks the harness to perturb the INSTRUCTION instead; the harness cached prompt_ids, so the family would have reported F=0 from an input identical to the original -- indistinguishable from a real floor. _predict now re-tokenizes the prompt. Adds bbox_jitter_null and instr_random_sub, the two out-of-CoT floors F_diff subtracts against.'
+tags: ['cotfaith', 'deepthink', 'edit', 'calibration', 'libero-cot-rl']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 12h
+  cluster: aws_6                # NOT aws_10: p6-b200 is sm_100, this image's torch stops at sm_90
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'yinchenghust/deepthinkvla_libero_cot_rl'
+  N_SAMPLES: '100'
+  SEED: '0'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_deepthink.sh
