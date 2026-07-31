@@ -204,16 +204,22 @@ if [ -n "${BADVLA_REPO:-}" ]; then
 fi
 
 # 6) LIBERO RLDS data.
+#    Both prefetches below go through sharpguard.hf_retry rather than calling
+#    snapshot_download directly. They did call it directly, and that is what
+#    killed hs3gey53wh / e8x2ejj7jf / 5z58wfj8jk / fpghw8b4uj: the pods receive
+#    the LITERAL string `${HF_TOKEN}` (Bolt does not expand it), huggingface_hub
+#    sent it as a Bearer credential, and the fallback anonymous pull then hit
+#    the Hub's per-IP limiter with a 429 that snapshot_download does not retry.
+#    hf_retry drops the placeholder token explicitly and retries the snapshot.
 python - <<PY || true
 import os, sys
-from huggingface_hub import snapshot_download
+from sharpguard.hf_retry import snapshot_with_retry
 suite = os.environ.get("LIBERO_SUITE", "libero_spatial_no_noops")
 try:
-    path = snapshot_download(repo_id="openvla/modified_libero_rlds",
-                              repo_type="dataset",
-                              cache_dir=os.environ.get("HF_HOME", "/tmp/hf"),
-                              token=os.environ.get("HF_TOKEN"),
-                              allow_patterns=[f"{suite}/*", f"*{suite}*"])
+    path = snapshot_with_retry(repo_id="openvla/modified_libero_rlds",
+                               repo_type="dataset",
+                               cache_dir=os.environ.get("HF_HOME", "/tmp/hf"),
+                               allow_patterns=[f"{suite}/*", f"*{suite}*"])
     print(f"[ok] LIBERO data at {path}")
     with open("/tmp/sharpguard.env", "a") as f:
         f.write(f"LIBERO_DATA_DIR={path}\n")
@@ -224,11 +230,10 @@ PY
 # 7) OpenVLA-7B itself.
 python - <<PY
 import os
-from huggingface_hub import snapshot_download
+from sharpguard.hf_retry import snapshot_with_retry
 print("Pre-fetching openvla/openvla-7b ...")
-p = snapshot_download("openvla/openvla-7b",
-                      cache_dir=os.environ.get("HF_HOME", "/tmp/hf"),
-                      token=os.environ.get("HF_TOKEN"))
+p = snapshot_with_retry(repo_id="openvla/openvla-7b",
+                        cache_dir=os.environ.get("HF_HOME", "/tmp/hf"))
 print("OK:", p)
 PY
 

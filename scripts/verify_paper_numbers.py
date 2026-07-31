@@ -220,9 +220,13 @@ def audit_noise_floor(a: Audit, d: Optional[dict]) -> None:
 
 def audit_f2_calib(a: Audit, d: Optional[dict]) -> None:
     sec = "F2 calibrated (sec:f2_calib)"
-    expected = {"ours-no-cot": 0.643, "ours-r8": 0.532, "ours-r16": 0.518,
-                "ours-r32": 0.491, "ours-r64": 0.549, "ours-data50A": 0.573,
-                "ours-data50B": 0.500}
+    # 3-seed values. These replaced the submission's single-run numbers when
+    # the 13-family sweep landed, and the floor row below did not exist at all
+    # in the submitted table -- which is why the two-sided row could not be
+    # computed and the one-sided ordering went unchallenged.
+    expected = {"ours-no-cot": 0.637, "ours-r8": 0.475, "ours-r16": 0.505,
+                "ours-r32": 0.487, "ours-r64": 0.580, "ours-data50A": 0.538,
+                "ours-data50B": 0.481}
     for m, exp in expected.items():
         a.check(sec, f"{m} ceiling-normalized F_bar = {exp}", exp,
                 r3(dig(d, "models", m, "F_bar_norm_ceiling")), tol=0.0015,
@@ -233,6 +237,63 @@ def audit_f2_calib(a: Audit, d: Optional[dict]) -> None:
             "ours-no-cot",
             None if any(v is None for v in norms.values())
             else max(norms, key=lambda k: norms[k]))
+    a.check(sec, "the other six one-sided scores span 0.475-0.580",
+            [0.475, 0.580],
+            [r3(min(v for k, v in norms.items() if k != "ours-no-cot")),
+             r3(max(v for k, v in norms.items() if k != "ours-no-cot"))]
+            if all(v is not None for v in norms.values()) else None)
+    a.check(sec, "the no-CoT ceiling is 3.1x below the mean of the other six "
+                 "(the scale confound, not CoT insensitivity)", 3.1,
+            _nocot_ceiling_factor(d), tol=0.06)
+
+    # The correction the completed sweep forced: every one-sided value is
+    # positive and every two-sided value is negative. If a future run flips a
+    # two-sided score positive on a full-CoT row, the paper's headline is wrong
+    # and this must fail rather than pass.
+    by = dig(d, "calibration_by_model") or {}
+    two = {m: (by.get(m) or {}).get("F_bar_two_sided") for m in expected}
+    a.check(sec, "the two-sided recomputation is now possible on all 7 rows",
+            7, sum(1 for v in two.values() if v is not None))
+    a.check(sec, "and it is NEGATIVE on all 7", 7,
+            sum(1 for v in two.values() if v is not None and v < 0),
+            source=f"two_sided={{{', '.join(f'{k}: {r3(v)}' for k, v in two.items())}}}")
+    a.check(sec, "the two-sided values span -0.743 to -0.299",
+            [-0.743, -0.299],
+            [r3(min(v for v in two.values() if v is not None)),
+             r3(max(v for v in two.values() if v is not None))]
+            if all(v is not None for v in two.values()) else None)
+    a.check(sec, "every one-sided value is POSITIVE while every two-sided "
+                 "value is negative -- the floor correction flips the sign, it "
+                 "does not merely shrink the number", True,
+            all(v > 0 for v in norms.values() if v is not None)
+            and all(v < 0 for v in two.values() if v is not None))
+
+    # F2's stated survival condition, and the noise bound on it.
+    cot_trained = ("ours-r8", "ours-r16", "ours-r32", "ours-r64",
+                   "ours-data50A", "ours-data50B")
+    ratios = {m: (by.get(m) or {}).get("cot_specificity_ratio")
+              for m in cot_trained + ("ours-no-cot",)}
+    a.check(sec, "F2's survival condition holds in direction on 5 of the 6 "
+                 "CoT-trained variants", 5,
+            sum(1 for m in cot_trained
+                if (ratios.get(m) or 0) > 1.0),
+            source=f"ratios={{{', '.join(f'{k}: {r3(v)}' for k, v in ratios.items())}}}")
+    a.check(sec, "and fails, as F2 requires, on no-CoT", True,
+            (ratios.get("ours-no-cot") or 9) < 1.0)
+    noise = max((dig(d, "training_replicate", "F_bar_abs_diff_per_pair")
+                 or {}).values() or [0])
+    a.check(sec, "but only 2 of those 5 clear the control by more than the "
+                 "retraining noise, so F2 narrows to absolute effect size", 2,
+            sum(1 for m in cot_trained
+                if (ratios.get(m) or 0) > 1.0
+                and ((by.get(m) or {}).get("F_bar_diff_vs_instr_random_sub")
+                     or 0) > noise))
+    tex = TEX.read_text()
+    a.check(sec, "the manuscript states F2 does not dissolve", True,
+            r"\textbf{F2 therefore does not dissolve.}" in tex, source=str(TEX))
+    a.check(sec, "the manuscript still forbids reading an ordering off either "
+                 "row", True,
+            "must not be read as floor-corrected" in tex, source=str(TEX))
 
     # Raw F2 collapse claim: 2-4x vs the CoT-trained variants on every family.
     nocot = dig(d, "models", "ours-no-cot", "families") or {}
@@ -246,23 +307,45 @@ def audit_f2_calib(a: Audit, d: Optional[dict]) -> None:
             source=f"ratios={[round(x, 2) for x in ratios]}")
 
 
+def _nocot_ceiling_factor(d: Optional[dict]) -> Optional[float]:
+    """How far below the other six the no-CoT ceiling sits. This is the scale
+    confound the F2 restatement turns on, so it is derived rather than quoted."""
+    by = dig(d, "calibration_by_model") or {}
+    nc = (by.get("ours-no-cot") or {}).get("ceiling_cross_task_swap")
+    others = [(by.get(m) or {}).get("ceiling_cross_task_swap")
+              for m in ("ours-r8", "ours-r16", "ours-r32", "ours-r64",
+                        "ours-data50A", "ours-data50B")]
+    if not nc or any(v is None for v in others):
+        return None
+    return round(sum(others) / len(others) / nc, 1)
+
+
 def audit_f3(a: Audit, d: Optional[dict]) -> None:
     sec = "F3 - attention/causation dissociation"
     mags = {m: dig(d, "models", m, "F_bar_mag") for m in ALL8}
     if all(v is not None for v in mags.values()):
         lo, hi = min(mags.values()), max(mags.values())
-        a.check(sec, "F_bar range lower bound = 0.154", 0.154, round(lo, 3),
+        a.check(sec, "F_bar range lower bound = 0.166", 0.166, round(lo, 3),
                 tol=0.0015, source="derived_metrics.json:models[*].F_bar_mag")
         a.check(sec, "F_bar range upper bound = 0.860", 0.860, round(hi, 3),
                 tol=0.0015)
-        a.check(sec, "F_bar spread = 5.6x", 5.6, round(hi / lo, 1), tol=0.05)
-        lo_ci, hi_ci = wilson_ci(round(lo * 700), 700), wilson_ci(round(hi * 700), 700)
+        a.check(sec, "F_bar spread = 5.2x", 5.2, round(hi / lo, 1), tol=0.05)
+        # N=612 is what the seven non-control families contribute per seed
+        # (4x100 + 2x69 + 74). Conservative: the point estimates are 3-seed
+        # means, so this understates the effective sample rather than
+        # overstating it, and the intervals are still disjoint.
+        lo_ci = wilson_ci(round(lo * 612), 612)
+        hi_ci = wilson_ci(round(hi * 612), 612)
         a.check(sec, "Wilson 95% CIs on the two extremes are disjoint", True,
                 lo_ci[1] < hi_ci[0],
                 source=f"lo={tuple(round(x, 3) for x in lo_ci)} "
                        f"hi={tuple(round(x, 3) for x in hi_ci)}")
+        a.check(sec, "the manuscript quotes those two CIs", True,
+                r"0.166 \in [0.140, 0.199]$" in TEX.read_text()
+                and r"0.860 \in [0.834, 0.888]$" in TEX.read_text(),
+                source=str(TEX))
     else:
-        a.check(sec, "F_bar spread = 5.6x", 5.6, None)
+        a.check(sec, "F_bar spread = 5.2x", 5.2, None)
 
 
 def audit_paraphrase_null(a: Audit, d: Optional[dict]) -> None:
@@ -284,9 +367,14 @@ def audit_paraphrase_null(a: Audit, d: Optional[dict]) -> None:
             None if eb.get("F_bar_diff") is None else eb["F_bar_diff"] < 0)
     measured = [m for m in ALL8
                 if dig(d, "models", m, "paraphrase_null_floor") is not None]
-    a.check(sec, "paraphrase_null measured on exactly 1 of 8 CoT-VLAs "
-                 "(disclosed as limitation (ii))", 1, len(measured),
-            source=f"measured={measured}")
+    # The submission measured this floor on 1 of the 8; every row now carries
+    # one from its own run, which is what removed the admission-rule gap that
+    # limitation (ii) used to disclose. If this ever drops below 8 again, a
+    # leaderboard row has lost its floor and the table is unreadable per the
+    # paper's own rule.
+    a.check(sec, "paraphrase_null measured on all 8 CoT-VLAs (the submission "
+                 "had 1; limitation (ii) is now about the DeepThinkVLA family)",
+            8, len(measured), source=f"measured={measured}")
     a.check(sec, "ECoT-bridge has 3 seeds", 3, eb.get("n_runs"))
 
 
@@ -394,10 +482,10 @@ def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
     # (F_mag, F_dir) on direction_flip, exactly as printed in tab:directional.
     # F_dir values are on the checkpoint's own de-quantization grid, which
     # derive_metrics applies before scoring; see audit_dequant_convention.
-    expected = {"ecot-bridge": (0.963, 0.120), "ours-r64": (0.820, 0.780),
-                "ours-r16": (0.780, 0.710), "ours-r8": (0.740, 0.670),
-                "ours-data50A": (0.720, 0.630), "ours-r32": (0.680, 0.610),
-                "ours-data50B": (0.660, 0.540), "ours-no-cot": (0.230, 0.080)}
+    expected = {"ecot-bridge": (0.963, 0.120), "ours-r64": (0.823, 0.779),
+                "ours-r16": (0.749, 0.666), "ours-data50A": (0.699, 0.642),
+                "ours-r8": (0.696, 0.649), "ours-r32": (0.652, 0.579),
+                "ours-data50B": (0.639, 0.542), "ours-no-cot": (0.274, 0.087)}
     def score(m: str, fam: str, which: str) -> Any:
         return dig(d, "models", m, "families", fam, which)
 
@@ -416,10 +504,60 @@ def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
             "ecot-bridge", None if not have else
             sorted(expected, key=lambda m: -score(m, "direction_flip", "F_dir"))[-2])
     grips = [score(m, "gripper_flip", "F_dir") for m in expected]
-    a.check(sec, "gripper_flip F_dir <= 0.05 for every model (no model inverts "
+    a.check(sec, "gripper_flip F_dir <= 0.03 for every model (no model inverts "
                  "its gripper on command)", True,
-            None if any(g is None for g in grips) else all(g <= 0.05 for g in grips),
+            None if any(g is None for g in grips) else all(g <= 0.03 for g in grips),
             source=f"gripper_flip F_dir = {[r3(g) for g in grips]}")
+    a.check(sec, "ECoT-bridge gripper_flip F_dir is exactly 0.000 on all 3 "
+                 "seeds (manuscript's 0.037 was the superseded P2 grid)", 0.0,
+            score("ecot-bridge", "gripper_flip", "F_dir"),
+            source="models['ecot-bridge'].families.gripper_flip.F_dir")
+    gcos = [score(m, "gripper_flip", "cos_xyz") for m in expected]
+    a.check(sec, "gripper_flip cos(xyz) between +0.93 and +1.00 on every model",
+            True, None if any(g is None for g in gcos)
+            else all(0.93 <= g <= 1.00 for g in gcos),
+            source=f"gripper_flip cos_xyz = {[r3(g) for g in gcos]}")
+    # The six full-CoT LoRA/data variants: the paper quotes their cosine range
+    # over all records and over the magnitude-faithful subset, and the two
+    # ratios by which ECoT-bridge beats them on magnitude and loses on direction.
+    lora = [m for m in expected if m.startswith("ours-") and m != "ours-no-cot"]
+    lcos = [score(m, "direction_flip", "cos_xyz") for m in lora]
+    lsub = [score(m, "direction_flip", "cos_xyz_faithful_subset") for m in lora]
+    lmag = [score(m, "direction_flip", "F_mag") for m in lora]
+    ldir = [score(m, "direction_flip", "F_dir") for m in lora]
+    ebm = score("ecot-bridge", "direction_flip", "F_mag")
+    ebd = score("ecot-bridge", "direction_flip", "F_dir")
+    ok = all(v is not None for v in lcos + lsub + lmag + ldir + [ebm, ebd])
+    a.check(sec, "LoRA/data variants reverse: cos(xyz) in [-0.509, -0.111]",
+            [-0.509, -0.111], None if not ok else [r3(min(lcos)), r3(max(lcos))],
+            source="models['ours-*'].families.direction_flip.cos_xyz")
+    a.check(sec, "on the magnitude-faithful subset they reverse harder: "
+                 "cos(xyz) in [-0.889, -0.741]", [-0.889, -0.741],
+            None if not ok else [r3(min(lsub)), r3(max(lsub))],
+            source="direction_flip.cos_xyz_faithful_subset")
+    a.check(sec, "ECoT-bridge beats them 1.2-1.5x on magnitude", [1.2, 1.5],
+            None if not ok else [round(ebm / max(lmag), 1),
+                                 round(ebm / min(lmag), 1)])
+    a.check(sec, "they beat ECoT-bridge 4.5-6.5x on direction", [4.5, 6.5],
+            None if not ok or not ebd else [round(min(ldir) / ebd, 1),
+                                            round(max(ldir) / ebd, 1)])
+    a.check(sec, "no-CoT moves the SAME way too: cos(xyz) = +0.759", 0.759,
+            r3(score("ours-no-cot", "direction_flip", "cos_xyz")), tol=0.0015)
+    # The two rows the caption explicitly refuses to order: rank 4 and rank 5
+    # are closer together than either row's own sampling-seed std.
+    da_, r8_ = score("ours-data50A", "direction_flip", "F_mag"), \
+        score("ours-r8", "direction_flip", "F_mag")
+    s8 = score("ours-r8", "direction_flip", "F_mag_std")
+    a.check(sec, "tab:directional ranks 4 and 5 are within seed noise, as the "
+                 "caption says (gap < r=8's own std)", True,
+            None if None in (da_, r8_, s8) else abs(da_ - r8_) < s8,
+            source=f"gap={r3(abs(da_ - r8_)) if None not in (da_, r8_) else None}"
+                   f" vs std={r3(s8)}")
+    # The paper quotes the inversion's size against the seed noise that could
+    # explain it away; this is the check that keeps that comparison honest.
+    a.check(sec, "ECoT-bridge's F_dir deficit against r=64 is 0.659, ~15x the "
+                 "larger of the two seed stds", 0.659,
+            None if not ok else r3(max(ldir) - ebd), tol=0.0015)
     # The paper reports the mean translation cosine as positive for ECoT-bridge
     # (+0.415): it moves the SAME way after the direction is reversed.
     a.check(sec, "ECoT-bridge direction_flip mean cos(xyz) = +0.415", 0.415,
@@ -457,31 +595,44 @@ def audit_decoder(a: Audit, da: Optional[dict]) -> None:
 
 def audit_second_calibration(a: Audit, d: Optional[dict]) -> None:
     """The R1 review's #1 objection was that construct validity was assessed on
-    one checkpoint. A second 13-family run answers it, and the answer changes
-    the finding: the degeneracy is a property of saturation, not the protocol."""
-    sec = "Second calibrated model (ours-no-cot) and the saturation contrast"
+    one checkpoint. The 13-family protocol has since run on all nine models in
+    the ECoT family, and the answer changes the finding twice over: the
+    degeneracy is a property of saturation rather than of the protocol, and the
+    out-of-CoT specificity check -- which the submission reported as failing on
+    every calibrated model -- passes on 5 of the 9. Both directions are
+    asserted here, including the one adverse to the paper's earlier wording.
+
+    The replicate row is keyed 'ours-no-cot-retrain', NOT 'ours-no-cot': since
+    the 3-seed sweep landed, 'ours-no-cot' is the leaderboard checkpoint and
+    carries different numbers. The manuscript's 0.110/0.220/0.127 belong to the
+    retraining, and reading them off the wrong key is exactly the silent
+    mis-pointing this file exists to prevent.
+    """
+    sec = "Second calibrated model (no-CoT replicate) and the saturation contrast"
     by = dig(d, "calibration_by_model") or {}
-    nc = by.get("ours-no-cot")
+    nc = by.get("ours-no-cot-retrain")
     if nc is None:
-        a.check(sec, "a second model has all 13 families scored", True, None,
-                source="derived_metrics.calibration_by_model['ours-no-cot']")
+        a.check(sec, "the no-CoT replicate has all 13 families scored", True,
+                None,
+                source="derived_metrics.calibration_by_model"
+                       "['ours-no-cot-retrain']")
         return
 
     a.check(sec, "13 edit families in the second calibration run",
             13, nc.get("n_families"))
     for fam, val in (("paraphrase_null", 0.11), ("bbox_jitter_null", 0.05),
                      ("instr_random_sub", 0.19), ("cross_task_swap", 0.22)):
-        a.check(sec, f"ours-no-cot {fam} = {val}", val,
+        a.check(sec, f"no-CoT replicate {fam} = {val}", val,
                 r3(dig(nc, "families", fam, "F_mag")), tol=0.0015)
-    a.check(sec, "ours-no-cot F_bar over non-control families = 0.124",
+    a.check(sec, "no-CoT replicate F_bar over non-control families = 0.124",
             0.124, r3(nc.get("F_bar_non_control")), tol=0.0015)
-    a.check(sec, "ours-no-cot F_bar sits only +0.014 above its own floor",
+    a.check(sec, "no-CoT replicate F_bar sits only +0.014 above its own floor",
             0.014, r3(nc.get("F_bar_diff_vs_paraphrase_null")), tol=0.0015)
 
     # The contrast is the finding: dynamic range 0.110 vs 0.010.
-    a.check(sec, "ours-no-cot dynamic range (ceiling - floor) = 0.110",
+    a.check(sec, "no-CoT replicate dynamic range (ceiling - floor) = 0.110",
             0.110, r3(nc.get("dynamic_range")), tol=0.0015)
-    a.check(sec, "ours-no-cot calibration is NOT degenerate",
+    a.check(sec, "no-CoT replicate calibration is NOT degenerate",
             False, nc.get("calibration_is_degenerate"))
     ec = by.get("ecot-bridge") or {}
     a.check(sec, "ECoT-bridge calibration IS degenerate",
@@ -492,31 +643,150 @@ def audit_second_calibration(a: Audit, d: Optional[dict]) -> None:
             source="paper: 'an 11x larger dynamic range'")
 
     # Two-sided normalization exists only where the range is real.
-    a.check(sec, "two-sided (F_bar - floor)/(ceiling - floor) = 0.127 on "
-                 "ours-no-cot", 0.127, r3(nc.get("F_bar_two_sided")), tol=0.0015)
+    a.check(sec, "two-sided (F_bar - floor)/(ceiling - floor) = 0.127 on the "
+                 "no-CoT replicate", 0.127, r3(nc.get("F_bar_two_sided")),
+            tol=0.0015)
     a.check(sec, "two-sided statistic is UNDEFINED on the saturated model",
             True, ec.get("F_bar_two_sided") is None,
             source="a 0.010 denominator must not be divided by")
-    one_sided = (nc.get("F_bar_non_control") / nc.get("ceiling_cross_task_swap")
-                 if nc.get("ceiling_cross_task_swap") else None)
-    a.check(sec, "one-sided F_bar/ceiling = 0.564 on ours-no-cot",
-            0.564, r3(one_sided), tol=0.0015)
-    a.check(sec, "one-sided normalization overstates the model by 4.4x", 4.4,
-            round(one_sided / nc["F_bar_two_sided"], 1)
-            if (one_sided and nc.get("F_bar_two_sided")) else None, tol=0.06)
-
-    # Neither calibrated model passes CoT-specificity.
-    a.check(sec, "ours-no-cot CoT-specificity ratio = 0.653",
+    a.check(sec, "no-CoT replicate CoT-specificity ratio = 0.653",
             0.653, r3(nc.get("cot_specificity_ratio")), tol=0.0015)
-    ratios = [c.get("cot_specificity_ratio") for c in by.values()]
-    a.check(sec, "BOTH calibrated models have CoT-specificity < 1", True,
-            all(r is not None and r < 1.0 for r in ratios) and len(ratios) == 2,
-            source=f"ratios={[r3(r) for r in ratios]}")
-    a.check(sec, "exactly 1 CoT family on ours-no-cot exceeds the out-of-CoT "
-                 "control (direction_flip, CIs overlap so not claimed)",
-            1, nc.get("n_families_above_out_of_cot_control"))
-    a.check(sec, "n_degenerate = 1 of the 2 calibrated models", 1,
+    a.check(sec, "exactly 1 CoT family on the no-CoT replicate exceeds the "
+                 "out-of-CoT control (direction_flip, CIs overlap so not "
+                 "claimed)", 1, nc.get("n_families_above_out_of_cot_control"))
+    a.check(sec, "n_degenerate = 1 in the 2-model saturation contrast", 1,
             dig(d, "calibration_contrast", "n_degenerate"))
+
+
+# Row order of tab:calibration. Each tuple is the published cell values:
+# (label, floor, bbox, instr, ceiling, range, two_sided, ratio, n_above).
+CALIB_TABLE = (
+    ("ours-r8",             0.587, 0.077, 0.333, 0.857, 0.270, -0.665, 1.222, 3),
+    ("ours-r16",            0.547, 0.083, 0.437, 0.883, 0.337, -0.299, 1.022, 3),
+    ("ours-r32",            0.567, 0.073, 0.370, 0.810, 0.243, -0.706, 1.067, 3),
+    ("ours-r64",            0.657, 0.087, 0.500, 0.887, 0.230, -0.621, 1.028, 3),
+    ("ours-no-cot",         0.193, 0.047, 0.263, 0.260, 0.067, -0.416, 0.629, 1),
+    ("ours-no-cot-retrain", 0.110, 0.050, 0.190, 0.220, 0.110,  0.127, 0.653, 1),
+    ("ours-data50A",        0.537, 0.067, 0.433, 0.730, 0.193, -0.743, 0.907, 3),
+    ("ours-data50B",        0.447, 0.053, 0.270, 0.733, 0.287, -0.327, 1.307, 4),
+    ("ecot-bridge",         0.960, 0.460, 0.990, 0.970, 0.010,   None, 0.878, 0),
+)
+
+
+def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
+    """tab:calibration, cell by cell, plus the four counted claims the section
+    is built on. Two of those counts are adverse to the submission's wording
+    (the specificity ratio exceeds 1 on 5 of 9, contradicting 'neither
+    calibrated model passes'), so this audit has to fail if anyone quietly
+    restores the stronger claim.
+    """
+    sec = "Two-sided calibration on 9 models (tab:calibration)"
+    by = dig(d, "calibration_by_model") or {}
+    if not by:
+        a.check(sec, "the 13-family sweep has run", True, None,
+                source="derived_metrics.calibration_by_model")
+        return
+
+    a.check(sec, "all 9 ECoT-family models are calibrated",
+            9, len(by), source=f"labels={sorted(by)}")
+    for label, floor, bbox, instr, ceil, rng, two, ratio, n_ab in CALIB_TABLE:
+        e = by.get(label)
+        if e is None:
+            a.check(sec, f"[{label}] is calibrated", True, None,
+                    source=f"calibration_by_model['{label}'] missing")
+            continue
+        for name, want, got in (
+                ("paraphrase_null floor", floor, e.get("paraphrase_null")),
+                ("bbox_jitter_null",      bbox,  e.get("bbox_jitter_null")),
+                ("instr_random_sub",      instr, e.get("instr_random_sub")),
+                ("ceiling",  ceil, e.get("ceiling_cross_task_swap")),
+                ("range",    rng,  e.get("dynamic_range")),
+                ("ratio",    ratio, e.get("cot_specificity_ratio"))):
+            a.check(sec, f"[{label}] {name} = {want}", want, r3(got),
+                    tol=0.0015)
+        if two is None:
+            # ECoT-bridge: dynamic range 0.010 makes the two-sided statistic
+            # undefined, and the table prints "degen." rather than a number.
+            # Asserting the ABSENCE is the claim here -- a number appearing in
+            # this cell would mean derive_metrics started dividing by a range
+            # the paper calls degenerate.
+            a.check(sec, f"[{label}] two-sided is undefined (degenerate range), "
+                         f"and the table prints no number for it", True,
+                    e.get("F_bar_two_sided") is None,
+                    source=f"calibration_by_model['{label}'].F_bar_two_sided="
+                           f"{e.get('F_bar_two_sided')}")
+        else:
+            a.check(sec, f"[{label}] two-sided = {two}", two,
+                    r3(e.get("F_bar_two_sided")), tol=0.0015)
+        a.check(sec, f"[{label}] {n_ab} of 7 families reach the out-of-CoT "
+                     f"control", n_ab,
+                e.get("n_families_above_out_of_cot_control"))
+        a.check(sec, f"[{label}] every quantity comes from ONE run of that "
+                     f"checkpoint", True,
+                bool(e.get("source")) and e.get("n_families") == 13,
+                source=str(e.get("source")))
+
+    # The seven leaderboard rows must carry 3 sampling seeds; the other two
+    # rows are single-run and the paper says so.
+    for label in ("ours-r8", "ours-r16", "ours-r32", "ours-r64",
+                  "ours-no-cot", "ours-data50A", "ours-data50B"):
+        a.check(sec, f"[{label}] is a 3-sampling-seed mean", [0, 1, 2],
+                (by.get(label) or {}).get("seeds"))
+    for label in ("ecot-bridge", "ours-no-cot-retrain"):
+        a.check(sec, f"[{label}] is single-seed and the paper marks it",
+                1, (by.get(label) or {}).get("n_runs"))
+
+    # The four counted claims of the section.
+    vals = [by[k] for k in by]
+    below = [v for v in vals if (v.get("F_bar_diff_vs_paraphrase_null") or 0) < 0]
+    neg = [v for v in vals if (v.get("F_bar_two_sided") or 0) < 0]
+    gt1 = [v for v in vals if (v.get("cot_specificity_ratio") or 0) > 1]
+    degen = [v for v in vals if v.get("calibration_is_degenerate")]
+    a.check(sec, "F_bar is BELOW its own paraphrase floor on 8 of 9 models",
+            8, len(below), source="the paper's central negative result")
+    a.check(sec, "the two-sided statistic is negative on 7 of 9 models",
+            7, len(neg))
+    a.check(sec, "the two-sided statistic is negative on ALL SIX "
+                 "non-degenerate full-CoT variants", 6,
+            sum(1 for k, v in by.items()
+                if k not in ("ecot-bridge", "ours-no-cot",
+                             "ours-no-cot-retrain")
+                and (v.get("F_bar_two_sided") or 0) < 0))
+    a.check(sec, "the CoT-specificity ratio exceeds 1 on 5 of 9 models -- "
+                 "which CONTRADICTS the submission's 'neither calibrated "
+                 "model passes' and must be reported as a correction",
+            5, len(gt1), source=f"passing={sorted(v['label'] for v in gt1)}")
+    a.check(sec, "exactly 1 of the 9 calibrations is degenerate", 1,
+            len(degen), source=f"degenerate={[v['label'] for v in degen]}")
+    a.check(sec, "the degenerate one is the saturated model, not a full-CoT "
+                 "variant", "ecot-bridge",
+            degen[0]["label"] if len(degen) == 1 else None)
+    nd = [v["dynamic_range"] for v in vals
+          if not v.get("calibration_is_degenerate")]
+    a.check(sec, "non-degenerate dynamic ranges span 0.067 to 0.337",
+            [0.067, 0.337], [r3(min(nd)), r3(max(nd))] if nd else None)
+    bb = [v["bbox_jitter_null"] for k, v in by.items() if k != "ecot-bridge"]
+    a.check(sec, "the numeric null is 0.047-0.087 on the 8 trained variants",
+            [0.047, 0.087], [r3(min(bb)), r3(max(bb))] if bb else None)
+
+    # Only 2 of the 5 passing models clear the control by more than the
+    # 0.021-0.030 that retraining alone moves F_bar. That bound is what keeps
+    # the corrected F2 from being overclaimed, so it is asserted, not prose.
+    noise = max((dig(d, "training_replicate", "F_bar_abs_diff_per_pair")
+                 or {}).values() or [0])
+    robust = sorted(v["label"] for v in gt1
+                    if (v.get("F_bar_diff_vs_instr_random_sub") or 0) > noise)
+    a.check(sec, "only ours-r8 and ours-data50B clear the out-of-CoT control "
+                 "by more than same-config retraining noise",
+            ["ours-data50B", "ours-r8"], robust,
+            source=f"retraining moves F_bar by up to {r3(noise)}")
+
+    tex = TEX.read_text()
+    for frag in (r"\label{tab:calibration}",
+                 r"$\mathbf{8}$ of $\mathbf{9}$",
+                 r"the ratio exceeds $1$ on $\mathbf{5}$ of the $9$ models"):
+        a.check(sec, f"the manuscript states it ({frag!r})", True, frag in tex,
+                source=str(TEX))
 
 
 def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
@@ -801,21 +1071,53 @@ def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
     a.check(sec, "largest same-config training difference on any bucket = 1.45 pp",
             1.45, round(tr.get("any_bucket_abs_diff_pp_max"), 2), tol=0.006)
 
-    fp = None
-    for pr in tr.get("pairs", []):
-        if pr.get("F_per_family"):
-            fp = pr["F_per_family"]
-    a.check(sec, "F is compared across retrainings on 9 families at N>=50",
-            9, dig(fp, "n_families_compared"))
-    a.check(sec, "mean |delta F| across retrainings = 0.024", 0.024,
-            r3(dig(fp, "mean_abs_diff")), tol=0.0015)
-    a.check(sec, "max |delta F| across retrainings = 0.083", 0.083,
-            r3(dig(fp, "max_abs_diff")), tol=0.0015)
-    a.check(sec, "the worst-reproducing family is adversarial_plausible",
-            "adversarial_plausible", dig(fp, "max_abs_diff_family"))
-    a.check(sec, "location_swap is excluded from the replicate spread "
-                 "(n=12 pre-fix run measures the annotation fix, not training)",
-            True, "location_swap" in (dig(fp, "excluded_low_n") or []))
+    # Keyed by label, not by position. This loop used to be
+    # `for pr in pairs: if pr["F_per_family"]: fp = pr["F_per_family"]`, i.e.
+    # "the last pair that happens to carry an F block" -- so the moment the
+    # r=32 pair acquired one, all four assertions below silently re-pointed at
+    # a different checkpoint and kept passing against the wrong numbers.
+    by_label = tr.get("by_label") or {}
+
+    def fpf(label):
+        return dig(by_label.get(label), "F_per_family")
+
+    for label, n_fam, mean_d, max_d, worst in (
+            ("ours-no-cot", 9, 0.024, 0.083, "adversarial_plausible"),
+            ("ours-r32",    9, 0.040, 0.180, "verb_swap")):
+        fp = fpf(label)
+        a.check(sec, "[%s] F is compared across retrainings on %d families "
+                     "at N>=50" % (label, n_fam), n_fam,
+                dig(fp, "n_families_compared"))
+        a.check(sec, "[%s] mean |delta F| across retrainings = %.3f"
+                % (label, mean_d), mean_d, r3(dig(fp, "mean_abs_diff")),
+                tol=0.0015)
+        a.check(sec, "[%s] max |delta F| across retrainings = %.3f"
+                % (label, max_d), max_d, r3(dig(fp, "max_abs_diff")),
+                tol=0.0015)
+        a.check(sec, "[%s] the worst-reproducing family is %s"
+                % (label, worst), worst, dig(fp, "max_abs_diff_family"))
+        a.check(sec, "[%s] location_swap is excluded from the replicate spread "
+                     "(n=12 pre-fix run measures the annotation fix, not "
+                     "training)" % label,
+                True, "location_swap" in (dig(fp, "excluded_low_n") or []))
+
+    a.check(sec, "the worst single-family retraining move over both pairs is "
+                 "0.180 on ours-r32:verb_swap", "ours-r32:verb_swap",
+            tr.get("F_max_abs_diff_where"))
+    a.check(sec, "manuscript limitation (viii) quotes that 0.180", True,
+            "$\\mathbf{0.180}$" in TEX.read_text(), source=str(TEX))
+
+    # F_bar itself across retraining: the unit every CoT-specificity margin in
+    # Section f2_calib is measured against, so it has to be asserted, not
+    # eyeballed off the per-family table.
+    fb = tr.get("F_bar_abs_diff_per_pair") or {}
+    a.check(sec, "F_bar moves 0.030 when the no-CoT config is retrained",
+            0.030, r3(fb.get("ours-no-cot")), tol=0.0015)
+    a.check(sec, "F_bar moves 0.021 when the r=32 config is retrained",
+            0.021, r3(fb.get("ours-r32")), tol=0.0015)
+    a.check(sec, "the manuscript quotes the F_bar retraining move as "
+                 "0.021--0.030", True,
+            "$0.021$--$0.030$" in TEX.read_text(), source=str(TEX))
 
     # The hierarchy, which is the actual claim.
     h = dig(d, "noise_hierarchy") or {}
@@ -906,8 +1208,28 @@ def audit_release(a: Audit) -> None:
     a.check(sec, "the attention-record count the manuscript quotes is the "
                  "number released", want_attn, n["attn"][0],
             source="cot_faith_iclr.tex: 'N per-observation attention records'")
+    # Both halves of the P3 story ship: the 200 withdrawn records are retained
+    # so the withdrawal is checkable, and the 153 in-domain re-run records are
+    # what replaced them. Asserting the SUM would let one file vanish while the
+    # other grew, so both are named.
+    p3_files = {}
+    for f in sorted(can.glob("*.json")):
+        rec = load(f)
+        if not isinstance(rec, dict):
+            continue
+        ps = rec.get("per_sample")
+        if isinstance(ps, list) and ps and ("aurocs" in rec
+                                            or "median_error_l1" in rec):
+            p3_files[f.name] = len(ps)
     a.check(sec, "200 withdrawn-P3 records retained so the withdrawal is "
-                 "checkable", 200, n["p3"][0])
+                 "checkable", 200, p3_files.get("auroc_ecot_bridge_n200.json"),
+            source="results_v2/canonical_runs/auroc_ecot_bridge_n200.json")
+    a.check(sec, "153 in-domain P3 records released as the replacement (F8)",
+            153, p3_files.get("auroc_ecot_bridge_indomain_n153.json"),
+            source="results_v2/canonical_runs/"
+                   "auroc_ecot_bridge_indomain_n153.json")
+    a.check(sec, "and nothing else claims to be a P3 run", 353, n["p3"][0],
+            source=f"P3-schema files: {p3_files}")
 
     total_mb = sum(f.stat().st_size for f in (root / "results_v2").rglob("*.json"))
     total_mb /= 1024 * 1024
@@ -2246,6 +2568,7 @@ def main() -> int:
     audit_f6_directional(a, d)
     audit_decoder(a, da)
     audit_second_calibration(a, d)
+    audit_calibration_nine_models(a, d)
     audit_deepthink_p2(a, d)
     audit_attention_cluster_range(a, d)
     audit_attention_seeds_and_depth(a, d)

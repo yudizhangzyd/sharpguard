@@ -33,11 +33,11 @@ Anonymous for review. Compute was provided by the authors' institution.
 **What do the instances represent?**
 Three kinds of record, all keyed to a (model, observation, edit family) triple:
 
-1. **Edit records** (16,326 released; 13,756 scored) — for one image/instruction/CoT triple
+1. **Edit records** (48,826 released; 43,114 scored) — for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
    boolean `faithful = delta_linf > tau`.
-2. **Attention records** (3,020 released) — per-observation four-bucket
+2. **Attention records** (3,180 released) — per-observation four-bucket
    decomposition of action-token attention mass (visual / instruction / CoT /
    previous-action), with segment boundaries and segment token counts so that
    per-token normalization is recomputable.
@@ -45,15 +45,22 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-19,546 records in 16.0 MB of JSON across 15 models: 16,326 edit records, 3,020
-attention records, and 200 records behind the withdrawn P3 probe (retained so
-the withdrawal is checkable rather than asserted). Per-model edit runs are
-1,000 records (10 families x N=100); the three ECoT-bridge seeds and the three
-DeepThinkVLA runs are 1,100 each (11 families) and the calibration run is
-1,300 (13 families); the three cross-corpus runs are 40-45 each.
+52,359 records in 43.3 MB of JSON across 15 models: 48,826 edit records, 3,180
+attention records, and 353 records behind the P3 probe (200 from the withdrawn
+cross-domain run, retained so the withdrawal is checkable rather than asserted,
+plus the 153 of the in-domain re-run that replaced it). The edit release is 43
+runs: 27 of 1,300 records (13 families x N=100 — the seven "ours" models at 3
+sampling seeds each, the ECoT-bridge and no-CoT calibration runs, and the
+retraining replicates), 6 of 1,100 (11 families — the three ECoT-bridge
+leaderboard seeds and the three DeepThinkVLA checkpoints), 7 of 1,000 (10
+families — the superseded single-seed "ours" runs, retained as the pairing
+partner for the retraining-variance measurement), and 3 cross-corpus runs of
+40–45. This is 3.0x the submitted release; essentially all of the growth is
+the 3-seed 13-family re-runs that replaced the submission's single-run point
+estimates.
 
-Of the 16,326 edit records, **13,756 carry a scored action pair**. The other
-2,570 are retained with `skipped: true` and a machine-readable `reason` --- most
+Of the 48,826 edit records, **43,114 carry a scored action pair**. The other
+5,712 are retained with `skipped: true` and a machine-readable `reason` --- most
 often that the edit family's target object is not visible in the frame, which
 is a property of the observation, not a failure. They are released rather than
 filtered so that the denominator of every reported `F` is recomputable and no
@@ -65,19 +72,27 @@ asserts both counts.
 This is the section a reader should read most carefully. The release is
 deliberately incomplete in ways the paper states as limitations:
 
-- **All three calibration floors exist for 2 of 11 CoT-VLAs; the paraphrase
-  floor for 5 of 11.** ECoT-bridge and our no-CoT variant have
-  `paraphrase_null`, `bbox_jitter_null`, and `instr_random_sub` at N=100. The
+- **All three calibration floors exist for 9 of 11 CoT-VLAs; the remaining
+  gap is the DeepThinkVLA family.** All nine models in the ECoT family — the
+  seven "ours" leaderboard rows at 3 sampling seeds each, ECoT-bridge, and an
+  independent retraining of the no-CoT variant — carry `paraphrase_null`,
+  `bbox_jitter_null`, and `instr_random_sub` in the same 13-family run as
+  their semantic families, so `F_diff`, the two-sided score, and the
+  out-of-CoT specificity ratio are all defined for them
+  (`results_v2/canonical_runs/ours_*_edit_13family_seed{0,1,2}.json`). The
   three DeepThinkVLA checkpoints carry `paraphrase_null` (floor) and
-  `cross_task_swap` (ceiling) in the same run as their semantic families, so
-  `F_diff` and the two-sided score are defined for them — but **not**
-  `bbox_jitter_null` or `instr_random_sub`, so the out-of-CoT specificity
-  check, the one that decides whether `F` measures anything CoT-specific, is
-  still computable on 2 of 11 models. The other six "ours" LoRA variants have
-  **no measured floor of any kind**, so their `F` values are uncalibrated and
-  the ceiling-normalized F2 table cannot be recomputed two-sided. On the one
-  row where both normalizations exist, the one-sided version overstates the
-  model by 4.4x — so that table's ordering is **not** floor-corrected.
+  `cross_task_swap` (ceiling) but **not** `bbox_jitter_null` or
+  `instr_random_sub`, so the out-of-CoT specificity check — the one that
+  decides whether `F` measures anything CoT-specific — is computable on 9 of
+  11 models rather than all 11. What the completed sweep found is stated in
+  the paper and is not uniformly favourable to the metric: `F_bar` sits
+  **below** its own paraphrase floor on 8 of the 9 calibrated models, the
+  two-sided score is negative on 7 of 9 (so the ceiling-normalized F2 table,
+  now recomputable two-sided, is negative on **all seven** "ours" rows and its
+  one-sided ordering is **not** floor-corrected), and the specificity ratio
+  exceeds 1 on 5 of 9 — which corrects the submission's stronger claim that no
+  model passes that check, while only 2 of those 5 clear it by more than
+  same-config retraining variance.
 - **All reported attention is averaged over layers 0-3, and the layer set
   changes the answer.** We now sweep five layer sets x 3 seeds. `cot` leads in
   **exactly one of the four four-layer blocks probed, and it is the block the
@@ -164,14 +179,20 @@ deliberately incomplete in ways the paper states as limitations:
   caveated: a decoder audit showed it was computed cross-domain. The
   implementation and the audit that killed it are both released
   (`results_v2/decoder_audit.json`) so the withdrawal is checkable.
-- **Sample sizes vary by family.** 7 of 10 semantic families are N=100;
-  `subject_swap`, `adversarial_plausible`, `selfsplice_control` are N=60-69
-  (skipped when the target object is not visible in frame); `location_swap` is
-  N=70-74 for ECoT-bridge after an annotation fix but remains N=12 for the
-  seven pre-fix "ours" rows.
-- **Seeds:** only ECoT-bridge has 3 seeds. All other rows, including the three
-  DeepThinkVLA checkpoints, are single-run point estimates with Wilson 95%
-  confidence intervals.
+- **Sample sizes vary by family, but no longer by row.** 10 of the 13
+  families are N=100; `subject_swap`, `adversarial_plausible`,
+  `selfsplice_control` are N=60-69 (skipped when the target object is not
+  visible in frame); `location_swap` is N=74 on the "ours" rows and N=70 on
+  ECoT-bridge. The N=12 `location_swap` cells that the submission carried on
+  the seven pre-fix "ours" rows are **gone** — every row is now from a post-fix
+  run, so per-family N is uniform across rows.
+- **Seeds:** all 8 rows of the leaderboard are 3-sampling-seed means with
+  Wilson 95% intervals computed on pooled counts (half-widths <= 0.067). The
+  three DeepThinkVLA checkpoints remain single-run point estimates. Sampling
+  seeds hold the checkpoint fixed and are therefore **not** the error bar that
+  matters for comparing rows: two same-config retraining pairs move a single
+  family's `F` by up to 0.180 and move `F_bar` by 0.021-0.030, and only two
+  such pairs exist.
 
 **Does the dataset contain confidential or offensive content?**
 No. Observations are tabletop manipulation frames from public robotics
@@ -315,17 +336,27 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 431 claims, one of which is that this
+The audit script currently checks 591 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 
 **Will it be maintained, and by whom?**
-Yes, by the authors. The first camera-ready deliverable is the 13-family
-calibration sweep across the remaining six "ours" CoT-VLAs — the check that
-would either establish or dissolve finding F2. Two of eleven models carry all
-three nulls, and neither passes the CoT-specificity check (ratios 0.878 and
-0.653, both below 1). Five of eleven carry the paraphrase floor, and
-`F_diff` is negative on all four of those that are not the no-CoT control.
+Yes, by the authors. The 13-family calibration sweep that was the first
+camera-ready deliverable is **complete**: all nine ECoT-family models now
+carry all three nulls, at 3 sampling seeds each for the seven leaderboard
+rows. It neither cleanly established nor cleanly dissolved F2. `F_diff` is
+negative on 8 of the 9, and the two-sided score is negative on 7 of 9, so
+`F` is not licensed as a reading of semantic CoT->action flow on any
+full-CoT model here. But the CoT-specificity ratio exceeds 1 on 5 of 9
+(r=8 1.222, r=16 1.022, r=32 1.067, r=64 1.028, data-50B 1.307), which
+**contradicts** the submission's claim that no model passes that check — and
+of those five, only r=8 (+0.074) and data-50B (+0.083) clear the out-of-CoT
+control by more than the 0.021-0.030 that retraining one configuration moves
+`F_bar`. F2 therefore survives as an absolute-effect-size claim with a
+measured floor under it, and no stronger. The remaining deliverables are
+`bbox_jitter_null` and `instr_random_sub` on the three DeepThinkVLA
+checkpoints, per-model retraining replicates beyond the two we have, and a
+rollout gate that passes.
 
 **How can users report errors?**
 Through the repository issue tracker after de-anonymization. During review,

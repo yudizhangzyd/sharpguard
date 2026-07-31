@@ -86,17 +86,38 @@ def quantize(node):
 # bcihypv3gu for BOTH and record the other r=32 run as a noise-floor replicate.)
 # ---------------------------------------------------------------------------
 EDIT_RUNS = {
-    "ours-r8":      ["/tmp/cf_full_sweep/lora-r8/cotfaith-edit/cot_edit_report.json"],
-    "ours-r16":     ["/tmp/cf_full_sweep/lora-r16/cotfaith-edit/cot_edit_report.json"],
-    "ours-r32":     ["/tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json"],
-    "ours-r64":     ["/tmp/cf_full_sweep/lora-r64/cotfaith-edit/cot_edit_report.json"],
-    "ours-no-cot":  ["/tmp/cf_full_sweep/no-cot/cotfaith-edit/cot_edit_report.json"],
-    "ours-data50A": ["/tmp/cf_full_sweep/data-50A/cotfaith-edit/cot_edit_report.json"],
-    "ours-data50B": ["/tmp/cf_full_sweep/data-50B/cotfaith-edit/cot_edit_report.json"],
+    # 3 sampling seeds x 13 families for every trained variant. What these
+    # replace was one seed x 10 families, which is why seven of eight
+    # leaderboard rows had no measured paraphrase floor and so no F_diff at
+    # all. Seed 0 of each row reproduces the superseded single run
+    # BIT-EXACTLY on 9 of its 10 families; the tenth is location_swap, which
+    # moves because these runs postdate the C5 annotation fix and score it at
+    # N~70 instead of N=12 (the same correction already applied to
+    # ECoT-bridge). So the 3-seed means below are a strict extension of the
+    # published numbers, not a re-measurement of them.
+    "ours-r8":      ["/tmp/cf_edit13/q5apfb9zxv/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-r16":     ["/tmp/cf_edit13/tf73jay9at/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-r32":     ["/tmp/cf_edit13/58vkvnic4b/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-r64":     ["/tmp/cf_edit13/7wtzrzeffk/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-no-cot":  ["/tmp/cf_edit13/uq6q5w4vpz/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-data50A": ["/tmp/cf_edit13/2kun548q37/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
+    "ours-data50B": ["/tmp/cf_edit13/f8647i5u7s/cotfaith-edit/seed%d/cot_edit_report.json" % s for s in (0, 1, 2)],
     # 3 file-shuffle seeds, post-C5 location_swap fix, includes paraphrase_null
     "ecot-bridge":  ["/tmp/cf_r3_all/ai3sg9h568/cotfaith-edit/cot_edit_report.json",
                      "/tmp/cf_r3_all/xvz7z8eput/cotfaith-edit/cot_edit_report.json",
                      "/tmp/cf_r3_all/bznf3vq5yu/cotfaith-edit/cot_edit_report.json"],
+}
+# The superseded single-seed, 10-family runs. Kept pinned and mirrored: they are
+# one half of the r=32 training-run replicate pair below, and they are what a
+# reader comparing against the v6 manuscript will look for.
+EDIT_RUNS_SUPERSEDED = {
+    "ours-r8":      "/tmp/cf_full_sweep/lora-r8/cotfaith-edit/cot_edit_report.json",
+    "ours-r16":     "/tmp/cf_full_sweep/lora-r16/cotfaith-edit/cot_edit_report.json",
+    "ours-r32":     "/tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json",
+    "ours-r64":     "/tmp/cf_full_sweep/lora-r64/cotfaith-edit/cot_edit_report.json",
+    "ours-no-cot":  "/tmp/cf_full_sweep/no-cot/cotfaith-edit/cot_edit_report.json",
+    "ours-data50A": "/tmp/cf_full_sweep/data-50A/cotfaith-edit/cot_edit_report.json",
+    "ours-data50B": "/tmp/cf_full_sweep/data-50B/cotfaith-edit/cot_edit_report.json",
 }
 RVIS_RUNS = {
     "ours-r8":      ["/tmp/cf_full_sweep/lora-r8/cotfaith-rvis/rvis_cot_report.json"],
@@ -136,6 +157,27 @@ CALIB_FLOORS = ["paraphrase_null", "bbox_jitter_null", "instr_random_sub"]
 # results_v2/canonical_runs/ is used.
 CANON = os.path.join(ROOT, "results_v2", "canonical_runs")
 MIRROR = {
+    "/tmp/cf_edit13/q5apfb9zxv/cotfaith-edit/seed0/cot_edit_report.json": "ours_lora-r8_edit_13family_seed0.json",
+    "/tmp/cf_edit13/q5apfb9zxv/cotfaith-edit/seed1/cot_edit_report.json": "ours_lora-r8_edit_13family_seed1.json",
+    "/tmp/cf_edit13/q5apfb9zxv/cotfaith-edit/seed2/cot_edit_report.json": "ours_lora-r8_edit_13family_seed2.json",
+    "/tmp/cf_edit13/tf73jay9at/cotfaith-edit/seed0/cot_edit_report.json": "ours_lora-r16_edit_13family_seed0.json",
+    "/tmp/cf_edit13/tf73jay9at/cotfaith-edit/seed1/cot_edit_report.json": "ours_lora-r16_edit_13family_seed1.json",
+    "/tmp/cf_edit13/tf73jay9at/cotfaith-edit/seed2/cot_edit_report.json": "ours_lora-r16_edit_13family_seed2.json",
+    "/tmp/cf_edit13/58vkvnic4b/cotfaith-edit/seed0/cot_edit_report.json": "ours_lora-r32_edit_13family_seed0.json",
+    "/tmp/cf_edit13/58vkvnic4b/cotfaith-edit/seed1/cot_edit_report.json": "ours_lora-r32_edit_13family_seed1.json",
+    "/tmp/cf_edit13/58vkvnic4b/cotfaith-edit/seed2/cot_edit_report.json": "ours_lora-r32_edit_13family_seed2.json",
+    "/tmp/cf_edit13/7wtzrzeffk/cotfaith-edit/seed0/cot_edit_report.json": "ours_lora-r64_edit_13family_seed0.json",
+    "/tmp/cf_edit13/7wtzrzeffk/cotfaith-edit/seed1/cot_edit_report.json": "ours_lora-r64_edit_13family_seed1.json",
+    "/tmp/cf_edit13/7wtzrzeffk/cotfaith-edit/seed2/cot_edit_report.json": "ours_lora-r64_edit_13family_seed2.json",
+    "/tmp/cf_edit13/uq6q5w4vpz/cotfaith-edit/seed0/cot_edit_report.json": "ours_no-cot_edit_13family_seed0.json",
+    "/tmp/cf_edit13/uq6q5w4vpz/cotfaith-edit/seed1/cot_edit_report.json": "ours_no-cot_edit_13family_seed1.json",
+    "/tmp/cf_edit13/uq6q5w4vpz/cotfaith-edit/seed2/cot_edit_report.json": "ours_no-cot_edit_13family_seed2.json",
+    "/tmp/cf_edit13/2kun548q37/cotfaith-edit/seed0/cot_edit_report.json": "ours_data-50A_edit_13family_seed0.json",
+    "/tmp/cf_edit13/2kun548q37/cotfaith-edit/seed1/cot_edit_report.json": "ours_data-50A_edit_13family_seed1.json",
+    "/tmp/cf_edit13/2kun548q37/cotfaith-edit/seed2/cot_edit_report.json": "ours_data-50A_edit_13family_seed2.json",
+    "/tmp/cf_edit13/f8647i5u7s/cotfaith-edit/seed0/cot_edit_report.json": "ours_data-50B_edit_13family_seed0.json",
+    "/tmp/cf_edit13/f8647i5u7s/cotfaith-edit/seed1/cot_edit_report.json": "ours_data-50B_edit_13family_seed1.json",
+    "/tmp/cf_edit13/f8647i5u7s/cotfaith-edit/seed2/cot_edit_report.json": "ours_data-50B_edit_13family_seed2.json",
     "/tmp/cf_full_sweep/lora-r8/cotfaith-edit/cot_edit_report.json": "ours_lora-r8_edit.json",
     "/tmp/cf_full_sweep/lora-r16/cotfaith-edit/cot_edit_report.json": "ours_lora-r16_edit.json",
     "/tmp/cf_done/bcihypv3gu/cotfaith-edit/cot_edit_report.json": "ours_lora-r32_edit.json",
@@ -193,7 +235,11 @@ TRAIN_REPLICATE_PAIRS = [
     {"label": "ours-r32",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
      "rvis": ("ours_lora-r32_rvis.json", "ours_lora-r32_rvis_REPLICATE.json"),
-     "edit": None},
+     # The edit half of this pair was left uncomputed while the attention half
+     # was published, which understated the error bar by an order of magnitude:
+     # attention moves 1.45pp between these two trainings, F moves up to 0.180.
+     "edit": ("ours_lora-r32_edit.json",
+              "ours_lora-r32_edit_13family_RETRAIN.json")},
 ]
 
 # 3 sampling seeds x 5 layer sets on the frozen public ECoT-bridge checkpoint.
@@ -550,6 +596,18 @@ def derive_training_replicate():
                     "mean_abs_diff": mean([per[f]["abs_diff"] for f in cmp_fams])
                                       if cmp_fams else None,
                 }
+                # The headline number the calibration section quotes as its
+                # noise unit: how far F_bar itself (mean over the 7 non-control
+                # families) moves when the SAME config is trained twice. This
+                # is the yardstick every cot_specificity_ratio margin is
+                # measured against, so it has to be derived, not eyeballed.
+                nc = [f for f in NON_CONTROL if f in per]
+                if len(nc) == len(NON_CONTROL):
+                    fa = mean([per[f]["run_A"] for f in nc])
+                    fb = mean([per[f]["run_B"] for f in nc])
+                    entry["F_per_family"]["F_bar_run_A"] = fa
+                    entry["F_per_family"]["F_bar_run_B"] = fb
+                    entry["F_per_family"]["F_bar_abs_diff"] = abs(fb - fa)
         if len(entry) > 2:
             pairs.append(entry)
     if not pairs:
@@ -565,27 +623,71 @@ def derive_training_replicate():
         "cot_abs_diff_pp_mean": mean(cots) if cots else None,
         "any_bucket_abs_diff_pp_max": max(maxes) if maxes else None,
     }
+    # The F rollup across pairs. Keyed by label rather than by position: the
+    # audit used to read "the last pair that has an F block", which silently
+    # re-pointed its assertions at a different checkpoint the moment a second
+    # pair acquired one.
+    out["by_label"] = {p["label"]: p for p in pairs}
+    fpairs = [p for p in pairs if p.get("F_per_family")]
+    if fpairs:
+        worst = max(fpairs, key=lambda p: p["F_per_family"]["max_abs_diff"] or 0)
+        wf = worst["F_per_family"]
+        out["F_n_pairs"] = len(fpairs)
+        out["F_max_abs_diff_over_pairs"] = wf["max_abs_diff"]
+        out["F_max_abs_diff_where"] = "%s:%s" % (worst["label"],
+                                                 wf["max_abs_diff_family"])
+        out["F_mean_abs_diff_per_pair"] = {p["label"]: p["F_per_family"]["mean_abs_diff"]
+                                           for p in fpairs}
+        out["F_max_abs_diff_per_pair"] = {p["label"]: p["F_per_family"]["max_abs_diff"]
+                                          for p in fpairs}
+        fbar = {p["label"]: p["F_per_family"]["F_bar_abs_diff"] for p in fpairs
+                if p["F_per_family"].get("F_bar_abs_diff") is not None}
+        if fbar:
+            out["F_bar_abs_diff_per_pair"] = fbar
+            out["F_bar_abs_diff_max"] = max(fbar.values())
+            out["F_bar_noise_note"] = (
+                "how far F_bar moves when the same config is trained twice; the "
+                "unit every cot_specificity_ratio margin is measured against")
     return out
 
 
 def derive_calibration(path, label):
-    """Two-sided calibration for one model from ONE 13-family run.
+    """Two-sided calibration for one model from its 13-family run(s).
 
-    Everything is compared only against families from the same run: mixing
-    runs is what produced the 0.340-vs-0.354 discrepancy the audit catches."""
-    crep = load(path) if path.startswith("/tmp") else _canon(os.path.basename(path))
-    if not crep:
+    Everything is compared only against families from the same run(s): mixing
+    runs is what produced the 0.340-vs-0.354 discrepancy the audit catches.
+    `path` may be a list of sampling-seed replicates of ONE checkpoint, in
+    which case each family's F is the mean over seeds and its Wilson interval
+    is computed on the pooled counts -- still a within-checkpoint comparison,
+    just a less noisy one. It may not mix checkpoints, and nothing here checks
+    that for you.
+    """
+    paths = [path] if isinstance(path, str) else list(path)
+    creps = []
+    for p in paths:
+        r = load(p) if p.startswith("/tmp") else _canon(os.path.basename(p))
+        if r:
+            creps.append(r)
+    if not creps:
         return None
-    ag = crep["aggregate"]
-    fr = {f: ag[f]["faithful_rate"] for f in ag}
-    n = {f: ag[f]["n"] for f in ag}
+    crep = creps[0]
+    ags = [r["aggregate"] for r in creps]
+    fams = sorted(set.intersection(*[set(a) for a in ags]))
+    fr = {f: mean([a[f]["faithful_rate"] for a in ags]) for f in fams}
+    fr_std = {f: std([a[f]["faithful_rate"] for a in ags]) for f in fams}
+    n = {f: int(round(mean([a[f]["n"] for a in ags]))) for f in fams}
+    n_pooled = {f: sum(a[f]["n"] for a in ags) for f in fams}
+    k_pooled = {f: sum(round(a[f]["faithful_rate"] * a[f]["n"]) for a in ags)
+                for f in fams}
     f_bar = mean([fr[f] for f in NON_CONTROL if f in fr])
     c = {
-        "label": label, "source": rel(path), "n_families": len(ag),
+        "label": label, "source": [rel(p) for p in paths], "n_families": len(fams),
+        "n_runs": len(creps), "seeds": [r.get("seed") for r in creps],
         "seed": crep.get("seed"), "F_bar_non_control": f_bar,
-        "families": {f: {"F_mag": fr[f], "n": n[f],
-                         "wilson": wilson(round(fr[f] * n[f]), n[f])}
-                     for f in sorted(ag)},
+        "families": {f: {"F_mag": fr[f], "F_mag_std": fr_std[f], "n": n[f],
+                         "n_pooled": n_pooled[f],
+                         "wilson": wilson(k_pooled[f], n_pooled[f])}
+                     for f in fams},
     }
     for floor in CALIB_FLOORS:
         if floor in fr:
@@ -1020,6 +1122,24 @@ def main():
     calib = derive_calibration(CALIB_RUN, "ecot-bridge")
     calib_no_cot = derive_calibration(CALIB_RUN_NO_COT, "ours-no-cot")
     calib_by_model = {c["label"]: c for c in (calib, calib_no_cot) if c}
+    # Every trained variant now has all three floors from its own 3-seed
+    # 13-family run, so the calibrated column is no longer 2 rows out of 11.
+    # `ours-no-cot` appears twice by design and the two entries are NOT
+    # interchangeable: `-retrain` is the independently trained checkpoint that
+    # makes the F2 claim a statement about more than one model, and the entry
+    # written here is the same checkpoint every other leaderboard row uses.
+    # The retrain keeps its own key rather than overwriting or being
+    # overwritten.
+    if "ours-no-cot" in calib_by_model:
+        calib_by_model["ours-no-cot-retrain"] = calib_by_model.pop("ours-no-cot")
+        calib_no_cot = calib_by_model["ours-no-cot-retrain"]
+        calib_no_cot["label"] = "ours-no-cot-retrain"
+    for name in EDIT_RUNS:
+        if name == "ecot-bridge":
+            continue                       # already calibrated from CALIB_RUN
+        c = derive_calibration(EDIT_RUNS[name], name)
+        if c:
+            calib_by_model[name] = c
     # The headline of the calibration story is the CONTRAST: on the saturated
     # model the floor rises to within 0.010 of the ceiling and F is
     # uninterpretable; on the low-F model the same protocol has a real dynamic
