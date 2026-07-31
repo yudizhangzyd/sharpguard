@@ -62,6 +62,7 @@ from sharpguard.libero_sim import (  # noqa: E402
     UPSTREAM_MAX_STEPS,
     _apply_gripper_transform as tf,
     _preprocess_image,
+    episode_budget,
 )
 
 
@@ -257,6 +258,28 @@ def main() -> int:
     ok("the gate's old flat 400 was below upstream's libero_10 budget",
        UPSTREAM_MAX_STEPS["libero_10"] > 400,
        f"{UPSTREAM_MAX_STEPS['libero_10']} > 400")
+
+    # ---------------- episode budget arithmetic ----------------
+    # The A/B report from bolt viyhc4kpft printed "n_episodes_per_arm": 4 above
+    # four arms each with "n_total": 10, because 4 // 10 floors to 1 episode per
+    # task and libero_object has 10 tasks. The floor is correct -- skipping
+    # tasks would measure the suite's SR on a subset of it -- so what is pinned
+    # here is that the realised count is what gets reported, not the request.
+    ok("a request below the task count runs one episode per task, not fewer",
+       episode_budget(4, 10) == (1, 10), str(episode_budget(4, 10)))
+    ok("that case is the exact one the viyhc4kpft report mislabelled: 4 asked, "
+       "10 run", episode_budget(4, 10)[1] > 4, "10 > 4")
+    ok("an exactly-divisible request is honoured as asked",
+       episode_budget(50, 10) == (5, 50), str(episode_budget(50, 10)))
+    ok("a non-divisible request above the task count rounds DOWN, so the "
+       "realised count is again not the request",
+       episode_budget(55, 10) == (5, 50), str(episode_budget(55, 10)))
+    ok("the realised count is always a whole multiple of the task count",
+       all(episode_budget(n, 10)[1] % 10 == 0 for n in range(1, 60)),
+       "checked n=1..59 at 10 tasks")
+    ok("n_tasks=0 does not raise (the suite lookup already rejects that, but a "
+       "ZeroDivisionError in the budget line would be a worse error message)",
+       episode_budget(4, 0) == (4, 0), str(episode_budget(4, 0)))
 
     print()
     if fails:

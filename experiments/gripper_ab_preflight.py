@@ -100,8 +100,9 @@ def main() -> int:
     print(f"[ab] gripper    : {arms}")
     print(f"[ab] image      : {imgs}")
     print(f"[ab] cells      : {len(cells)} = {len(arms)} x {len(imgs)}")
-    print(f"[ab] budget     : {args.n_episodes} episodes x {args.max_steps} "
-          f"steps per cell\n")
+    print(f"[ab] budget     : {args.n_episodes} episodes (requested) x "
+          f"{args.max_steps} steps per cell; episodes-per-task floors at 1, so "
+          f"a request below the suite's task count runs more\n")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     processor = AutoProcessor.from_pretrained(args.model, trust_remote_code=True)
@@ -153,11 +154,27 @@ def main() -> int:
               f"{r.get('gripper_frac_close_sent'):>11}")
 
     winners = [a for a, sr in scored.items() if sr >= args.win_threshold]
+    # What was asked for and what actually ran, separately. rollout_libero
+    # rounds eps_per_task up to 1, so a request below the suite's task count
+    # runs more episodes than requested -- viyhc4kpft asked for 4 on
+    # libero_object and ran 10 per arm. Reporting only the request made the
+    # top-level "n_episodes_per_arm: 4" contradict every arm's "n_total": 10.
+    n_ran = sorted({r.get("n_total") for r in results.values()
+                    if r.get("n_total") is not None})
+    if n_ran and n_ran != [args.n_episodes]:
+        print(f"\n[ab] NOTE: asked for {args.n_episodes} episodes per cell, "
+              f"actually ran {n_ran}. rollout_libero floors episodes-per-task "
+              f"at 1, so a request below the suite's task count runs more than "
+              f"requested. Read the SR denominators above, not the request.")
     payload = {
         "model": args.model, "suite": args.suite,
         "unnorm_key": args.unnorm_key,
         "gripper_arms": arms, "image_preprocs": imgs,
-        "n_episodes_per_arm": args.n_episodes,
+        "n_episodes_requested_per_arm": args.n_episodes,
+        "n_episodes_actually_run_per_arm": n_ran[0] if len(n_ran) == 1 else n_ran,
+        # Every cell must get the same budget or the comparison is not a
+        # comparison; a list here rather than a scalar means it did not.
+        "all_arms_same_episode_count": len(n_ran) == 1,
         "max_steps": args.max_steps,
         "win_threshold": args.win_threshold,
         "arms": results,

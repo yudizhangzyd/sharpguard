@@ -1,0 +1,81 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-object",
+  "suite": "libero_object",
+  "unnorm_key": "libero_object",
+  "n_episodes_per_arm": 4,
+  "max_steps": 400,
+  "win_threshold": 0.5,
+  "arms": {
+    "none": {
+      "n_total": 10,
+      "n_success": 0,
+      "n_asr": 0,
+      "n_episodes_canonical_init": 10,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "none",
+      "gripper_raw_mean": 0.18706470978516154,
+      "gripper_sent_mean": 0.18706470978516154,
+      "gripper_frac_close_raw": 0.676,
+      "gripper_frac_close_sent": 0.676,
+      "n_gripper_samples": 4000,
+      "SR": 0.0,
+      "ASR": NaN
+    },
+    "invert": {
+      "n_total": 10,
+      "n_success": 0,
+      "n_asr": 0,
+      "n_episodes_canonical_init": 10,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "invert",
+      "gripper_raw_mean": 0.354549023299478,
+      "gripper_sent_mean": -0.354549023299478,
+      "gripper_frac_close_raw": 0.7365,
+      "gripper_frac_close_sent": 0.1215,
+      "n_gripper_samples": 4000,
+      "SR": 0.0,
+      "ASR": NaN
+    },
+    "binvert": {
+      "n_total": 10,
+      "n_success": 0,
+      "n_asr": 0,
+      "n_episodes_canonical_init": 10,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "binvert",
+      "gripper_raw_mean": 0.3288058869843371,
+      "gripper_sent_mean": -0.535,
+      "gripper_frac_close_raw": 0.7675,
+      "gripper_frac_close_sent": 0.2325,
+      "n_gripper_samples": 4000,
+      "SR": 0.0,
+      "ASR": NaN
+    },
+    "openvla": {
+      "n_total": 10,
+      "n_success": 0,
+      "n_asr": 0,
+      "n_episodes_canonical_init": 10,
+      "n_episodes_reset_init": 0,
+      "all_episodes_used_canonical_init": true,
+      "gripper_transform": "openvla",
+      "gripper_raw_mean": 0.21492353432369418,
+      "gripper_sent_mean": 0.7795,
+      "gripper_frac_close_raw": 0.71675,
+      "gripper_frac_close_sent": 0.88975,
+      "n_gripper_samples": 4000,
+      "SR": 0.0,
+      "ASR": NaN
+    }
+  },
+  "sr_by_arm": {
+    "none": 0.0,
+    "invert": 0.0,
+    "binvert": 0.0,
+    "openvla": 0.0
+  },
+  "winners": []
+}

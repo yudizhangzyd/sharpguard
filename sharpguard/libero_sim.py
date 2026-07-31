@@ -472,6 +472,23 @@ def _preprocess_image(img: np.ndarray, mode: str, resize: int = 224) -> np.ndarr
     return _image_preproc.preprocess(img, mode, resize)
 
 
+def episode_budget(n_episodes_per_suite: int, n_tasks: int) -> tuple:
+    """Split a per-suite episode request across tasks: (per_task, realised).
+
+    Its own function because the floor at 1 makes the request and the realised
+    count differ, silently and in the direction nobody expects -- asking for
+    FEWER episodes than the suite has tasks runs MORE than asked. bolt
+    viyhc4kpft requested 4 on libero_object (10 tasks) and ran 10 per arm,
+    and the A/B report then printed the requested 4 beside a per-arm n_total
+    of 10. The floor itself is right (every task must be visited at least
+    once, or the suite's SR is measured on a subset of it), so the fix is to
+    report both numbers rather than to change the arithmetic -- which is why
+    this is testable in isolation on a CPU.
+    """
+    per_task = max(1, n_episodes_per_suite // max(n_tasks, 1))
+    return per_task, per_task * max(n_tasks, 0)
+
+
 def rollout_libero(model, processor, cfg: RolloutConfig, *,
                    device: torch.device) -> Dict[str, float]:
     """Run K episodes per task in `cfg.suite` and report SR + ASR.
@@ -496,7 +513,11 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                        f"available: {list(bench_dict)}")
     task_suite = bench_dict[cfg.suite]()
     n_tasks = task_suite.n_tasks
-    eps_per_task = max(1, cfg.n_episodes_per_suite // max(n_tasks, 1))
+    eps_per_task, n_planned = episode_budget(cfg.n_episodes_per_suite, n_tasks)
+    if n_planned != cfg.n_episodes_per_suite:
+        print(f"[rollout] NOTE: asked for {cfg.n_episodes_per_suite} episodes "
+              f"on {cfg.suite}; every one of its {n_tasks} tasks gets at least "
+              f"one, so this run does {eps_per_task} x {n_tasks} = {n_planned}.")
 
     # A budget below upstream's truncates episodes by construction, which is
     # how the four-suite gate reported libero_10 = 0/50 from 400 steps against
@@ -646,6 +667,20 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         "n_total": total,
         "n_success": successes,
         "n_asr": asr_hits,
+        # The requested budget alongside the realised one, because they are not
+        # the same number and the difference is silent. eps_per_task rounds UP
+        # to 1, so any request below the suite's task count runs MORE episodes
+        # than asked: bolt viyhc4kpft asked for 4 on libero_object (10 tasks)
+        # and ran 10. Harmless for coverage, but the A/B report printed the
+        # requested 4 next to a per-arm n_total of 10, which is the same
+        # defect class as a rollout that misreports its init states -- a report
+        # that describes something other than the run it came from.
+        "n_episodes_requested": cfg.n_episodes_per_suite,
+        "n_episodes_per_task": eps_per_task,
+        "n_tasks": n_tasks,
+        # Derived from the planned count rather than re-deriving the inequality,
+        # so this flag cannot disagree with the arithmetic it describes.
+        "n_episodes_rounded_up": bool(n_planned != cfg.n_episodes_per_suite),
         # Provenance for the SR, recorded because its absence is what let a
         # broken gate run look like a real one: an SR measured from random
         # env.reset() states is not comparable to a published number measured

@@ -1609,6 +1609,113 @@ def audit_tf_env_probe(a):
             r"\texttt{USE\_TF=0}" in tex, source="cot_faith_iclr.tex")
 
 
+def audit_gripper_ab_null(a):
+    """The negative result Section 6 now reports, checked against its artifact.
+
+    A null is the easiest claim in a paper to leave unsourced, because nothing
+    downstream depends on it: no table cell moves if "all four arms scored zero"
+    quietly becomes "three of four". It is also the claim most likely to be
+    softened later, once a fix is found, into something that reads better than
+    what was measured. So every digit the manuscript prints about this run is
+    tied here to results_v2/canonical_runs/gripper_ab_null/gripper_ab.json.
+
+    The distinctness checks are not decoration. Four arms that all score 0 are
+    only evidence about the gripper if they actually sent different gripper
+    commands; if the transform had silently no-opped, the same artifact would
+    have been produced by four runs of one configuration and would license
+    nothing at all.
+    """
+    sec = "Gripper-convention A/B (the null Section 6 reports)"
+    path = ROOT / "results_v2" / "canonical_runs" / "gripper_ab_null" / \
+        "gripper_ab.json"
+    r = load(path)
+    if not r:
+        a.check(sec, "the gripper-A/B artifact is released alongside the claim",
+                True, False, source=str(path))
+        return
+    src = "results_v2/canonical_runs/gripper_ab_null/gripper_ab.json"
+    arms = r.get("arms") or {}
+
+    a.check(sec, "all four conventions the manuscript names are in the report",
+            ["binvert", "invert", "none", "openvla"], sorted(arms),
+            source=src)
+    a.check(sec, "every arm scored exactly zero successes -- the null, stated as "
+                 "the artifact states it", [0.0],
+            sorted({float(v.get("SR")) for v in arms.values()}), source=src)
+    a.check(sec, "each arm's denominator is the realised 10 episodes, so the "
+                 "quoted 0/10 is the run's own tally", [10],
+            sorted({v.get("n_total") for v in arms.values()}), source=src)
+    a.check(sec, "40 episodes in total, as Section 6 says", 40,
+            sum(v.get("n_total") or 0 for v in arms.values()), source=src)
+    a.check(sec, "all 40 episodes ran on canonical initial states, without "
+                 "which a zero SR would be uninterpretable", True,
+            all(v.get("all_episodes_used_canonical_init") is True
+                for v in arms.values()), source=src)
+
+    # The arms are distinct: this is what makes four zeros evidence.
+    sent = {k: v.get("gripper_sent_mean") for k, v in arms.items()}
+    # Quoted at 4 dp, not 3, because the max is exactly 0.7795 (3118 of 4000
+    # samples at +1) and rounding it to 3 dp puts the paper one ULP away from
+    # the artifact for no gain: the stored double is 0.779499..., so "0.780" is
+    # arguably right and round() disagrees. Exact digits end the argument.
+    a.check(sec, "the quoted span of delivered gripper commands is the min and "
+                 "max over the four arms", [-0.535, 0.7795],
+            [round(min(sent.values()), 4), round(max(sent.values()), 4)],
+            source=src)
+    frac = [v.get("gripper_frac_close_sent") for v in arms.values()]
+    a.check(sec, "the quoted closed-gripper fraction range is the artifact's, "
+                 "rounded as printed", [0.12, 0.89],
+            [round(min(frac), 2), round(max(frac), 2)], source=src)
+    a.check(sec, "the four arms are pairwise distinct in what they sent, so this "
+                 "is not one configuration run four times", 4,
+            len({round(v, 6) for v in sent.values()}), source=src)
+    a.check(sec, "'none' sent exactly what it decoded, which is what makes it "
+                 "the anchor cell", True,
+            dig(arms, "none", "gripper_raw_mean") ==
+            dig(arms, "none", "gripper_sent_mean"), source=src)
+    a.check(sec, "the report names no winner, matching the reported null", [],
+            r.get("winners"), source=src)
+
+    tid = ROOT / "results_v2" / "canonical_runs" / "gripper_ab_null" / \
+        "bolt_task_id.txt"
+    a.check(sec, "the run is attributable to a bolt task id", "viyhc4kpft",
+            (tid.read_text().strip() if tid.exists() else ""), source=str(tid))
+
+    # The artifact ships verbatim, including the misleading field name it was
+    # written with. That is the honest choice, but it is only honest if the
+    # discrepancy is documented rather than left for a reader to trip over.
+    readme = ROOT / "results_v2" / "canonical_runs" / "gripper_ab_null" / \
+        "README.md"
+    rd = readme.read_text() if readme.exists() else ""
+    a.check(sec, "the released artifact explains why its 'n_episodes_per_arm: 4' "
+                 "disagrees with every arm's n_total of 10", True,
+            "n_episodes_per_arm" in rd and "10 tasks" in rd,
+            source="results_v2/canonical_runs/gripper_ab_null/README.md")
+    a.check(sec, "and explains that the task's FAILED state is the designed "
+                 "exit code for 'no arm wins', not a crash", True,
+            "not a crash" in rd,
+            source="results_v2/canonical_runs/gripper_ab_null/README.md")
+
+    # The manuscript side. What must not drift is the scope of the null: the
+    # source diff established the gripper difference is real, so "not sufficient"
+    # and "not a difference" are different claims and only one of them is ours.
+    tex = TEX.read_text() if TEX.exists() else ""
+    a.check(sec, "Section 6 reports the null rather than only the factorial that "
+                 "followed it", True,
+            "The gripper convention alone is not the cause" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 bounds the null to insufficiency, not to the "
+                 "difference being absent", True,
+            "not that it is a non-difference" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 points at the released artifact", True,
+            r"gripper\_ab\_null" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "limitation (v) carries the null too, since that is where a "
+                 "reader checks what the gate does and does not license", True,
+            "leaves SR at $0/10$ under all four conventions" in tex,
+            source="cot_faith_iclr.tex")
+
+
 def audit_rollout_gate(a, d):
     """Table "Four-suite rollout gate" and Section 6/limitation (v).
 
@@ -1826,6 +1933,7 @@ def main() -> int:
     audit_resize_check(a)
     audit_citations(a)
     audit_tf_env_probe(a)
+    audit_gripper_ab_null(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script
