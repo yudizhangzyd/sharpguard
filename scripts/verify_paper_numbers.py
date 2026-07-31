@@ -1729,6 +1729,101 @@ def audit_gripper_ab_null(a):
             source="cot_faith_iclr.tex")
 
 
+def audit_gate_factorial(a):
+    """The 2x2 gripper x image factorial, and the null it returned.
+
+    This is the run the paper's diagnostic narrative ends on, which makes it the
+    one most likely to be quietly reframed once a fix is eventually found: "all
+    four cells scored zero" is a sentence that gets easier to soften every week
+    it stays true. Every digit is pinned to the artifact, including the two that
+    do the argumentative work -- the 280-step budget, which is what excludes
+    truncation as an explanation, and the distinctness of the cells, without
+    which four zeros are four runs of the anchor.
+    """
+    sec = "Gripper x image factorial (the second null Section 6 reports)"
+    base = ROOT / "results_v2" / "canonical_runs" / "gate_factorial_pil"
+    r = load(base / "gripper_ab.json")
+    if not r:
+        a.check(sec, "the factorial artifact is released alongside the claim",
+                True, False, source=str(base / "gripper_ab.json"))
+        return
+    src = "results_v2/canonical_runs/gate_factorial_pil/gripper_ab.json"
+    arms = r.get("arms") or {}
+
+    a.check(sec, "the run is the 2x2 the manuscript describes, with the gate "
+                 "configuration as one of its cells",
+            [["none", "openvla"], ["none", "pil_lanczos"]],
+            [r.get("gripper_arms"), r.get("image_preprocs")], source=src)
+    a.check(sec, "all four cells are present and none raised", [4, []],
+            [len(arms), sorted(k for k, v in arms.items() if v.get("error"))],
+            source=src)
+    a.check(sec, "every cell scored zero, including the both-corrections cell",
+            [0.0], sorted(set(r.get("sr_by_arm", {}).values())), source=src)
+    a.check(sec, "the both-corrections cell exists under the name the "
+                 "manuscript gives it and is one of the zeros", 0.0,
+            (r.get("sr_by_arm") or {}).get("openvla+pil_lanczos"), source=src)
+    a.check(sec, "10 episodes per cell and 40 in total, as printed", [[10], 40],
+            [sorted({v.get("n_total") for v in arms.values()}),
+             sum(v.get("n_total") or 0 for v in arms.values())], source=src)
+    a.check(sec, "all 40 episodes ran on canonical initial states", True,
+            all(v.get("all_episodes_used_canonical_init") is True
+                for v in arms.values()), source=src)
+    # The step budget is load-bearing: at 400 the paper could not claim
+    # truncation is excluded, and the earlier gate's libero_10 zero is exactly
+    # what an under-budgeted suite looks like.
+    a.check(sec, "every cell ran at upstream's own 280-step budget for "
+                 "libero_object, which is what excludes truncation", [[280], 280],
+            [sorted({v.get("max_steps") for v in arms.values()}),
+             r.get("max_steps")], source=src)
+    a.check(sec, "and no cell recorded itself as below upstream's budget", True,
+            all(v.get("max_steps_below_upstream") is False
+                for v in arms.values()), source=src)
+
+    # Distinctness of the factors, quoted as the manuscript quotes them.
+    def cell(k, f):
+        return (arms.get(k) or {}).get(f)
+    a.check(sec, "the quoted gripper-command means for the anchor and the "
+                 "gripper-corrected cell", [0.216, 0.753],
+            [round(cell("none+none", "gripper_sent_mean"), 3),
+             round(cell("openvla+pil_lanczos", "gripper_sent_mean"), 3)],
+            source=src)
+    a.check(sec, "the quoted closed-gripper fractions for the same two cells",
+            [0.695, 0.876],
+            [round(cell("none+none", "gripper_frac_close_sent"), 3),
+             round(cell("openvla+pil_lanczos", "gripper_frac_close_sent"), 3)],
+            source=src)
+    a.check(sec, "the image factor moved the telemetry too, so it was applied "
+                 "rather than silently skipped", True,
+            cell("none+none", "gripper_sent_mean") !=
+            cell("none+pil_lanczos", "gripper_sent_mean"), source=src)
+    a.check(sec, "the report names no winner", [], r.get("winners"), source=src)
+
+    tid = base / "bolt_task_id.txt"
+    a.check(sec, "the run is attributable to a bolt task id", "i55ww23d5n",
+            (tid.read_text().strip() if tid.exists() else ""), source=str(tid))
+
+    tex = TEX.read_text() if TEX.exists() else ""
+    a.check(sec, "Section 6 states the factorial null in the paper's own voice "
+                 "rather than leaving the factorial 'under way'", True,
+            "The factorial is also a null: all four cells scored $0/10$" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 no longer describes the factorial as pending", 0,
+            tex.count("are being measured factorially"),
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 bounds this null to sufficiency as well, since the "
+                 "differences themselves were read out of upstream's source",
+            True, "nor their conjunction, is what the gate is failing on" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 names what is left rather than stopping at the null",
+            True, "least-checked assumption left" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 points at the released artifact", True,
+            r"gate\_factorial\_pil" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "limitation (v) carries the factorial null too", True,
+            "scores $0/10$ in every cell including the one that applies both "
+            "corrections" in tex, source="cot_faith_iclr.tex")
+
+
 def audit_rollout_gate(a, d):
     """Table "Four-suite rollout gate" and Section 6/limitation (v).
 
@@ -1969,6 +2064,7 @@ def main() -> int:
     audit_citations(a)
     audit_tf_env_probe(a)
     audit_gripper_ab_null(a)
+    audit_gate_factorial(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script
