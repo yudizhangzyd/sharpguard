@@ -190,6 +190,8 @@ def main() -> int:
     # top-level "n_episodes_per_arm: 4" contradict every arm's "n_total": 10.
     n_ran = sorted({r.get("n_total") for r in results.values()
                     if r.get("n_total") is not None})
+    steps_ran = sorted({r.get("max_steps") for r in results.values()
+                        if r.get("max_steps") is not None})
     if n_ran and n_ran != [args.n_episodes]:
         print(f"\n[ab] NOTE: asked for {args.n_episodes} episodes per cell, "
               f"actually ran {n_ran}. rollout_libero floors episodes-per-task "
@@ -211,7 +213,13 @@ def main() -> int:
         # Every cell must get the same budget or the comparison is not a
         # comparison; a list here rather than a scalar means it did not.
         "all_arms_same_episode_count": len(n_ran) == 1,
-        "max_steps": args.max_steps,
+        # Requested and resolved, separately, for the same reason as the episode
+        # count: --max-steps 0 means "use upstream's per-suite budget", so a bare
+        # "max_steps": 0 reads as a zero-step run. f52r5nvnhb's report says 0 at
+        # the top level while every arm inside it says 280.
+        "max_steps_requested": args.max_steps,
+        "max_steps": (steps_ran[0] if len(steps_ran) == 1
+                      else (steps_ran or args.max_steps)),
         "win_threshold": args.win_threshold,
         "arms": results,
         "sr_by_arm": scored,

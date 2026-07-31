@@ -1,0 +1,52 @@
+name: 'CoT-Faith four-suite gate on the winning composition: libero_10'
+description: 'Four-suite decode gate, re-run at the composition that finally cleared it. The published gate ran our own action decode with gripper_transform=none at max_steps=400 on every suite, and scored 0/50 four times -- which the paper reports as a harness limitation rather than a model result. bolt f52r5nvnhb then ran the 2x3 decoder x gripper grid on libero_object at upstream own per-suite step budget and found two winners: upstream|openvla+none and upstream|binvert+none, both 10/10, against 0/10 for all three cells of the ours decoder and 0/10 for upstream|none+none. So both factors are necessary and neither alone is sufficient. This job re-runs suite libero_10 with the upstream decoder at 520 steps (upstream own budget for this suite, MAX_STEPS=0), 50 episodes = 5 per task, canonical init. Two cells: gripper=openvla is the fix, gripper=none is the in-run anchor that shows the gripper factor is still necessary away from libero_object. Exit 0 iff a cell clears SR>=0.5.'
+tags: ['cotfaith', 'decoder-gate', 'gate4', '10']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  # f52r5nvnhb: ~15 min per 10-episode cell at 280 steps. 2 cells x 50 episodes
+  # at 520 steps scales that by ~19x, so ~4.8h of rollout; 12h leaves
+  # room for a slow HF pull and for episodes that run the budget out.
+  timeout: 12h
+  cluster: aws_2  # A100. NOT aws_10: its B200s are sm_100 and this image's torch caps at sm_90, plus MuJoCo EGL has no device platform there.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-10'
+  LIBERO_SUITE: 'libero_10'
+  UNNORM_KEY: 'libero_10'
+
+  # Fixed to the winner. 'ours' is not re-run here: f52r5nvnhb scored it 0/10 in
+  # all three of its gripper arms, and spending a third of this job on a cell
+  # already measured at zero buys nothing the anchor below does not.
+  ACTION_DECODERS: 'upstream'
+  # 'openvla' is upstream own composition; 'none' reproduces the published gate
+  # under the corrected decode, which is what separates the two factors.
+  # 'binvert' is dropped: it tied openvla at 10/10 on libero_object and the two
+  # only come apart for g<0.5, which upstream decode does not emit here.
+  ARMS: 'none,openvla'
+  IMAGE_PREPROCS: 'none'
+
+  N_EPISODES: '50'   # 5 per task on a 10-task suite
+  MAX_STEPS: '0'     # 0 = upstream own per-suite budget (520 for libero_10)
+  WIN_THRESHOLD: '0.5'
+
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_decoder_gripper.sh

@@ -26,8 +26,14 @@ if [ ! -f "$CKPT_LOCAL/config.json" ]; then
     # awscli not preinstalled on iris pods — install first.
     which aws >/dev/null 2>&1 || pip install --quiet awscli || true
     S3_URL="s3://bolt-prod-2702150980/tasks/$CKPT_TASK_ID/artifacts/cotfaith-train/merged_model"
-    # Bolt pods carry IAM role granting read on task artifact prefixes.
-    aws s3 sync "$S3_URL" "$CKPT_LOCAL" --quiet || {
+    # Bolt pods do NOT carry an IAM role for the artifact bucket: it is served by
+    # conductor.data.apple.com and needs a task-scoped token from
+    # `bolt task get-credentials $CKPT_TASK_ID`, exported at submit time. Seven
+    # jobs (jk6t6c3tbs and siblings) died at NoCredentialProviders proving it.
+    [ -n "${AWS_SESSION_TOKEN:-}" ] || unset AWS_SESSION_TOKEN
+    S3_ENDPOINT_URL="${S3_ENDPOINT_URL:-https://conductor.data.apple.com}"
+    export S3_ENDPOINT_URL      # s5cmd reads this one directly
+    aws s3 sync "$S3_URL" "$CKPT_LOCAL" --endpoint-url "$S3_ENDPOINT_URL" --quiet || {
         echo "[sanity] aws s3 sync failed — trying s5cmd fallback"
         pip install --quiet s5cmd || true
         s5cmd cp "$S3_URL/*" "$CKPT_LOCAL/" || {

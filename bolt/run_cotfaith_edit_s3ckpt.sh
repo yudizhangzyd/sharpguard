@@ -14,6 +14,15 @@
 # CKPT_TASK_ID  bolt task whose artifacts/cotfaith-train/merged_model to use
 # SEEDS         whitespace-separated inference seeds (default "0 1 2")
 # N_SAMPLES     samples per seed (default 100)
+#
+# Credentials: the bolt artifact bucket is NOT public AWS S3. It is served by
+# https://conductor.data.apple.com and needs a task-scoped token, which the pod
+# does not have -- the first submission of this runner (jk6t6c3tbs and six
+# siblings) died at `NoCredentialProviders` on every one of the seven jobs. The
+# token comes from `bolt task get-credentials $CKPT_TASK_ID` at submit time and
+# arrives here as AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY. It is scoped to that
+# one task prefix and expires, so it is worth nothing to anyone reading the log,
+# and a stale one fails loudly below rather than silently reading nothing.
 set -e -x
 cd "$(dirname "$0")/.."
 if [ -f /tmp/sharpguard.env ]; then set -a; . /tmp/sharpguard.env; set +a; fi
@@ -33,15 +42,34 @@ fi
 
 CKPT_LOCAL=/tmp/cotfaith_ckpt
 mkdir -p "$CKPT_LOCAL"
+
+# An empty AWS_SESSION_TOKEN is worse than an absent one: botocore signs with it
+# and the request is rejected. get-credentials emits it empty for scoped tokens.
+[ -n "${AWS_SESSION_TOKEN:-}" ] || unset AWS_SESSION_TOKEN
+S3_ENDPOINT_URL="${S3_ENDPOINT_URL:-https://conductor.data.apple.com}"
+export S3_ENDPOINT_URL      # s5cmd reads this one directly
+if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
+    echo "[FATAL] no S3 credentials in the environment. The bolt artifact bucket"
+    echo "        is behind $S3_ENDPOINT_URL and needs a task-scoped token:"
+    echo "          eval \"\$(bolt task get-credentials $CKPT_TASK_ID"
+    echo "                    --expires-in-seconds 129600)\""
+    echo "        then submit with AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY"
+    echo "        exported, so the config placeholders resolve."
+    exit 2
+fi
+
 if [ ! -f "$CKPT_LOCAL/config.json" ]; then
     echo "[edit-s3] fetching merged_model from bolt task $CKPT_TASK_ID"
     which aws >/dev/null 2>&1 || pip install --quiet awscli || true
     S3_URL="s3://bolt-prod-2702150980/tasks/$CKPT_TASK_ID/artifacts/cotfaith-train/merged_model"
-    aws s3 sync "$S3_URL" "$CKPT_LOCAL" --quiet || {
+    aws s3 sync "$S3_URL" "$CKPT_LOCAL" --endpoint-url "$S3_ENDPOINT_URL" --quiet || {
         echo "[edit-s3] aws s3 sync failed -- trying s5cmd"
         pip install --quiet s5cmd || true
         s5cmd cp "$S3_URL/*" "$CKPT_LOCAL/" || {
             echo "[FATAL] cannot fetch $S3_URL"
+            echo "        If this is AccessDenied, the token is scoped to a"
+            echo "        different task than CKPT_TASK_ID=$CKPT_TASK_ID."
+            echo "        If it is ExpiredToken, re-issue and resubmit."
             exit 3
         }
     }

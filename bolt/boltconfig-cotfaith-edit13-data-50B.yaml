@@ -21,6 +21,13 @@ environment_variables:
   HF_HOME: /tmp/hf
   HF_HUB_OFFLINE: '0'
   HF_TOKEN: ${HF_TOKEN}
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by `bolt task get-credentials $CKPT_TASK_ID`. The pod
+  # has no IAM role for this bucket; without these the sync dies at
+  # NoCredentialProviders, which is how the first seven submissions failed.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
   TRANSFORMERS_VERBOSITY: 'error'
   CKPT_TASK_ID: '9ay2rt3ra5'
   SEEDS: '0 1 2'
