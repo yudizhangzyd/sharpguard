@@ -50,8 +50,20 @@ jobs:
       - name: Assert every number quoted in the manuscript
         run: python scripts/verify_paper_numbers.py
       # Pure numpy, and deliberately written to run without torch so it belongs
-      # in this job rather than in a GPU one. It guards the gripper convention
-      # that the decoder gate turns on: if the four A/B arms ever stop being
-      # distinct, the experiment silently compares an arm against itself.
-      - name: Gripper-transform arms stay distinct and side-effect-free
-        run: python tests/test_gripper_transform.py
+      # in this job rather than in a GPU one. It guards the two free parameters
+      # the decoder gate turns on: if the gripper arms or the image-preproc
+      # modes ever stop being distinct, the factorial silently compares a cell
+      # against itself.
+      #
+      # Failures are echoed into an annotation for the same reason as the drift
+      # gate above: the step log is in blob storage that some networks get 403
+      # from, so a red check with an unreadable reason costs a push per guess.
+      - name: Gripper and image-preproc arms stay distinct and side-effect-free
+        run: |
+          set -o pipefail
+          if ! python tests/test_gripper_transform.py 2>&1 | tee /tmp/gt.log; then
+            ENC=$(tail -c 3000 /tmp/gt.log | python3 -c \
+              'import sys; print(sys.stdin.read().replace("%","%25").replace("\r","%0D").replace("\n","%0A"))')
+            echo "::error::test_gripper_transform.py failed:%0A$ENC"
+            exit 1
+          fi
