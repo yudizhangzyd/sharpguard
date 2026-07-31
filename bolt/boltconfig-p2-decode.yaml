@@ -1,0 +1,47 @@
+name: 'CoT-Faith P2 decode equivalence: is the decode behind every published F the checkpoint own?'
+description: 'P2 decode equivalence. Every published F comes from experiments/cotfaith_edit.infer_action, a reimplementation of OpenVLA action decoding that has never been compared to the checkpoint own predict_action: it puts no logit mask over the 256-token action window (a non-action token is silently dropped rather than forbidden) and it skips the input-id surgery upstream does. bolt 7vpp28qfsk already measured that our OTHER decoder, on the rollout path, disagrees with upstream on 24 of 24 frames, so this one cannot be assumed fine. Stage A needs no GPU: it replays both de-quantization conventions on every released record (P2 uses 2/256 spacing, upstream the midpoints of linspace(-1,1,256); max gap 0.007797 = 15.6 pct of tau) and reports whether F_mag, F_dir or cos_xyz move. Stage B hands upstream predict_action P2 own input_ids, holding the CoT prompt fixed so only decode mechanics differ, and recomputes the faithful flag from upstream bins. Exit 0 iff nothing published moves.'
+tags: ['cotfaith', 'p2', 'decode-equivalence', 'reviewer-critical']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  # Forward passes only, no rollout: 12 samples x 6 prompts x 2 decoders is a
+  # few hundred generate calls of 8 tokens. The model load and the tfds pull
+  # dominate. 3h is generous.
+  timeout: 3h
+  cluster: aws_2  # A100, same as 7vpp28qfsk. aws_10's B200s are sm_100 and this image's torch caps at sm_90.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # ECoT-bridge is the checkpoint to test: it is public, it ships predict_action
+  # in its remote code, it is the base our own LoRA rows are trained from, and it
+  # is the model whose gripper_flip F_dir Stage A shows moving. Our LoRA
+  # checkpoints are not separately published, so this bounds one row of the
+  # leaderboard rather than all of them -- the report says so.
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  UNNORM_KEY: 'bridge_orig'
+
+  N_SAMPLES: '12'
+  # Two families with a large published F, one whose F_dir Stage A shows moving,
+  # one directional-gripper family, and the null. Enough to answer "does ANY
+  # flag differ" without paying for all 11.
+  FAMILIES: 'subject_swap,location_swap,direction_flip,gripper_flip,paraphrase_null'
+  THRESHOLD: '0.05'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_p2_decode.sh
