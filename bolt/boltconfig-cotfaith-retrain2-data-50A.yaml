@@ -1,0 +1,47 @@
+name: 'CoT-Faith R2: data-50A same-config retraining replicate + 13-family edit'
+description: 'Same-config retraining replicate. Limitations (vi) and (viii) say the error bar that matters is same-config training-run variance, and the manuscript has exactly two pairs for it (r=32: mean dF 0.040, max 0.180; no-CoT: mean 0.024, max 0.083) -- a magnitude, not a distribution. This is the second run of data-50A at a byte-identical recipe and the same SEED, following the protocol bolt f2d55rbcpd used for the r=32 pair, then scored with the same 13-family edit protocol at the same evaluation seed on the same 100 samples, so the only thing differing within the pair is the training run itself. With all five, training-run variance becomes a 7-model distribution instead of two magnitudes, which is what the leaderboard Wilson intervals need to be judged against.'
+tags: ['cotfaith', 'data-50A', 'r2-retrain-replicate', 'training-run-variance']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '15000'
+  BATCH_SIZE: '2'
+  MAX_STEPS_PER_EP: '0'
+  DTYPE: 'bfloat16'
+  SEED: '0'
+  DATA_SEED: '100'
+  DATA_FRACTION: '0.5'
+
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_train_and_sanity.sh
