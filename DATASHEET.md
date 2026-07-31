@@ -350,7 +350,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 624 claims, one of which is that this
+The audit script currently checks 632 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 

@@ -2572,6 +2572,39 @@ def audit_rollout_gate_winning(a, d):
             max(a_ for a_ in anchors if a_ is not None) <= 0.12,
             source="SR_anchor_no_gripper_transform")
 
+    # --- the gripper channel, which is what distinguishes the two arms ---
+    # Prose quotes the raw -> delivered transform per suite. If these ever came
+    # out equal, the "winning" arm would be running the anchor's configuration
+    # under a different label and the whole comparison would be vacuous.
+    for suite, raw, sent in (("libero_spatial", 0.447, 0.102),
+                             ("libero_object", 0.441, 0.115),
+                             ("libero_goal", 0.717, -0.440)):
+        v = suites.get(suite) or {}
+        a.check(sec, f"{suite}: mean gripper command, raw then delivered, as "
+                     f"quoted", [raw, sent],
+                [v.get("gripper_raw_mean"), v.get("gripper_sent_mean")],
+                source=v.get("source"))
+    a.check(sec, "the anchor arm delivers the raw command unchanged on every "
+                 "suite, which is what makes it the anchor", True,
+            all(v.get("gripper_sent_equals_raw_in_anchor") for v in suites.values()),
+            source="gripper_sent_mean == gripper_raw_mean in the none+none arm")
+    # Episode length agrees with the success flag: successes terminate early, so
+    # the winning arm logs strictly fewer per-step samples. This is the internal
+    # consistency the original info["success"] bug destroyed -- under that bug an
+    # episode could terminate on completion and still be scored a failure.
+    for suite, win, anch in (("libero_spatial", 7025, 11000),
+                             ("libero_object", 7864, 14000),
+                             ("libero_goal", 7931, 13897)):
+        v = suites.get(suite) or {}
+        a.check(sec, f"{suite}: per-step gripper samples, winning then anchor "
+                     f"arm, as quoted", [win, anch],
+                [v.get("n_gripper_samples"), v.get("n_gripper_samples_anchor")],
+                source=v.get("source"))
+    a.check(sec, "the winning arm's episodes are shorter than the anchor's on "
+                 "every suite, so success and episode length agree", True,
+            all(v.get("episodes_shorter_than_anchor") for v in suites.values()),
+            source="n_gripper_samples vs n_gripper_samples_anchor")
+
     # --- the prose the table replaces must actually be gone ---
     # The manuscript carried "The gate does not pass" for several revisions.
     # Leaving it in place while this table prints 0.74 would be the single worst

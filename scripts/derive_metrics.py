@@ -1016,6 +1016,24 @@ def derive_rollout_gate_winning():
             "n_episodes_canonical_init": win.get("n_episodes_canonical_init"),
             "all_episodes_used_canonical_init": win.get(
                 "all_episodes_used_canonical_init"),
+            # The gripper channel, so a reader can check the two arms are not
+            # two runs of one configuration: in the winning arm the delivered
+            # command is the transform of the raw one, and in the anchor arm it
+            # is the raw one.
+            "gripper_raw_mean": round(win["gripper_raw_mean"], 3) if win.get("gripper_raw_mean") is not None else None,
+            "gripper_sent_mean": round(win["gripper_sent_mean"], 3) if win.get("gripper_sent_mean") is not None else None,
+            "gripper_sent_equals_raw_in_anchor": (
+                anchor.get("gripper_sent_mean") == anchor.get("gripper_raw_mean")),
+            # Successful episodes terminate on completion rather than running to
+            # the step cap, so the winning arm collects strictly fewer per-step
+            # samples than the anchor. That is the corroboration the original
+            # info["success"] bug destroyed: episode length and the success flag
+            # now agree instead of being independent.
+            "n_gripper_samples": win.get("n_gripper_samples"),
+            "n_gripper_samples_anchor": anchor.get("n_gripper_samples"),
+            "episodes_shorter_than_anchor": bool(
+                win.get("n_gripper_samples") and anchor.get("n_gripper_samples")
+                and win["n_gripper_samples"] < anchor["n_gripper_samples"]),
             "bolt_task": tid,
             "source": rel(f),
         }

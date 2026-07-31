@@ -7411,6 +7411,12 @@
     "interpretable": true,
     "n_episodes_canonical_init": 50,
     "all_episodes_used_canonical_init": true,
+    "gripper_raw_mean": 0.717,
+    "gripper_sent_mean": -0.44,
+    "gripper_sent_equals_raw_in_anchor": true,
+    "n_gripper_samples": 7931,
+    "n_gripper_samples_anchor": 13897,
+    "episodes_shorter_than_anchor": true,
     "bolt_task": "73yemfcdew",
     "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_goal/gripper_ab.json"
    },
@@ -7438,6 +7444,12 @@
     "interpretable": true,
     "n_episodes_canonical_init": 50,
     "all_episodes_used_canonical_init": true,
+    "gripper_raw_mean": 0.441,
+    "gripper_sent_mean": 0.115,
+    "gripper_sent_equals_raw_in_anchor": true,
+    "n_gripper_samples": 7864,
+    "n_gripper_samples_anchor": 14000,
+    "episodes_shorter_than_anchor": true,
     "bolt_task": "77j7hsb2gi",
     "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_object/gripper_ab.json"
    },
@@ -7465,6 +7477,12 @@
     "interpretable": true,
     "n_episodes_canonical_init": 50,
     "all_episodes_used_canonical_init": true,
+    "gripper_raw_mean": 0.447,
+    "gripper_sent_mean": 0.102,
+    "gripper_sent_equals_raw_in_anchor": true,
+    "n_gripper_samples": 7025,
+    "n_gripper_samples_anchor": 11000,
+    "episodes_shorter_than_anchor": true,
     "bolt_task": "hge7gkxaa2",
     "source": "results_v2/canonical_runs/gate_foursuite_winning/libero_spatial/gripper_ab.json"
    }
