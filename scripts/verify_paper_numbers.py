@@ -122,6 +122,11 @@ def r3(x: Any) -> Any:
     return None if x is None else round(float(x), 3)
 
 
+def r2(x: Any) -> Any:
+    """Round to 2dp, mapping absent values to None so check() fails them."""
+    return None if x is None else round(float(x), 2)
+
+
 def wilson_ci(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     if n == 0:
         return (0.0, 0.0)
@@ -1737,16 +1742,16 @@ def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
     rep = load(rel / "p2_dequant_recompute.json")
     tot = dig(rep, "totals") or {}
     for key, claim, exp in [
-        ("n_scored", "10,780 scored records replayed", 10780),
+        ("n_scored", "36,688 scored records replayed", 36688),
         ("n_recover_failed", "0 records failed to invert back to bins", 0),
         ("n_delta_mismatch", "0 replays disagreed with their own stored delta", 0),
         ("n_flip_to_faithful", "0 records flip TO faithful", 0),
         ("n_flip_to_unfaithful", "0 records flip AWAY from faithful", 0),
-        ("n_linf_changed", "6,306 records do get a different L-inf", 6306),
-        ("n_bin255_present", "4,393 records sit at bin 255", 4393),
-        ("n_dir_verdict_changed", "12 records change F_dir verdict", 12),
+        ("n_linf_changed", "17,058 records do get a different L-inf", 17058),
+        ("n_bin255_present", "5,634 records sit at bin 255", 5634),
+        ("n_dir_verdict_changed", "46 records change F_dir verdict", 46),
         ("n_dir_applicability_changed",
-         "24 records change F_dir admissibility", 24),
+         "25 records change F_dir admissibility", 25),
     ]:
         a.check(sec, claim, exp, tot.get(key),
                 source=f"{rel.name}/p2_dequant_recompute.json:totals.{key}")
@@ -1757,6 +1762,15 @@ def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
             True, "gripper_flip" in (dig(rep, "worst_delta_F_dir_where") or ""),
             source=f"worst_delta_F_dir_where = "
                    f"{dig(rep, 'worst_delta_F_dir_where')!r}")
+    # The replay is only worth quoting if it covers the artifacts the paper
+    # actually publishes. It used to run over 12 files (the single-seed release);
+    # it now runs over 34, which is what the 3-seed re-runs produced, and the
+    # F_mag invariance holding at 3.4x the record count is a stronger claim than
+    # the one the submission made rather than the same one restated.
+    a.check(sec, "the replay covers all 34 released edit artifacts, not the 12 "
+                 "of the superseded single-seed release", 34,
+            len(dig(rep, "per_artifact") or []),
+            source=f"{rel.name}/p2_dequant_recompute.json:per_artifact")
     for fn in ("README.md", "bolt_task_id.txt"):
         a.check(sec, f"the release ships {fn} for this artifact", True,
                 (rel / fn).exists(), source=str(rel / fn))
@@ -1767,12 +1781,15 @@ def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
         return
     for needle, what in [
         ("15.6\\%", "the skew as a fraction of tau"),
-        ("10{,}780", "the number of records replayed"),
+        ("36{,}688", "the number of records replayed"),
         ("exactly invariant", "the F_mag invariance claim"),
         ("p2\\_dequant\\_recompute", "the derivation script"),
     ]:
         a.check(sec, f"the manuscript states {what}", True, needle in tex,
                 source="the convention paragraph in the gate section")
+    a.check(sec, "the superseded single-seed record count is gone from the "
+                 "manuscript", 0, tex.count("10{,}780"),
+            source="cot_faith_iclr.tex")
 
 
 def audit_deepthink_tau_units(a: Audit) -> None:
@@ -2641,6 +2658,112 @@ def audit_rollout_gate_winning(a, d):
             source="cot_faith_iclr.tex")
 
 
+def audit_p2_decode_equivalence(a: Audit) -> None:
+    """Every number the token-selection paragraph quotes, against its artifact.
+
+    This paragraph is the load-bearing one for the whole edit protocol: it is
+    what bounds the published F's exposure to the decode defect the rollout
+    harness turned out to have. It was quoted entirely in prose until now --
+    the release carried the JSON but nothing asserted the manuscript against
+    it, which is exactly the gap this script exists to close.
+
+    The 66-vs-108 duplication is deliberate. The artifact counts unique prompts
+    (66 = 12 originals + 54 edits); the manuscript's 108 counts record passes
+    (54 records x 2). Both appear in the text, so both are recomputed here from
+    the released per-record bins rather than either being taken on trust.
+    """
+    sec = "P2 token selection vs upstream predict_action"
+    rel = ROOT / "results_v2" / "canonical_runs" / "p2_decode_equivalence"
+    rep = load(rel / "p2_decode_equivalence.json")
+    if not rep:
+        a.check(sec, "p2_decode_equivalence.json is released", True, False,
+                source=str(rel / "p2_decode_equivalence.json"))
+        return
+    src = f"{rel.name}/p2_decode_equivalence.json"
+
+    a.check(sec, "the checkpoint measured is ecot-openvla-7b-bridge", True,
+            "ecot-openvla-7b-bridge" in (rep.get("ckpt_path") or ""),
+            source=src)
+    a.check(sec, "12 samples, 66 prompts, 54 scored records, as printed",
+            [12, 66, 54],
+            [len({r["sample"] for r in rep.get("records") or []}),
+             rep.get("n_prompts_compared"), rep.get("n_records")], source=src)
+    # THE claim: raw generated ids byte-identical on every prompt. If this ever
+    # drops below 1.0, P2's missing logit mask has started changing a selected
+    # token and the paragraph's conclusion is void.
+    a.check(sec, "the raw generated ids are byte-identical on 66 of 66 prompts",
+            1.0, rep.get("frac_prompts_raw_generated_ids_identical"),
+            tol=1e-12, source=src)
+    a.check(sec, "no faithful flag differs on any of the 54 records, and no "
+                 "family's F moves", [0, 0.0],
+            [rep.get("n_faithful_flag_differs"), rep.get("worst_delta_F")],
+            source=src)
+    for fam, f in (("subject_swap", 1.00), ("location_swap", 0.90),
+                   ("direction_flip", 1.00), ("gripper_flip", 0.50),
+                   ("paraphrase_null", 0.92)):
+        pf = dig(rep, "per_family", fam) or {}
+        a.check(sec, f"per-family F as printed ({fam})", [f, f],
+                [r2(pf.get("F_p2_decode")), r2(pf.get("F_upstream_decode"))],
+                source=f"{src}:per_family.{fam}")
+
+    # The confound the paper flagged as the larger risk, measured absent.
+    lut = dig(rep, "lut_diagnostics") or {}
+    a.check(sec, "both vocab sizes are 32,000 so the grid offset is 0",
+            [32000, 32000, 0, True],
+            [lut.get("model_vocab_size"), lut.get("processor_vocab_size"),
+             lut.get("bin_index_offset_upstream_minus_p2"),
+             lut.get("bin_index_offset_is_zero")], source=f"{src}:lut_diagnostics")
+    a.check(sec, "the inversion back to bins is exact, and the mirror "
+                 "reproduces P2's own infer_action", [0.0, True],
+            [rep.get("max_bin_inversion_residual"),
+             rep.get("mirror_reproduces_infer_action")], source=src)
+    a.check(sec, "the checkpoint's grid has 255 distinct values with 1 "
+                 "collapsed bin, which is why bins 254/255 share a value",
+            [255, 1],
+            [rep.get("grid_n_distinct_values"), rep.get("grid_n_collapsed_bins")],
+            source=src)
+
+    # The audit's own slice bug, now a measured field on both counts.
+    a.check(sec, "upstream's span is offset by one on 66 of 66 prompts, and its "
+                 "dim 0 is the grid top on 66 of 66", [66, 66],
+            [rep.get("n_prompts_upstream_slice_offset_by_one"),
+             rep.get("n_prompts_upstream_dim0_at_grid_top")], source=src)
+    top = (rep.get("grid_n_distinct_values") or 0) - 1
+    n = off = dim0 = 0
+    for r in rep.get("records") or []:
+        for pas in ("orig", "edit"):
+            p2, up = r.get(f"bins_{pas}_p2"), r.get(f"bins_{pas}_upstream")
+            if not p2 or not up:
+                continue
+            n += 1
+            off += all(up[k + 1] == min(p2[k], top) for k in range(6))
+            dim0 += int(up[0] == top)
+    a.check(sec, "recomputed per record pass: the offset and the pinned dim 0 "
+                 "hold on 108 of 108 decodes, as the manuscript prints",
+            [108, 108, 108], [n, off, dim0],
+            source=f"{src}:records[*].bins_{{orig,edit}}_{{p2,upstream}}")
+
+    # The aux probe. It returned 0 measurements before the two calling-
+    # convention bugs were fixed, so a regression there shows up as aux_n_probed
+    # falling back to 0 rather than as a wrong number.
+    a.check(sec, "the auxiliary CoT-in-the-loop probe ran on 12 samples and "
+                 "found upstream's action changed on all of them", [12, 1.0],
+            [rep.get("aux_n_probed"),
+             rep.get("aux_cot_context_changes_upstream_action")], source=src)
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    a.check(sec, "the manuscript reports the aux probe as a weak positive "
+                 "rather than as a rate", True,
+            "We report that as a weak positive and no more" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and reconciles its 108/108 with the artifact's 66/66 rather "
+                 "than printing two unexplained counts", True,
+            "counted per unique prompt instead of per record pass" in tex,
+            source="cot_faith_iclr.tex")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -2758,6 +2881,7 @@ def main() -> int:
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
     audit_rollout_gate_winning(a, d)
+    audit_p2_decode_equivalence(a)
     audit_resize_check(a)
     audit_citations(a)
     audit_tf_env_probe(a)
