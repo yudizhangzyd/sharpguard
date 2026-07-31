@@ -1823,6 +1823,67 @@ def audit_gate_factorial(a):
             "scores $0/10$ in every cell including the one that applies both "
             "corrections" in tex, source="cot_faith_iclr.tex")
 
+    # ---- the same factorial with upstream's exact ops (bolt mmmnxeehda) ----
+    # A separate artifact rather than more checks on the first one, because it
+    # answers a different objection: the first run's image arm was an 8/255-LSB
+    # approximation of the very kind of small per-frame mismatch it was testing
+    # for, so "the approximation was not close enough" was an available excuse
+    # for the null. This is the run that removes it.
+    base2 = ROOT / "results_v2" / "canonical_runs" / "gate_factorial_tf"
+    r2 = load(base2 / "gripper_ab.json")
+    if not r2:
+        a.check(sec, "the exact-preprocessing factorial is released too", True,
+                False, source=str(base2 / "gripper_ab.json"))
+        return
+    src2 = "results_v2/canonical_runs/gate_factorial_tf/gripper_ab.json"
+    arms2 = r2.get("arms") or {}
+    a.check(sec, "the exact run is the same 2x2 with tf_upstream in place of the "
+                 "Pillow path", [["none", "openvla"], ["none", "tf_upstream"]],
+            [r2.get("gripper_arms"), r2.get("image_preprocs")], source=src2)
+    a.check(sec, "it too scored zero in every cell, so the null does not depend "
+                 "on the approximation", [0.0],
+            sorted(set(r2.get("sr_by_arm", {}).values())), source=src2)
+    a.check(sec, "including the exact both-corrections cell", 0.0,
+            (r2.get("sr_by_arm") or {}).get("openvla+tf_upstream"), source=src2)
+    a.check(sec, "same budget and same episode count as the approximate run, so "
+                 "the two are comparable", [[280], [10], 40],
+            [sorted({v.get("max_steps") for v in arms2.values()}),
+             sorted({v.get("n_total") for v in arms2.values()}),
+             sum(v.get("n_total") or 0 for v in arms2.values())], source=src2)
+    a.check(sec, "all 40 of its episodes ran on canonical initial states", True,
+            all(v.get("all_episodes_used_canonical_init") is True
+                for v in arms2.values()), source=src2)
+    a.check(sec, "no cell raised, so tensorflow really executed in the rollout "
+                 "process rather than being skipped", [],
+            sorted(k for k, v in arms2.items() if v.get("error")), source=src2)
+    # The shared cell is the alignment evidence: the two jobs measured the same
+    # configuration, so the exact-vs-approximate comparison is between the image
+    # cells and not between two unrelated runs.
+    a.check(sec, "the gripper-only cell reproduces across the two jobs to every "
+                 "printed digit, which is what makes them comparable", True,
+            (arms2.get("openvla+none") or {}).get("gripper_sent_mean") ==
+            (arms.get("openvla+none") or {}).get("gripper_sent_mean"),
+            source=f"{src2} vs {src}")
+    a.check(sec, "and the anchor cells agree to within 0.005", True,
+            abs((arms2.get("none+none") or {}).get("gripper_sent_mean", 0) -
+                (arms.get("none+none") or {}).get("gripper_sent_mean", 0)) < 0.005,
+            source=f"{src2} vs {src}")
+    tid2 = base2 / "bolt_task_id.txt"
+    a.check(sec, "the exact run is attributable to its own bolt task id",
+            "mmmnxeehda", (tid2.read_text().strip() if tid2.exists() else ""),
+            source=str(tid2))
+    a.check(sec, "Section 6 reports the exact repeat and says why it was worth a "
+                 "second job", True,
+            "available as an excuse for the null" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 no longer calls the exact factorial 'now under way'",
+            0, tex.count("The factorial now under way"),
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 records that the tensorflow-coexistence probe held "
+                 "in a real GPU rollout, not only in the probe", True,
+            "holding in production rather than in isolation" in tex,
+            source="cot_faith_iclr.tex")
+
 
 def audit_rollout_gate(a, d):
     """Table "Four-suite rollout gate" and Section 6/limitation (v).
