@@ -274,7 +274,10 @@ score is not interpretable in absolute terms without them.
   models with a measured floor that are not the no-CoT control (ECoT-bridge and
   the three DeepThinkVLA checkpoints), the mean semantic `F` sits **below** the
   model's own paraphrase floor, i.e. `F_diff < 0` on 4 of 4.
-- Do **not** rank models by magnitude `F`. The ranking inverts under the
+- Do **not** rank models by magnitude `F`. The paper itself publishes no
+  ranking: Table 2 bolds no cell, and seven of its eight rows are
+  inadmissible under the benchmark's own reporting rule for want of a
+  paraphrase floor. The ordering also inverts under the
   direction-aware score: ECoT-bridge goes from 0.963 to 0.120 on
   `direction_flip` while the LoRA variants it outscored genuinely reverse. The
   gap is wider on the second architecture family: DeepThinkVLA scores 0.64-0.97
@@ -312,7 +315,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 290 claims, one of which is that this
+The audit script currently checks 310 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 

@@ -1174,12 +1174,161 @@ def audit_manuscript_hygiene(a: Audit) -> None:
             [], sorted(refs - labels),
             source=f"{len(labels)} labels, {len(refs)} distinct refs")
 
+
     for lab, what in {"sec:f2_calib": "F2 calibration section",
                       "sec:directional": "F6 direction-aware section",
                       "sec:paraphrase_null": "construct-validity section",
                       "eq:fdiff": "differential faithfulness equation",
                       "eq:fdir": "direction-aware faithfulness equation"}.items():
         a.check(sec, f"{what} present (\\label{{{lab}}})", True, lab in labels)
+
+
+def audit_no_published_ranking(a: Audit) -> None:
+    """The reviewer's C1 objection was not that F is imprecise -- it was that the
+    paper argues F is invalid and then still ships a ranking computed with it.
+    We resolved that by withdrawing the ranking rather than by rescuing F, so
+    these checks guard the withdrawal. If any of them fails, the manuscript has
+    drifted back into claiming a winner it cannot support."""
+    sec = "No published ranking (reviewer C1)"
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        a.check(sec, "manuscript is readable", True, None, source=str(TEX))
+        return
+
+    for needle, why in {
+        r"\textbf{Bold} = highest per-column":
+            "the caption again declares a per-column winner",
+        "bolded best in every column":
+            "the F6 text again refers to bolding that should not exist",
+        "nominal leaderboard":
+            "the magnitude ordering is again called the nominal leaderboard",
+        "is the main CoT-Faith leaderboard":
+            "the table is again introduced as the leaderboard",
+    }.items():
+        a.check(sec, f"withdrawn ranking claim absent: {why}", True,
+                needle not in tex, source=f"searched for {needle!r}")
+
+    a.check(sec, "the paper states explicitly that no cell is bolded", True,
+            "no cell is bolded" in tex,
+            source="Section 'Model scores, and why we do not publish them as "
+                   "a ranking'")
+    a.check(sec, "the admission rule is stated against our own submissions",
+            True,
+            "seven of our own eight submissions would be rejected" in tex,
+            source="this is what converts the missing floors from an excuse "
+                   "into the protocol's teeth")
+
+    # The leaderboard table body must contain no \textbf at all: a single bold
+    # cell reinstates the ranking the surrounding prose disclaims.
+    m = re.search(r"\\label\{tab:leaderboard\}(.*?)\\end\{tabular\}", tex,
+                  re.S)
+    a.check(sec, "the leaderboard table body is locatable", True, m is not None,
+            source="cot_faith_iclr.tex, tab:leaderboard")
+    if m:
+        a.check(sec, "the leaderboard table body contains zero \\textbf cells",
+                0, m.group(1).count(r"\textbf"),
+                source="bolding one cell is a ranking claim regardless of "
+                       "what the caption says")
+
+
+def audit_edit_decode_is_unnorm_free(a: Audit) -> None:
+    """The paper now asserts that the frame-mismatch bug which withdrew P3
+    cannot reach any Delta_inf, because the edit decode never un-normalizes.
+    That is a claim about source code, so check the source code, not the prose:
+    if `unnorm_key` ever appears in the edit path, the assertion in limitation
+    (v) becomes false and every edit cell inherits P3's contamination."""
+    sec = "Edit decode is un-normalization-free (reviewer C2)"
+    src_path = ROOT / "experiments" / "cotfaith_edit.py"
+    try:
+        src = src_path.read_text()
+    except Exception:
+        a.check(sec, "edit protocol source is readable", True, None,
+                source=str(src_path))
+        return
+
+    for needle in ("unnorm_key", "norm_stats", "predict_action"):
+        a.check(sec, f"the edit path never references {needle!r}", True,
+                needle not in src,
+                source=f"{src_path.name}: the paper's limitation (v) says this "
+                       f"code path cannot inherit the P3 frame mismatch")
+    a.check(sec, "the edit path de-quantizes to the normalized [-1,1] range",
+            True,
+            "def dequantize_action" in src and "low=-1.0, high=1.0" in src,
+            source=f"{src_path.name}: tau=0.05 is 5% of this range, which is "
+                   f"what the paper claims")
+
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    a.check(sec, "the manuscript states the structural-immunity argument", True,
+            "structurally incapable" in tex
+            and r"\texttt{unnorm\_key} does not appear anywhere in that code "
+                r"path" in tex,
+            source="limitation (v)")
+    a.check(sec, "the manuscript no longer claims the decoder was validated by "
+                 "the offline audit (that audit ran on the broken config)",
+            True, "validated only by the offline audit" not in tex,
+            source="the audit's provenance is the bridge_orig AUROC run")
+
+
+def audit_deepthink_tau_units(a: Audit) -> None:
+    """DeepThinkVLA de-normalizes by LIBERO quantiles, so tau=0.05 means
+    something different there than on the ECoT side. The paper discloses this
+    with the checkpoint's own q01/q99, so those digits must match the artifact
+    and the stated direction of the bias must be the conservative one."""
+    sec = "DeepThinkVLA tau units (cross-family comparability)"
+    run_path = ROOT / "results_v2" / "canonical_runs" / "deepthink_sft.json"
+    try:
+        run = json.loads(run_path.read_text())
+    except Exception:
+        run = None
+    if not run:
+        a.check(sec, "deepthink_sft.json present", True, None,
+                source=str(run_path))
+        return
+    dec = run.get("action_decode") or {}
+    q01, q99 = dec.get("q01"), dec.get("q99")
+    a.check(sec, "the run records q01/q99 for all 7 DoF", [7, 7],
+            [len(q01 or []), len(q99 or [])], source="action_decode")
+    if not (q01 and q99):
+        return
+
+    widths = [b - a_ for a_, b in zip(q01, q99)]
+    a.check(sec, "per-DoF physical widths as printed in Section 6.8",
+            [1.64, 1.67, 1.88, 0.25, 0.36, 0.56, 2.00],
+            [round(w, 2) for w in widths], source="q99 - q01")
+
+    # Every physical width <= the normalized width of 2.0, so a fixed tau is
+    # stricter on DeepThinkVLA. That direction is what makes the negative
+    # F_diff conservative rather than an artifact, so assert it rather than
+    # trusting the prose.
+    a.check(sec, "no DoF is WIDER than the normalized range, i.e. tau=0.05 is "
+                 "never more lenient on DeepThinkVLA than on ECoT", True,
+            all(w <= 2.0 + 1e-9 for w in widths),
+            source="if any width exceeded 2.0 the bias would flatter "
+                   "DeepThinkVLA and Section 6.8 would have to be rewritten")
+    dominant = max(widths[0], widths[1], widths[2], widths[6])
+    a.check(sec, "strictness factor on the L-inf-dominant dims, as printed",
+            [1.0, 1.22],
+            [round(2.0 / dominant, 2),
+             round(2.0 / min(widths[0], widths[1], widths[2], widths[6]), 2)],
+            source="2.0 / width, over the 3 translation dims and the gripper; "
+                   "the gripper's quantiles are exactly +/-1 so its factor is "
+                   "1.00, which is why the printed range starts at 1.00")
+    a.check(sec, "strictness factor on the rotation dims, as printed",
+            [3.6, 8.1],
+            [round(2.0 / max(widths[3:6]), 1),
+             round(2.0 / min(widths[3:6]), 1)],
+            source="2.0 / width, over droll/dpitch/dyaw")
+
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    a.check(sec, "Section 6.8 carries the units caveat", True,
+            "A units caveat" in tex, source="cot_faith_iclr.tex")
 
 
 # ----------------------------------------------------------------------
@@ -1221,6 +1370,9 @@ def main() -> int:
     audit_upstream_licenses(a)
     audit_deepthink_decode(a)
     audit_manuscript_hygiene(a)
+    audit_no_published_ranking(a)
+    audit_edit_decode_is_unnorm_free(a)
+    audit_deepthink_tau_units(a)
 
     # The manuscript states how many claims this script checks. Let the script
     # verify its own advertised size, so adding a check cannot silently make
