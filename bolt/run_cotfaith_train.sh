@@ -9,6 +9,11 @@ if [ -f /tmp/sharpguard.env ]; then
     set -a; . /tmp/sharpguard.env; set +a
 fi
 
+# Repo root importable regardless of whether setup wrote it into the env file.
+# See the note in bolt/setup-openvla.sh: this is what the five failed
+# retraining replicates needed.
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
 OUT_DIR="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-train"
 mkdir -p "$OUT_DIR"
 

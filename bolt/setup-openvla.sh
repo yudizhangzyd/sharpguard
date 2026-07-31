@@ -103,6 +103,16 @@ fi
 echo 'export MUJOCO_GL=egl' >> /tmp/sharpguard.env
 echo 'export PYOPENGL_PLATFORM=egl' >> /tmp/sharpguard.env
 
+# Repo root on PYTHONPATH, for every runner that sources this env file.
+# `python experiments/foo.py` puts experiments/ on sys.path[0] and NOT the repo
+# root, so `from sharpguard...` raises ModuleNotFoundError even with cwd at the
+# root. Most experiment scripts carry their own sys.path bootstrap; two did not,
+# and that cost five 24h retraining replicates (bolt a4ut7ak2yn / 4w79n4t6nq /
+# ayrd9c6e3z / 3t6kyskxbf / 7vc4rfuqiv) which failed at the first import AFTER
+# the full env setup had already succeeded. Both scripts now have the bootstrap;
+# this line means the next script that forgets one still runs.
+echo "export PYTHONPATH=$PWD\${PYTHONPATH:+:\$PYTHONPATH}" >> /tmp/sharpguard.env
+
 # Verify the OpenVLA-required pins survived all of the above.
 python - <<'PY'
 import sys

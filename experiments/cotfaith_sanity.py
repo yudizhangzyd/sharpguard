@@ -25,6 +25,17 @@ import sys
 import time
 from pathlib import Path
 
+# Repo root on sys.path. `python experiments/cotfaith_train.py` puts
+# experiments/ on sys.path[0], NOT the repo root, so `from sharpguard...`
+# raises ModuleNotFoundError even when cwd IS the repo root. That is exactly
+# what killed the five retraining replicates (bolt a4ut7ak2yn / 4w79n4t6nq /
+# ayrd9c6e3z / 3t6kyskxbf / 7vc4rfuqiv): the whole 20-minute env setup
+# succeeded, then the import at first use failed. Every other experiment
+# script already carries this block; these two were the exceptions.
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import numpy as np
 
 
