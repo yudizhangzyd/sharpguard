@@ -37,9 +37,24 @@ Two things are reported, and only the second one can move the paper:
      flags means P2 has to be re-run.
 
 Upstream's returned action is un-normalized, so it is inverted back to bins
-through a (256, 7) table built from the checkpoint's OWN action tokenizer and
-OWN action stats -- not from an assumed grid. The inversion residual is reported;
-if it is not ~0 the inversion failed and no claim is made.
+through a (256, 7) table built from the checkpoint's OWN `bin_centers` and OWN
+action stats -- not from an assumed grid. The inversion residual is reported; if
+it is not ~0 the inversion failed and no claim is made.
+
+Three properties of the checkpoint's `predict_action` are load-bearing here and
+were read out of the shipped remote code rather than assumed. The first run of
+this script got all three wrong and compared 0 prompts, which is why they are
+written down: (a) it forwards `**kwargs` into `generate()` without setting
+`max_new_tokens`, so the caller must -- unset, generate stops at the default
+`max_length=20` and raises on a 300-token ECoT prompt; (b) it returns
+`(actions, generated_ids)`, not an array; (c) it slices
+`generated_ids[0, -(action_dim+1):-1]`, so with `max_new_tokens=8` it reads
+exactly the first 7 generated positions, which is the same span P2's filter
+reads -- that is what makes the comparison apples to apples. It also indexes the
+grid as `clip(self.vocab_size - id - 1, 0, len(bin_centers)-1)` where
+`self.vocab_size = text_config.vocab_size - pad_to_multiple_of`, while P2 uses
+`processor.tokenizer.vocab_size - 1 - id`; if those differ the two paths index
+the grid with a constant offset, so the offset is measured and reported.
 
 Output: p2_decode_equivalence.json plus a verdict. Exit 0 iff the two paths
 select identical tokens on every prompt AND no faithful flag differs.
@@ -94,24 +109,40 @@ def _p2_bins_and_action(model, processor, text, image, device, dtype):
 
 
 def _normalized_lut(model, processor):
-    """token id -> normalized action value, taken from the checkpoint itself."""
-    vocab = processor.tokenizer.vocab_size
-    ids = np.arange(vocab - 256, vocab)
-    tok = getattr(model, "action_tokenizer", None)
-    if tok is not None and hasattr(tok, "decode_token_ids_to_actions"):
-        try:
-            vals = np.asarray(tok.decode_token_ids_to_actions(ids),
-                              dtype=np.float64).reshape(-1)
-            if vals.size == 256:
-                return vals, "model.action_tokenizer.decode_token_ids_to_actions"
-        except Exception as e:
-            print(f"[eq] action_tokenizer LUT unavailable ({type(e).__name__}: "
-                  f"{e}); falling back to the linspace grid")
-    edges = np.linspace(-1.0, 1.0, 256)
-    centers = (edges[:-1] + edges[1:]) / 2.0
-    # bin index = vocab - 1 - id, and upstream clips index 255 onto 254.
-    bins = vocab - 1 - ids
-    return centers[np.clip(bins, 0, 254)], "linspace(-1,1,256) midpoints (assumed)"
+    """P2 bin index -> the normalized value upstream would produce for it.
+
+    Indexed by *P2's* bin index rather than by token id, because that is what
+    makes the two paths comparable: P2 computes `bin = vocab_p - 1 - id` from the
+    processor's tokenizer, and the checkpoint's `predict_action` computes
+    `clip(vocab_m - id - 1, 0, len(bin_centers) - 1)` from `self.vocab_size`,
+    which is `text_config.vocab_size - pad_to_multiple_of`. Those two vocab sizes
+    need not be equal, and if they differ the two paths index the grid with a
+    constant offset -- a bigger difference than the 2/256-vs-2/255 spacing, so it
+    is measured here and reported rather than assumed away.
+
+    Returns (table, source, diagnostics). No fallback grid: if the checkpoint
+    does not expose its own centres there is nothing to compare against and the
+    caller reports INCONCLUSIVE instead of inventing an answer.
+    """
+    centers = getattr(model, "bin_centers", None)
+    if centers is None:
+        return None, "unavailable: model exposes no bin_centers", {}
+    centers = np.asarray(centers, dtype=np.float64).reshape(-1)
+    vocab_m = int(getattr(model, "vocab_size"))
+    vocab_p = int(processor.tokenizer.vocab_size)
+    offset = vocab_m - vocab_p
+    p2_bins = np.arange(256)
+    idx = np.clip(p2_bins + offset, 0, centers.size - 1)
+    diag = {
+        "n_bin_centers": int(centers.size),
+        "model_vocab_size": vocab_m,
+        "processor_vocab_size": vocab_p,
+        "bin_index_offset_upstream_minus_p2": offset,
+        "bin_index_offset_is_zero": offset == 0,
+        "n_p2_bins_clipped_by_upstream": int(np.sum(p2_bins + offset
+                                                   > centers.size - 1)),
+    }
+    return centers[idx], "model.bin_centers (the checkpoint's own grid)", diag
 
 
 def _action_stats(model, unnorm_key):
@@ -181,10 +212,25 @@ def main() -> int:
               "trust_remote_code=True, or pick a checkpoint that ships one.")
         return 1
 
-    lut, lut_source = _normalized_lut(model, processor)
+    norm_by_bin, lut_source, lut_diag = _normalized_lut(model, processor)
     q01, q99, mask, stats_source = _action_stats(model, args.unnorm_key)
     print(f"[eq] normalized LUT source : {lut_source}")
     print(f"[eq] action stats source   : {stats_source}")
+    if norm_by_bin is None:
+        print("[eq] INCONCLUSIVE: the checkpoint does not expose the bin centres "
+              "its own predict_action uses, so upstream's un-normalized output "
+              "cannot be inverted back to bins without assuming a grid -- and an "
+              "assumed grid is exactly what this script exists to avoid.")
+        return 1
+    for k, v in lut_diag.items():
+        print(f"[eq]   {k}: {v}")
+    if not lut_diag.get("bin_index_offset_is_zero", True):
+        print(f"[eq] NOTE P2 and upstream index the bin grid with a constant "
+              f"offset of {lut_diag['bin_index_offset_upstream_minus_p2']} "
+              f"(processor vocab {lut_diag['processor_vocab_size']} vs model "
+              f"vocab {lut_diag['model_vocab_size']}). A constant offset cancels "
+              f"in a paired difference, so it cannot move F_mag, but it does "
+              f"move any sign- or norm-based predicate.")
     if q01 is None:
         print(f"[eq] INCONCLUSIVE: no action stats for unnorm_key="
               f"{args.unnorm_key!r}, so upstream's un-normalized output cannot "
@@ -195,22 +241,28 @@ def main() -> int:
     # Upstream's whole output space: row b = what predict_action returns if it
     # selects bin b in that dim. Built from the checkpoint's own tokenizer and
     # own stats, so inverting through it assumes nothing about the grid.
-    vocab = processor.tokenizer.vocab_size
-    bins_for_ids = vocab - 1 - np.arange(vocab - 256, vocab)      # 255..0
-    norm_by_bin = np.empty(256, dtype=np.float64)
-    norm_by_bin[bins_for_ids] = lut
     unnorm_table = np.where(mask[None, :],
                             0.5 * (norm_by_bin[:, None] + 1.0) * (q99 - q01) + q01,
                             norm_by_bin[:, None])                  # (256, 7)
+    # A dim is "degenerate" only if un-normalization loses distinctions the
+    # checkpoint's own grid still had. The grid itself is legitimately coarser
+    # than 256: linspace(-1,1,256) yields 255 midpoints, so the top bins collapse
+    # and an earlier version of this script wrongly called all seven dims
+    # degenerate for that reason and compared nothing at all.
+    n_distinct_grid = int(len(np.unique(norm_by_bin)))
     degenerate_dims = [int(i) for i in range(N_ACT)
-                       if len(np.unique(unnorm_table[:, i])) < 256]
+                       if len(np.unique(unnorm_table[:, i])) < n_distinct_grid]
+    n_collapsed_bins = 256 - n_distinct_grid
     p2_table = dequantize_action(np.arange(256), bins=256)
     convention_diff = float(np.max(np.abs(p2_table - norm_by_bin)))
     print(f"[eq] max |P2 value - checkpoint value| over 256 bins: "
           f"{convention_diff:.6f} ({100 * convention_diff / args.tau:.1f}% of "
           f"tau={args.tau})")
+    print(f"[eq] the checkpoint's grid has {n_distinct_grid} distinct values "
+          f"over 256 bin indices ({n_collapsed_bins} collapse), which is a "
+          f"property of linspace(-1,1,256) and not a defect")
     if degenerate_dims:
-        print(f"[eq] NOTE dims {degenerate_dims} do not have 256 distinct "
+        print(f"[eq] NOTE dims {degenerate_dims} do not have {n_distinct_grid} distinct "
               f"un-normalized values, so a bin cannot always be recovered "
               f"there; those dims are excluded from bin-level agreement and "
               f"counted separately.")
@@ -233,6 +285,7 @@ def main() -> int:
     max_residual = 0.0
     n_prompts = 0
     n_token_identical = 0
+    n_raw_ids_identical = 0
     dim_agree = np.zeros(N_ACT, dtype=int)
     dim_absdiff_max = np.zeros(N_ACT, dtype=int)
     cot_changes_action = []
@@ -281,13 +334,30 @@ def main() -> int:
                     print(f"[eq] mirror reproduces cotfaith_edit.infer_action "
                           f"exactly: {mirror_verified}")
 
+                # predict_action forwards **kwargs straight into generate()
+                # WITHOUT setting max_new_tokens, so the caller must: left
+                # unset, generate stops at the default max_length=20 and raises
+                # on a 300-token ECoT prompt. 8 is not arbitrary -- upstream
+                # slices `generated_ids[0, -(action_dim+1):-1]`, so with 8 new
+                # tokens it reads exactly the first 7 generated positions, which
+                # is the same span P2's filter reads. It also returns
+                # (actions, generated_ids), not an array.
                 with torch.no_grad():
-                    a_up = model.predict_action(
+                    a_up, up_gen_ids = model.predict_action(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
-                        unnorm_key=args.unnorm_key, do_sample=False)
+                        unnorm_key=args.unnorm_key, do_sample=False,
+                        max_new_tokens=8)
                 b_up, resid = invert(a_up)
                 max_residual = max(max_residual, float(np.max(resid)))
+
+                # Both paths ran their own greedy generate() on the same
+                # input_ids, so the raw ids should coincide; if they do, any bin
+                # difference is post-processing arithmetic rather than token
+                # selection, which is a sharper answer than either alone.
+                up_tail = up_gen_ids[0, -8:-1].cpu().tolist()
+                raw_ids_same = bool(list(gen_ids[:N_ACT]) == list(up_tail))
+                n_raw_ids_identical += int(raw_ids_same)
 
                 n_prompts += 1
                 good = [i for i in range(N_ACT) if i not in degenerate_dims]
@@ -300,6 +370,9 @@ def main() -> int:
                 decoded[name] = {
                     "bins_p2": b_p2.tolist(), "bins_upstream": b_up.tolist(),
                     "tokens_identical": same,
+                    "raw_generated_ids_identical": raw_ids_same,
+                    "gen_ids_p2": list(gen_ids),
+                    "gen_ids_upstream_span": up_tail,
                     "max_bin_residual": float(np.max(resid)),
                     "action_p2": [float(x) for x in a_p2],
                     "action_upstream_raw": [float(x) for x in
@@ -395,10 +468,16 @@ def main() -> int:
         "normalized_lut_source": lut_source,
         "action_stats_source": stats_source,
         "degenerate_dims_excluded": degenerate_dims,
+        "grid_n_distinct_values": n_distinct_grid,
+        "grid_n_collapsed_bins": n_collapsed_bins,
+        "lut_diagnostics": lut_diag,
         "max_bin_inversion_residual": max_residual,
         "convention_max_value_diff": convention_diff,
         "convention_max_value_diff_frac_of_tau": convention_diff / args.tau,
         "n_prompts_token_identical": n_token_identical,
+        "n_prompts_raw_generated_ids_identical": n_raw_ids_identical,
+        "frac_prompts_raw_generated_ids_identical":
+            (n_raw_ids_identical / n_prompts) if n_prompts else None,
         "frac_prompts_token_identical": (n_token_identical / n_prompts
                                         if n_prompts else None),
         "per_dim_bin_agreement": [
@@ -422,6 +501,9 @@ def main() -> int:
     print(f"prompts compared                : {n_prompts}")
     print(f"prompts with identical tokens   : {n_token_identical}"
           f"  ({payload['frac_prompts_token_identical']})")
+    print(f"prompts with identical raw ids  : {n_raw_ids_identical}"
+          f"  (if this is {n_prompts} and the bins still differ, the difference "
+          f"is index arithmetic, not token selection)")
     print(f"per-dim bin agreement           : {payload['per_dim_bin_agreement']}")
     print(f"per-dim max bin difference      : {payload['per_dim_max_bin_diff']}")
     print(f"max bin-inversion residual      : {max_residual:.3e}")

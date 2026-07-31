@@ -88,8 +88,11 @@ python - "$OUT_DIR/p2_decode_equivalence.json" <<'PY' || true
 import json, sys
 d = json.load(open(sys.argv[1]))
 for k in ("ckpt_path", "n_prompts_compared", "frac_prompts_token_identical",
+          "frac_prompts_raw_generated_ids_identical",
           "per_dim_bin_agreement", "per_dim_max_bin_diff",
           "max_bin_inversion_residual", "normalized_lut_source",
+          "lut_diagnostics", "grid_n_distinct_values", "grid_n_collapsed_bins",
+          "degenerate_dims_excluded",
           "convention_max_value_diff", "mirror_reproduces_infer_action",
           "n_records", "n_faithful_flag_differs", "worst_delta_F",
           "aux_cot_context_changes_upstream_action", "per_family"):
