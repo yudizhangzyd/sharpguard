@@ -55,9 +55,9 @@ def load_first_libero_sample(dataset_repo: str,
                               reasoning_json: str = "libero_reasonings.json"):
     """Return (pil_image, instruction, gt_reasoning_dict) for the first
     real LIBERO sample in the ECoT dataset."""
-    from huggingface_hub import snapshot_download
-    ds_dir = Path(snapshot_download(repo_id=dataset_repo, repo_type="dataset",
-                                       cache_dir=os.environ.get("HF_HOME")))
+    from sharpguard.hf_retry import snapshot_with_retry
+    ds_dir = Path(snapshot_with_retry(repo_id=dataset_repo,
+                                        repo_type="dataset"))
     tfds_dir = ds_dir / tfds_subdir
     with open(ds_dir / reasoning_json) as f:
         reasoning_data = json.load(f)

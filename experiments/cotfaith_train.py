@@ -403,11 +403,10 @@ def main():
               "bfloat16": torch.bfloat16}[args.dtype]
 
     # ----- 1. Download data -----
-    from huggingface_hub import snapshot_download
+    from sharpguard.hf_retry import snapshot_with_retry
     print(f"[train] downloading dataset {args.dataset_repo}")
-    ds_dir = Path(snapshot_download(repo_id=args.dataset_repo,
-                                       repo_type="dataset",
-                                       cache_dir=os.environ.get("HF_HOME")))
+    ds_dir = Path(snapshot_with_retry(repo_id=args.dataset_repo,
+                                        repo_type="dataset"))
     tfds_dir = ds_dir / args.tfds_subdir
     reasoning_path = ds_dir / args.reasoning_json
     print(f"[train]   tfds dir: {tfds_dir}")

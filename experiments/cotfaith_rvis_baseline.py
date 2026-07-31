@@ -38,9 +38,9 @@ def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples,
                           seed: int = 0):
     """Reuse the same first-step sampler as cotfaith_rvis.py so the
     baseline analysis sees the SAME 20 scenes."""
-    from huggingface_hub import snapshot_download
-    ds_dir = Path(snapshot_download(repo_id=dataset_repo, repo_type="dataset",
-                                       cache_dir=os.environ.get("HF_HOME")))
+    from sharpguard.hf_retry import snapshot_with_retry
+    ds_dir = Path(snapshot_with_retry(repo_id=dataset_repo,
+                                        repo_type="dataset"))
     tfds_dir = ds_dir / tfds_subdir
     with open(ds_dir / reasoning_json) as f:
         rdata = json.load(f)
