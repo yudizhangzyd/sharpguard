@@ -1,0 +1,46 @@
+name: 'CoT-Faith gate factorial: gripper x image preprocessing on libero_object'
+description: 'Fifth gate attempt, and the first driven by upstream source rather than recollection. bolt htrg4uchwi read openvla/openvla and found two real differences: upstream applies normalize_gripper_action(binarize=True) then invert_gripper_action to the last action dim (composition -sign(2g-1); we applied neither), and it prepares every frame with a JPEG round-trip plus a lanczos3 antialiased resize to 224 because the training images went through the same path (we handed the raw 256px render to the processor). Two changes means an A/B over one of them cannot attribute anything, so this is a 2x2: gripper in {none, openvla} x image in {none, pil_lanczos}. The none+none cell reproduces the four failed gates as an anchor, so a null result is distinguishable from a broken harness. libero_object at upstream 280 steps, 4 episodes per cell, one model load. Exit 0 iff exactly one cell clears SR>=0.5.'
+tags: ['cotfaith', 'decoder-gate', 'factorial', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h   # 4 cells x 4 episodes x <=280 steps; ~50 min expected
+  cluster: aws_2  # A100. NOT aws_10: its B200s are sm_100 and this image's torch caps at sm_90.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  MODEL: 'openvla/openvla-7b-finetuned-libero-object'
+  LIBERO_SUITE: 'libero_object'
+  UNNORM_KEY: 'libero_object'
+
+  N_EPISODES: '4'
+  # Upstream's own budget for this suite, read from run_libero_eval.py by
+  # htrg4uchwi. The earlier gate ran a flat 400 everywhere, which was harmless
+  # here but truncated every libero_10 episode.
+  MAX_STEPS: '280'
+  ARMS: 'none,openvla'
+  # tf_upstream is deliberately absent: tensorflow clobbers this environment's
+  # numpy<2 pin (bolt/setup-openvla.sh:41). bolt/boltconfig-resize-check.yaml
+  # measures how far pil_lanczos is from it in an isolated venv.
+  IMAGE_PREPROCS: 'none,pil_lanczos'
+  WIN_THRESHOLD: '0.5'
+
+  DTYPE: 'bfloat16'
+  ATTN: 'eager'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_gripper_ab.sh

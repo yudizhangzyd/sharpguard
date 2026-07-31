@@ -1,0 +1,25 @@
+name: 'CoT-Faith resize-kernel check: how far is pil_lanczos from tf lanczos3?'
+description: 'Support job for the decoder gate. The reference diff (htrg4uchwi) showed upstream prepares every LIBERO frame with a JPEG round-trip plus tf.image.resize(method=lanczos3, antialias=True) to 224px, and our four failed gates did none of it. The gate cannot import tensorflow -- bolt/setup-openvla.sh:41 records that it clobbers the numpy<2 pin and breaks transformers lazy TF detection -- so image_preproc=pil_lanczos reimplements the three steps with Pillow. This job attaches a number to that substitution instead of asserting it is fine: it builds a throwaway venv with tensorflow-cpu, runs both paths on the same three inputs (smooth gradient, hard edges, high-frequency noise -- kernel differences live at edges and high frequencies, not on flat regions), and reports max/mean pixel disagreement. Thresholds are fixed in the docstring ahead of the measurement: <=1 LSB is equivalent up to rounding, <=4 usable with a caveat, larger means the gate must not claim to reproduce upstream. CPU only.'
+tags: ['cotfaith', 'decoder-gate', 'resize-check', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
+  disk_gb: 64
+  timeout: 40m
+  cluster: aws_2
+
+environment_variables:
+  # No setup_command: the job builds its own venv precisely so that nothing it
+  # installs can reach the shared eval environment.
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+command: bash bolt/run_resize_check.sh

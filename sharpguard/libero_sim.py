@@ -343,30 +343,84 @@ class RolloutConfig:
     gripper_transform: str = "none"
     """How to map the decoded gripper channel onto LIBERO's OSC convention.
 
-    This is the open question behind the third consecutive SR=0 gate. The
-    gripper dim has mask=False in every OpenVLA norm_stats, so it bypasses
-    un-normalization entirely and arrives here as a raw bin centre in
-    [-1, 1] -- meaning `unnorm_key` cannot be the reason it is wrong. What
-    we do know from results_v2/decoder_audit.json is that our decoded
-    gripper agrees with the ground-truth demo gripper on only 2% of samples
-    (`gripper_sign_agreement: 0.02`), i.e. it is near-systematically
-    inverted, and an inverted gripper cannot grasp, which produces exactly
-    the observed 0/50 rather than a degraded SR.
+    The gripper dim has mask=False in every OpenVLA norm_stats, so it
+    bypasses un-normalization entirely and arrives here as a raw bin centre
+    in [-1, 1] -- meaning `unnorm_key` cannot be the reason it is wrong.
+    results_v2/decoder_audit.json records that our decoded gripper agrees
+    with the ground-truth demo gripper on 2% of samples
+    (`gripper_sign_agreement: 0.02`) against ~50% chance.
 
-    Rather than guess which of the upstream conventions applies, the arms
-    below are A/B/C-tested empirically by scripts/gripper_ab_preflight.py:
-      "none"    -- pass through (what the three failed gates ran)
+    The "openvla" arm is not a guess: bolt task htrg4uchwi read upstream's
+    run_libero_eval.py and confirmed it calls
+    normalize_gripper_action(action, binarize=True) -- which maps [0,1] to
+    [-1,1] and takes np.sign -- and THEN invert_gripper_action(), which
+    negates. The composition is g -> -sign(2g - 1). The default "none" that
+    the four failed gates ran applies neither of those two steps.
+
+    The remaining arms are kept because they separate "the channel arrives
+    in [-1,1] and is merely inverted" from upstream's "[0,1]" assumption:
+      "none"    -- pass through (what the four failed gates ran)
       "invert"  -- g -> -g, the minimal fix consistent with the 0.02
       "binvert" -- g -> -sign(g), inverted and binarized to the +/-1 that
-                   LIBERO's OSC gripper actuator actually expects
-      "openvla" -- g -> -sign(2g - 1), the composition of upstream's
-                   normalize_gripper_action(binarize=True) (which assumes
-                   the channel arrives in [0, 1]) with
-                   invert_gripper_action()
+                   LIBERO's OSC gripper actuator expects
+      "openvla" -- g -> -sign(2g - 1), upstream-exact (see above)
+    """
+    image_preproc: str = "none"
+    """How the 256x256 agentview render is prepared for the model.
+
+    This is the difference the reference diff (htrg4uchwi) turned up that
+    was not on any earlier list, and it is the one that matches the shape of
+    the measured failure. Upstream's resize_image() does three things we did
+    not do at all, and its own docstring says why: "To make input images in
+    distribution with respect to the inputs seen at training time, we follow
+    the same resizing scheme used in the Octo dataloader, which OpenVLA uses
+    for training."
+
+      1. a JPEG encode/decode round-trip, "as done in RLDS dataset builder"
+         -- i.e. the training images were lossily compressed, so a
+         pixel-exact render is itself off-distribution;
+      2. tf.image.resize(..., method="lanczos3", antialias=True) to 224,
+         not the processor's default bilinear resize from 256;
+      3. round, clip to [0,255], cast back to uint8.
+
+    A resize-kernel and compression mismatch perturbs every single frame
+    slightly, which degrades a policy without making success impossible --
+    and the four-suite gate measured exactly that, libero_goal 5/50 = 0.10
+    rather than a clean zero. Modes:
+      "none"        -- hand the raw flipped 256x256 render to the processor
+                       (what the four failed gates ran)
+      "tf_upstream" -- upstream-exact, requires tensorflow
+      "pil_lanczos" -- the same three steps with Pillow instead of
+                       tensorflow. This is the mode the gate actually runs,
+                       because bolt/setup-openvla.sh documents that
+                       installing tensorflow clobbers the numpy<2 pin and
+                       breaks transformers' lazy TF detection -- so buying
+                       kernel exactness would cost the eval environment.
+                       It is kept as a separate named mode rather than
+                       silently standing in for "tf_upstream" because PIL's
+                       LANCZOS and TF's lanczos3+antialias are not verified
+                       to be bit-identical; experiments/resize_kernel_check.py
+                       measures the gap in an isolated venv so the size of
+                       the approximation is a number rather than an
+                       assumption.
     """
 
 
 GRIPPER_TRANSFORMS = ("none", "invert", "binvert", "openvla")
+
+IMAGE_PREPROCS = ("none", "tf_upstream", "pil_lanczos")
+
+# Read off upstream's run_libero_eval.py by bolt task htrg4uchwi, not from
+# memory. Our four-suite gate ran 400 steps everywhere, which silently
+# invalidated libero_10 (its 0/50 was truncated by construction) while being
+# harmless on the other three.
+UPSTREAM_MAX_STEPS = {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520,
+    "libero_90": 400,
+}
 
 
 def _apply_gripper_transform(action: np.ndarray, mode: str) -> np.ndarray:
@@ -389,6 +443,55 @@ def _apply_gripper_transform(action: np.ndarray, mode: str) -> np.ndarray:
         s = 2.0 * g - 1.0
         a[-1] = -1.0 if s > 0 else 1.0
     return a
+
+
+def _preprocess_image(img: np.ndarray, mode: str, resize: int = 224) -> np.ndarray:
+    """Prepare the (already 180-degree-flipped) render for the processor.
+
+    See RolloutConfig.image_preproc. `img` must be uint8 HxWx3 and is never
+    modified in place. Raises rather than falling back if the requested
+    backend is missing: a silent fallback would report "ran upstream-exact
+    preprocessing" for a run that did something else, and mislabelled arms
+    are how this gate came to fail four times.
+    """
+    if mode not in IMAGE_PREPROCS:
+        raise ValueError(f"unknown image_preproc {mode!r}; "
+                         f"expected one of {IMAGE_PREPROCS}")
+    arr = np.asarray(img, dtype=np.uint8)
+    if mode == "none":
+        return arr
+
+    if mode == "tf_upstream":
+        try:
+            import tensorflow as tf
+        except ImportError as e:  # pragma: no cover - depends on environment
+            raise RuntimeError(
+                "image_preproc='tf_upstream' reproduces upstream's resize_image "
+                "exactly and needs tensorflow. Install it, or run the "
+                "'pil_lanczos' arm and label the result as an approximation."
+            ) from e
+        # Upstream experiments/robot/libero/libero_utils.py:resize_image, in
+        # order: JPEG round-trip ("as done in RLDS dataset builder"), then a
+        # lanczos3 antialiased resize, then round/clip/uint8.
+        t = tf.image.encode_jpeg(arr)
+        t = tf.io.decode_image(t, expand_animations=False, dtype=tf.uint8)
+        t = tf.image.resize(t, (resize, resize), method="lanczos3",
+                            antialias=True)
+        t = tf.cast(tf.clip_by_value(tf.round(t), 0, 255), tf.uint8)
+        return t.numpy()
+
+    # "pil_lanczos": same three steps, Pillow kernels. Not upstream-exact.
+    import io
+
+    from PIL import Image
+    buf = io.BytesIO()
+    # tf.image.encode_jpeg defaults to quality=95; match it so the two arms
+    # differ only in the resize kernel, not in the compression strength.
+    Image.fromarray(arr).convert("RGB").save(buf, format="JPEG", quality=95)
+    buf.seek(0)
+    pil = Image.open(buf).convert("RGB").resize((resize, resize),
+                                                Image.LANCZOS)
+    return np.asarray(pil, dtype=np.uint8)
 
 
 def rollout_libero(model, processor, cfg: RolloutConfig, *,
@@ -416,6 +519,19 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
     task_suite = bench_dict[cfg.suite]()
     n_tasks = task_suite.n_tasks
     eps_per_task = max(1, cfg.n_episodes_per_suite // max(n_tasks, 1))
+
+    # A budget below upstream's truncates episodes by construction, which is
+    # how the four-suite gate reported libero_10 = 0/50 from 400 steps against
+    # the 520 that suite needs. cfg.max_steps <= 0 asks for upstream's value;
+    # any smaller explicit value is loud rather than silent, because "0/50" and
+    # "0/50 but we cut every episode short" are not the same result.
+    upstream_steps = UPSTREAM_MAX_STEPS.get(cfg.suite)
+    max_steps = cfg.max_steps if cfg.max_steps and cfg.max_steps > 0 else (
+        upstream_steps or 400)
+    if upstream_steps and max_steps < upstream_steps:
+        print(f"[rollout] WARNING: max_steps={max_steps} is below upstream's "
+              f"{upstream_steps} for {cfg.suite}; a zero SR from this run is "
+              f"not evidence about the policy.")
 
     mal = np.asarray(cfg.malicious_action, dtype=np.float32)
     successes, asr_hits, total = 0, 0, 0
@@ -481,7 +597,7 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
             steps = 0
             first_actions = []
             success = False
-            while not done and steps < cfg.max_steps:
+            while not done and steps < max_steps:
                 # LIBERO's agentview_image is returned upside-down and
                 # horizontally mirrored relative to what OpenVLA was trained
                 # on (Kim's run_libero_eval.py:381 applies img[::-1, ::-1]).
@@ -501,6 +617,11 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
                                                   badvla_eval_size=True)
                     else:
                         img = apply_block_trigger(img, size=cfg.trigger_size)
+                # After any trigger, so trigger geometry stays defined on the
+                # 256px render as it was for every previously published ASR
+                # number, and so image_preproc="none" is bit-identical to the
+                # behaviour those numbers were measured with.
+                img = _preprocess_image(img, cfg.image_preproc)
                 action = predict_action(model, processor, img, instruction,
                                         device=device,
                                         unnorm_key=cfg.unnorm_key)
@@ -561,6 +682,10 @@ def rollout_libero(model, processor, cfg: RolloutConfig, *,
         # never commands close (frac_close_sent == 0) cannot grasp, and that
         # is a sufficient explanation for SR=0 without invoking the policy.
         "gripper_transform": cfg.gripper_transform,
+        "image_preproc": cfg.image_preproc,
+        "max_steps": max_steps,
+        "upstream_max_steps": upstream_steps,
+        "max_steps_below_upstream": bool(upstream_steps and max_steps < upstream_steps),
         "gripper_raw_mean": float(np.mean(g_raw)) if g_raw else None,
         "gripper_sent_mean": float(np.mean(g_sent)) if g_sent else None,
         "gripper_frac_close_raw": (float(np.mean(np.asarray(g_raw) > 0))

@@ -1,19 +1,23 @@
-"""Unit test for `_apply_gripper_transform`, the free parameter in the A/B.
+"""Unit tests for the two free parameters in the decoder-gate factorial.
 
 Why this runs before the GPU job. The last four gate submissions died in 2
 minutes on an `AttributeError` in a test helper, which was cheap only because
-the test ran first. The same applies here: the A/B is worthless if an arm is
-mis-implemented, and every property below is checkable on a CPU in a second.
+the test ran first. The same applies here: the factorial is worthless if a cell
+is mis-implemented, and every property below is checkable on a CPU in a second.
 
-The properties that matter for the experiment:
-  * every arm leaves the 6 continuous dims untouched -- if an arm perturbed
-    xyz/rpy, a difference in SR could not be attributed to the gripper;
-  * "none" is bit-identical to the input, so arm A really does reproduce the
-    three gates that already failed;
-  * the three active arms all emit exactly +/-1 or the negated input, i.e.
-    they are valid OSC gripper commands;
-  * the active arms genuinely differ somewhere in [-1, 1], otherwise the A/B
-    has fewer than 4 distinct arms and cannot discriminate.
+Covered:
+  * `_apply_gripper_transform` -- every arm leaves the 6 continuous dims
+    untouched (else an SR delta is unattributable to the gripper), "none" is
+    bit-identical to the input (so that cell really does reproduce the four
+    failed gates), the active arms emit valid OSC values, the arms are pairwise
+    distinct (else the factorial silently has duplicate cells), and "openvla"
+    equals upstream's -sign(2g - 1) composition;
+  * `_preprocess_image` -- "none" is the identity at 256px, "pil_lanczos"
+    returns 224px uint8 and is distinguishable both from a no-op and from a
+    plain bilinear resize;
+  * `UPSTREAM_MAX_STEPS` -- pinned to what upstream's run_libero_eval.py
+    actually contains, because a flat 400 is what made the gate's libero_10
+    zero uninterpretable.
 """
 
 import os
@@ -54,7 +58,10 @@ except ModuleNotFoundError:  # pragma: no cover - depends on environment
 
 from sharpguard.libero_sim import (  # noqa: E402
     GRIPPER_TRANSFORMS,
+    IMAGE_PREPROCS,
+    UPSTREAM_MAX_STEPS,
     _apply_gripper_transform as tf,
+    _preprocess_image,
 )
 
 
@@ -122,6 +129,80 @@ def main() -> int:
         ok("an unknown transform name raises", False, "it returned instead")
     except ValueError as e:
         ok("an unknown transform name raises", True, str(e)[:60] + "...")
+
+    # 7. 'openvla' must equal upstream's composition exactly. Upstream (read
+    #    from source by bolt task htrg4uchwi) applies
+    #    normalize_gripper_action(binarize=True), i.e. g -> sign(2g - 1), and
+    #    then invert_gripper_action(), i.e. a negation. This asserts the
+    #    composition rather than trusting the one-line comment next to it.
+    def upstream(g):
+        return -float(np.sign(2.0 * np.float32(g) - 1.0))
+
+    mismatch = [g for g in np.linspace(-1.0, 1.0, 81)
+                if abs(2.0 * np.float32(g) - 1.0) > 1e-6
+                and float(tf(np.append(base[:6], g).astype(np.float32),
+                             "openvla")[-1]) != upstream(g)]
+    ok("'openvla' equals upstream's -sign(2g-1) over a grid",
+       not mismatch, f"{len(mismatch)} mismatches" if mismatch else "81 points")
+
+    # ---------------- image preprocessing ----------------
+    # Only 'none' and 'pil_lanczos' are exercised: 'tf_upstream' needs
+    # tensorflow, which this CI job deliberately does not install. The A/B
+    # script checks for tensorflow before the model load instead, so a missing
+    # backend fails fast there rather than silently choosing another kernel.
+    ok("all three image modes are registered",
+       tuple(IMAGE_PREPROCS) == ("none", "tf_upstream", "pil_lanczos"),
+       str(IMAGE_PREPROCS))
+
+    rng = np.random.default_rng(0)
+    render = rng.integers(0, 256, size=(256, 256, 3), dtype=np.uint8)
+
+    out_none = _preprocess_image(render, "none")
+    ok("'none' returns the render untouched at full 256px",
+       out_none.shape == (256, 256, 3) and np.array_equal(out_none, render),
+       str(out_none.shape))
+
+    try:
+        out_pil = _preprocess_image(render, "pil_lanczos")
+        ok("'pil_lanczos' returns 224x224x3 uint8",
+           out_pil.shape == (224, 224, 3) and out_pil.dtype == np.uint8,
+           f"{out_pil.shape} {out_pil.dtype}")
+        # The JPEG round-trip plus a resize must actually change the pixels,
+        # otherwise the arm is a no-op wearing a different name and the
+        # factorial has a duplicate cell.
+        ok("'pil_lanczos' is not a no-op",
+           not np.array_equal(out_pil, render[:224, :224]),
+           "differs from a naive crop")
+        # And it must not silently be doing the processor's default resize:
+        # compare against a plain bilinear resize with no JPEG step.
+        from PIL import Image
+        plain = np.asarray(Image.fromarray(render).resize((224, 224),
+                                                          Image.BILINEAR))
+        ok("'pil_lanczos' differs from a plain bilinear resize",
+           not np.array_equal(out_pil, plain),
+           f"max abs diff {int(np.abs(out_pil.astype(int) - plain.astype(int)).max())}")
+    except ImportError:  # pragma: no cover - Pillow is a hard dep of the repo
+        ok("'pil_lanczos' runs", False, "Pillow missing")
+
+    try:
+        _preprocess_image(render, "lanzcos")
+        ok("an unknown image_preproc raises", False, "it returned instead")
+    except ValueError as e:
+        ok("an unknown image_preproc raises", True, str(e)[:60] + "...")
+
+    # ---------------- per-suite step budgets ----------------
+    # Read from upstream's run_libero_eval.py by bolt task htrg4uchwi. Pinned
+    # here because the four-suite gate ran 400 steps everywhere, which made
+    # libero_10's 0/50 uninterpretable, and nothing but a test stops that from
+    # happening again.
+    ok("upstream per-suite max_steps are pinned",
+       UPSTREAM_MAX_STEPS == {"libero_spatial": 220, "libero_object": 280,
+                              "libero_goal": 300, "libero_10": 520,
+                              "libero_90": 400},
+       str(UPSTREAM_MAX_STEPS))
+    ok("the gate's old flat 400 was below upstream's libero_10 budget",
+       UPSTREAM_MAX_STEPS["libero_10"] > 400,
+       f"{UPSTREAM_MAX_STEPS['libero_10']} > 400")
 
     print()
     if fails:

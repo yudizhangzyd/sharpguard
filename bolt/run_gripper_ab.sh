@@ -41,6 +41,7 @@ python experiments/gripper_ab_preflight.py \
     --n-episodes    "${N_EPISODES:-4}" \
     --max-steps     "${MAX_STEPS:-400}" \
     --arms          "${ARMS:-none,invert,binvert,openvla}" \
+    --image-preprocs "${IMAGE_PREPROCS:-none}" \
     --win-threshold "${WIN_THRESHOLD:-0.5}" \
     --out           "$OUT_DIR/gripper_ab.json"
 AB_RC=$?
