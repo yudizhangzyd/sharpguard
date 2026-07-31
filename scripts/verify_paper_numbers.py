@@ -1334,6 +1334,63 @@ def audit_deepthink_tau_units(a: Audit) -> None:
 # ----------------------------------------------------------------------
 
 
+def audit_resize_check(a):
+    """Section 6's frame-preprocessing paragraph, against the measurement job.
+
+    This paragraph is the one place the paper quantifies its own approximation,
+    so every digit in it has to come from the artifact. It also asserts the two
+    structural properties the measurement depends on: that mode "none" is still
+    a pass-through (otherwise the gate's anchor configuration is not the one the
+    four failed runs used) and that the shipped subsampling default is the
+    measured-best value (the check that caught a 240-LSB error).
+    """
+    sec = "Frame preprocessing approximation (resize check)"
+    path = ROOT / "results_v2" / "canonical_runs" / "resize_check" / \
+        "resize_kernel_check.json"
+    r = load(path)
+    if not r:
+        a.check(sec, "the resize-check report is released", True, False,
+                source=str(path))
+        return
+    src = "results_v2/canonical_runs/resize_check/resize_kernel_check.json"
+
+    # The three numbers the paragraph quotes for the subsampling sweep.
+    a.check(sec, "Pillow chroma subsampling swept against tf.image.encode_jpeg: "
+                 "4:4:4 off by 240, 4:2:2 by 150, 4:2:0 by 9 levels",
+            [240, 150, 9],
+            [dig(r, "jpeg_only", f"subsampling_{i}", "worst") for i in (0, 1, 2)],
+            source=src)
+    a.check(sec, "the shipped default is the measured-best subsampling (4:2:0)",
+            [2, 2, True],
+            [r.get("jpeg_best_subsampling"), r.get("jpeg_shipped_subsampling"),
+             r.get("jpeg_shipped_is_best")], source=src)
+    # The claim that carries the most weight: the kernel is exact.
+    a.check(sec, "the Lanczos-3 kernel agrees with tf.image.resize to within "
+                 "1/255, i.e. exactly up to uint8 rounding",
+            1, dig(r, "resize_only", "worst"), source=src)
+    a.check(sec, "the full np_lanczos path is 8/255 from upstream", 8,
+            dig(r, "full", "np_lanczos", "worst"), source=src)
+    a.check(sec, "the discarded Pillow LANCZOS path was 23/255, past the "
+                 "4-level ceiling fixed before the measurement", 23,
+            dig(r, "full", "pil_lanczos", "worst"), source=src)
+    # The paper says np_lanczos is better than what it replaced; if that ever
+    # inverted, the implementation would be a regression wearing a caveat.
+    a.check(sec, "the reimplemented kernel is closer to upstream than the "
+                 "Pillow path it replaced", True,
+            (dig(r, "full", "np_lanczos", "worst") or 99)
+            < (dig(r, "full", "pil_lanczos", "worst") or 0), source=src)
+    a.check(sec, "mode 'none' is still a pass-through, so the gate's anchor "
+                 "configuration is the one the failed runs used", True,
+            r.get("none_is_passthrough"), source=src)
+    a.check(sec, "all four preprocessing modes are registered in the shipped "
+                 "module", ["none", "np_lanczos", "pil_lanczos", "tf_upstream"],
+            r.get("shipped_modes"), source=src)
+    # The report must name the tensorflow it compared against, or "validated
+    # against upstream" has no referent.
+    a.check(sec, "the report records the tensorflow version it compared against",
+            True, bool(r.get("tf_version")), source=src)
+
+
 def audit_rollout_gate(a, d):
     """Table "Four-suite rollout gate" and Section 6/limitation (v).
 
@@ -1547,6 +1604,7 @@ def main() -> int:
     audit_edit_decode_is_unnorm_free(a)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
+    audit_resize_check(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script

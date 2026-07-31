@@ -1,0 +1,250 @@
+{
+  "root": "/mnt/task_runtime",
+  "tf_version": "2.21.0",
+  "pillow_version": "12.3.0",
+  "numpy_version": "2.2.6",
+  "shipped_modes": [
+    "none",
+    "np_lanczos",
+    "pil_lanczos",
+    "tf_upstream"
+  ],
+  "jpeg_only": {
+    "subsampling_0": {
+      "cases": {
+        "gradient": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 4,
+          "mean_abs_diff": 0.9917,
+          "frac_pixels_differing": 0.6545,
+          "frac_pixels_diff_gt_1": 0.2473
+        },
+        "edges": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 0.6416,
+          "frac_pixels_differing": 0.2676,
+          "frac_pixels_diff_gt_1": 0.1738
+        },
+        "noise": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 240,
+          "mean_abs_diff": 46.6105,
+          "frac_pixels_differing": 0.9921,
+          "frac_pixels_diff_gt_1": 0.9773
+        }
+      },
+      "worst": 240
+    },
+    "subsampling_1": {
+      "cases": {
+        "gradient": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 4,
+          "mean_abs_diff": 0.9972,
+          "frac_pixels_differing": 0.656,
+          "frac_pixels_diff_gt_1": 0.2481
+        },
+        "edges": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 0.6416,
+          "frac_pixels_differing": 0.2676,
+          "frac_pixels_diff_gt_1": 0.1738
+        },
+        "noise": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 150,
+          "mean_abs_diff": 21.1221,
+          "frac_pixels_differing": 0.9806,
+          "frac_pixels_diff_gt_1": 0.9477
+        }
+      },
+      "worst": 150
+    },
+    "subsampling_2": {
+      "cases": {
+        "gradient": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 3,
+          "mean_abs_diff": 1.0042,
+          "frac_pixels_differing": 0.6657,
+          "frac_pixels_diff_gt_1": 0.2505
+        },
+        "edges": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 0.6416,
+          "frac_pixels_differing": 0.2676,
+          "frac_pixels_diff_gt_1": 0.1738
+        },
+        "noise": {
+          "shape": [
+            256,
+            256,
+            3
+          ],
+          "max_abs_diff": 9,
+          "mean_abs_diff": 1.4933,
+          "frac_pixels_differing": 0.7848,
+          "frac_pixels_diff_gt_1": 0.424
+        }
+      },
+      "worst": 9
+    }
+  },
+  "jpeg_best_subsampling": 2,
+  "jpeg_shipped_subsampling": 2,
+  "jpeg_shipped_is_best": true,
+  "resize_only": {
+    "cases": {
+      "gradient": {
+        "shape": [
+          224,
+          224,
+          3
+        ],
+        "max_abs_diff": 1,
+        "mean_abs_diff": 0.0193,
+        "frac_pixels_differing": 0.0193,
+        "frac_pixels_diff_gt_1": 0.0
+      },
+      "edges": {
+        "shape": [
+          224,
+          224,
+          3
+        ],
+        "max_abs_diff": 0,
+        "mean_abs_diff": 0.0,
+        "frac_pixels_differing": 0.0,
+        "frac_pixels_diff_gt_1": 0.0
+      },
+      "noise": {
+        "shape": [
+          224,
+          224,
+          3
+        ],
+        "max_abs_diff": 1,
+        "mean_abs_diff": 0.0007,
+        "frac_pixels_differing": 0.0007,
+        "frac_pixels_diff_gt_1": 0.0
+      }
+    },
+    "worst": 1
+  },
+  "full": {
+    "np_lanczos": {
+      "cases": {
+        "gradient": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 4,
+          "mean_abs_diff": 0.9998,
+          "frac_pixels_differing": 0.669,
+          "frac_pixels_diff_gt_1": 0.2531
+        },
+        "edges": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 0.5856,
+          "frac_pixels_differing": 0.2897,
+          "frac_pixels_diff_gt_1": 0.1207
+        },
+        "noise": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 1.3655,
+          "frac_pixels_differing": 0.7693,
+          "frac_pixels_diff_gt_1": 0.3842
+        }
+      },
+      "worst": 8
+    },
+    "pil_lanczos": {
+      "cases": {
+        "gradient": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 4,
+          "mean_abs_diff": 1.0226,
+          "frac_pixels_differing": 0.6808,
+          "frac_pixels_diff_gt_1": 0.2604
+        },
+        "edges": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 8,
+          "mean_abs_diff": 0.621,
+          "frac_pixels_differing": 0.314,
+          "frac_pixels_diff_gt_1": 0.1322
+        },
+        "noise": {
+          "shape": [
+            224,
+            224,
+            3
+          ],
+          "max_abs_diff": 23,
+          "mean_abs_diff": 1.3902,
+          "frac_pixels_differing": 0.7731,
+          "frac_pixels_diff_gt_1": 0.3904
+        }
+      },
+      "worst": 23
+    }
+  },
+  "none_is_passthrough": true,
+  "worst_max_abs_diff": 8,
+  "verdict": "materially different; the gate must not claim to reproduce upstream's preprocessing"
+}
