@@ -88,9 +88,10 @@ def main() -> int:
             import tensorflow  # noqa: F401
         except ImportError:
             sys.exit("[ab] image_preproc 'tf_upstream' was requested but "
-                     "tensorflow is not installed. Install tensorflow-cpu, or "
-                     "ask for 'pil_lanczos' and read the result as an "
-                     "approximation of upstream's kernel rather than a match.")
+                     "tensorflow is not installed. Set INSTALL_TF=1 so "
+                     "bolt/setup-openvla.sh adds tensorflow-cpu, or ask for "
+                     "'np_lanczos' and read the result as 8/255 LSB from "
+                     "upstream's kernel rather than a bit-exact match.")
 
     cells = [(g, i) for i in imgs for g in arms]
 

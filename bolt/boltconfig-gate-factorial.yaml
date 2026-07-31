@@ -1,5 +1,5 @@
-name: 'CoT-Faith gate factorial: gripper x image preprocessing on libero_object'
-description: 'Fifth gate attempt, and the first driven by upstream source rather than recollection. bolt htrg4uchwi read openvla/openvla and found two real differences: upstream applies normalize_gripper_action(binarize=True) then invert_gripper_action to the last action dim (composition -sign(2g-1); we applied neither), and it prepares every frame with a JPEG round-trip plus a lanczos3 antialiased resize to 224 because the training images went through the same path (we handed the raw 256px render to the processor). Two changes means an A/B over one of them cannot attribute anything, so this is a 2x2: gripper in {none, openvla} x image in {none, pil_lanczos}. The none+none cell reproduces the four failed gates as an anchor, so a null result is distinguishable from a broken harness. libero_object at upstream 280 steps, 4 episodes per cell, one model load. Exit 0 iff exactly one cell clears SR>=0.5.'
+name: 'CoT-Faith gate factorial (exact preproc): gripper x image on libero_object'
+description: 'Gate preflight with upstream-EXACT frame preprocessing. bolt htrg4uchwi read openvla/openvla and found two real gaps in our harness: upstream binarizes then inverts the gripper dim (composition -sign(2g-1); we did neither), and it JPEG-round-trips plus lanczos3-resizes every frame to 224 because the training images went through that path (we handed the raw 256px render straight to the processor). Two changes means one A/B cannot attribute anything, so this is a 2x2: gripper {none, openvla} x image {none, tf_upstream}. The earlier run (i55ww23d5n) used a Pillow stand-in for the resize; bolt d543p4f86p then measured that tensorflow CAN coexist with this env (numpy pin unmoved, torch CUDA intact, is_tf_available False under USE_TF=0), so this run calls tf.image.resize itself and is exact rather than 8/255 approximate. The none+none cell reproduces the four failed gates, so a null is distinguishable from a broken harness. libero_object, upstream 280 steps, 4 episodes per cell.'
 tags: ['cotfaith', 'decoder-gate', 'factorial', 'preflight']
 
 project_id: ads_algo_signal_qucacheoffline
@@ -23,6 +23,15 @@ environment_variables:
   HF_TOKEN: ${HF_TOKEN}
   TRANSFORMERS_VERBOSITY: 'error'
 
+  # Opt in to tensorflow-cpu for the exact resize, and tell transformers not to
+  # probe for it at import (the ABI hazard the old setup comment warned about;
+  # measured harmless under this flag by d543p4f86p, but the flag is what makes
+  # it harmless so it is not optional).
+  INSTALL_TF: '1'
+  USE_TF: '0'
+  TRANSFORMERS_NO_TF: '1'
+  USE_TORCH: '1'
+
   MODEL: 'openvla/openvla-7b-finetuned-libero-object'
   LIBERO_SUITE: 'libero_object'
   UNNORM_KEY: 'libero_object'
@@ -33,10 +42,11 @@ environment_variables:
   # here but truncated every libero_10 episode.
   MAX_STEPS: '280'
   ARMS: 'none,openvla'
-  # tf_upstream is deliberately absent: tensorflow clobbers this environment's
-  # numpy<2 pin (bolt/setup-openvla.sh:41). bolt/boltconfig-resize-check.yaml
-  # measures how far pil_lanczos is from it in an isolated venv.
-  IMAGE_PREPROCS: 'none,pil_lanczos'
+  # tf_upstream, not the Pillow approximation: d543p4f86p established that
+  # tensorflow coexists with this environment, so there is no reason to run an
+  # 8/255-approximate stand-in for the arm whose whole purpose is to match
+  # upstream. INSTALL_TF=1 above is what puts tensorflow-cpu in the image.
+  IMAGE_PREPROCS: 'none,tf_upstream'
   WIN_THRESHOLD: '0.5'
 
   DTYPE: 'bfloat16'

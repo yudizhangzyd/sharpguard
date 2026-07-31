@@ -147,9 +147,10 @@ def main() -> int:
 
     # ---------------- image preprocessing ----------------
     # 'tf_upstream' is not exercised here: it needs tensorflow, which this CI
-    # job deliberately does not install (it clobbers the numpy<2 pin). The A/B
-    # script checks for tensorflow before the model load instead, so a missing
-    # backend fails fast there rather than silently choosing another kernel.
+    # job does not install (the GPU jobs that want it opt in with INSTALL_TF=1;
+    # keeping CI tensorflow-free keeps it fast). The A/B script checks for
+    # tensorflow before the model load instead, so a missing backend fails fast
+    # there rather than silently choosing another kernel.
     # 'np_lanczos' is checked for structure here and for numerical agreement
     # with tensorflow by experiments/resize_kernel_check.py, which runs in an
     # isolated tf venv on bolt.

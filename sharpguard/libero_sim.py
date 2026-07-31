@@ -391,16 +391,23 @@ class RolloutConfig:
     rather than a clean zero. Modes:
       "none"        -- hand the raw flipped 256x256 render to the processor
                        (what the four failed gates ran)
-      "tf_upstream" -- upstream-exact, requires tensorflow
+      "tf_upstream" -- upstream-exact, because it calls upstream's own
+                       tensorflow ops. Needs tensorflow-cpu in the image,
+                       which bolt/setup-openvla.sh installs under
+                       INSTALL_TF=1. This mode was long believed unusable
+                       here; bolt d543p4f86p measured that belief and it is
+                       false (numpy stayed pinned at 1.26.4, torch kept
+                       CUDA, transformers reported is_tf_available()=False
+                       under USE_TF=0), so the gate can be exact rather than
+                       approximate.
       "np_lanczos"  -- upstream's three steps with the Lanczos-3 kernel
-                       reimplemented in numpy. This is the mode the gate
-                       runs: bolt/setup-openvla.sh documents that installing
-                       tensorflow clobbers the eval environment's numpy<2
-                       pin, so exactness has to be bought without the
-                       dependency. experiments/resize_kernel_check.py
-                       measures this mode against "tf_upstream" in an
-                       isolated tf venv, so the claim of exactness is a
-                       measured number and not an assumption.
+                       reimplemented in numpy, for environments without
+                       tensorflow. experiments/resize_kernel_check.py
+                       measures it against "tf_upstream" in an isolated tf
+                       venv: the kernel itself lands within 1/255 LSB, and
+                       the full path within 8/255, the residual being
+                       Pillow-vs-tensorflow libjpeg. Use it when the
+                       dependency is unavailable, not by preference.
       "pil_lanczos" -- the same steps using Pillow's LANCZOS. Kept only as a
                        diagnostic contrast: bolt q5z79humta measured it up to
                        23/255 LSB from tensorflow, past the 4-LSB ceiling

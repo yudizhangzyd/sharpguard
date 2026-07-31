@@ -170,9 +170,14 @@ def preprocess(img: np.ndarray, mode: str, size: int = 224) -> np.ndarray:
                        the factorial can show what it costs: bolt q5z79humta
                        measured it up to 23/255 LSB from TF, so it must not be
                        described as reproducing upstream.
-      "tf_upstream" -- calls tensorflow directly. Exact by construction, but
-                       unusable in the eval environment, where tensorflow
-                       clobbers the numpy<2 pin (bolt/setup-openvla.sh:41).
+      "tf_upstream" -- calls tensorflow directly. Exact by construction, and
+                       usable in the eval environment after all: the note that
+                       used to sit here said tensorflow clobbers the numpy<2
+                       pin, and bolt d543p4f86p measured that it does not
+                       (numpy stayed 1.26.4, torch kept CUDA, transformers
+                       reported is_tf_available()=False under USE_TF=0). It
+                       needs tensorflow-cpu in the image, which
+                       bolt/setup-openvla.sh installs when INSTALL_TF=1.
     """
     if mode not in MODES:
         raise ValueError(f"unknown image preproc {mode!r}; expected {MODES}")
@@ -191,9 +196,11 @@ def preprocess(img: np.ndarray, mode: str, size: int = 224) -> np.ndarray:
         import tensorflow as tf
     except ImportError as e:  # pragma: no cover - depends on environment
         raise RuntimeError(
-            "image preproc 'tf_upstream' needs tensorflow, which this "
-            "environment deliberately does not have. Use 'np_lanczos', which "
-            "experiments/resize_kernel_check.py validates against it."
+            "image preproc 'tf_upstream' needs tensorflow, which is opt-in in "
+            "this environment: set INSTALL_TF=1 so bolt/setup-openvla.sh adds "
+            "tensorflow-cpu (and USE_TF=0 so transformers does not route "
+            "through it). Otherwise use 'np_lanczos', which "
+            "experiments/resize_kernel_check.py measures at 8/255 LSB from it."
         ) from e
     t = tf.image.encode_jpeg(arr)
     t = tf.io.decode_image(t, expand_animations=False, dtype=tf.uint8)

@@ -38,12 +38,45 @@ pip install \
     "huggingface_hub>=0.20,<1.0" "safetensors>=0.4" \
     "sentencepiece>=0.1.99" "Pillow>=9.5"
 
-# 4) Sim deps. We deliberately do NOT install tensorflow — it would clobber
-#    the numpy<2 pin and trigger an ABI mismatch in transformers' lazy TF
-#    detection. Real LIBERO RLDS parsing (TFRecords) is therefore disabled;
-#    the runner falls back to synthetic-shape training data and relies on
-#    LIBERO simulator rollouts (which only need mujoco/robosuite/libero) for
-#    the headline SR/ASR numbers.
+# 4) Sim deps. Real LIBERO RLDS parsing (TFRecords) is off by default; the
+#    runner falls back to synthetic-shape training data and relies on LIBERO
+#    simulator rollouts (which only need mujoco/robosuite/libero) for the
+#    headline SR/ASR numbers.
+#
+#    This block used to say tensorflow must never be installed here, because it
+#    "would clobber the numpy<2 pin and trigger an ABI mismatch in transformers'
+#    lazy TF detection". bolt d543p4f86p TESTED that claim against this exact
+#    script and both halves of it are false:
+#
+#      numpy after `pip install tensorflow-cpu==2.16.2`   1.26.4  (unmoved)
+#      torch 2.4.1+cu118, cuda=True, 1 device, matmul ok
+#      transformers 4.40.1, is_tf_available()=False under USE_TF=0
+#      tf.image encode_jpeg / decode_image / resize        all run
+#
+#    That matters because upstream's frame preprocessing is tf.image.resize with
+#    lanczos3+antialias, and without tensorflow the rollout can only approximate
+#    it -- measured at 8/255 intensity levels (bolt 5df7cdeicj), the residual
+#    being Pillow-vs-tensorflow libjpeg, which no PIL flag closes.
+#
+#    It is still opt-in rather than default: every published number so far was
+#    produced by an environment without tensorflow, and silently changing the
+#    shared environment underneath them would make old and new runs
+#    incomparable for no reason. Jobs that want the exact preprocessing set
+#    INSTALL_TF=1; everything else is bit-identical to before.
+if [ "${INSTALL_TF:-0}" = "1" ]; then
+    # CPU build deliberately: the GPU build pulls its own CUDA/cuDNN wheels,
+    # which is what would actually fight with the cu118 torch pinned above.
+    # Nothing here needs a GPU -- it is one 256->224 reduction per frame.
+    pip install "tensorflow-cpu==2.16.2"
+    # Restore the pin defensively. It did not move in d543p4f86p, but a future
+    # tensorflow release could, and a numpy 2.x here breaks every OpenVLA
+    # forward rather than failing loudly.
+    pip install "numpy<2"
+    python -c "import numpy, torch, tensorflow as tf; \
+print('[setup] tf', tf.__version__, 'numpy', numpy.__version__, \
+'torch', torch.__version__, 'cuda', torch.cuda.is_available())"
+fi
+
 pip install "mujoco==3.1.6" "robosuite==1.4.1" \
             "easydict" "termcolor" "thop" "h5py" "imageio" "av" \
             "bddl" || true

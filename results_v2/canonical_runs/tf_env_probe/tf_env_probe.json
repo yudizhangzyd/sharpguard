@@ -1,0 +1,35 @@
+{
+  "argv": [
+    "experiments/tf_env_probe.py"
+  ],
+  "env": {
+    "USE_TF": "0",
+    "TRANSFORMERS_NO_TF": "1",
+    "USE_TORCH": "1",
+    "CUDA_VISIBLE_DEVICES": null
+  },
+  "numpy_pin_held": {
+    "ok": true,
+    "detail": "numpy 1.26.4 (<2, arithmetic works)"
+  },
+  "torch_still_works": {
+    "ok": true,
+    "detail": "torch 2.4.1+cu118, cuda=True, devices=1, matmul ok"
+  },
+  "transformers_without_tf": {
+    "ok": true,
+    "detail": "transformers 4.40.1, is_tf_available()=False"
+  },
+  "tensorflow_runs": {
+    "ok": true,
+    "detail": "tensorflow 2.16.2, encode/decode/resize all ran"
+  },
+  "both_preproc_modes_in_one_process": {
+    "ok": true,
+    "detail": "both modes ran in one process; np_lanczos vs tf_upstream worst 8 LSB (tf_upstream is exact by construction, so the gate can use it directly and drop the 8-LSB approximation)"
+  },
+  "n_passed": 5,
+  "n_failed": 0,
+  "failed_stages": [],
+  "verdict": "tensorflow can coexist with the eval environment; the gate may use image_preproc='tf_upstream' and drop the approximation"
+}

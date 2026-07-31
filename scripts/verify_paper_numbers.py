@@ -619,6 +619,54 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
             source=str(TEX) + ": 3 DeepThinkVLA rows now have the identity null")
 
 
+def audit_attention_cluster_range(a: Audit, d: Optional[dict]) -> None:
+    """F1/F3's headline interval, checked digit-for-digit against the artifact.
+
+    The paper quotes the ECoT cluster as $[0.335, 0.358]$ in four places -- two
+    body paragraphs, a figure caption, and a claim about the max-min gap -- and
+    F3's whole argument is that this interval is narrow while the causal spread
+    is wide. Nothing tied any of those digits to derived_metrics until now, and
+    that gap was not hypothetical: a regex meant to bump the advertised claim
+    count from 358 matched the "358" inside "0.358" and silently rewrote all four
+    to 0.362, and the audit still reported every claim reproduced. The interval
+    endpoints and the gap are asserted here so a stray edit to the interval fails
+    instead of passing.
+    """
+    sec = "ECoT attention cluster interval (F1/F3)"
+    att = dig(d, "attention") or {}
+    cot = {k: dig(v, "mass", "cot") for k, v in att.items()}
+    cot = {k: v for k, v in cot.items() if v is not None}
+    if len(cot) < 8:
+        a.check(sec, "all 8 trained variants have a CoT attention mass", 8,
+                len(cot), source="derived_metrics.attention")
+        return
+    src = "results_v2/derived_metrics.json: attention[*].mass.cot"
+    lo, hi = min(cot.values()), max(cot.values())
+    a.check(sec, "the quoted cluster interval endpoints are the artifact's min "
+                 "and max CoT attention over the 8 trained variants",
+            [0.335, 0.358], [round(lo, 3), round(hi, 3)], source=src)
+    a.check(sec, "the quoted max-min gap is that interval's width", 0.023,
+            round(hi - lo, 3), source=src)
+
+    tex = TEX.read_text() if TEX.exists() else ""
+    # Every place the interval is printed, in both of the two typographies the
+    # manuscript uses for it. A caption that drifts from the body is the same
+    # defect as a body that drifts from the artifact.
+    a.check(sec, "the manuscript prints the interval as [0.335, 0.358] in both "
+                 "body paragraphs and the figure caption", 3,
+            tex.count("[0.335, 0.358]"), source="cot_faith_iclr.tex")
+    a.check(sec, "and once more in range typography for the cross-family "
+                 "comparison", 1, tex.count("$0.335$--$0.358$"),
+            source="cot_faith_iclr.tex")
+    # The two individual values the reasoning-target paragraph turns on. audit_f1
+    # already checks them against the artifact; what was missing is that the
+    # manuscript still *prints* them, which is the direction the corruption ran.
+    a.check(sec, "the manuscript still prints the no-CoT vs r=32 pair audit_f1 "
+                 "checks against the artifact", [True, True],
+            [tex.count("$0.3491$") >= 1, tex.count("$0.3543$") >= 1],
+            source="cot_faith_iclr.tex")
+
+
 def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
     """R1 critical #5 items (c) and (6): the attention numbers were single-run
     and the layer set was unjustified. Both are now measured, and the layer
@@ -1391,6 +1439,106 @@ def audit_resize_check(a):
             True, bool(r.get("tf_version")), source=src)
 
 
+def audit_tf_env_probe(a):
+    """The measurement that retired an untested constraint.
+
+    bolt/setup-openvla.sh, sharpguard/image_preproc.py, sharpguard/libero_sim.py
+    and the gate config all now cite this probe by task id and by number, in
+    place of a comment that asserted tensorflow cannot coexist with the eval
+    environment. That comment stood unchallenged long enough to shape the design
+    -- it is why the frame preprocessing shipped an 8/255-LSB substitute -- so
+    the replacement claim is pinned here stage by stage rather than trusted the
+    way its predecessor was. Each stage is checked individually: "tensorflow
+    imports" and "the eval environment still works" are different claims, and
+    only the conjunction licenses image_preproc='tf_upstream'.
+    """
+    sec = "Tensorflow/eval-environment coexistence probe"
+    path = ROOT / "results_v2" / "canonical_runs" / "tf_env_probe" / \
+        "tf_env_probe.json"
+    r = load(path)
+    if not r:
+        a.check(sec, "the tf-env-probe report is released", True, False,
+                source=str(path))
+        return
+    src = "results_v2/canonical_runs/tf_env_probe/tf_env_probe.json"
+
+    # The two halves of the retired claim, each against its own stage.
+    a.check(sec, "installing tensorflow-cpu did NOT move the numpy<2 pin, "
+                 "refuting the first half of the retired constraint", True,
+            "1.26.4" in str(dig(r, "numpy_pin_held", "detail") or ""),
+            source=src)
+    a.check(sec, "transformers reports is_tf_available()=False under USE_TF=0, "
+                 "refuting the second half (the lazy-TF ABI mismatch)", True,
+            "is_tf_available()=False" in
+            str(dig(r, "transformers_without_tf", "detail") or ""), source=src)
+    # The collateral damage the constraint was really guarding against. A probe
+    # that passed its own two stages while silently costing CUDA would have been
+    # worse than the comment it replaced.
+    a.check(sec, "torch kept CUDA and a correct matmul after the install, so "
+                 "the GPU rollout is unaffected", True,
+            all(s in str(dig(r, "torch_still_works", "detail") or "")
+                for s in ("cuda=True", "matmul ok")), source=src)
+    a.check(sec, "tf.image encode_jpeg / decode_image / resize all ran, so the "
+                 "exact path is executable and not merely importable", True,
+            "all ran" in str(dig(r, "tensorflow_runs", "detail") or ""),
+            source=src)
+    a.check(sec, "both preprocessing modes ran in one process, which is what "
+                 "makes 'tf_upstream' usable as the gate's image path", True,
+            dig(r, "both_preproc_modes_in_one_process", "ok") is True,
+            source=src)
+    # The conjunction, and the environment flags it holds under. USE_TF=0 is not
+    # incidental: it is the mechanism, so a run without it does not inherit the
+    # result.
+    a.check(sec, "every stage passed, which is what licenses the gate to drop "
+                 "the approximation", [5, 0, []],
+            [r.get("n_passed"), r.get("n_failed"), r.get("failed_stages")],
+            source=src)
+    a.check(sec, "the probe recorded the off-switch it ran under, so the result "
+                 "is not read as unconditional", ["0", "1"],
+            [dig(r, "env", "USE_TF"), dig(r, "env", "TRANSFORMERS_NO_TF")],
+            source=src)
+    # The 8 LSB the two independent jobs must agree on: if the resize check and
+    # the probe disagreed, one of them is measuring something else.
+    a.check(sec, "the np_lanczos-vs-tf_upstream gap the probe saw matches the "
+                 "8/255 the resize check measured independently", True,
+            "worst 8 LSB" in
+            str(dig(r, "both_preproc_modes_in_one_process", "detail") or ""),
+            source=src)
+    # The code that cites this job must cite it by id, or the claim floats.
+    setup_path = ROOT / "bolt" / "setup-openvla.sh"
+    setup = setup_path.read_text() if setup_path.exists() else ""
+    a.check(sec, "bolt/setup-openvla.sh cites this task id where it used to "
+                 "assert the opposite", True, "d543p4f86p" in setup,
+            source="bolt/setup-openvla.sh")
+    a.check(sec, "tensorflow stays opt-in (INSTALL_TF), so previously published "
+                 "runs keep the environment they were produced in", True,
+            'INSTALL_TF:-0' in setup, source="bolt/setup-openvla.sh")
+
+    # And the manuscript, which previously stated the retired claim as fact.
+    # This is the check that would have caught the stale sentence: prose can go
+    # on asserting a refuted constraint indefinitely while every number still
+    # reproduces, because the constraint is not a number.
+    tex = TEX.read_text() if TEX.exists() else ""
+    # Not "the phrase is absent": the paper is entitled to quote the retired
+    # claim, and does, because reporting that it was believed is the point. What
+    # it must not do is state it in its own voice. So every occurrence has to
+    # carry the attribution that marks it as reported speech.
+    a.check(sec, "Section 6 states the refuted constraint only as something the "
+                 "repository asserted, never in the paper's own voice",
+            tex.count("eval environment cannot host"),
+            tex.count("asserted that the eval environment cannot host"),
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 says the constraint is false rather than merely "
+                 "questionable", True, "both halves of it are false" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 reports the numpy version the probe measured, not "
+                 "just that the pin 'held'", True, "$1.26.4$" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 names the mechanism (USE_TF=0) rather than "
+                 "reporting coexistence as unconditional", True,
+            r"\texttt{USE\_TF=0}" in tex, source="cot_faith_iclr.tex")
+
+
 def audit_rollout_gate(a, d):
     """Table "Four-suite rollout gate" and Section 6/limitation (v).
 
@@ -1594,6 +1742,7 @@ def main() -> int:
     audit_decoder(a, da)
     audit_second_calibration(a, d)
     audit_deepthink_p2(a, d)
+    audit_attention_cluster_range(a, d)
     audit_attention_seeds_and_depth(a, d)
     audit_training_replicate(a, d)
     audit_release(a)
@@ -1605,6 +1754,7 @@ def main() -> int:
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
     audit_resize_check(a)
+    audit_tf_env_probe(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script

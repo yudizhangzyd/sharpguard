@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Quantify the pil_lanczos-vs-tf_upstream resize gap in an isolated venv.
 #
-# No GPU, no model, no simulator. Isolated on purpose: tensorflow in the eval
-# environment clobbers its numpy<2 pin (see bolt/setup-openvla.sh:41), which is
-# exactly why the gate runs the Pillow path and why the size of that
-# substitution needs measuring rather than assuming.
+# No GPU, no model, no simulator. Isolated in its own venv on purpose: this job
+# is the independent reference the shipped numpy kernel is measured against, and
+# a reference that shares a numpy with the code under test is not independent.
+# (It is NOT isolated because tensorflow and the eval env are incompatible --
+# bolt d543p4f86p measured that they are not.)
 set -e -x
 
 cd "$(dirname "$0")/.."

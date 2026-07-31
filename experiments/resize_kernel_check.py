@@ -3,9 +3,13 @@
 
 The reference diff (bolt htrg4uchwi) showed upstream prepares every LIBERO frame
 with a JPEG round-trip plus tf.image.resize(method="lanczos3", antialias=True) to
-224, and the decoder gate did none of that. The gate cannot simply import
-tensorflow: bolt/setup-openvla.sh documents that installing it clobbers the eval
-environment's numpy<2 pin and breaks transformers' lazy TF detection.
+224, and the decoder gate did none of that. At the time this script was written,
+bolt/setup-openvla.sh asserted the gate could not simply import tensorflow --
+that doing so clobbers the eval environment's numpy<2 pin and breaks
+transformers' lazy TF detection. bolt d543p4f86p later tested that assertion and
+found both halves false, so the gate now runs "tf_upstream" directly. This script
+is still the reason we know what "np_lanczos" costs when tensorflow is
+unavailable, and it still validates the shipped kernel rather than trusting it.
 
 The first attempt at a substitute was Pillow's LANCZOS. This script measured it
 (bolt q5z79humta) and it failed the criterion fixed in advance -- up to 23/255
@@ -270,9 +274,11 @@ def main() -> int:
     if os.environ.get("RESIZE_CHECK_CHILD") == "1":
         return compare()
 
-    # Parent: build an isolated venv so tensorflow never touches the eval
-    # environment's numpy<2 pin. This is the whole reason the gate cannot just
-    # import tf directly.
+    # Parent: build an isolated venv rather than installing tensorflow into
+    # whatever interpreter launched this. Not because the two cannot coexist --
+    # d543p4f86p showed they can -- but because this job's whole purpose is to
+    # be an independent reference, and an independent reference should not share
+    # a numpy with the thing it is checking.
     print(f"[resize] creating throwaway venv at {VENV}")
     for cmd in ([sys.executable, "-m", "venv", VENV],
                 [f"{VENV}/bin/pip", "install", "--quiet", "--upgrade", "pip"],
