@@ -362,8 +362,30 @@ def predict_action_upstream(model, processor, image: np.ndarray,
     # unnorm_key="" is not the same as omitting it: upstream treats a falsy key
     # as "use the single registered dataset if there is exactly one", and raises
     # otherwise. Pass it only when we have one.
-    act = model.predict_action(**inputs, unnorm_key=unnorm_key or None,
-                               do_sample=False)
+    # Two checkpoint-dependent facts about the shipped predict_action, both found
+    # by calling it on ECoT-bridge (bolt e2d58fvvn8, aux probe, 12/12 samples):
+    #
+    #  * vanilla OpenVLA's copy sets max_new_tokens itself; ECoT's copy forwards
+    #    **kwargs into generate() without setting it, so generation stops at HF's
+    #    default max_length=20 and raises on any prompt longer than 20 tokens --
+    #    which every instruction prompt here is. Passing it unconditionally would
+    #    be a duplicate keyword on the copy that already sets it, so the retry is
+    #    driven by the error rather than by a guess about which copy we hold.
+    #  * ECoT's copy returns (actions, generated_ids); vanilla's returns actions.
+    #    np.asarray of that tuple raises on a CUDA tensor rather than silently
+    #    producing something wrong, which is the only reason this went unnoticed.
+    try:
+        act = model.predict_action(**inputs, unnorm_key=unnorm_key or None,
+                                   do_sample=False)
+    except ValueError as e:
+        if "max_length" not in str(e):
+            raise
+        act = model.predict_action(**inputs, unnorm_key=unnorm_key or None,
+                                   do_sample=False, max_new_tokens=8)
+    if isinstance(act, tuple):
+        act = act[0]
+    if hasattr(act, "detach"):
+        act = act.detach().cpu()
     return np.asarray(act, dtype=np.float32).reshape(-1)[:7]
 
 

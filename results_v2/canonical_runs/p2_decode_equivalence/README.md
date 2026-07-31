@@ -1,8 +1,9 @@
 # P2's de-quantization convention: F_mag is exactly invariant, F_dir is not
 
 `p2_dequant_recompute.json` is the verbatim Stage A artifact of bolt task
-`srkhkq7ea2`. Stage B of that task is a separate question and is **not** in this
-directory yet; see "Stage B" below.
+`srkhkq7ea2`. `p2_decode_equivalence.json` is Stage B, from the rerun
+`e2d58fvvn8`; see "Stage B" below for what it answers and for the one number in
+it that is a property of the audit rather than of P2.
 
 ## Why this was asked
 
@@ -122,9 +123,13 @@ instance) is not corrupted by the conversion.
 magnitude and 2nd-to-last by direction, so the direction-blindness finding is not
 an artifact of the convention.
 
-## Stage B (token selection) is not answered here
+## Stage B (token selection): answered, and P2's selection is the correct one
 
-Stage B of `srkhkq7ea2` compared **0 of 12** samples and its report says
+Stage B asks the other half of the question: P2 puts **no logit mask** over the
+256-token action window and does **no input-id surgery**, so does it select
+different tokens than the checkpoint's own `predict_action`?
+
+The first attempt (`srkhkq7ea2`) compared **0 of 12** samples and said
 `INCONCLUSIVE` — correctly, since it measured nothing. All three causes were bugs
 in the audit script, found by reading the checkpoint's shipped remote code:
 
@@ -136,18 +141,84 @@ in the audit script, found by reading the checkpoint's shipped remote code:
    dimension, but the checkpoint's grid has only 255 — so all seven dimensions
    were excluded as "degenerate" and nothing was compared.
 
-All three are fixed in `experiments/p2_decode_equivalence.py`, and the rerun is
-bolt task `e2d58fvvn8`. Its Stage A output is byte-comparable to the one released
-here. Nothing in Result 1 or Result 2 above depends on Stage B: they are a
-replay of released records, not an inference run.
+All three are fixed and the rerun is `e2d58fvvn8`, on
+`Embodied-CoT/ecot-openvla-7b-bridge`, 12 samples, 66 prompts, 54 scored
+(sample, family) records over five families.
 
-The fixed script also measures a difference the first version had not considered:
-upstream indexes the grid as `clip(self.vocab_size - id - 1, 0, 254)` with
-`self.vocab_size = text_config.vocab_size - pad_to_multiple_of`, while P2 uses
-`processor.tokenizer.vocab_size - 1 - id`. If those two vocab sizes differ, the
-two paths index the grid with a **constant offset** — which cancels in a paired
-difference, so it cannot move \(\mathcal{F}_{\text{mag}}\) either, but does move
-any sign- or norm-based predicate. It is reported either way.
+### Result: selection is identical, and F is untouched
+
+| quantity | value |
+|---|---|
+| prompts compared | 66 |
+| prompts whose **raw generated ids** are byte-identical between the two paths | **66 / 66 (100 %)** |
+| mirror reproduces `cotfaith_edit.infer_action` exactly | yes |
+| scored records | 54 |
+| faithful flags that differ | **0** |
+| worst \|dF\| over the five families | **0.000** |
+| worst per-record \(\Delta_\infty\) gap | **0.0078125** (= the Stage A grid difference, not a selection difference) |
+
+Both paths run their own greedy `generate()` on the same `input_ids`, so
+byte-identical raw ids settle the question directly: **P2's missing logit mask
+never changed a selected token on these prompts.** The unmasked argmax landed
+inside the action window every time. Per family, `F_p2 == F_upstream` exactly:
+`subject_swap` 1.00, `location_swap` 0.90, `direction_flip` 1.00, `gripper_flip`
+0.50, `paraphrase_null` 0.92.
+
+The hypothesised vocab-size confound is **absent**, measured rather than assumed:
+`model_vocab_size == processor_vocab_size == 32000`, so
+`bin_index_offset_upstream_minus_p2 = 0`.
+
+### The one number in the report that is not about P2
+
+`n_prompts_token_identical` is **0 / 66**, and `per_dim_bin_agreement` is
+\(\approx 0\) on all seven dims. Read at face value that says the two decodes
+disagree on every prompt, which contradicts the 66/66 raw-id identity above. The
+contradiction is real and the fault is the audit's, not P2's.
+
+On **108 of 108** decodes (54 records × original + edited):
+
+* `bins_upstream[j+1] == bins_p2[j]` for `j = 0..5`, up to upstream's 255→254
+  clip (its grid has 255 centres);
+* `bins_upstream[0]` is the **grid top** (254) on 108/108;
+* `bins_p2[6]` is 255 on 108/108.
+
+So upstream's span sits exactly one position earlier than P2's. The mechanism:
+the model emits one non-action separator token before the seven action tokens
+(the processor appends SentencePiece id `29871` when the prompt does not end in
+it). P2 filters for ids inside the action window `[vocab-256, vocab)` and so
+reads `[a1..a7]`. Upstream slices a **fixed** `generated_ids[0, -(action_dim+1):-1]`,
+which with `max_new_tokens=8` reads `[sep, a1..a6]` — it puts the separator in
+dim 0 and drops the gripper. A separator id cannot produce bin 254 as an action:
+254 is what `clip(vocab_m - 29871 - 1, 0, 254)` clips **to**. That is why dim 0
+is pinned at the grid top on every decode.
+
+**P2's selection is the correct one**, and the misalignment is a property of
+calling `predict_action` with a pre-built `input_ids` and `max_new_tokens=8`.
+
+This also explains why `worst_delta_F` is nevertheless exactly 0, which would
+otherwise look lucky: the offset is *constant* across the original and the edited
+forward pass, so the paired \(\Delta\) is the same vector shifted by one, and the
+one dim that is not shared is saturated (255 in P2, 254 in upstream) and
+therefore contributes \(\Delta = 0\) in both. \(\Delta_\infty\) is a max over the
+same six varying dims either way. So the ΔF = 0 result is robust — but it is
+**not** the evidence for token-selection equivalence. The 66/66 raw-id identity
+is.
+
+`experiments/p2_decode_equivalence.py` now measures the offset
+(`n_prompts_upstream_slice_offset_by_one`,
+`n_prompts_upstream_dim0_at_grid_top`), releases the raw ids per record
+(`gen_ids_orig_p2`, `gen_ids_orig_upstream_span`, and the `_edit_` pair) so a
+reader can check the span themselves, and keys its verdict on raw-id identity
+rather than on the misaligned slice. `sharpguard/libero_sim.predict_action_upstream`
+had the same two upstream-calling-convention bugs — no `max_new_tokens`, and no
+handling of the `(actions, generated_ids)` return — which is why the
+instruction-only auxiliary probe recorded `aux_n_probed: 0` in `e2d58fvvn8`; both
+are fixed. Vanilla OpenVLA's copy of `predict_action` sets `max_new_tokens`
+itself, so the LIBERO rollout path was never affected, which is why this surfaced
+only on ECoT.
+
+Nothing in Result 1 or Result 2 above depends on Stage B: they are a replay of
+released records, not an inference run.
 
 ## Reproduce
 

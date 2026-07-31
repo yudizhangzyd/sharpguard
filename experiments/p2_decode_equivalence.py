@@ -286,6 +286,10 @@ def main() -> int:
     n_prompts = 0
     n_token_identical = 0
     n_raw_ids_identical = 0
+    # The naive slice below turned out to be misaligned on every prompt of
+    # e2d58fvvn8, so the offset is now measured rather than assumed to be zero.
+    n_slice_offset_by_one = 0
+    n_upstream_dim0_at_grid_top = 0
     dim_agree = np.zeros(N_ACT, dtype=int)
     dim_absdiff_max = np.zeros(N_ACT, dtype=int)
     cot_changes_action = []
@@ -363,6 +367,24 @@ def main() -> int:
                 good = [i for i in range(N_ACT) if i not in degenerate_dims]
                 same = bool(np.array_equal(b_p2[good], b_up[good]))
                 n_token_identical += int(same)
+                # e2d58fvvn8 reported same=False on 66/66 prompts, and that was
+                # this comparison being misaligned rather than the two decodes
+                # disagreeing. The model emits one non-action separator token
+                # before the seven action tokens, so P2's window filter reads
+                # [a1..a7] while upstream's fixed `generated_ids[0, -8:-1]`
+                # slice reads [sep, a1..a6]: on all 108 decodes
+                # b_up[j+1] == b_p2[j] (up to upstream's 255->254 clip, since
+                # its grid has only 255 centres), b_up[0] was the grid top on
+                # 108/108 -- the clip of a non-action id, which no real action
+                # token can produce -- and b_p2[6] was 255 on 108/108. P2's
+                # selection is the correct one. Measured here so the report
+                # states the offset instead of publishing a 0/66 that reads as
+                # a disagreement.
+                top = n_distinct_grid - 1
+                shifted = bool(np.array_equal(
+                    np.minimum(b_p2[:N_ACT - 1], top), b_up[1:N_ACT]))
+                n_slice_offset_by_one += int(shifted)
+                n_upstream_dim0_at_grid_top += int(int(b_up[0]) == top)
                 for i in good:
                     dim_agree[i] += int(b_p2[i] == b_up[i])
                     dim_absdiff_max[i] = max(dim_absdiff_max[i],
@@ -424,6 +446,15 @@ def main() -> int:
                     "bins_orig_upstream": o["bins_upstream"],
                     "bins_edit_p2": e["bins_p2"],
                     "bins_edit_upstream": e["bins_upstream"],
+                    # Released so a reader can check the span offset themselves:
+                    # gen_ids_p2 is the full 8-token generation and
+                    # gen_ids_upstream_span is the 7 that upstream's own slice
+                    # read. Without these the offset is only inferable from the
+                    # bins, which is how it went unnoticed in e2d58fvvn8.
+                    "gen_ids_orig_p2": o["gen_ids_p2"],
+                    "gen_ids_orig_upstream_span": o["gen_ids_upstream_span"],
+                    "gen_ids_edit_p2": e["gen_ids_p2"],
+                    "gen_ids_edit_upstream_span": e["gen_ids_upstream_span"],
                 })
             if (si + 1) % 4 == 0:
                 print(f"[eq] {si + 1}/{len(samples)} samples; "
@@ -476,6 +507,10 @@ def main() -> int:
         "convention_max_value_diff_frac_of_tau": convention_diff / args.tau,
         "n_prompts_token_identical": n_token_identical,
         "n_prompts_raw_generated_ids_identical": n_raw_ids_identical,
+        # The two keys that say whether `n_prompts_token_identical` is a
+        # measurement of P2 or a measurement of this script's slice.
+        "n_prompts_upstream_slice_offset_by_one": n_slice_offset_by_one,
+        "n_prompts_upstream_dim0_at_grid_top": n_upstream_dim0_at_grid_top,
         "frac_prompts_raw_generated_ids_identical":
             (n_raw_ids_identical / n_prompts) if n_prompts else None,
         "frac_prompts_token_identical": (n_token_identical / n_prompts
@@ -506,6 +541,8 @@ def main() -> int:
           f"is index arithmetic, not token selection)")
     print(f"per-dim bin agreement           : {payload['per_dim_bin_agreement']}")
     print(f"per-dim max bin difference      : {payload['per_dim_max_bin_diff']}")
+    print(f"upstream slice off by one       : {n_slice_offset_by_one}/{n_prompts}"
+          f"  (upstream dim0 at grid top on {n_upstream_dim0_at_grid_top})")
     print(f"max bin-inversion residual      : {max_residual:.3e}")
     print(f"(sample, family) records        : {len(records)}")
     print(f"faithful flags that differ      : {n_flag_differs}")
@@ -529,6 +566,33 @@ def main() -> int:
         print("\n[eq] INCONCLUSIVE: no prompt was compared.")
         return 1
 
+    # The question Stage B was asked is whether P2's *token selection* -- no
+    # logit mask over the action window, no input-id surgery -- picks different
+    # tokens than upstream. The sharpest available answer to that is the raw
+    # generated ids, because both paths run their own greedy generate() on the
+    # same input_ids: if those coincide, selection cannot differ. The bin
+    # comparison below it is downstream of a fixed slice that e2d58fvvn8 showed
+    # to be misaligned on every prompt, so it is reported but does not decide
+    # the verdict.
+    if (n_raw_ids_identical == n_prompts and n_flag_differs == 0
+            and n_slice_offset_by_one == n_prompts):
+        print(f"\n[eq] CONCLUSION: both paths generate byte-identical raw ids on "
+              f"all {n_prompts} prompts, so P2's missing logit mask and missing "
+              f"input-id surgery do not change which tokens are selected here. "
+              f"No faithful flag differs on any of the {len(records)} records. "
+              f"The bin-level slice disagrees on {n_prompts - n_token_identical}"
+              f"/{n_prompts} prompts for a separate and now-measured reason: "
+              f"upstream's `generated_ids[0, -8:-1]` reads one position earlier "
+              f"than P2's action-window filter on {n_slice_offset_by_one}"
+              f"/{n_prompts} prompts, putting a non-action separator token in "
+              f"dim 0 (clipped to the grid top on "
+              f"{n_upstream_dim0_at_grid_top}/{n_prompts}) and dropping the "
+              f"gripper dim. P2's selection is the correct one. The 24/24 "
+              f"mismatch measured by 7vpp28qfsk stays confined to the rollout "
+              f"path, which publishes no number, and the de-quantization "
+              f"convention remains a separate question "
+              f"(p2_dequant_recompute.py).")
+        return 0
     if n_token_identical == n_prompts and n_flag_differs == 0:
         print(f"\n[eq] CONCLUSION: P2's decode selects the SAME action tokens as "
               f"the checkpoint's own predict_action on all {n_prompts} prompts, "
