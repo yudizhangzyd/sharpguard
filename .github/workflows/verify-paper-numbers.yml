@@ -34,9 +34,17 @@ jobs:
         # authors' /tmp scratch runs lying around.
         run: |
           if ! git diff --quiet -- results_v2/derived_metrics.json; then
-            echo "::error::derived_metrics.json drifted on a clean checkout"
             git diff --stat -- results_v2/derived_metrics.json
-            git diff -U0 -- results_v2/derived_metrics.json | head -300
+            D=$(git diff -U0 -- results_v2/derived_metrics.json \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | head -30)
+            echo "$D"
+            # Also emit the diff as a workflow annotation. The step log lives in
+            # blob storage that some networks cannot reach, whereas annotations
+            # come back from the REST API, and this gate is useless if the
+            # reason it fired is unreadable.
+            ENC=$(printf '%s' "$D" | python3 -c \
+              'import sys; print(sys.stdin.read().replace("%","%25").replace("\r","%0D").replace("\n","%0A"))')
+            echo "::error::derived_metrics.json drifted on a clean checkout:%0A$ENC"
             exit 1
           fi
       - name: Assert every number quoted in the manuscript
