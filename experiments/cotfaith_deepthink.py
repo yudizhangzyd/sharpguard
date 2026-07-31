@@ -265,6 +265,26 @@ def run(args):
                         n_tokens=int(edit_meta["instr_random_sub"]))
                     edit_meta["instruction_perturbed"] = instr_override[:200]
                 edited_cot = build_cot_text(edited)
+                # An edit that does not survive rendering is not a measurement.
+                # `build_cot_text` emits only plan/subtask/movement/move, so
+                # `bbox_jitter_null` -- which perturbs `bboxes` -- produced a
+                # byte-identical CoT here and scored F=0.000 on all three
+                # checkpoints with delta==0 on every sample, indistinguishable
+                # from `selfsplice_control`, whose whole purpose is to be
+                # byte-identical. Read as robustness that would be wrong: the
+                # intervention never reached the model. ECoT renders bboxes
+                # under VISIBLE OBJECTS, so the same family is a real edit
+                # there; this is a per-model applicability fact, and it has to
+                # be recorded as such rather than as a zero.
+                if fname != "selfsplice_control" and instr_override is None \
+                        and edited_cot == cot_text:
+                    per_sample_edit.append({
+                        "sample": si, "family": fname, "file_base": fbase,
+                        "skipped": True,
+                        "reason": "edit not represented in the rendered CoT",
+                        "edit_meta": edit_meta,
+                    })
+                    continue
                 a_edit_chunk, _ = _predict(edited_cot,
                                            instr_override=instr_override)
                 # The leaderboard metric is defined on a single 7-DoF action, and
