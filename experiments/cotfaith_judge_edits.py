@@ -162,6 +162,25 @@ class Judge:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
         self.max_new_tokens = max_new_tokens
+        # A CPU fallback here is not a slower run, it is a dead one, and it must
+        # not be silent. This job requests 1gpu and judges ~440 pairs with a 7B
+        # model; on GPU that is well inside the 6h timeout, on CPU it measured
+        # 180 s/pair -- 22 hours -- so the job times out and writes nothing after
+        # burning a GPU slot it never used. It happened: torch.cuda.is_available()
+        # returned False under torch 2.13.0+cu130, which the unpinned
+        # `torch>=2.1` in requirements.txt pulled onto a pod whose driver is 12.8
+        # (bolt xiyuyquje6, "cuda False | ngpus 1" -- the device was visible and
+        # unusable). setup.sh printed exactly that line and carried on.
+        if not torch.cuda.is_available():
+            n = torch.cuda.device_count()
+            raise RuntimeError(
+                f"CUDA is unavailable (torch {torch.__version__}, "
+                f"device_count={n}). Refusing to judge on CPU: at 180 s/pair "
+                f"this job cannot finish inside its timeout, so it would spend a "
+                f"GPU slot to produce no report. If device_count>0 the GPU is "
+                f"visible but the torch build does not match the pod driver -- "
+                f"pin torch to the cu118 build in requirements.txt rather than "
+                f"letting pip resolve `torch>=2.1`.")
         last = None
         for mid in model_ids:
             try:
@@ -169,10 +188,9 @@ class Judge:
                 self.tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
                 self.model = AutoModelForCausalLM.from_pretrained(
                     mid, torch_dtype=dtype, low_cpu_mem_usage=True,
-                    trust_remote_code=True).to(
-                    "cuda" if torch.cuda.is_available() else "cpu").eval()
+                    trust_remote_code=True).to("cuda").eval()
                 self.model_id = mid
-                print(f"[judge] loaded {mid}")
+                print(f"[judge] loaded {mid} on {self.model.device}")
                 return
             except Exception as e:
                 # Recorded, not swallowed: which judge answered is part of the

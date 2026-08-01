@@ -1,6 +1,19 @@
-torch>=2.1
-transformers>=4.40
-accelerate>=0.29
-numpy>=1.24
+# Pinned, not floored. `torch>=2.1` and `transformers>=4.40` used to be the spec
+# here, and pip resolved them to torch 2.13.0+cu130 and transformers 5.14.1
+# inside the iris image. The pod's driver is CUDA 12.8, so a cu130 build reports
+# `cuda False` with `ngpus 1` -- the GPU visible and unusable. The LLM-judge job
+# (bolt xiyuyquje6) therefore ran a 7B model on CPU at 180 s/pair against a 6h
+# timeout: a GPU slot spent to produce no report.
+#
+# These are the versions bolt/setup-openvla.sh has been pinning all along, and
+# that 127 of the 133 job configs already run on, so this makes the light setup
+# path agree with the one that works rather than inventing a new combination.
+# The upper bound is the point: a floor-only spec silently re-resolves every time
+# a pod is built, which means the environment is not part of the release.
+torch==2.4.1
+transformers==4.40.1
+tokenizers==0.19.1
+accelerate>=0.29,<1.0
+numpy>=1.24,<2.0
 pyyaml>=6.0
 tqdm>=4.66
