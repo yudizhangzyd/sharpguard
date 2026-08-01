@@ -1,0 +1,37 @@
+name: 'CoT-Faith #16b: DeepThinkVLA base decode equivalence at a token budget that lets the CoT terminate'
+description: 'Closes the one undefined cell of #16 (bolt 8cvg2daria). That job returned EQUIVALENT on 12/12 comparable frames for deepthinkvla_libero_cot_sft and _rl -- our build_input_cot_ids reproduces the checkpoint own input_cot_ids byte-identically, action_start_idx agrees, and decode_action_chunk reproduces the (10,7) chunk with max abs diff 0.0 -- but deepthinkvla_base came back UNDEFINED with 0/12 comparable and 12/12 no_stop_tail: at MAX_NEW_TOKENS=320 that checkpoint never emitted upstream own stop tail, so the assembled sequence was never compared against one it produced. That measures nothing about our decode. This run is the same audit on that checkpoint alone at 768 tokens. It matters because every published DeepThinkVLA faithfulness number for the base row was decoded through the path under test, so the row is currently unaudited rather than audited-and-passing. Two outcomes are both useful: the CoT terminates and the verdict resolves, or it still does not, which is itself a reportable property of the base checkpoint and bounds the base row explicitly. Minutes of GPU, not hours.'
+tags: ['cotfaith', 'deepthink', 'decode-equivalence', 'audit', 'followup']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 3h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  # Only the checkpoint that came back undefined. The other two are settled and
+  # rerunning them would just re-download 2x14 GB to reprint a known verdict.
+  CKPTS: 'yinchenghust/deepthinkvla_base'
+  N_SAMPLES: '12'
+  # 320 -> 768. #16 recorded mean_cot_tokens 72.7 on the checkpoints that DO
+  # terminate, so base is not merely a little over the old budget; either it
+  # runs long or it does not terminate at all, and 768 separates those two.
+  MAX_NEW_TOKENS: '768'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_dt_decode_equivalence.sh
