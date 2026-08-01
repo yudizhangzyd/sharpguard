@@ -1,0 +1,24 @@
+name: 'CoT-Faith: fetch ACL/ARR style files and build a PDF off the authoring host'
+description: 'Unblocks the ARR 2026-08-03 submission. The authoring host reaches pypi and huggingface but 403s on github raw, ctan.org, overleaf and openreview, and tectonic 403s on its own bundle host, so that machine can neither obtain acl.sty nor produce a PDF by any route. This job clones acl-org/acl-style-files, records the upstream commit it pinned, and copies every .sty/.bst/.cls into artifacts/acl-style for committing into the repo so all later builds are offline-capable. It then installs a TeX engine if the image lacks one and compiles the manuscript as it currently stands (ICLR single-column, ~22.9k words) to get a baseline page count and the overfull-box log -- the two numbers the two-column conversion has to be steered by, since ARR allows 8 content pages with an unlimited appendix. The style files are the deliverable that must not fail: a missing TeX engine exits 0 with the styles kept, only a failed clone exits nonzero. No GPU work; 1gpu is just the shape that schedules promptly.'
+tags: ['cotfaith', 'paper', 'arr', 'preflight', 'no-gpu']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest prompt-scheduling shape
+  disk_gb: 32       # texlive-latex-extra alone is several GB if the image has no engine
+  timeout: 40m
+  cluster: aws_2
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  DEBIAN_FRONTEND: 'noninteractive'
+
+command: bash bolt/run_paper_build.sh
