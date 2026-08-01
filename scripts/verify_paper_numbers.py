@@ -2477,6 +2477,142 @@ def audit_tf_env_probe(a):
             r"\texttt{USE\_TF=0}" in tex, source="cot_faith_iclr.tex")
 
 
+def audit_judge_edit_families(a: Audit) -> None:
+    """The edit families' own semantic premises, against the LLM-judge run.
+
+    Section~\\ref{sec:judge_edits} reports one adverse result: the family named
+    `adversarial_plausible` is judged plausible on 0.125 of its pairs, against a
+    taxonomy entry that promised "visually plausible but wrong". That correction
+    is the kind that gets quietly reverted -- the old sentence is shorter, reads
+    better, and nothing in a LaTeX build objects to it. So this function checks
+    two different things:
+
+      * the numbers, from judge_report.json, including the FAILING verdict. It
+        asserts premise_holds is False, not True. An audit that only knows how
+        to confirm favourable premises would pass the day someone regenerates
+        the family and the failure silently goes away unremarked -- and would
+        also pass if the report were replaced by one measuring nothing.
+      * the manuscript text, for the refuted phrase as a bare assertion. This is
+        the only check in the script that guards a *wording*, and it is here
+        because the wording is the claim: "visually plausible but wrong" with no
+        qualifier is a statement the release refutes.
+
+    The judge's own validity gates are checked first and hard. Every rate below
+    is worthless if the judge answers "preserved" unconditionally, which is
+    exactly what the identity gate alone cannot detect -- so the pooled negative
+    control is required to be LOW, as an upper bound rather than a floor.
+    """
+    sec = "Edit-family premises (LLM-judge validation of the generators)"
+    rel = ROOT / "results_v2" / "canonical_runs" / "judge_edit_families"
+    src = "results_v2/canonical_runs/judge_edit_families/judge_report.json"
+    rep = load(rel / "judge_report.json")
+    if not rep:
+        a.check(sec, "judge_report.json is released", True, False, source=src)
+        return
+
+    a.check(sec, "the judged pairs are released alongside the report, so every "
+                 "rate below can be recomputed and a disputed verdict read",
+            True, (rel / "judge_pairs.json").exists(),
+            source="results_v2/canonical_runs/judge_edit_families/judge_pairs.json")
+    a.check(sec, "the run records its bolt task id", "jhcgnqbmf2",
+            (rel / "bolt_task_id.txt").read_text().strip()
+            if (rel / "bolt_task_id.txt").exists() else None,
+            source="results_v2/canonical_runs/judge_edit_families/bolt_task_id.txt")
+
+    # ---- the judge's own gates, before any of its rates are read ----
+    g = rep.get("gates") or {}
+    a.check(sec, "identity control: an X->X edit is called meaning-preserving "
+                 "on all 40 pairs", 1.0,
+            g.get("identity_control_preserved_rate"), tol=1e-9, source=src)
+    # An upper bound, not a target. The identity gate passes for a judge that
+    # always answers "preserved"; this is the one that rules it out.
+    a.check(sec, "negative control: pooled over the meaning-destroying "
+                 "families the judge preserves at most 0.30 (measured 0.175)",
+            True, (g.get("negative_control_pooled_preserved_rate") or 1.0) <= 0.30,
+            source=src)
+    a.check(sec, "order agreement is 0.824 as quoted, i.e. a 17.6% flip rate "
+                 "under swapping which trace is shown first", 0.824,
+            g.get("order_agreement"), tol=0.001, source=src)
+    a.check(sec, "the run is marked valid, which is the conjunction of the "
+                 "three gates", True, g.get("judge_valid"), source=src)
+    a.check(sec, "the flip rate the manuscript quotes is the ratio the report "
+                 "records", 77,
+            rep.get("order_disagreements"), source=src)
+
+    # ---- skip accounting: nothing silently dropped ----
+    tot, judged, skip = (rep.get("n_pairs_total"), rep.get("n_pairs_judged"),
+                         rep.get("n_skipped"))
+    a.check(sec, "480 pairs constructed, 437 judged, 43 skipped, as printed",
+            [480, 437, 43], [tot, judged, skip], source=src)
+    a.check(sec, "judged + skipped accounts for every constructed pair",
+            tot, (judged or 0) + (skip or 0), source=src)
+    a.check(sec, "every skip is itemized with a reason, and the itemization "
+                 "sums to the skip count",
+            skip, sum((rep.get("skipped_reasons") or {}).values()), source=src)
+
+    # ---- the four declared premises, including the one that fails ----
+    v = rep.get("verdicts") or {}
+    for fam, holds in (("paraphrase_null", True), ("bbox_jitter_null", True),
+                       ("syntactic_scramble", True),
+                       ("adversarial_plausible", False)):
+        a.check(sec, f"declared premise for {fam} comes back "
+                     f"{'HOLDS' if holds else 'FAILED'}",
+                holds, (v.get(fam) or {}).get("premise_holds"), source=src)
+
+    # The two rates F_diff depends on. If either of these ever drops, the
+    # paraphrase floor stops being a floor and the central negative result of
+    # sections f2_calib and paraphrase_null loses its premise.
+    a.check(sec, "paraphrase_null preserves meaning at 0.975 as quoted", 0.975,
+            (v.get("paraphrase_null") or {}).get("meaning_preserved_rate"),
+            tol=0.001, source=src)
+    a.check(sec, "bbox_jitter_null preserves meaning at 1.000 as quoted", 1.0,
+            (v.get("bbox_jitter_null") or {}).get("meaning_preserved_rate"),
+            tol=1e-9, source=src)
+
+    # ---- the adverse result, both halves ----
+    ap = v.get("adversarial_plausible") or {}
+    a.check(sec, "adversarial_plausible does change the referent (0.958) -- the "
+                 "half of its premise that holds", 0.958,
+            ap.get("referent_changed_rate"), tol=0.001, source=src)
+    a.check(sec, "adversarial_plausible is judged plausible on only 0.125 -- "
+                 "the half that fails, and the reason the taxonomy entry was "
+                 "corrected", 0.125,
+            ap.get("plausible_rate"), tol=0.001, source=src)
+
+    pf = rep.get("per_family") or {}
+    for fam, rate in (("syntactic_scramble", 1.0), ("verb_swap", 0.575),
+                      ("cross_task_swap", 0.025), ("gripper_flip", 0.05),
+                      ("negation", 0.1), ("direction_flip", 0.2)):
+        a.check(sec, f"{fam} meaning-preserved rate is {rate} as quoted", rate,
+                (pf.get(fam) or {}).get("meaning_preserved_rate"), tol=0.001,
+                source=src)
+
+    a.check(sec, "the report states plainly that it validates the generators "
+                 "and not the specific scored pairs", True,
+            str(rep.get("record_level_correspondence") or "").startswith("NO"),
+            source=src)
+
+    # ---- the manuscript wording the release refutes ----
+    if TEX.exists():
+        tex = TEX.read_text()
+        # The refuted claim, as it stood before this measurement. Matched
+        # without the qualifier that now follows it, so restoring the old
+        # sentence fails the audit while the corrected one passes.
+        a.check(sec, "the taxonomy no longer asserts adversarial_plausible is "
+                     "'visually plausible but wrong' without qualification",
+                False,
+                "second-most visible object (visually plausible but wrong)" in tex,
+                source="cot_faith_iclr.tex: section taxonomy")
+        a.check(sec, "and it states the measured plausibility rate instead",
+                True, ("only $0.125$ of its edits are judged plausible" in tex),
+                source="cot_faith_iclr.tex: section taxonomy")
+        a.check(sec, "the judge section exists and is the target of the "
+                     "taxonomy's cross-references", True,
+                "\\label{sec:judge_edits}" in tex
+                and tex.count("ref{sec:judge_edits}") >= 3,
+                source="cot_faith_iclr.tex")
+
+
 def audit_p3_frame_check(a):
     """A report whose frame check FAILED must not be citable as a P3 row.
 
@@ -3449,6 +3585,7 @@ def main() -> int:
     audit_tf_env_probe(a)
     audit_gripper_ab_null(a)
     audit_p3_frame_check(a)
+    audit_judge_edit_families(a)
     audit_gate_factorial(a)
     audit_derived_paths_are_portable(a)
 

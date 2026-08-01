@@ -1,0 +1,179 @@
+{
+  "judge_model": "Qwen/Qwen2.5-7B-Instruct",
+  "judge_models_tried": "Qwen/Qwen2.5-7B-Instruct,mistralai/Mistral-7B-Instruct-v0.2",
+  "n_samples": 40,
+  "families": [
+    "paraphrase_null",
+    "bbox_jitter_null",
+    "syntactic_scramble",
+    "direction_flip",
+    "negation",
+    "subject_swap",
+    "verb_swap",
+    "gripper_flip",
+    "location_swap",
+    "cross_task_swap",
+    "adversarial_plausible"
+  ],
+  "seed": 0,
+  "corpus": "Embodied-CoT/embodied_features_and_demos_libero/libero_reasonings.json",
+  "restricted_to_scored_demo_files": true,
+  "n_pairs_total": 480,
+  "n_pairs_judged": 437,
+  "n_skipped": 43,
+  "skipped_reasons": {
+    "adversarial_plausible::no plausible edit": 16,
+    "location_swap::identical render (inapplicable)": 1,
+    "location_swap::no plausible edit": 10,
+    "subject_swap::no plausible edit": 16
+  },
+  "order_pairs_compared": 437,
+  "order_disagreements": 77,
+  "gates": {
+    "identity_control_preserved_rate": 1.0,
+    "identity_gate_pass": true,
+    "negative_control_pooled_preserved_rate": 0.175,
+    "negative_gate_pass": true,
+    "order_agreement": 0.824,
+    "order_gate_pass": true,
+    "judge_valid": true
+  },
+  "per_family": {
+    "adversarial_plausible": {
+      "n_judged": 24,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.0,
+      "same_referent_rate": 0.042,
+      "same_direction_rate": 0.042,
+      "plausible_rate": 0.125,
+      "mean_fluency": 2.58
+    },
+    "bbox_jitter_null": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 1.0,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 1.0,
+      "plausible_rate": 1.0,
+      "mean_fluency": 5.0
+    },
+    "cross_task_swap": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.025,
+      "same_referent_rate": 0.1,
+      "same_direction_rate": 0.0,
+      "plausible_rate": 0.9,
+      "mean_fluency": 3.0
+    },
+    "direction_flip": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.2,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.0,
+      "plausible_rate": 1.0,
+      "mean_fluency": 3.12
+    },
+    "gripper_flip": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.05,
+      "same_referent_rate": 0.975,
+      "same_direction_rate": 0.4,
+      "plausible_rate": 1.0,
+      "mean_fluency": 3.42
+    },
+    "identity_control": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 1.0,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 1.0,
+      "plausible_rate": 1.0,
+      "mean_fluency": 5.0
+    },
+    "location_swap": {
+      "n_judged": 29,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.276,
+      "same_referent_rate": 0.793,
+      "same_direction_rate": 0.552,
+      "plausible_rate": 1.0,
+      "mean_fluency": 3.66
+    },
+    "negation": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.1,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.0,
+      "plausible_rate": 0.9,
+      "mean_fluency": 3.0
+    },
+    "paraphrase_null": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.975,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.975,
+      "plausible_rate": 1.0,
+      "mean_fluency": 4.92
+    },
+    "subject_swap": {
+      "n_judged": 24,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.0,
+      "same_referent_rate": 0.083,
+      "same_direction_rate": 0.083,
+      "plausible_rate": 0.292,
+      "mean_fluency": 2.58
+    },
+    "syntactic_scramble": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 1.0,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.925,
+      "plausible_rate": 1.0,
+      "mean_fluency": 4.0
+    },
+    "verb_swap": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.575,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.35,
+      "plausible_rate": 1.0,
+      "mean_fluency": 3.5
+    }
+  },
+  "verdicts": {
+    "paraphrase_null": {
+      "premise": "meaning preserved",
+      "meaning_preserved_rate": 0.975,
+      "mean_fluency": 4.92,
+      "premise_holds": true
+    },
+    "bbox_jitter_null": {
+      "premise": "meaning preserved",
+      "meaning_preserved_rate": 1.0,
+      "mean_fluency": 5.0,
+      "premise_holds": true
+    },
+    "syntactic_scramble": {
+      "premise": "meaning preserved",
+      "meaning_preserved_rate": 1.0,
+      "mean_fluency": 4.0,
+      "premise_holds": true
+    },
+    "adversarial_plausible": {
+      "premise": "referent changes AND result stays plausible",
+      "referent_changed_rate": 0.958,
+      "plausible_rate": 0.125,
+      "premise_holds": false
+    }
+  },
+  "record_level_correspondence": "NO. Validates the generators on the same reasoning corpus (restricted to the scored demo files when --file-base-from is given), not the exact scored pairs: the released records store actions only, and demo/step identity is not recoverable without re-iterating the 17GB tfds shards.",
+  "elapsed_s": 1502.9
+}

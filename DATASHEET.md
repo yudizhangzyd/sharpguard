@@ -328,6 +328,29 @@ earlier revision; the corrected implementation is in
 Raw model reports are preserved. `results_v2/superseded/` retains earlier runs
 that the paper no longer cites, with a README explaining what replaced each.
 
+**The edit generators' own semantic premises are measured, not asserted.** Each
+family is defined by a claim about what its edit does, and those claims are
+load-bearing: `F_diff = F(family) - F(paraphrase_null)` is a floor-corrected
+statistic only if the floor family really preserves meaning. A blind LLM judge
+(`Qwen2.5-7B-Instruct`, neither architecture under test) read 437 of 480 pairs
+with all 43 skips itemized, and was itself gated on an identity control (1.000),
+a pooled negative control (0.175, required to be *low*) and an order-agreement
+check (0.824). Result: **`paraphrase_null` preserves meaning at 0.975 and
+`bbox_jitter_null` at 1.000**, so the two premises `F_diff` and the numeric-floor
+argument depend on are validated. **One family's name overstates it:**
+`adversarial_plausible` changes the referent as designed (0.958) but is judged
+plausible on only **0.125** of pairs, against a description that promised
+"visually plausible but wrong" — so treat it as an unconstrained object
+substitution. Two by-products: `syntactic_scramble`, listed as a Tier-0
+structural edit, preserves meaning at 1.000 and is really a third
+meaning-preserving family; and `verb_swap` changes meaning on only 0.575, which
+is also the family with the largest same-config retraining movement in the
+benchmark (max |ΔF| = 0.260). This validates the *generators* over the same
+corpus and demo files, **not** the specific scored pairs — the released records
+store actions only. `results_v2/canonical_runs/judge_edit_families/` (bolt
+`jhcgnqbmf2`) carries the report, all 437 judged pairs with both traces verbatim,
+and a README.
+
 ---
 
 ## Uses

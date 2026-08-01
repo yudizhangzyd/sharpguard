@@ -1,0 +1,13 @@
+{
+  "out": "/mnt/task_wrapper/user_output/artifacts/cotfaith-judge-edits",
+  "judge_models": "Qwen/Qwen2.5-7B-Instruct,mistralai/Mistral-7B-Instruct-v0.2",
+  "reasoning_repo": "Embodied-CoT/embodied_features_and_demos_libero",
+  "reasoning_file": "libero_reasonings.json",
+  "file_base_from": "results_v2/canonical_runs/ecot_bridge_edit_seed1.json",
+  "n_samples": 40,
+  "families": "paraphrase_null,bbox_jitter_null,syntactic_scramble,direction_flip,negation,subject_swap,verb_swap,gripper_flip,location_swap,cross_task_swap,adversarial_plausible",
+  "seed": 0,
+  "dtype": "bfloat16",
+  "max_new_tokens": 160,
+  "time_budget_h": 5.0
+}
