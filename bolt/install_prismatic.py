@@ -54,6 +54,7 @@ import argparse
 import importlib
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -92,8 +93,82 @@ IMPORT_TO_PIP = {
 
 MAX_TRANSITIVE = 24
 
+# A pip constraints file, applied to EVERY install this module runs. Set by
+# `--write-constraints`, read from the environment so the runner's own shell pip
+# calls can pass the same file with `-c`.
+#
+# Round 5 (bolt `8ejjyfkzq8`) is why this exists. Two things moved that nobody
+# asked to move:
+#
+#   * torch went from 2.4.1+cu118 to 2.2.0+cu121 between stages 1 and 3 -- the
+#     runner's own pin-restore resolved torch from PyPI. Stages 3 and 4 were
+#     therefore not measuring the stack the paper names, and nothing said so.
+#   * protobuf oscillated 4.x <-> 5.x for four rounds, because `tensorflow`
+#     requires <5, recent `wandb` requires >=5, and `tensorflow_metadata`'s
+#     generated stubs import `google.protobuf.runtime_version`, which only
+#     exists in 5.x. Whichever generation won, one of the three broke: the job
+#     ended on protobuf 4.x and `cannot import name 'Imports' from
+#     wandb.proto.wandb_telemetry_pb2`.
+#
+# A constraints file is the right shape for both: it is a statement about the
+# whole environment rather than a flag on one install, so a resolution that would
+# violate it fails and gets recorded instead of silently winning.
+CONSTRAINTS_ENV = "SG_PIP_CONSTRAINTS"
+
+# The coherent protobuf-4 world, chosen rather than discovered: the image ships
+# tensorflow (needs <5) and the paper's rollout numbers depend on it, so the two
+# packages that can move are the ones that get pinned back.
+CONSTRAINT_LINES = [
+    "protobuf<5",
+    # Recent wandb ships stubs generated against protobuf 5. wandb is only here
+    # because prismatic's logging imports it, so it is the cheapest thing to
+    # move: <0.18 is the last line whose stubs work on protobuf 4.
+    "wandb<0.18",
+    # Same story one layer down: tensorflow_metadata >=1.15 calls
+    # google.protobuf.runtime_version, added in protobuf 5.
+    "tensorflow-metadata<1.15",
+]
+
+
+def constraints_path() -> str | None:
+    """The constraints file to apply, if one has been written."""
+    p = os.environ.get(CONSTRAINTS_ENV)
+    return p if p and os.path.exists(p) else None
+
+
+def write_constraints(path: str, freeze: tuple = ("torch",)) -> dict:
+    """Freeze part of the paper's stack into a pip constraints file.
+
+    `freeze` names the pins that must not move *at all*, and it defaults to torch
+    alone. torch is the one no stage varies and the one PyPI cannot put back: the
+    image ships `2.4.1+cu118`, a local build PyPI does not serve, so pinning that
+    exact string turns round 5's silent downgrade (2.4.1+cu118 -> 2.2.0+cu121, via
+    the runner's own pin-restore) into a resolution failure that gets recorded.
+
+    transformers/tokenizers/timm are deliberately NOT frozen by default: the 2x2
+    moves them on purpose, and a constraint on a variable of the experiment would
+    make the stage that varies it fail rather than measure. They are held by the
+    explicit `pip install` each stage runs, and any drift from that is caught by
+    `reassert_pins`.
+    """
+    lines = list(CONSTRAINT_LINES)
+    now = pins()
+    for name in freeze:
+        v = now.get(name, "")
+        if v and not str(v).startswith("<absent"):
+            lines.append(f"{name}=={v}")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    return {"path": path, "lines": lines, "frozen": list(freeze),
+            "pins_at_write": now}
+
 
 def pip(*args) -> tuple[bool, str]:
+    # Every install carries the constraints file when one exists. Applied here
+    # rather than at each call site so a new call site cannot forget it -- that
+    # is exactly how round 5's pin-restore moved torch.
+    if args and args[0] == "install" and constraints_path():
+        args = (args[0], "-c", constraints_path(), *args[1:])
     cp = subprocess.run([sys.executable, "-m", "pip", *args],
                         capture_output=True, text=True)
     return cp.returncode == 0, (cp.stdout + cp.stderr)[-2000:]
@@ -237,9 +312,23 @@ def pip_check_repair(max_rounds: int = 4) -> dict:
     loaded object. Round 4's in-process repair ran, succeeded, and changed
     nothing for exactly that reason.
 
-    Bounded and monotone: a round that does not shrink the finding set stops the
-    loop, so an unrepairable conflict is reported as one instead of consuming the
-    budget. Repairs that would touch the paper's pins are refused, not applied.
+    Bounded, and bounded against the right thing. The first version stopped when
+    a round produced the SAME finding set twice in a row, which round 5 (bolt
+    `8ejjyfkzq8`) showed is not enough: `tensorflow` requires protobuf <5, recent
+    `wandb` requires >=5, so each round "fixed" the other one's complaint and the
+    set ALTERNATED rather than repeated. Four rounds burned, ended unclean, and
+    the last install decided which package was broken -- protobuf 4.x won and
+    stage 3 died on `cannot import name 'Imports' from
+    wandb.proto.wandb_telemetry_pb2`. So two guards now:
+
+      * every finding set seen so far is remembered, and a repeat of ANY of them
+        is an oscillation, not progress;
+      * a dist that two holders want at incompatible versions in the SAME round
+        is `unsatisfiable` and is not touched at all. Installing either side is
+        picking a loser silently, and which side loses should be a decision in
+        the constraints file, not a side effect of iteration order.
+
+    Repairs that would touch the paper's pins are refused, not applied.
 
     `max_rounds=0` is report-only, and stage 1 uses it. That stage exists to
     measure the environment the paper names, so it must record whether the image
@@ -247,35 +336,56 @@ def pip_check_repair(max_rounds: int = 4) -> dict:
     and "it was already broken" become indistinguishable, and the baseline stops
     being the thing that keeps limitation (ix) falsifiable.
     """
-    rec: dict = {"rounds": [], "refused": [], "clean": None}
-    prev: set[tuple] = set()
+    rec: dict = {"rounds": [], "refused": [], "unsatisfiable": [],
+                 "oscillated": False, "clean": None}
+    seen_sets: list[frozenset] = []
+    protected = {_norm_dist(p) for p in PROTECTED}
     for _ in range(max_rounds):
         _ok, text = pip("check")
         found = parse_pip_check(text)
         if not found:
             rec["clean"] = True
             break
-        key = {(f["kind"], f["holder"], f["requirement"]) for f in found}
-        if key == prev:                 # no progress: repairing again cannot help
+        key = frozenset((f["kind"], f["holder"], f["requirement"]) for f in found)
+        if key in seen_sets:            # repeating, in any order: not progress
+            rec["oscillated"] = True
             break
-        prev = key
+        seen_sets.append(key)
+
+        # Group by target dist first: the conflicts worth refusing are the ones
+        # where two holders disagree, and that is invisible finding-by-finding.
+        by_dist: dict[str, list] = {}
+        for f in found:
+            by_dist.setdefault(_norm_dist(f["name"]), []).append(f)
+        contested = {d for d, fs in by_dist.items()
+                     if len({f["requirement"] for f in fs}) > 1}
+        for d in sorted(contested):
+            rec["unsatisfiable"].append(
+                {"dist": d, "wanted_by": [{"holder": f["holder"],
+                                           "requirement": f["requirement"]}
+                                          for f in by_dist[d]]})
+
         rnd: dict = {"findings": found, "repairs": []}
         for f in found:
-            if _norm_dist(f["name"]) in {_norm_dist(p) for p in PROTECTED}:
+            dist = _norm_dist(f["name"])
+            if dist in protected:
                 rec["refused"].append(f)
                 continue
+            if dist in contested:
+                continue                # reported above; picking a side is not ours
             spec = f["requirement"] if f["kind"] == "conflict" else f["name"]
             got, tail = pip("install", "--quiet", spec)
             rnd["repairs"].append({"spec": spec, "ok": got,
                                    "pip_tail": None if got else tail[-300:]})
         rec["rounds"].append(rnd)
-        if not rnd["repairs"]:          # everything left is refused
+        if not rnd["repairs"]:          # everything left is refused or contested
             break
     if rec["clean"] is None:
         _ok, text = pip("check")
         remaining = parse_pip_check(text)
         rec["clean"] = not remaining
         rec["remaining"] = remaining
+    rec["constraints"] = constraints_path()
     return rec
 
 
@@ -440,6 +550,15 @@ def _print_consistency(label: str, c: dict) -> None:
         # finding about what supporting OFT costs.
         print(f"[{label}]   REFUSED (paper pin): {f['holder']} wants "
               f"{f['requirement']}")
+    for u in c.get("unsatisfiable", []) or []:
+        # No install can satisfy this, so the fix is a decision (a constraints
+        # line), not another round. Round 5 spent four rounds not knowing that.
+        want = ", ".join(f"{w['holder']} wants {w['requirement']}"
+                         for w in u["wanted_by"])
+        print(f"[{label}]   UNSATISFIABLE {u['dist']}: {want}")
+    if c.get("oscillated"):
+        print(f"[{label}]   OSCILLATED: a finding set repeated, so the repairs "
+              f"were undoing each other. Pin the loser in CONSTRAINT_LINES.")
     for f in c.get("remaining", []) or []:
         print(f"[{label}]   UNRESOLVED: {f['holder']} wants {f['requirement']}")
 
@@ -460,7 +579,28 @@ def main() -> int:
                          "install set without repairing it. Used for stage 1, "
                          "which must measure the image the paper names rather "
                          "than an image we tidied first.")
+    ap.add_argument("--write-constraints", metavar="PATH",
+                    help="freeze the currently installed torch (see --freeze-pins) "
+                         "plus the protobuf-4 pins round 5 showed are needed into "
+                         "a pip constraints file at PATH; then exit. Export "
+                         "SG_PIP_CONSTRAINTS=PATH (and pass -c PATH to any shell "
+                         "pip) so every later install fails loudly instead of "
+                         "moving a pin silently.")
+    ap.add_argument("--freeze-pins", default="torch",
+                    help="comma-separated pins to freeze exactly in the "
+                         "constraints file (default: torch, the one no stage "
+                         "varies and the one PyPI cannot restore).")
     args = ap.parse_args()
+
+    if args.write_constraints:
+        freeze = tuple(p for p in args.freeze_pins.split(",") if p.strip())
+        rec = write_constraints(args.write_constraints, freeze=freeze)
+        with open(args.out, "w") as f:
+            json.dump({"mode": "write_constraints", **rec}, f, indent=2)
+        print(f"[constraints] {rec['path']}")
+        for line in rec["lines"]:
+            print(f"[constraints]   {line}")
+        return 0
 
     if args.pip_check_only:
         c = pip_check_repair(max_rounds=0 if args.report_only else 4)

@@ -32,6 +32,28 @@
 # from the probe on purpose -- a compiled extension can only be replaced before
 # the process that imports it starts, which is why round 4's in-process repair
 # installed the right version and changed nothing.
+#
+# Round 6 fixes what round 5 (bolt 8ejjyfkzq8) measured. Round 5's own installs
+# were clean, all four stages reported, and three of the four results were still
+# not about OFT:
+#
+#   * a constraints file now holds torch and the protobuf-4 world across every
+#     pip call, shell ones included. Round 5's stage-3 pin restore silently moved
+#     torch 2.4.1+cu118 -> 2.2.0+cu121, so stages 3 and 4 measured a stack the
+#     paper does not name;
+#   * stage 4 no longer forces `timm>=1.0.11`. The checkpoint's remote code
+#     raises `NotImplementedError: TIMM Version must be >= 0.9.10 and < 1.0.0`,
+#     so round 5's last cell was unloadable by construction and its failure
+#     measured our install, not transformers;
+#   * `pip_check_repair` stops on an oscillation and refuses to pick a side
+#     between two holders that can never both be satisfied. Round 5 ping-ponged
+#     protobuf 4<->5 for four rounds and left stage 3 with a wandb that could not
+#     import.
+#
+# Stage 3 is the cell that matters: round 5 proved OFT wants exactly the paper's
+# own pins (transformers 4.40.1 / tokenizers 0.19.1 / timm 0.9.10 -- 20 REFUSED
+# lines say so), and its only remaining blocker was the wandb/protobuf mismatch
+# the constraints file now prevents.
 set -x
 cd "$(dirname "$0")/.."
 if [ -f /tmp/sharpguard.env ]; then set -a; . /tmp/sharpguard.env; set +a; fi
@@ -53,6 +75,45 @@ pin_doctor () {
         --out "$OUT_DIR/pin_doctor_$1.json" || echo "[oft] pin doctor $1 crashed"
 }
 
+# ---- round 6: make a pin move a failure instead of a surprise ----------------
+# Round 5 (bolt `8ejjyfkzq8`) ran all four stages and reported cleanly, and two
+# things had still gone wrong underneath it:
+#
+#   * torch went 2.4.1+cu118 -> 2.2.0+cu121 between stages 1 and 3, because the
+#     stage-3 pin restore below resolved torch from PyPI. Stages 3 and 4 were
+#     measuring a different stack than the paper names and said nothing.
+#   * protobuf oscillated 4.x <-> 5.x for four repair rounds (tensorflow wants
+#     <5, recent wandb wants >=5, tensorflow_metadata's stubs need 5) and stage 3
+#     died on `cannot import name 'Imports' from wandb.proto.wandb_telemetry_pb2`.
+#
+# One constraints file fixes both, and it is passed to EVERY pip call from here
+# on -- including these shell ones, which is how torch escaped last time. A
+# constraint is a statement about the whole environment, so a resolution that
+# would break it fails and is recorded rather than silently winning.
+CONSTRAINTS="$OUT_DIR/constraints.txt"
+python bolt/install_prismatic.py --write-constraints "$CONSTRAINTS" \
+    --freeze-pins torch --out "$OUT_DIR/constraints.json" \
+    || echo "[oft] constraints write failed"
+export SG_PIP_CONSTRAINTS="$CONSTRAINTS"
+cat "$CONSTRAINTS" || true
+
+# torch is the one pin no stage varies, so any movement invalidates the
+# comparison the 2x2 exists to make. Checked between stages rather than at the
+# end: knowing WHICH install moved it is the whole point.
+TORCH_REF="$(python -c 'import torch; print(torch.__version__)' 2>/dev/null || echo unknown)"
+echo "[oft] torch reference for this job: $TORCH_REF"
+torch_watch () {
+    now="$(python -c 'import torch; print(torch.__version__)' 2>/dev/null || echo unknown)"
+    if [ "$now" != "$TORCH_REF" ]; then
+        echo "[oft] FATAL-ISH torch moved before stage $1: $TORCH_REF -> $now."
+        echo "[oft]   Everything from here on describes a stack the paper does"
+        echo "[oft]   not name. The constraints file was supposed to prevent"
+        echo "[oft]   this; treat any load result below as uncomparable."
+    else
+        echo "[oft] torch still $now before stage $1"
+    fi
+}
+
 # ---- stage 1: the environment the paper names -------------------------------
 python -c "import torch, transformers, sys;
 print('[oft] baseline python', sys.version.split()[0],
@@ -72,14 +133,20 @@ python experiments/probe_openvla_oft_load.py \
 # without --no-deps on purpose: the point is to try the combination upstream
 # actually supports, not a hand-pinned one we invented. timm and tokenizers move
 # with it because OpenVLA's remote code imports both.
-pip install --quiet --upgrade \
-    "transformers==4.53.2" "tokenizers>=0.21,<0.22" "timm>=1.0.11" \
+#
+# `-c "$CONSTRAINTS"` holds torch and the protobuf-4 world while transformers
+# moves. Without it this install is free to drag torch along, which is what
+# happened in round 5 -- and a transformers-vs-OFT result read off a stack whose
+# torch also changed answers a question nobody asked.
+pip install --quiet -c "$CONSTRAINTS" --upgrade \
+    "transformers==4.53.2" "tokenizers>=0.21,<0.22" "timm>=0.9.10,<1.0.0" \
     "accelerate>=0.34" "peft>=0.13" || echo "[oft] upgrade pip install failed"
 
 python -c "import torch, transformers, sys;
 print('[oft] upgraded python', sys.version.split()[0],
       'torch', torch.__version__, 'transformers', transformers.__version__)" || true
 
+torch_watch upgraded
 pin_doctor upgraded
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
@@ -99,7 +166,11 @@ python experiments/probe_openvla_oft_load.py \
 # re-measured. Back to the paper's pins first: stage 2 moved transformers, and a
 # load result is only about the environment the paper names if that environment
 # is the one in place.
-pip install --quiet \
+#
+# Round 5 ran this WITHOUT the constraints file and it is the line that moved
+# torch to 2.2.0+cu121: resolving `transformers==4.40.1`'s dependency set was
+# allowed to pick a torch, and it did.
+pip install --quiet -c "$CONSTRAINTS" \
     "transformers==4.40.1" "tokenizers==0.19.1" "timm==0.9.10" \
     "peft==0.11.1" "accelerate==0.30.1" || echo "[oft] pin restore failed"
 
@@ -110,6 +181,7 @@ python -c "import torch, transformers, sys;
 print('[oft] prismatic_baseline python', sys.version.split()[0],
       'torch', torch.__version__, 'transformers', transformers.__version__)" || true
 
+torch_watch prismatic_baseline
 pin_doctor prismatic_baseline
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
@@ -122,10 +194,24 @@ python experiments/probe_openvla_oft_load.py \
 # The last cell of the 2x2. If stage 3 still fails, this separates "OFT needs a
 # newer transformers than our pin" from "OFT does not load here at all", and
 # only the second supports the limitation as written.
-pip install --quiet --upgrade \
-    "transformers==4.53.2" "tokenizers>=0.21,<0.22" "timm>=1.0.11" \
+#
+# timm is held below 1.0 here, and that is a correction, not a compromise. Round
+# 5 installed `timm>=1.0.11` in this cell and got timm 1.0.28, whereupon the
+# checkpoint's own remote code refused before loading anything:
+#
+#   NotImplementedError: TIMM Version must be >= 0.9.10 and < 1.0.0
+#     (modeling_prismatic.py:32)
+#
+# So the round-5 stage 4 could not have loaded for any transformers, and its
+# failure said nothing about transformers -- it measured our own out-of-range
+# install. `>=0.9.10,<1.0.0` is the window the checkpoint itself declares, which
+# leaves transformers as the only thing this cell varies. That is what makes the
+# cell a control instead of a second, differently-broken environment.
+pip install --quiet -c "$CONSTRAINTS" --upgrade \
+    "transformers==4.53.2" "tokenizers>=0.21,<0.22" "timm>=0.9.10,<1.0.0" \
     "accelerate>=0.34" "peft>=0.13" || echo "[oft] second upgrade failed"
 
+torch_watch prismatic_upgraded
 pin_doctor prismatic_upgraded
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
@@ -164,8 +250,29 @@ for p in sorted(d.glob("pin_doctor_*.json")):
     for f in c.get("refused", []):
         print(f"    REFUSED (would move a paper pin): {f['holder']} "
               f"{f['holder_version']} wants {f['requirement']}")
+    # Round 6. An unsatisfiable dist is a decision to make, not a round to run
+    # again: round 5 spent its whole repair budget alternating between two
+    # holders that can never both be satisfied.
+    for u in c.get("unsatisfiable", []) or []:
+        want = ", ".join(f"{w['holder']} wants {w['requirement']}"
+                         for w in u["wanted_by"])
+        print(f"    UNSATISFIABLE {u['dist']}: {want}")
+    if c.get("oscillated"):
+        print("    OSCILLATED: repairs were undoing each other; add the losing "
+              "side to CONSTRAINT_LINES in bolt/install_prismatic.py")
     for f in c.get("remaining", []) or []:
         print(f"    UNRESOLVED: {f['holder']} wants {f['requirement']}")
+# Did torch hold across all four stages? Round 5's reports each looked fine on
+# their own and only disagreed with each other, which no single report can show.
+torches = {}
+for p in found:
+    torches[p.stem] = (json.loads(p.read_text()).get("environment") or {}).get("torch")
+if len(set(torches.values())) > 1:
+    print(f"[FATAL-ISH] torch is not the same in every stage: {torches}. The 2x2 "
+          f"compares cells that do not share a torch, so no cell's failure can be "
+          f"attributed to the variable that cell was meant to vary.")
+else:
+    print(f"[oft] torch held across all stages: {sorted(set(torches.values()))}")
 loaded_anywhere = False
 for p in found:
     r = json.loads(p.read_text())

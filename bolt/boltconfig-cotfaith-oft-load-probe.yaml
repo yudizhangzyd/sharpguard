@@ -1,11 +1,11 @@
-name: 'CoT-Faith #15e: OpenVLA-OFT load, round 5 (fix the install policy, not the symptom)'
-description: 'Round 4 (bolt s6arkzytjr) failed twice and both failures were ours, not OFT''s. (1) Its skew repair installed pydantic-core==2.46.4 successfully and the identical SystemError returned: pydantic_core is a compiled extension already imported, so no reinstall and no invalidate_caches() can swap the loaded object. (2) The stage that got past pydantic died on AttributeError: partially initialized module ''wandb'' has no attribute ''errors'' -- what wandb does when its requirements are absent. Both are --no-deps-everything producing partial installs, and both read in a log exactly like an OFT incompatibility. Round 5 fixes the policy: deps installed WITH their own deps, the four pins the paper names re-asserted afterwards with any movement reported; a pip-check repair before each stage in its OWN process, the only point at which a compiled-module conflict is fixable; a surviving skew triggers a bounded re-exec, not an in-process retry.'
+name: 'CoT-Faith #15e: OpenVLA-OFT load, round 6 (hold the stack the paper names)'
+description: 'Round 5 (bolt 8ejjyfkzq8) fixed both round-4 failures -- wandb installs cleanly, no pydantic skew, 0 re-execs -- and exposed that three of its four cells still measured our environment, not OFT. (1) torch silently moved 2.4.1+cu118 to 2.2.0+cu121 when stage 3 restored the paper''s transformers pin with deps, so stages 3-4 were not the named stack; a pip constraints file now holds torch and the protobuf-4 world across every pip call, shell ones included. (2) Stage 4 forced timm>=1.0.11 and the checkpoint''s remote code refuses it (TIMM Version must be >= 0.9.10 and < 1.0.0), so that cell could not load for any transformers; timm now stays in the declared window. (3) The repair loop ping-ponged protobuf 4/5 for four rounds -- tensorflow wants <5, recent wandb >=5 -- ending with a wandb that cannot import; it now detects the alternation and refuses to pick a side. Stage 3 is the cell that matters: round 5''s 20 REFUSED lines show OFT wants exactly the paper''s pins.'
 tags:
 - cotfaith
 - openvla-oft
 - limitation-ix
 - load-probe
-- round5
+- round6
 project_id: ads_algo_signal_qucacheoffline
 permissions:
   owners: yudi_zhang2

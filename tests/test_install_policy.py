@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -337,6 +338,196 @@ def test_pip_check_repair(m) -> None:
           rec3["rounds"] == [] or not rec3["rounds"][0]["repairs"], str(rec3))
 
 
+def test_oscillation_and_unsatisfiable(m) -> None:
+    """Round 6: the two ways round 5's repair loop misread its own output.
+
+    Round 5 (bolt `8ejjyfkzq8`) hit both at once. `tensorflow` requires
+    protobuf<5 and recent `wandb` requires >=5, so every round satisfied one and
+    broke the other; the finding set alternated instead of repeating, the
+    same-as-last-round guard never fired, four rounds were spent, and whichever
+    install happened last decided which package was broken. Stage 3 then died on
+    `cannot import name 'Imports' from wandb.proto.wandb_telemetry_pb2` -- a
+    failure with our name on it, inside the stage that was supposed to answer
+    whether OFT loads.
+    """
+    # Two holders, one dist, incompatible specifiers: no install satisfies both.
+    contested = ("tensorflow 2.15.0 has requirement protobuf<5, but you have "
+                 "protobuf 5.29.0.\n"
+                 "wandb 0.19.1 has requirement protobuf>=5, but you have "
+                 "protobuf 5.29.0.\n")
+    issued = []
+
+    def fake_pip(*args):
+        if args[0] == "check":
+            return False, contested
+        issued.append(args)
+        return True, ""
+
+    orig = m.pip
+    m.pip = fake_pip
+    try:
+        rec = m.pip_check_repair()
+    finally:
+        m.pip = orig
+
+    check("unsatisfiable: the contested dist is reported",
+          [u["dist"] for u in rec["unsatisfiable"]] == ["protobuf"], str(rec))
+    check("unsatisfiable: BOTH holders are named",
+          sorted(w["holder"] for w in rec["unsatisfiable"][0]["wanted_by"])
+          == ["tensorflow", "wandb"], str(rec["unsatisfiable"]))
+    check("unsatisfiable: nothing is installed for a contested dist",
+          not issued,
+          # Installing either side is choosing a loser by iteration order, and
+          # round 5's loser was the one whose failure got read as OFT's.
+          str(issued))
+    check("unsatisfiable: the set is reported unclean, not clean",
+          rec["clean"] is False, str(rec))
+
+    # Now the alternation itself: two finding sets that swap every round. The
+    # old guard compared against the previous round only and never matched.
+    seq = [
+        "tensorflow 2.15.0 has requirement protobuf<5, but you have protobuf 5.29.0.\n",
+        "wandb 0.19.1 has requirement protobuf>=5, but you have protobuf 4.25.3.\n",
+    ]
+    state = {"i": 0}
+
+    def flip_pip(*args):
+        if args[0] == "check":
+            text = seq[state["i"] % 2]
+            state["i"] += 1
+            return False, text
+        return True, ""
+
+    m.pip = flip_pip
+    try:
+        rec2 = m.pip_check_repair(max_rounds=8)
+    finally:
+        m.pip = orig
+
+    check("oscillation: an alternating finding set is detected",
+          rec2["oscillated"] is True, str(rec2))
+    check("oscillation: it stops on the repeat, not at the round budget",
+          len(rec2["rounds"]) == 2, str(len(rec2["rounds"])))
+    check("oscillation: the outcome is reported unclean",
+          rec2["clean"] is False, str(rec2))
+
+    # A single non-clearing finding is NOT an oscillation -- it is one set seen
+    # twice. Both must terminate, but they are different diagnoses and the fix
+    # differs (pin the loser vs. the requirement is simply unmeetable).
+    stuck = "foo 1.0 has requirement bar==9.9.9, but you have bar 1.0.\n"
+    m.pip = lambda *a: (False, stuck) if a[0] == "check" else (True, "")
+    try:
+        rec3 = m.pip_check_repair()
+    finally:
+        m.pip = orig
+    check("oscillation: a single non-clearing finding is flagged as such",
+          rec3["oscillated"] is True and rec3["unsatisfiable"] == [], str(rec3))
+
+
+def test_write_constraints(m, tmp) -> None:
+    """The constraints file: torch exactly, protobuf world pinned, others free."""
+    orig_pins = m.pins
+    m.pins = lambda: {"torch": "2.4.1+cu118", "transformers": "4.40.1",
+                      "tokenizers": "0.19.1", "timm": "0.9.10"}
+    try:
+        rec = m.write_constraints(str(tmp / "c.txt"))
+        body = (tmp / "c.txt").read_text()
+    finally:
+        m.pins = orig_pins
+
+    check("constraints: torch is pinned to the LOCAL build",
+          "torch==2.4.1+cu118" in body,
+          # PyPI does not serve +cu118, so this makes a downgrade a resolution
+          # failure instead of round 5's silent 2.4.1+cu118 -> 2.2.0+cu121.
+          body)
+    check("constraints: the protobuf-4 world is pinned",
+          "protobuf<5" in body and "wandb<0.18" in body
+          and "tensorflow-metadata<1.15" in body, body)
+    for free in ("transformers==", "tokenizers==", "timm=="):
+        check(f"constraints: {free[:-2]} is NOT frozen by default",
+              free not in body,
+              # The 2x2 varies these on purpose; constraining a variable of the
+              # experiment turns the cell that varies it into a pip failure.
+              body)
+    check("constraints: what was frozen is recorded",
+          rec["frozen"] == ["torch"], str(rec))
+
+    # An absent pin must not become the literal string `torch==<absent: ...>`.
+    m.pins = lambda: {"torch": "<absent: ModuleNotFoundError>"}
+    try:
+        m.write_constraints(str(tmp / "d.txt"))
+        body2 = (tmp / "d.txt").read_text()
+    finally:
+        m.pins = orig_pins
+    check("constraints: an absent pin is skipped, not written as a bad spec",
+          "absent" not in body2 and "torch" not in body2, body2)
+
+    # And the whole point: an install must carry the file without the call site
+    # asking. Round 5's pin restore is the call site that forgot.
+    seen = []
+    orig_pip_run = m.subprocess.run
+
+    class _CP:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(cmd, **kw):
+        seen.append(cmd)
+        return _CP()
+
+    import os as _os
+    prev = _os.environ.get(m.CONSTRAINTS_ENV)
+    _os.environ[m.CONSTRAINTS_ENV] = str(tmp / "c.txt")
+    m.subprocess.run = fake_run
+    try:
+        m.pip("install", "--quiet", "wandb")
+        m.pip("check")
+    finally:
+        m.subprocess.run = orig_pip_run
+        if prev is None:
+            _os.environ.pop(m.CONSTRAINTS_ENV, None)
+        else:
+            _os.environ[m.CONSTRAINTS_ENV] = prev
+
+    check("constraints: every install carries -c automatically",
+          "-c" in seen[0] and str(tmp / "c.txt") in seen[0], str(seen[0]))
+    check("constraints: -c goes right after `install`, before the packages",
+          seen[0][seen[0].index("install") + 1] == "-c", str(seen[0]))
+    check("constraints: a non-install pip call is left alone",
+          "-c" not in seen[1], str(seen[1]))
+
+
+def test_runner_round6_policy() -> None:
+    """The runner's own pip calls, which are the ones that escaped in round 5."""
+    src = (ROOT / "bolt" / "run_oft_load_probe.sh").read_text()
+    check("runner: a constraints file is written before any stage",
+          "--write-constraints" in src and "SG_PIP_CONSTRAINTS" in src)
+    check("runner: it is exported so install_prismatic picks it up",
+          'export SG_PIP_CONSTRAINTS="$CONSTRAINTS"' in src)
+    n_pip = src.count("pip install --quiet")
+    n_constrained = src.count('pip install --quiet -c "$CONSTRAINTS"')
+    check("runner: EVERY shell pip install is constrained",
+          n_pip == n_constrained,
+          # The stage-3 pin restore is the one that moved torch to 2.2.0+cu121.
+          f"{n_constrained}/{n_pip} constrained")
+    check("runner: stage 4 no longer forces a timm the checkpoint rejects",
+          '"timm>=1.0.11"' not in src,
+          # Quoted, so the header comment explaining WHY it was removed does not
+          # itself satisfy the check.
+          "modeling_prismatic.py raises NotImplementedError for timm >= 1.0.0")
+    check("runner: timm stays inside the window the checkpoint declares",
+          src.count('"timm>=0.9.10,<1.0.0"') == 2,
+          "both upgrade stages must stay loadable to be about transformers")
+    check("runner: torch movement is checked between stages",
+          "torch_watch " in src and src.count("torch_watch ") >= 3)
+    check("runner: the reader compares torch ACROSS stage reports",
+          "torch is not the same in every stage" in src,
+          "each round-5 report looked fine alone; they disagreed with each other")
+    check("runner: the reader surfaces unsatisfiable and oscillated",
+          "UNSATISFIABLE" in src and "OSCILLATED" in src)
+
+
 def test_report_only(m) -> None:
     """`max_rounds=0` observes without touching: stage 1 depends on it."""
     issued = []
@@ -405,8 +596,12 @@ def main() -> int:
     test_reassert_pins(m)
     test_install_policy(m)
     test_pip_check_repair(m)
+    test_oscillation_and_unsatisfiable(m)
+    with tempfile.TemporaryDirectory() as td:
+        test_write_constraints(m, Path(td))
     test_report_only(m)
     test_runner_stage_policy()
+    test_runner_round6_policy()
     test_probe_reexec_constants()
 
     bad = [c for c in CHECKS if not c[1]]
