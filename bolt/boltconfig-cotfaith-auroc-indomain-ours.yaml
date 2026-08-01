@@ -1,0 +1,47 @@
+name: 'CoT-Faith #13: P3 in-domain on our own LIBERO CoT-VLA (second model, annotated CoT)'
+description: 'P3 (does CoT attention predict action error?) currently rests on ONE model and concedes two limits it cannot shed from that run: n=1 supports no cross-model claim, and Bridge has no ground-truth reasoning, so the trace was self-generated -- the negative result cannot separate "attention does not predict error" from "attention over a self-generated trace does not predict error". This run removes both: a second model (our r=32 LIBERO fine-tune, bolt bcihypv3gu, the weights behind the published ours-r=32 row), scored on LIBERO, whose ECoT annotations are ground truth and are the traces it trained on. In-domain without borrowing percentiles: _quantize_action clips raw LIBERO actions to [-1,1] and quantizes directly, so token grid and LIBERO units are one frame and the map is the identity. Measured, not asserted -- the run aborts if a norm_stats key claims LIBERO, if >5 pct of GT actions leave [-1,1], or if the policy loses to predicting the dataset mean, the signature that withdrew P3.'
+tags: ['cotfaith', 'p3-auroc', 'in-domain', 'second-model', 'annotated-cot']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by `bolt task get-credentials $CKPT_TASK_ID`. The pod
+  # has no IAM role for this bucket; without these the sync dies at
+  # NoCredentialProviders.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  # The published ours-r=32 row's training task -- the same weights the
+  # first-step leaderboard number and the rollout job (#10) use, so P3's second
+  # data point describes a model the paper already characterises rather than an
+  # otherwise-unreported one.
+  CKPT_TASK_ID: 'bcihypv3gu'
+
+  # 200 keeps both AUROC classes populated well past the n>=20 floor the script
+  # enforces, at ~1 forward + 1 teacher-forced pass per sample.
+  N_SAMPLES: '200'
+  SEED: '0'
+  RVIS_LAYERS: '0,1,2,3'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_auroc_s3ckpt.sh

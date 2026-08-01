@@ -123,6 +123,47 @@ def load_libero_samples(dataset_repo, tfds_subdir, reasoning_json, n_samples, se
         n += 1
 
 
+def identity_norm_stats(model, corpus):
+    """The other in-domain case, and it needs no statistics at all.
+
+    Our LIBERO fine-tunes were trained by quantizing the RAW LIBERO action
+    clipped to [-1,1] with no dataset normalization at all
+    (`cotfaith_train.py:_quantize_action`), so the token grid and the corpus's
+    own action units are the SAME frame and the correct map between them is the
+    identity.
+
+    Returning mask=all-False makes `unnormalize_action` and `normalize_action`
+    pass values through unchanged (the latter still clipping to the grid), so the
+    identity is expressed in the same code path as the affine rather than as a
+    special case around it.
+
+    The guard is NOT "the checkpoint carries no norm_stats". Our merged models
+    inherit `bridge_orig` from the ECoT-bridge base they were LoRA'd from, even
+    though training never consulted it -- so an existence test would refuse a
+    legitimate run and, worse, teach the next reader that inherited keys mean the
+    affine applies. What actually disqualifies the identity is the checkpoint
+    carrying statistics that claim to describe the corpus being scored: then
+    there are two competing maps and picking the identity is an unchecked
+    assertion. Inherited keys for OTHER corpora are recorded in the report as
+    unused rather than silently dropped.
+    """
+    stats = getattr(model, "norm_stats", None) or {}
+    claims = sorted(k for k in stats if corpus.split("_")[0] in str(k).lower())
+    if claims:
+        raise RuntimeError(
+            f"--action-scale identity refused: this checkpoint ships action "
+            f"statistics that claim to describe corpus={corpus!r} ({claims}), "
+            f"so the identity is a competing map rather than the native one. Use "
+            f"--unnorm-key {claims[0]!r}.")
+    if corpus != "libero":
+        raise RuntimeError(
+            f"--action-scale identity is only established for corpus=libero "
+            f"(that is the corpus our fine-tunes clipped to [-1,1] and "
+            f"quantized directly); got corpus={corpus!r}.")
+    z = np.zeros(7, dtype=np.float64)
+    return z, z, np.zeros(7, dtype=bool), sorted(stats)
+
+
 def compute_auroc(scores, labels):
     """Non-parametric AUROC via rank-based Mann-Whitney U statistic."""
     pos = [s for s, l in zip(scores, labels) if l == 1]
@@ -231,12 +272,29 @@ def run(args):
     analyzer = CotAttentionAnalyzer(hook, processor.tokenizer, n_visual=256)
 
     # ---- protocol preflight, before a single sample is scored ----
-    q01, q99, mask = action_norm_stats(model, args.unnorm_key)
-    print(f"[auroc] corpus={args.corpus}  unnorm_key={args.unnorm_key}")
+    inherited_keys = []
+    if args.action_scale == "identity":
+        q01, q99, mask, inherited_keys = identity_norm_stats(model, args.corpus)
+        if inherited_keys:
+            # Recorded, not hidden: the merged checkpoint carries the ECoT base's
+            # keys because LoRA merging preserves the config, and the reader is
+            # entitled to see that the identity was chosen over a key that was
+            # physically present.
+            print(f"[auroc] checkpoint carries UNUSED norm_stats for "
+                  f"{inherited_keys} (inherited from the base it was LoRA'd "
+                  f"from; none describes corpus={args.corpus}). Identity map is "
+                  f"justified below by a measured frame match, not by absence.")
+    else:
+        q01, q99, mask = action_norm_stats(model, args.unnorm_key)
+    print(f"[auroc] corpus={args.corpus}  unnorm_key={args.unnorm_key}  "
+          f"action_scale={args.action_scale}")
     print(f"[auroc]   q01  = {np.round(q01, 4).tolist()}")
     print(f"[auroc]   q99  = {np.round(q99, 4).tolist()}")
     print(f"[auroc]   mask = {mask.tolist()}")
-    cross_domain = (args.corpus == "libero" and "libero" not in args.unnorm_key)
+    # The identity path is in-domain BY CONSTRUCTION, so it must not trip the
+    # cross-domain guard that exists to catch a borrowed percentile set.
+    cross_domain = (args.corpus == "libero" and args.action_scale != "identity"
+                    and "libero" not in args.unnorm_key)
     if cross_domain and not args.allow_cross_domain:
         raise RuntimeError(
             f"refusing to score corpus={args.corpus} with unnorm_key="
@@ -255,8 +313,19 @@ def run(args):
                                  args.reasoning_json, args.n_samples,
                                  seed=args.seed)
     n_cot_selfgen = 0
+    # Frame-match evidence for the identity path, counted rather than assumed.
+    # If the corpus's raw actions were NOT already inside the token grid's
+    # range, the identity would be as wrong as a borrowed percentile set and the
+    # residual would again be dominated by scale. This is checked against the
+    # data instead of inferred from the training script.
+    n_gt_outside_grid = 0
+    gt_abs_max = 0.0
     for si, (img, instr, gt, gt_action, fbase, dem) in enumerate(it):
         try:
+            am = float(np.max(np.abs(gt_action)))
+            gt_abs_max = max(gt_abs_max, am)
+            if am > 1.0:
+                n_gt_outside_grid += 1
             prompt = (f"{ECOT_SYSTEM_PROMPT} USER: What action should the "
                        f"robot take to {instr.lower()}? ASSISTANT: ")
             if gt:
@@ -349,6 +418,51 @@ def run(args):
             f"AUROC over a median split needs both classes populated; below ~20 "
             f"samples the statistic is noise. No report written.")
 
+    # The identity path's precondition, enforced after the fact rather than
+    # promised in a comment: if the corpus's own actions do not already live
+    # inside the token grid, the identity map is wrong and this run reproduces
+    # the mixed-space defect it exists to avoid. 5% tolerance because LIBERO's
+    # gripper is +/-1 exactly and float round-trips can land a hair outside.
+    frac_out = n_gt_outside_grid / max(1, len(per_sample))
+    if args.action_scale == "identity" and frac_out > 0.05:
+        raise RuntimeError(
+            f"--action-scale identity but {n_gt_outside_grid} ground-truth "
+            f"actions ({frac_out:.1%}) fall outside [-1,1] (max |a| = "
+            f"{gt_abs_max:.4f}). The corpus is not in the token grid's frame, "
+            f"so the identity is not the right map and the error this script "
+            f"thresholds would again be dominated by scale. No report written.")
+
+    # The second, harder precondition -- and the one that actually distinguishes
+    # "right frame" from "plausible frame". The withdrawn P3 run was caught not by
+    # reading a config but by noticing its policy was ~13x WORSE than predicting
+    # the dataset mean: when the prediction and the target sit in different units,
+    # a constant beats the model. So the same trivial baselines are computed here
+    # and the identity path is required to beat them. This is what makes the
+    # frame claim a measurement rather than a reading of `_quantize_action`.
+    gt_mat = np.asarray([s["action_gt"] for s in per_sample], dtype=np.float64)
+    pred_mat = np.asarray([s["action_pred"] for s in per_sample], dtype=np.float64)
+    gt_mean = gt_mat.mean(axis=0)
+    baselines = {
+        "policy":        float(np.mean(np.abs(pred_mat - gt_mat))),
+        "predict_mean":  float(np.mean(np.abs(gt_mean[None, :] - gt_mat))),
+        "predict_zero":  float(np.mean(np.abs(gt_mat))),
+    }
+    baselines["policy_over_predict_mean"] = (
+        baselines["policy"] / baselines["predict_mean"]
+        if baselines["predict_mean"] > 0 else float("inf"))
+    print(f"[auroc] action-error baselines (L1, corpus units): {baselines}")
+    if args.action_scale == "identity" and \
+            baselines["policy"] >= baselines["predict_mean"]:
+        raise RuntimeError(
+            f"--action-scale identity but the policy's action error "
+            f"({baselines['policy']:.4f}) is no better than predicting the "
+            f"dataset mean ({baselines['predict_mean']:.4f}); ratio "
+            f"{baselines['policy_over_predict_mean']:.2f}x. A fine-tuned policy "
+            f"scored in its own training frame must beat a constant. That it "
+            f"does not is the signature of the mixed-space defect that withdrew "
+            f"P3, so the identity is the wrong map for this checkpoint after "
+            f"all. No report written.")
+
     # Compute AUROC of each attention feature as high-error predictor.
     errors = [s["action_error_l1"] for s in per_sample]
     median_err = float(np.median(errors))
@@ -386,15 +500,39 @@ def run(args):
         "protocol": {
             "corpus": args.corpus,
             "unnorm_key": args.unnorm_key,
+            "action_scale": args.action_scale,
             "in_domain": not cross_domain,
             "cross_domain_override": bool(args.allow_cross_domain),
-            "error_space": "robot units (prediction un-normalized with the "
-                           "checkpoint's own q01/q99 for unnorm_key)",
+            "error_space": (
+                "robot units == token-grid units (this checkpoint was trained "
+                "on raw actions clipped to [-1,1] with no dataset "
+                "normalization, so the map between the two frames is the "
+                "identity; verified by measurement, not by config inspection)"
+                if args.action_scale == "identity" else
+                "robot units (prediction un-normalized with the "
+                "checkpoint's own q01/q99 for unnorm_key)"),
             "q01": q01.tolist(), "q99": q99.tolist(), "mask": mask.tolist(),
             "cot_source": ("self-generated" if n_cot_selfgen else
                            "ground-truth annotations"),
             "n_cot_self_generated": n_cot_selfgen,
+            # Present but unused. A merged LoRA keeps the base checkpoint's
+            # config, so our LIBERO fine-tunes still advertise the ECoT base's
+            # bridge_orig statistics even though `_quantize_action` never reads
+            # them. Released because "the identity was chosen while a norm_stats
+            # key was sitting right there" is exactly the fact a skeptical
+            # reader needs, and an existence-based guard would have wrongly
+            # refused this run.
+            "inherited_unused_norm_stats_keys": inherited_keys,
+            # Measured frame-match evidence for the identity path. Released
+            # whichever path ran, so a reader can check the precondition on the
+            # affine path too rather than only where it is load-bearing.
+            "n_gt_actions_outside_token_grid": n_gt_outside_grid,
+            "gt_action_abs_max": gt_abs_max,
         },
+        # The frame claim's real evidence: a policy scored in its own training
+        # frame beats a constant. The withdrawn run was ~13x worse than
+        # predict-the-mean, which is how the mixed-space defect was found.
+        "action_error_baselines_l1": baselines,
         "median_error_l1": median_err,
         "aurocs": aurocs,
         # The withdrawn protocol, recomputed on the same forward passes.
@@ -440,6 +578,16 @@ def main():
     p.add_argument("--unnorm-key", default="bridge_orig",
                      help="Which of the checkpoint's action statistics to "
                           "un-normalize with. Must exist or the run aborts.")
+    p.add_argument("--action-scale", default="unnorm",
+                     choices=["unnorm", "identity"],
+                     help="How to put the predicted action in the corpus's "
+                          "units. 'unnorm' (default) uses the checkpoint's own "
+                          "q01/q99 for --unnorm-key. 'identity' is for a "
+                          "checkpoint trained on raw actions clipped to [-1,1] "
+                          "with no dataset normalization -- ours -- where the "
+                          "token grid IS the corpus frame; it is refused on any "
+                          "checkpoint that ships norm_stats, and on any corpus "
+                          "other than libero.")
     p.add_argument("--allow-cross-domain", action="store_true",
                      help="Score a corpus the unnorm_key does not describe. "
                           "Only for reproducing the withdrawn P3 run.")
