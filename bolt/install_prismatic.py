@@ -12,20 +12,25 @@ from its absence -- and reports what the resolution cost, because "OFT needs N
 extra packages, one of which moves transformers" would itself be a legitimate
 reason to scope it out, whereas "unloadable" is not.
 
-Two sources are tried in order:
+Two kinds of source are tried in order:
 
   1. `pip install prismatic` -- literally what the exception suggests. PyPI has
      an unrelated project under that name, so this is accepted only if it
      actually provides `prismatic.extern.hf.modeling_prismatic`; otherwise it is
      uninstalled again, because leaving it would shadow the real package.
-  2. the OFT / OpenVLA source trees, whose package IS `prismatic`.
+     Measured (bolt `9n7zqdxy9b`): it installs and does NOT provide it --
+     `ModuleNotFoundError: No module named 'prismatic.extern'`.
+  2. the OFT / OpenVLA source trees, whose package IS `prismatic`. Both install
+     cleanly and move no pins.
 
 Every install uses --no-deps: the pinned torch 2.4.1+cu118 is the environment
 the paper names, and a transitive upgrade would silently make the load result
 describe a different stack. Missing transitive imports are then resolved one at
 a time, by reading the module name out of the ImportError and installing it --
 each one logged, so the output doubles as the answer to "what would supporting
-OFT take".
+OFT take". So far that answer is: isodate, draccus, mergedeep, typing_inspect,
+mypy_extensions, and then whatever the logging handler needs (see
+`target_importable` on why that one was invisible at first).
 """
 from __future__ import annotations
 
@@ -36,6 +41,7 @@ import json
 import re
 import subprocess
 import sys
+import traceback
 
 # What OFT's remote code needs to exist for `check_imports` to pass and for the
 # modeling file to actually import.
@@ -47,16 +53,23 @@ SOURCES = [
     ("git:openvla/openvla", ["git+https://github.com/openvla/openvla.git"]),
 ]
 
-# pip name != import name for a few of the things these trees pull in.
+# pip name != import name for a few of the things these trees pull in. Every
+# entry here is one the resolver actually hit, or one that `--no-deps` makes
+# unavoidable: installing `rich` without its dependencies means the next round
+# asks for `markdown_it`, and `pip install markdown_it` does not exist.
 IMPORT_TO_PIP = {
     "cv2": "opencv-python-headless",
     "PIL": "Pillow",
     "yaml": "pyyaml",
     "sklearn": "scikit-learn",
     "google": "protobuf",
+    "markdown_it": "markdown-it-py",
+    "dateutil": "python-dateutil",
+    "pkg_resources": "setuptools",
+    "json_numpy": "json-numpy",
 }
 
-MAX_TRANSITIVE = 12
+MAX_TRANSITIVE = 24
 
 
 def pip(*args) -> tuple[bool, str]:
@@ -81,6 +94,17 @@ def target_importable() -> tuple[bool, str | None]:
     `find_spec` is not enough -- it answers "is it on the path", not "does it
     import", and the transitive-dependency failures this script exists to fix
     are all in the second category.
+
+    The failure is returned as the full formatted traceback, not `str(e)`.
+    Bolt `9n7zqdxy9b` is why: after prismatic installed, the import died with
+
+        ValueError: Unable to configure handler 'console'
+
+    which names nothing installable. `prismatic.overwatch` configures logging
+    through `logging.config.dictConfig`, and dictConfig catches the handler's
+    own ImportError and re-raises this instead -- so the module name survives
+    only in the `__cause__` chain. Reading just the top-level message made a
+    missing `rich` look like a broken package.
     """
     for name in list(sys.modules):
         if name == "prismatic" or name.startswith("prismatic."):
@@ -89,13 +113,18 @@ def target_importable() -> tuple[bool, str | None]:
         importlib.invalidate_caches()
         importlib.import_module(TARGET)
         return True, None
-    except Exception as e:                                  # noqa: BLE001
-        return False, f"{type(e).__name__}: {e}"
+    except Exception:                                       # noqa: BLE001
+        return False, traceback.format_exc()
 
 
 def missing_module(err: str) -> str | None:
-    """The top-level module name an ImportError is complaining about."""
+    """The top-level module name an ImportError is complaining about.
+
+    Searched over the whole chained traceback, so a name buried under a
+    dictConfig ValueError is still found (see `target_importable`).
+    """
     for pat in (r"No module named '([^']+)'",
+                r"not found in your environment: ([A-Za-z0-9_.]+)",
                 r"cannot import name '[^']+' from '([^']+)'"):
         m = re.search(pat, err or "")
         if m:
@@ -126,12 +155,21 @@ def resolve() -> dict:
         ok, err = target_importable()
         # Resolve transitive imports one at a time. Each is a real fact about
         # what OFT needs; guessing a list up front would hide which ones.
+        seen: set[str] = set()
         for _ in range(MAX_TRANSITIVE):
             if ok:
                 break
             mod = missing_module(err or "")
             if not mod or mod.startswith("prismatic"):
                 break
+            if mod in seen:
+                # The pip install reported success and the import still asks
+                # for the same module, so installing it again cannot help.
+                # Without this the loop burns every remaining iteration on one
+                # name and the log reads as if 24 dependencies were needed.
+                entry["stuck_on"] = mod
+                break
+            seen.add(mod)
             pkg = IMPORT_TO_PIP.get(mod, mod)
             got, _tail = pip("install", "--quiet", "--no-deps", pkg)
             log["transitive_installs"].append(
@@ -141,7 +179,7 @@ def resolve() -> dict:
             ok, err = target_importable()
 
         entry["importable"] = ok
-        entry["error"] = None if ok else err
+        entry["error"] = None if ok else (err or "")[-3000:]
         log["attempts"].append(entry)
         if ok:
             log.update(importable=True, resolved_by=label)
@@ -169,8 +207,14 @@ def main() -> int:
     print(f"[prismatic] importable={log['importable']} "
           f"resolved_by={log['resolved_by']}")
     for a in log["attempts"]:
+        # The TAIL of the traceback, not the head: the head is our own import
+        # frames and the exception is on the last line.
+        tail = str(a.get("error") or "").strip().splitlines()[-1:] or [""]
         print(f"[prismatic]   {a['source']}: pip_ok={a.get('pip_ok')} "
-              f"importable={a.get('importable')} {str(a.get('error'))[:140]}")
+              f"importable={a.get('importable')} {tail[0][:200]}")
+        if a.get("stuck_on"):
+            print(f"[prismatic]     stuck: installing {a['stuck_on']} did not "
+                  f"satisfy the import that asked for it")
     if log["transitive_installs"]:
         print("[prismatic]   transitive: " + ", ".join(
             f"{t['import']}({'ok' if t['ok'] else 'FAILED'})"
