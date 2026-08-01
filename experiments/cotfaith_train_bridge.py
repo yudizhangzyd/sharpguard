@@ -46,7 +46,8 @@ if str(_ROOT) not in sys.path:
 import numpy as np
 import torch
 from torch.utils.data import IterableDataset, DataLoader
-from huggingface_hub import hf_hub_download, HfApi
+from huggingface_hub import HfApi
+from sharpguard.hf_retry import file_with_retry
 
 
 # ---------- recipe import (not a copy) ----------
@@ -78,7 +79,7 @@ ECOT_TAGS_ORDER = _recipe.ECOT_TAGS_ORDER
 
 def load_bridge_reasoning(hf_repo="Embodied-CoT/embodied_features_bridge"):
     """Load the Embodied-CoT Bridge V2 reasoning annotations JSON (~1.4GB)."""
-    path = hf_hub_download(hf_repo, "embodied_features_bridge.json",
+    path = file_with_retry(hf_repo, "embodied_features_bridge.json",
                            repo_type="dataset")
     print(f"[bridge-train] loading reasoning from {path}")
     with open(path) as f:
@@ -222,7 +223,7 @@ class BridgeV2CotDataset(IterableDataset):
         out = {}
         for rel in ("meta/episodes.jsonl", "meta/episodes.json"):
             try:
-                p = hf_hub_download(self.dataset_repo, rel, repo_type="dataset")
+                p = file_with_retry(self.dataset_repo, rel, repo_type="dataset")
             except Exception:
                 continue
             with open(p) as f:
@@ -248,7 +249,7 @@ class BridgeV2CotDataset(IterableDataset):
         import av
         for vd in self.video_dirs:
             try:
-                vp = hf_hub_download(self.dataset_repo,
+                vp = file_with_retry(self.dataset_repo,
                                      f"{vd}/episode_{ep_idx:06d}.mp4",
                                      repo_type="dataset")
                 container = av.open(vp)
@@ -266,7 +267,7 @@ class BridgeV2CotDataset(IterableDataset):
             if self.stats["yielded"] >= self.n_examples:
                 return
             try:
-                pp = hf_hub_download(self.dataset_repo, parquet_path,
+                pp = file_with_retry(self.dataset_repo, parquet_path,
                                      repo_type="dataset")
                 table = pq.read_table(pp)
                 ep_col = table.column("episode_index").to_pylist()

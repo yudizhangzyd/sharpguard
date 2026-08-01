@@ -236,6 +236,82 @@ def normalize_action(a_raw, q01, q99, mask):
     return np.clip(np.where(mask, 2.0 * (a - q01) / span - 1.0, a), -1.0, 1.0)
 
 
+def error_baselines(pred_mat, gt_mat):
+    """Policy L1 error next to the two constants any policy must beat.
+
+    `predict_mean` is the load-bearing one. The withdrawn P3 run was caught not
+    by reading a config but by noticing its policy was ~13x WORSE than the
+    dataset mean: when prediction and target sit in different units, a constant
+    wins. `predict_zero` is reported alongside because on LIBERO the per-step
+    deltas are small and near-zero-centred, so it is the number that shows how
+    much of `predict_mean`'s strength is just "actions are tiny".
+    """
+    gt_mean = gt_mat.mean(axis=0)
+    b = {
+        "policy":       float(np.mean(np.abs(pred_mat - gt_mat))),
+        "predict_mean": float(np.mean(np.abs(gt_mean[None, :] - gt_mat))),
+        "predict_zero": float(np.mean(np.abs(gt_mat))),
+    }
+    b["policy_over_predict_mean"] = (
+        b["policy"] / b["predict_mean"] if b["predict_mean"] > 0
+        else float("inf"))
+    return b
+
+
+def policy_signal_check(frames, scored_as):
+    """Did the policy beat predicting the dataset mean, and if not, why not?
+
+    `frames` maps a frame name to `error_baselines(...)` for that frame, all
+    computed from the SAME predictions. Splitting the failure in two is the
+    point. A single frame's ratio cannot distinguish
+
+      * WRONG FRAME -- we de-quantized in the wrong units, so some competing
+        frame the checkpoint ships does beat the mean. This is the defect that
+        withdrew P3, and it is fixable by using that frame.
+      * NOT A FRAME ERROR -- no frame beats the mean, so the scale is not what
+        is wrong and the policy's open-loop action prediction simply carries
+        too little signal to threshold. Nothing to fix; P3 stays withdrawn on
+        this checkpoint, for a reason about competence rather than units.
+
+    Both block a P3 row. Reporting them as one verdict would have let the second
+    be written up as the first.
+    """
+    here = frames[scored_as]
+    best = min(frames, key=lambda k: frames[k]["policy_over_predict_mean"])
+    best_ratio = frames[best]["policy_over_predict_mean"]
+    passed = here["policy"] < here["predict_mean"]
+    if passed:
+        diagnosis = (f"policy beats predict-the-mean by "
+                     f"{1.0 / here['policy_over_predict_mean']:.2f}x in the "
+                     f"{scored_as} frame")
+    elif best_ratio < 1.0:
+        diagnosis = (
+            f"WRONG FRAME: scored in {scored_as} the policy loses to the "
+            f"dataset mean (ratio {here['policy_over_predict_mean']:.3f}), but "
+            f"the competing frame {best} beats it (ratio {best_ratio:.3f}). The "
+            f"predictions were de-quantized in the wrong units -- the defect "
+            f"that withdrew P3 -- and {best} is the map to use.")
+    else:
+        diagnosis = (
+            f"NOT A FRAME ERROR: no frame this checkpoint offers beats the "
+            f"dataset mean (best is {best} at ratio {best_ratio:.3f}). The "
+            f"scale is not what is wrong; this checkpoint's open-loop "
+            f"single-step action prediction is no better than a constant, so a "
+            f"per-sample action error computed from it carries too little "
+            f"policy signal to threshold. P3 stays withdrawn on this "
+            f"checkpoint for a reason about competence, not units.")
+    return {
+        "check": "policy_beats_predict_mean",
+        "passed": bool(passed),
+        "measured": {"scored_frame": scored_as,
+                     "ratio": here["policy_over_predict_mean"],
+                     "best_frame": best,
+                     "best_frame_ratio": best_ratio},
+        "threshold": "policy_over_predict_mean < 1.0",
+        "diagnosis": diagnosis,
+    }
+
+
 def load_bridge_v2(dataset_repo, n_samples, seed=0):
     """In-domain corpus for the Bridge-trained ECoT checkpoint. Bridge carries
     no ground-truth CoT, so the CoT is self-generated -- which is also the only
@@ -418,50 +494,84 @@ def run(args):
             f"AUROC over a median split needs both classes populated; below ~20 "
             f"samples the statistic is noise. No report written.")
 
-    # The identity path's precondition, enforced after the fact rather than
-    # promised in a comment: if the corpus's own actions do not already live
-    # inside the token grid, the identity map is wrong and this run reproduces
-    # the mixed-space defect it exists to avoid. 5% tolerance because LIBERO's
-    # gripper is +/-1 exactly and float round-trips can land a hair outside.
-    frac_out = n_gt_outside_grid / max(1, len(per_sample))
-    if args.action_scale == "identity" and frac_out > 0.05:
-        raise RuntimeError(
-            f"--action-scale identity but {n_gt_outside_grid} ground-truth "
-            f"actions ({frac_out:.1%}) fall outside [-1,1] (max |a| = "
-            f"{gt_abs_max:.4f}). The corpus is not in the token grid's frame, "
-            f"so the identity is not the right map and the error this script "
-            f"thresholds would again be dominated by scale. No report written.")
+    # ---- frame preconditions ----------------------------------------------
+    # These used to `raise` before writing anything, which was backwards: the
+    # first time one of them fired for real (bolt h3yb3s23qd) it destroyed the
+    # only evidence for its own verdict, leaving a traceback in a log as the
+    # sole record of a measurement worth releasing. They now record, write the
+    # report, and exit non-zero. A failed frame check is a finding about the
+    # checkpoint, not a crash.
+    frame_checks = []
 
-    # The second, harder precondition -- and the one that actually distinguishes
-    # "right frame" from "plausible frame". The withdrawn P3 run was caught not by
-    # reading a config but by noticing its policy was ~13x WORSE than predicting
-    # the dataset mean: when the prediction and the target sit in different units,
-    # a constant beats the model. So the same trivial baselines are computed here
-    # and the identity path is required to beat them. This is what makes the
-    # frame claim a measurement rather than a reading of `_quantize_action`.
+    # (1) Does the corpus's own action live inside the token grid? If not, the
+    # identity map is as wrong as a borrowed percentile set and the residual is
+    # again dominated by scale. 5% tolerance because LIBERO's gripper is +/-1
+    # exactly and float round-trips can land a hair outside.
+    frac_out = n_gt_outside_grid / max(1, len(per_sample))
+    if args.action_scale == "identity":
+        frame_checks.append({
+            "check": "gt_actions_inside_token_grid",
+            "passed": frac_out <= 0.05,
+            "measured": {"frac_outside": frac_out,
+                         "n_outside": n_gt_outside_grid,
+                         "gt_abs_max": gt_abs_max},
+            "threshold": "frac_outside <= 0.05",
+        })
+
+    # (2) The harder one, and the only one that separates "right frame" from
+    # "plausible frame": the policy must beat predicting the dataset mean.
     gt_mat = np.asarray([s["action_gt"] for s in per_sample], dtype=np.float64)
     pred_mat = np.asarray([s["action_pred"] for s in per_sample], dtype=np.float64)
-    gt_mean = gt_mat.mean(axis=0)
-    baselines = {
-        "policy":        float(np.mean(np.abs(pred_mat - gt_mat))),
-        "predict_mean":  float(np.mean(np.abs(gt_mean[None, :] - gt_mat))),
-        "predict_zero":  float(np.mean(np.abs(gt_mat))),
-    }
-    baselines["policy_over_predict_mean"] = (
-        baselines["policy"] / baselines["predict_mean"]
-        if baselines["predict_mean"] > 0 else float("inf"))
+    norm_mat = np.asarray([s["action_pred_normalized"] for s in per_sample],
+                          dtype=np.float64)
+    baselines = error_baselines(pred_mat, gt_mat)
+
+    # ...and, when it fails, whether ANY frame does better. A single frame's
+    # ratio cannot tell "we de-quantized in the wrong units" (some competing
+    # frame would win) from "this policy is simply weak open-loop" (none does).
+    # Both are reasons not to publish a P3 row, but they are different findings,
+    # so every frame the checkpoint physically ships is scored on these exact
+    # same predictions rather than argued about.
+    scored_as = ("identity" if args.action_scale == "identity"
+                 else f"unnorm:{args.unnorm_key}")
+    frames = {scored_as: baselines}
+    for key in sorted(getattr(model, "norm_stats", None) or {}):
+        name = f"unnorm:{key}"
+        if name in frames:
+            continue
+        try:
+            aq01, aq99, amask = action_norm_stats(model, key)
+            alt = np.stack([unnormalize_action(r, aq01, aq99, amask)
+                            for r in norm_mat])
+        except Exception as e:                              # noqa: BLE001
+            print(f"[auroc] competing frame {key!r} not scorable: {e}")
+            continue
+        frames[name] = error_baselines(alt, gt_mat)
+
     print(f"[auroc] action-error baselines (L1, corpus units): {baselines}")
-    if args.action_scale == "identity" and \
-            baselines["policy"] >= baselines["predict_mean"]:
-        raise RuntimeError(
-            f"--action-scale identity but the policy's action error "
-            f"({baselines['policy']:.4f}) is no better than predicting the "
-            f"dataset mean ({baselines['predict_mean']:.4f}); ratio "
-            f"{baselines['policy_over_predict_mean']:.2f}x. A fine-tuned policy "
-            f"scored in its own training frame must beat a constant. That it "
-            f"does not is the signature of the mixed-space defect that withdrew "
-            f"P3, so the identity is the wrong map for this checkpoint after "
-            f"all. No report written.")
+    for name, b in sorted(frames.items(),
+                          key=lambda kv: kv[1]["policy_over_predict_mean"]):
+        print(f"[auroc]   frame {name:24s} policy={b['policy']:.4f}  "
+              f"mean={b['predict_mean']:.4f}  "
+              f"ratio={b['policy_over_predict_mean']:.3f}"
+              f"{'   <-- scored here' if name == scored_as else ''}")
+
+    frame_checks.append(policy_signal_check(frames, scored_as))
+    diagnosis = frame_checks[-1]["diagnosis"]
+
+    frame_check = {
+        "why": "A P3 row is only meaningful if the action error it thresholds "
+               "is in one frame and reflects the policy. Both preconditions are "
+               "measured here and released whether or not they hold.",
+        "passed": all(c["passed"] for c in frame_checks),
+        "checks": frame_checks,
+        "baselines_by_frame": frames,
+        "diagnosis": diagnosis,
+    }
+    if not frame_check["passed"]:
+        print(f"\n[auroc] *** FRAME CHECK FAILED *** {diagnosis}")
+        print("[auroc] report still written; exiting 3. This artifact is a "
+              "null result for P3, not a P3 row.")
 
     # Compute AUROC of each attention feature as high-error predictor.
     errors = [s["action_error_l1"] for s in per_sample]
@@ -533,6 +643,11 @@ def run(args):
         # frame beats a constant. The withdrawn run was ~13x worse than
         # predict-the-mean, which is how the mixed-space defect was found.
         "action_error_baselines_l1": baselines,
+        # Verdict on that evidence, plus the same baselines under every
+        # competing frame the checkpoint ships. `passed: false` means this
+        # artifact is a null result for P3 and must not be cited as a P3 row --
+        # scripts/verify_paper_numbers.py enforces that.
+        "frame_check": frame_check,
         "median_error_l1": median_err,
         "aurocs": aurocs,
         # The withdrawn protocol, recomputed on the same forward passes.
@@ -561,7 +676,10 @@ def run(args):
     for feat, a in legacy_aurocs.items():
         print(f"  {feat:22s}  AUROC={a['raw_auroc']:.3f}  abs={a['abs_auroc']:.3f}")
     print(f"  report -> {out / 'cot_auroc_report.json'}")
-    sys.stdout.flush(); os._exit(0)
+    if not frame_check["passed"]:
+        print(f"  FRAME CHECK FAILED: {frame_check['diagnosis']}")
+        print(f"  -> exiting 3; this is a released null result, not a P3 row.")
+    sys.stdout.flush(); os._exit(0 if frame_check["passed"] else 3)
 
 
 def main():

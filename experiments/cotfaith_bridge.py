@@ -48,7 +48,8 @@ def _load_lerobot_manual(dataset_repo, n_samples):
     import json as _json
     from PIL import Image as PILImage
     import numpy as _np
-    from huggingface_hub import hf_hub_download, HfApi
+    from huggingface_hub import HfApi
+    from sharpguard.hf_retry import file_with_retry
     import pyarrow.parquet as pq
     import av
     api = HfApi()
@@ -58,7 +59,7 @@ def _load_lerobot_manual(dataset_repo, n_samples):
     tasks_map = {}
     task_file = next((f for f in files if f.endswith("tasks.jsonl")), None)
     if task_file:
-        tp = hf_hub_download(dataset_repo, task_file, repo_type="dataset")
+        tp = file_with_retry(dataset_repo, task_file, repo_type="dataset")
         for line in open(tp):
             try:
                 d = _json.loads(line)
@@ -90,7 +91,7 @@ def _load_lerobot_manual(dataset_repo, n_samples):
     for parquet_path in parquets[:n_samples * 2]:  # buffer for skips
         if len(out) >= n_samples: break
         try:
-            pp = hf_hub_download(dataset_repo, parquet_path, repo_type="dataset")
+            pp = file_with_retry(dataset_repo, parquet_path, repo_type="dataset")
             table = pq.read_table(pp)
             row_cols = table.column_names
             if len(out) == 0:
@@ -109,7 +110,7 @@ def _load_lerobot_manual(dataset_repo, n_samples):
             if vname is None or vname not in files:
                 if len(out) < 3: print(f"[manual] ep {ep_idx}: no video {vname}")
                 continue
-            vp = hf_hub_download(dataset_repo, vname, repo_type="dataset")
+            vp = file_with_retry(dataset_repo, vname, repo_type="dataset")
             container = av.open(vp)
             first_frame = next(container.decode(video=0))
             img = first_frame.to_image()

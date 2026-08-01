@@ -60,7 +60,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 import numpy as np
-from huggingface_hub import hf_hub_download
+from sharpguard.hf_retry import file_with_retry
 
 # torch is imported lazily inside Judge/main so the pair-building and
 # aggregation logic -- which is pure text -- can be exercised without the GPU
@@ -226,7 +226,7 @@ def load_samples(reasoning_repo, reasoning_file, n, seed, allowed_files=None):
     Only the reasoning JSON is downloaded -- one 432MB file, not the 17GB
     shard repo -- because this experiment needs the CoT text and nothing else.
     """
-    path = hf_hub_download(reasoning_repo, reasoning_file, repo_type="dataset")
+    path = file_with_retry(reasoning_repo, reasoning_file, repo_type="dataset")
     print(f"[judge] reasoning: {path}")
     with open(path) as f:
         data = json.load(f)

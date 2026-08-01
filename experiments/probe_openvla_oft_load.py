@@ -32,6 +32,7 @@ success removes a coverage gap.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import sys
@@ -138,6 +139,23 @@ def env_snapshot() -> dict:
             snap[mod] = __import__(mod).__version__
         except Exception as e:
             snap[mod] = f"<absent: {type(e).__name__}>"
+    # `prismatic` is the package OFT's remote code imports, and its absence is
+    # the entire content of the first two stages' failure ("requires the
+    # following packages that were not found in your environment: prismatic").
+    # Recording where it came from matters: PyPI has an unrelated project of
+    # that name, so "prismatic is installed" and "the OFT codebase is
+    # installed" are different facts and only the second one can satisfy the
+    # import.
+    try:
+        import prismatic
+        snap["prismatic"] = getattr(prismatic, "__version__", "<no __version__>")
+        snap["prismatic_path"] = getattr(prismatic, "__file__", None)
+        snap["prismatic_has_vla"] = hasattr(prismatic, "load_vla") or bool(
+            importlib.util.find_spec("prismatic.extern.hf.modeling_prismatic"))
+    except Exception as e:
+        snap["prismatic"] = f"<absent: {type(e).__name__}>"
+        snap["prismatic_path"] = None
+        snap["prismatic_has_vla"] = False
     try:
         import torch
         snap["cuda_available"] = bool(torch.cuda.is_available())
@@ -214,9 +232,15 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--stage", default="baseline",
-                    choices=["baseline", "upgraded"],
+                    choices=["baseline", "upgraded",
+                             "prismatic_baseline", "prismatic_upgraded"],
                     help="which environment this invocation is measuring; the "
-                         "runner calls it twice and merges")
+                         "runner calls it once per stage and the reports merge. "
+                         "The prismatic_* stages exist because the first two "
+                         "both failed with an ImportError naming a package we "
+                         "had simply not installed -- a missing dependency is "
+                         "not an incompatibility, and limitation (ix) cannot "
+                         "cite one as the other")
     ap.add_argument("--no-forward", action="store_true",
                     help="skip the generation stage (config/weights only)")
     ap.add_argument("--repos", default="",

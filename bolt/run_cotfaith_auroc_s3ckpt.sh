@@ -131,6 +131,12 @@ python -c "import tensorflow_datasets; print('[auroc-s3] tfds ok')" || {
     echo "        exactly the confound this run exists to remove."
     exit 5; }
 
+# `|| RC=$?` rather than a bare call followed by `RC=$?`: this script runs under
+# `set -e` (line 36), which would abort on the exit-3 frame check before the
+# status could be read -- discarding the artifact the exit code exists to
+# annotate. Being the right-hand side of `||` suppresses errexit for this call
+# only.
+RC=0
 python experiments/cotfaith_auroc.py \
     --ckpt-path     "$CKPT_LOCAL" \
     --out           "$OUT_DIR" \
@@ -139,8 +145,36 @@ python experiments/cotfaith_auroc.py \
     --rvis-layers   "${RVIS_LAYERS:-0,1,2,3}" \
     --corpus        libero \
     --action-scale  identity \
-    --dtype         "${DTYPE:-bfloat16}"
+    --dtype         "${DTYPE:-bfloat16}" || RC=$?
+
+# Exit 3 is the frame check failing, which is a RESULT: the script scored every
+# sample, measured the policy against predict-the-mean in every frame the
+# checkpoint ships, and concluded the action error is not usable for P3. The
+# first time that happened (bolt h3yb3s23qd) the script raised before writing
+# anything, so a real measurement survived only as a traceback. It now writes
+# the report first, and this maps 3 to success so Bolt preserves the artifact
+# and the task does not read as a harness failure. Anything else is a real
+# failure and propagates.
+if [ "$RC" = "3" ]; then
+    echo "[auroc-s3] frame check FAILED -- released as a null result for P3."
+    echo "[auroc-s3] the report below is NOT a P3 row; see .frame_check"
+    python - "$OUT_DIR/cot_auroc_report.json" <<'PY' || exit 7
+import json, sys
+r = json.load(open(sys.argv[1]))
+fc = r.get("frame_check") or {}
+assert fc.get("passed") is False, "exit 3 but frame_check.passed is not false"
+print("  diagnosis:", fc.get("diagnosis"))
+for c in fc.get("checks", []):
+    print(f"  {c['check']}: passed={c['passed']} {c.get('measured')}")
+for name, b in sorted((fc.get("baselines_by_frame") or {}).items()):
+    print(f"  frame {name}: ratio={b['policy_over_predict_mean']:.3f}")
+PY
+    RC=0
+elif [ "$RC" != "0" ]; then
+    echo "[auroc-s3] cotfaith_auroc.py failed with rc=$RC (not a frame check)"
+    exit "$RC"
+fi
 
 echo "==== Done ===="
 head -c 3000 "$OUT_DIR/cot_auroc_report.json" || true
-exit 0
+exit "$RC"

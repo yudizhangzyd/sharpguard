@@ -85,10 +85,10 @@ def load_quantile_norm_stats(ckpt_dir_or_repo: str) -> dict:
     wrong pair rescales every action by a constant factor per dimension, which
     would inflate or deflate every delta_linf we report.
     """
-    from huggingface_hub import hf_hub_download
+    from sharpguard.hf_retry import file_with_retry
 
     try:
-        path = hf_hub_download(ckpt_dir_or_repo, "norm_stats.json")
+        path = file_with_retry(ckpt_dir_or_repo, "norm_stats.json")
     except Exception:
         import os
         path = os.path.join(ckpt_dir_or_repo, "norm_stats.json")

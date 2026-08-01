@@ -1,4 +1,4 @@
-"""Snapshot-level retry for Hub downloads that get rate limited.
+"""Retry for Hub downloads that get rate limited (snapshots and single files).
 
 Every Bolt config carries `HF_TOKEN: ${HF_TOKEN}` in `environment_variables`,
 and Bolt does not expand `${VAR}` from the submitting shell -- the pods receive
@@ -18,11 +18,16 @@ lands on a file's metadata HEAD, where `huggingface_hub` re-raises it as
 a pod that had just pulled 857 MB of torch wheels at 15 MB/s.
 
 `snapshot_download` retries an interrupted *transfer* but not a throttled
-metadata call, so one 429 aborts the whole snapshot. The retry here is at the
-snapshot level, which is the cheap place to put it: files already fetched are in
-the cache, so each attempt resumes and only the throttled tail is re-requested.
-`max_workers` is also lowered from the default 8, since eight concurrent
-metadata calls per job is what tripped the limiter in the first place.
+metadata call, so one 429 aborts the whole snapshot. The retry here wraps the
+whole download call, which is the cheap place to put it: files already fetched
+are in the cache, so each attempt resumes and only the throttled tail is
+re-requested. `max_workers` is also lowered from the default 8, since eight
+concurrent metadata calls per job is what tripped the limiter in the first place.
+
+Both entry points go through the same loop. `snapshot_with_retry` came first and
+single-file fetches were left calling `hf_hub_download` bare on the assumption
+that one small file could not be throttled; `file_with_retry` exists because
+that assumption cost a GPU job (see its docstring).
 """
 
 from __future__ import annotations
@@ -61,26 +66,22 @@ def _drop_placeholder_token() -> None:
               "downloading anonymously" % tok[:16], file=sys.stderr, flush=True)
 
 
-def snapshot_with_retry(**kw):
-    """`snapshot_download(**kw)`, retried through Hub rate limiting.
+def _retrying(call, label):
+    """Run `call()`, retrying only while the Hub is throttling us.
 
-    Defaults `cache_dir` to `$HF_HOME` (what every call site here passed) and
-    `max_workers` to 4. Non-throttle errors propagate unchanged: a missing repo
-    or a bad revision must still fail immediately and loudly.
+    Non-throttle errors propagate unchanged: a missing repo or a bad revision
+    must still fail immediately and loudly.
     """
-    from huggingface_hub import snapshot_download
     _drop_placeholder_token()
-    kw.setdefault("cache_dir", os.environ.get("HF_HOME"))
-    kw.setdefault("max_workers", 4)
     last = None
     for attempt, nap in enumerate((0,) + _RETRY_SLEEPS):
         if nap:
             print("[hf] rate limited on %s; sleeping %ds before attempt %d/%d"
-                  % (kw.get("repo_id"), nap, attempt + 1,
-                     len(_RETRY_SLEEPS) + 1), file=sys.stderr, flush=True)
+                  % (label, nap, attempt + 1, len(_RETRY_SLEEPS) + 1),
+                  file=sys.stderr, flush=True)
             time.sleep(nap)
         try:
-            return snapshot_download(**kw)
+            return call()
         except Exception as e:                      # noqa: BLE001
             if not _is_throttle(e):
                 raise
@@ -90,4 +91,38 @@ def snapshot_with_retry(**kw):
         "anonymously because Bolt passes the literal '${HF_TOKEN}'; either run "
         "fewer jobs concurrently or render a real token into the config the way "
         "bolt/submit_edit13.sh renders the S3 ones."
-        % (kw.get("repo_id"), sum(_RETRY_SLEEPS))) from last
+        % (label, sum(_RETRY_SLEEPS))) from last
+
+
+def snapshot_with_retry(**kw):
+    """`snapshot_download(**kw)`, retried through Hub rate limiting.
+
+    Defaults `cache_dir` to `$HF_HOME` (what every call site here passed) and
+    `max_workers` to 4.
+    """
+    from huggingface_hub import snapshot_download
+    kw.setdefault("cache_dir", os.environ.get("HF_HOME"))
+    kw.setdefault("max_workers", 4)
+    return _retrying(lambda: snapshot_download(**kw), kw.get("repo_id"))
+
+
+def file_with_retry(repo_id, filename, **kw):
+    """`hf_hub_download(repo_id, filename, **kw)`, retried the same way.
+
+    A single-file fetch was assumed to be too small to get throttled, so every
+    call site called `hf_hub_download` bare. The limiter is per-IP and counts
+    requests, not bytes: bolt `9w7vtsx9ds` (the LLM edit-family judge) died on
+    the FIRST file it asked for --
+
+        429 Client Error: Too Many Requests for url:
+        .../embodied_features_and_demos_libero/resolve/main/libero_reasonings.json
+        We had to rate limit your IP (18.246.171.111).
+
+    -- after a full GPU setup had already succeeded, while a sibling job was
+    pulling a 392-file snapshot through `snapshot_with_retry` on the same egress
+    IP and survived. The asymmetry was the bug, not the load.
+    """
+    from huggingface_hub import hf_hub_download
+    kw.setdefault("cache_dir", os.environ.get("HF_HOME"))
+    return _retrying(lambda: hf_hub_download(repo_id, filename, **kw),
+                     "%s/%s" % (repo_id, filename))
