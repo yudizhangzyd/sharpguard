@@ -1,0 +1,39 @@
+name: 'CoT-Faith #16: DeepThinkVLA decode equivalence (the FAST-tokenizer half of the bound)'
+description: 'p2_decode_equivalence.py bounds our decode against the checkpoint own on the OpenVLA family and explicitly declines to do it for DeepThinkVLA: its README records that off-grid records pass through untouched "so a report from a checkpoint with a different action tokenizer (DeepThinkVLA FAST tokenizer, for instance) is not corrupted". Correct refusal, and it leaves the manuscript equivalence claim scoped to one family. This closes the other half. The argmax arithmetic is not what is tested -- decode_action_chunk transcribes upstream own slice and would pass by construction. What is tested is PROMPT AND CoT ASSEMBLY, which has no upstream counterpart in our code: P2 injects a CoT and calls prompt_cot_predict_action on a sequence build_input_cot_ids assembled. Upstream stopping criterion fires only on the tail [</think>, <action>], so when generation stops on its own the two sequences compare token for token. Three checkpoints, 12 frames each, plus a bf16 determinism control.'
+tags: ['cotfaith', 'deepthink', 'decode-equivalence', 'audit', 'fast-tokenizer']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  # All three published checkpoints. The claim is about our code, so one passing
+  # checkpoint would reproduce exactly the single-checkpoint scope this job
+  # exists to remove.
+  CKPTS: 'yinchenghust/deepthinkvla_base yinchenghust/deepthinkvla_libero_cot_sft yinchenghust/deepthinkvla_libero_cot_rl'
+  # 12 frames each, matching the OpenVLA-side audit's n. Each frame costs one
+  # generation plus three forward passes, so this is minutes, not hours.
+  N_SAMPLES: '12'
+  # Upstream's stop tail must actually fire, or nothing is comparable and the
+  # report says so instead of passing. 320 is what the edit runs used.
+  MAX_NEW_TOKENS: '320'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_dt_decode_equivalence.sh

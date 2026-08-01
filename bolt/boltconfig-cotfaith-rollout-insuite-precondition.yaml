@@ -1,0 +1,82 @@
+name: 'CoT-Faith #10c: in-suite SR precondition for our r=32 fine-tune (CoT refreshed every 25 steps)'
+description: 'Round 3, limitation (v). #10b (bolt nskmsunnpb) is measuring the right thing at an unaffordable price: on libero_90 a no-CoT episode costs 3.6 min and a CoT episode 63 min, because the CoT is regenerated at every one of 400 steps (~8.9 s of a 9.5 s step). Its 20 h budget therefore buys ~9 episodes, and a 0/9 clean-CoT result carries a 95% upper bound of ~30% -- too loose to support the limitation. This run keeps the suite, the weights, the identity decoder and the init-state pairing, and changes exactly one thing: --cot-refresh-steps 25, so reasoning is regenerated 16 times per episode instead of 400. That is a different protocol, not an approximation, and it is recorded per arm (n_cot_generated vs n_steps) so the two can never be conflated. Two arms only: nocot and cot_clean. SR(cot_clean) is the precondition that makes DSR defined at all, and no artifact of ours has ever reported it for our own checkpoint -- only upstream four LIBERO checkpoints were gated (0.74/0.90/0.74/0.46).'
+tags: ['cotfaith', 'rollout-edit', 'limitation-v', 'precondition', 'round3', 'in-suite']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 8h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by bolt/submit_rollout_edit_ckpt.sh.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  # The published ours-r=32 row's training task -- same weights as #10b, so the
+  # two runs differ only in protocol and are directly comparable.
+  CKPT_TASK_ID: 'bcihypv3gu'
+
+  # Same suite as #10b: libero_90 is what this checkpoint was LoRA-trained on
+  # (TFDS_SUBDIR=libero_lm_90/1.0.0), so an SR of 0 here cannot be explained by
+  # distribution shift the way round 1's libero_spatial run could.
+  SUITE: 'libero_90'
+  ACTION_DECODER: 'ours'
+  UNNORM_KEY: ''
+  GRIPPER_TRANSFORM: 'openvla'
+  IMAGE_PREPROC: 'none'
+
+  # THE change over #10b. 400 steps / 25 = 16 CoT generations per episode, so a
+  # clean-CoT episode costs ~3.6 min of action decode + ~2.4 min of reasoning
+  # instead of 63 min. At ~10 min per (nocot, cot_clean) pair, a 7 h budget
+  # reaches ~40 distinct libero_90 tasks. A 0/40 cot_clean result bounds the
+  # clean SR at 8.8% (Wilson, 95%); #10b's 0/9 bounds it at 30%.
+  #
+  # Honest about what it costs: GRIPPER POSITION and MOVE are frame-dependent,
+  # so for up to 24 steps the policy acts on reasoning about a frame it has left
+  # behind. That makes this a lower bound on the per-step protocol's SR, which is
+  # the right direction for a precondition -- if THIS finds successes, #10b's
+  # protocol has them too; if it finds none, the tighter bound is what limitation
+  # (v) cites, alongside #10b's per-step 0/N.
+  COT_REFRESH_STEPS: '25'
+  # nocot is not decoration: it is the control that separates "this policy cannot
+  # do libero_90 at all under our decoder" from "the CoT prefix is what breaks
+  # it". Both arms share the canonical init state per episode, so the pair is
+  # matched. Edit arms are deliberately absent -- DSR is 0 by construction until
+  # cot_clean is nonzero, so paying for them now buys nothing.
+  ARMS: 'nocot,cot_clean'
+  # Still parsed, still probed: the gate in run_cotfaith_rollout_edit_s3.sh
+  # requires at least one family to change the rendered CoT, which is a check on
+  # the harness rather than on this run's arms.
+  FAMILIES: 'direction_flip'
+
+  MAX_NEW_TOKENS: '320'
+  # 0 => upstream's own libero_90 budget of 400. A shorter budget would truncate
+  # episodes and manufacture the zero this run exists to test for.
+  MAX_STEPS: '0'
+  # All 90 tasks, one episode each: with successes this rare, breadth over tasks
+  # estimates the suite SR better than depth on a few, and the clock decides how
+  # far it gets.
+  N_TASKS: '0'
+  N_EPS_PER_TASK: '1'
+  TIME_BUDGET_H: '7'
+  DTYPE: 'bfloat16'
+  PROBE_ONLY: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_edit_s3.sh

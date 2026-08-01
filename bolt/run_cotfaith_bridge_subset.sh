@@ -60,11 +60,44 @@ fi
 CKPT="$TRAIN_OUT/merged_model"
 ls -la "$CKPT" | head -10
 
+# ---- Step 2-4 need TFDS; step 1 does not -------------------------------------
+# This install is deliberately AFTER training. `v9rkpp2342` trained all 15000
+# steps successfully (loss 1.1755 -> 0.2373) and then died here:
+#
+#   ModuleNotFoundError: No module named 'tensorflow_datasets'
+#     (experiments/cotfaith_sanity.py:76)
+#
+# The scoring stages read LIBERO through TFDS and this script never installed it
+# -- step 1 pulls Bridge through `datasets`, so nothing before now needed it.
+# Keeping the install here rather than at the top means a resolver accident can
+# only cost the minutes of scoring, never the hours of training.
+pip install "dm-tree" "protobuf>=3.20,<5" "promise" "dill" "etils[epath]" \
+            "toml" "termcolor" "tqdm" "click" || true
+pip install "tensorflow-cpu==2.15.1" --no-deps \
+    || pip install "tensorflow==2.15.1" --no-deps || true
+pip install "absl-py" "astunparse" "flatbuffers" "gast" "google-pasta" \
+            "grpcio" "h5py" "libclang" "ml-dtypes==0.2.0" "opt-einsum" \
+            "packaging" "six" "wrapt" "termcolor" "typing-extensions" \
+            "tensorboard==2.15.2" "keras==2.15.0" "tensorflow-estimator==2.15.0" || true
+pip install "tensorflow_datasets==4.9.3" "tensorflow_metadata==1.15.0" \
+            --force-reinstall --no-deps || true
+python -c "import tensorflow_datasets, tensorflow as tf;
+print('[bridge-subset] tfds', tensorflow_datasets.__version__, 'tf', tf.__version__)" \
+    || echo "[bridge-subset] WARNING tfds still not importable; stages 2-4 will fail"
+
+# From here on a stage failure is recorded and the remaining stages still run.
+# `set -e` is what turned v9rkpp2342 into a FAILED task with no scores at all:
+# the cheapest stage (sanity) killed step 4, which is the calibration profile
+# this job exists to produce. The exit code at the bottom still reflects it.
+set +e
+FAILED_STAGES=""
+
 # ---- Step 2: SANITY ----
 SANITY_OUT="${BOLT_ARTIFACT_DIR:-./artifacts}/cotfaith-bridge-subset-sanity"
 mkdir -p "$SANITY_OUT"
 python experiments/cotfaith_sanity.py \
-    --ckpt-path "$CKPT" --out "$SANITY_OUT" --dtype "${DTYPE:-bfloat16}"
+    --ckpt-path "$CKPT" --out "$SANITY_OUT" --dtype "${DTYPE:-bfloat16}" \
+    || FAILED_STAGES="$FAILED_STAGES sanity"
 [ -f "$SANITY_OUT/sanity_report.json" ] && head -80 "$SANITY_OUT/sanity_report.json"
 
 # ---- Step 3: r_vis(CoT) attention decomposition ----
@@ -74,7 +107,8 @@ python experiments/cotfaith_rvis.py \
     --ckpt-path "$CKPT" --out "$RVIS_OUT" \
     --n-samples "${RVIS_N_SAMPLES:-100}" \
     --rvis-layers "${RVIS_LAYERS:-0,1,2,3}" \
-    --dtype "${DTYPE:-bfloat16}"
+    --dtype "${DTYPE:-bfloat16}" \
+    || FAILED_STAGES="$FAILED_STAGES rvis"
 [ -f "$RVIS_OUT/rvis_cot_report.json" ] && head -c 1000 "$RVIS_OUT/rvis_cot_report.json"
 
 # ---- Step 4: causal CoT edit -> the calibration profile this job exists for ----
@@ -84,9 +118,22 @@ python experiments/cotfaith_edit.py \
     --ckpt-path "$CKPT" --out "$EDIT_OUT" \
     --n-samples "${EDIT_N_SAMPLES:-100}" \
     --threshold "${EDIT_THRESHOLD:-0.05}" \
-    --dtype "${DTYPE:-bfloat16}"
+    --dtype "${DTYPE:-bfloat16}" \
+    || FAILED_STAGES="$FAILED_STAGES edit"
 
 echo ""
 echo "==== Done ===="
 [ -f "$EDIT_OUT/cot_edit_report.json" ] && head -c 2500 "$EDIT_OUT/cot_edit_report.json"
+
+# The checkpoint is in this task's S3 prefix either way, so a partial failure is
+# recoverable without retraining -- but it must not report as success.
+if [ -n "$FAILED_STAGES" ]; then
+    echo "[bridge-subset] stages failed:$FAILED_STAGES"
+    echo "[bridge-subset] training itself succeeded and merged_model is in this"
+    echo "                task's artifacts; re-score with"
+    echo "                bolt/run_cotfaith_bridge_subset_eval_s3.sh instead of"
+    echo "                repeating ${STEPS:-15000} training steps."
+    [ -f "$EDIT_OUT/cot_edit_report.json" ] || exit 5
+    exit 4
+fi
 exit 0

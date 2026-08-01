@@ -419,14 +419,23 @@ def main() -> int:
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--stage", default="baseline",
                     choices=["baseline", "upgraded",
-                             "prismatic_baseline", "prismatic_upgraded"],
+                             "prismatic_baseline", "prismatic_upgraded",
+                             "oft_declared_pins"],
                     help="which environment this invocation is measuring; the "
                          "runner calls it once per stage and the reports merge. "
                          "The prismatic_* stages exist because the first two "
                          "both failed with an ImportError naming a package we "
                          "had simply not installed -- a missing dependency is "
                          "not an incompatibility, and limitation (ix) cannot "
-                         "cite one as the other")
+                         "cite one as the other. oft_declared_pins is outside "
+                         "the 2x2: round 6 (bolt dxb6wu9rxy) got as far as "
+                         "weight loading in both prismatic_* cells and died on "
+                         "`cumsum() ... got (bool, dim=int)` under torch "
+                         "2.4.1, while openvla-oft's own metadata declares "
+                         "torch==2.2.0. That cell runs in a separate venv "
+                         "holding exactly the stack OFT declares, so 'does not "
+                         "load here at all' is tested at the pin the "
+                         "checkpoint itself asks for rather than only at ours.")
     ap.add_argument("--no-forward", action="store_true",
                     help="skip the generation stage (config/weights only)")
     ap.add_argument("--repos", default="",

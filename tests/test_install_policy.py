@@ -522,10 +522,52 @@ def test_runner_round6_policy() -> None:
     check("runner: torch movement is checked between stages",
           "torch_watch " in src and src.count("torch_watch ") >= 3)
     check("runner: the reader compares torch ACROSS stage reports",
-          "torch is not the same in every stage" in src,
+          "torch is not the same in every 2x2 stage" in src,
           "each round-5 report looked fine alone; they disagreed with each other")
     check("runner: the reader surfaces unsatisfiable and oscillated",
           "UNSATISFIABLE" in src and "OSCILLATED" in src)
+
+
+def test_runner_round7_policy() -> None:
+    """Round 7's fifth stage: OFT's own declared pins, outside the 2x2.
+
+    Round 6 (bolt dxb6wu9rxy) held torch at 2.4.1+cu118 in all four cells, which
+    is what makes them comparable -- and that is exactly why no cell ran the
+    torch==2.2.0 openvla-oft itself declares. This stage does, in its own venv.
+    Three properties matter, and all three are the difference between a
+    measurement and a second broken environment.
+    """
+    src = (ROOT / "bolt" / "run_oft_load_probe.sh").read_text()
+    check("round7: the stage exists and is named in the probe's stage flag",
+          "--stage oft_declared_pins" in src)
+    check("round7: it runs in its own venv, not the job's interpreter",
+          "python -m venv" in src and '"$VENV/bin/python" experiments/probe' in src,
+          "installing torch 2.2.0 into the job's env would break stages 1-4")
+    check("round7: the venv is NOT --system-site-packages",
+          "venv --system-site-packages" not in src,
+          "inheriting the job's torch is precisely what this stage must not do")
+    check("round7: openvla-oft is installed WITH its declared deps",
+          "git+https://github.com/moojink/openvla-oft.git" in src and
+          '"$VENV/bin/pip" install --quiet --no-deps '
+          '"git+https://github.com/moojink/openvla-oft.git"' not in src,
+          "--no-deps would defeat the stage: the deps ARE the measurement")
+    check("round7: the constraints file is not applied to that pip",
+          '"$VENV/bin/pip" install --quiet -c' not in src,
+          "the constraints file freezes torch, and moving torch is the stage")
+    check("round7: the declared stage is excluded from the 2x2 torch check",
+          'DECLARED = "oft_load_probe_oft_declared_pins.json"' in src and
+          "for p in grid:" in src,
+          "folding it in would fire the check on the one stage meant to differ")
+    check("round7: a stage that silently ran OUR torch is reported inconclusive",
+          "INCONCLUSIVE" in src,
+          "a refused resolution leaves a cell that looks like a 5th data point "
+          "and is a duplicate of the 2x2")
+    check("round7: a missing stage-5 report is stated, not skipped",
+          "stage 5 (oft_declared_pins) wrote NO report" in src)
+    check("round7: the probe accepts the stage name",
+          '"oft_declared_pins"' in
+          (ROOT / "experiments" / "probe_openvla_oft_load.py").read_text(),
+          "an unlisted --stage choice would exit 2 before measuring anything")
 
 
 def test_report_only(m) -> None:
@@ -602,6 +644,7 @@ def main() -> int:
     test_report_only(m)
     test_runner_stage_policy()
     test_runner_round6_policy()
+    test_runner_round7_policy()
     test_probe_reexec_constants()
 
     bad = [c for c in CHECKS if not c[1]]

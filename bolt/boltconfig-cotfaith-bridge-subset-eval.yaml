@@ -1,0 +1,50 @@
+name: 'CoT-Faith #11b: score the Bridge-subset deconfound checkpoint (v9rkpp2342, no retrain)'
+description: 'The training half of the F4/O4 deconfound already succeeded. Task v9rkpp2342 ran all 15000 steps (loss 1.1755 -> 0.2373, join_strategy=by_task_text with the per-shard episode_id join refused, n_forward_failures=0) and reported FAILED for exactly one reason: the scoring stages read LIBERO through TFDS and that runner never installed it (ModuleNotFoundError at cotfaith_sanity.py:76). merged_model is intact in that task''s artifact prefix, so this job fetches it and runs stages 2-4 only -- sanity, r_vis(CoT), and the 13-family causal edit whose per-family F values ARE the calibration profile the deconfound compares. Retraining was the wrong fix twice over: hours of GPU, and a DIFFERENT checkpoint. f2d55rbcpd, an independent r=32 retrain of one published config, moved verb_swap 0.60 -> 0.78 with the protocol untouched, so same-weights is what makes this a deconfound rather than a second confound. A stage failure no longer discards the later stages.'
+tags:
+- cotfaith
+- deconfound
+- bridge-subset
+- F4
+- rescore
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  # Scoring only: no training loop here. 8h covers the ~15 GB checkpoint sync,
+  # the TF/TFDS install, and three passes at n=100 over a 7B model.
+  timeout: 8h
+  cluster: aws_6
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by bolt/submit_rollout_edit_ckpt.sh. Bolt does not
+  # expand ${VAR} from the submitting shell, so the helper substitutes them.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  # The Bridge-subset training task. Its state reads FAILED; that is the
+  # post-training sanity step, not the training. train_meta.json is copied next
+  # to the new reports so no reader has to take that on faith.
+  CKPT_TASK_ID: 'v9rkpp2342'
+  CKPT_SUBDIR: 'cotfaith-bridge-subset'
+
+  # Identical to the settings the LIBERO-trained rows were scored with. A
+  # deconfound that also changes n, the threshold or the family set compares two
+  # things at once, which is the failure it exists to fix.
+  RVIS_N_SAMPLES: '100'
+  EDIT_N_SAMPLES: '100'
+  EDIT_THRESHOLD: '0.05'
+  FAMILIES: 'all'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_bridge_subset_eval_s3.sh

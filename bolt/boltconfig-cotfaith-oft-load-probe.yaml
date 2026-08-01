@@ -1,11 +1,12 @@
-name: 'CoT-Faith #15e: OpenVLA-OFT load, round 6 (hold the stack the paper names)'
-description: 'Round 5 (bolt 8ejjyfkzq8) fixed both round-4 failures -- wandb installs cleanly, no pydantic skew, 0 re-execs -- and exposed that three of its four cells still measured our environment, not OFT. (1) torch silently moved 2.4.1+cu118 to 2.2.0+cu121 when stage 3 restored the paper''s transformers pin with deps, so stages 3-4 were not the named stack; a pip constraints file now holds torch and the protobuf-4 world across every pip call, shell ones included. (2) Stage 4 forced timm>=1.0.11 and the checkpoint''s remote code refuses it (TIMM Version must be >= 0.9.10 and < 1.0.0), so that cell could not load for any transformers; timm now stays in the declared window. (3) The repair loop ping-ponged protobuf 4/5 for four rounds -- tensorflow wants <5, recent wandb >=5 -- ending with a wandb that cannot import; it now detects the alternation and refuses to pick a side. Stage 3 is the cell that matters: round 5''s 20 REFUSED lines show OFT wants exactly the paper''s pins.'
+name: 'CoT-Faith #15f: OpenVLA-OFT load, round 7 (test it at the pin OFT itself declares)'
+description: 'Round 6 (bolt dxb6wu9rxy) worked: the constraints file held torch at 2.4.1+cu118 in all four cells (round 5 silently moved it), timm stayed inside the checkpoint''s declared window, and 4/4 stages reported. With prismatic resolved via git:moojink/openvla-oft, both prismatic_* cells got past the processor to WEIGHT LOADING and died there on a real API error rather than an ImportError: TypeError: cumsum() received an invalid combination of arguments - got (bool, dim=int). So limitation (ix) now has a measured exception behind it -- but the resolver also printed openvla-oft 0.0.1 wants torch==2.2.0 (plus torchvision 0.17.0, timm 0.9.10, tokenizers 0.19.1), all REFUSED because holding torch is what makes the 2x2 comparable. The one torch OFT names is the one torch no cell ran. Round 7 adds a fifth stage outside the 2x2: a separate venv built from OFT''s own declared dependency set, no constraints file, so unloadable is tested at the pin the checkpoint asks for.'
 tags:
 - cotfaith
 - openvla-oft
 - limitation-ix
 - load-probe
-- round6
+- round7
+- declared-pins
 project_id: ads_algo_signal_qucacheoffline
 permissions:
   owners: yudi_zhang2
@@ -15,7 +16,10 @@ resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
   task_type: 1gpu
   disk_gb: 512
-  timeout: 4h
+  # 5h, up from round 6's 4h: stage 5 builds a fresh venv and downloads a second
+  # complete torch (2.2.0 + torchvision + torchaudio, ~2.5 GB) before it can
+  # probe anything.
+  timeout: 5h
   cluster: aws_6
 environment_variables:
   HF_HOME: /tmp/hf

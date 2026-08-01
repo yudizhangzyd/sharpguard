@@ -80,6 +80,17 @@ ls "$CKPT_LOCAL"/*.safetensors >/dev/null 2>&1 \
     || { echo "[FATAL] no weight shards in $CKPT_LOCAL"; exit 3; }
 du -sh "$CKPT_LOCAL"
 
+# One second, before the checkpoint is loaded, on the two flags that decide what
+# this job spends its whole budget on. `--arms` typo'd to a name that is not an
+# arm of this run, or `--cot-refresh-steps` gating off by one, would produce a
+# well-formed report of the wrong experiment -- and #10c's budget buys ~40
+# episodes, once.
+python tests/test_rollout_arms_and_refresh.py || {
+    echo "[FATAL] the arm/refresh unit checks fail. Refusing to spend a rollout"
+    echo "        budget on a harness whose arm selection is wrong."
+    exit 7
+}
+
 COMMON=(
     --ckpt-path         "$CKPT_LOCAL"
     --suite             "${SUITE:-libero_spatial}"
@@ -89,6 +100,8 @@ COMMON=(
     --action-decoder    "${ACTION_DECODER:-ours}"
     --gripper-transform "${GRIPPER_TRANSFORM:-openvla}"
     --image-preproc     "${IMAGE_PREPROC:-none}"
+    --arms              "${ARMS:-}"
+    --cot-refresh-steps "${COT_REFRESH_STEPS:-1}"
     --dtype             "${DTYPE:-bfloat16}"
 )
 

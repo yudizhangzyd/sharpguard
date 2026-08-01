@@ -330,20 +330,27 @@ def probe(args, model, processor, device, pixel_dtype) -> dict:
                 v["delta_linf_vs_cot_clean"] = round(float(d.max()), 5)
 
     # Feasibility, computed rather than guessed: this is what decides whether a
-    # full run fits in the 24h wall clock.
-    per_step = out.get("cot_gen_seconds", 0.0) + sum(
+    # full run fits in the 24h wall clock. The CoT term is divided by the
+    # refresh interval, because that is the only reason the interval exists --
+    # bolt nskmsunnpb spent 63 of every 66 minutes generating reasoning.
+    refresh = max(1, int(getattr(args, "cot_refresh_steps", 1) or 1))
+    per_step = out.get("cot_gen_seconds", 0.0) / refresh + sum(
         v.get("seconds", 0.0) for v in out.get("one_frame_actions", {}).values()
         if isinstance(v, dict)) / max(1, len(out.get("one_frame_actions", {})))
     n_arms = 1 + 1 + sum(1 for s in fam_status.values()
                          if s == "changes the rendered CoT")
+    if args.arms:
+        n_arms = len([a for a in args.arms.split(",") if a.strip()])
     out["feasibility"] = {
         "seconds_per_step_per_arm": round(per_step, 2),
         "n_arms": n_arms,
+        "cot_refresh_steps": refresh,
         "est_hours_full_run": round(
             per_step * n_arms * args.max_steps * args.n_eps_per_task
             * args.n_tasks_est / 3600.0, 1),
         "note": "est assumes every episode runs to max_steps; successful "
-                "episodes terminate early, so this is an upper bound.",
+                "episodes terminate early, so this is an upper bound. The "
+                "no-CoT arm is cheaper than this per-arm average.",
     }
     return out
 
@@ -393,8 +400,19 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
     for _ in range(10):                       # Kim's NUM_STEPS_WAIT settling
         obs, _, _, _ = env.step(no_op)
     success, steps = False, 0
-    n_cot_ok = n_cot_bad = n_edit_skipped = 0
+    n_cot_ok = n_cot_bad = n_edit_skipped = n_cot_gen = 0
     deltas = []
+    # Regenerating the CoT every step costs ~8.9 s of the 9.5 s step on a 7B
+    # (bolt nskmsunnpb: 3.6 min/episode with no CoT, 63 min with one), so a
+    # per-step protocol buys ~9 episodes out of a 20 h budget and a 0/9 bound.
+    # `--cot-refresh-steps k` regenerates every k steps and reuses the prefix in
+    # between, which buys ~10x the episodes at the cost of feeding the policy
+    # reasoning that is up to k-1 steps stale. That is a DIFFERENT protocol, not
+    # a cheaper approximation of the same one -- GRIPPER POSITION and MOVE are
+    # frame-dependent -- so k is recorded per arm in the report and k=1
+    # reproduces the per-step run exactly.
+    refresh = max(1, int(getattr(args, "cot_refresh_steps", 1) or 1))
+    cached_prompt = None
     while steps < args.max_steps:
         img = obs.get("agentview_image", obs.get("image"))
         if img is None:
@@ -403,32 +421,36 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
         img = _preprocess_image(img, args.image_preproc)
         prompt = None
         if arm != "nocot":
-            reasoning, _, _ = gen_cot(model, processor, img, task_lang,
-                                      device=device, pixel_dtype=pixel_dtype,
-                                      max_new_tokens=args.max_new_tokens)
-            if not has_structured_cot(reasoning):
-                # No CoT this frame. Falling back to the no-CoT prompt would
-                # silently mix arms, so the step is recorded and the clean
-                # prefix is used as-is (empty tags render as empty strings).
-                n_cot_bad += 1
-            else:
-                n_cot_ok += 1
-            body = build_cot_body(reasoning)
-            if edit_fn is not None:
-                try:
-                    ed = edit_fn(reasoning)
-                except Exception:
-                    ed = None
-                if ed is None:
-                    n_edit_skipped += 1
+            if should_refresh_cot(steps, refresh, cached_prompt is not None):
+                reasoning, _, _ = gen_cot(model, processor, img, task_lang,
+                                          device=device,
+                                          pixel_dtype=pixel_dtype,
+                                          max_new_tokens=args.max_new_tokens)
+                n_cot_gen += 1
+                if not has_structured_cot(reasoning):
+                    # No CoT this frame. Falling back to the no-CoT prompt would
+                    # silently mix arms, so the step is recorded and the clean
+                    # prefix is used as-is (empty tags render as empty strings).
+                    n_cot_bad += 1
                 else:
-                    ed.pop("__edit_meta__", None)
-                    eb = build_cot_body(ed)
-                    if eb == body:
+                    n_cot_ok += 1
+                body = build_cot_body(reasoning)
+                if edit_fn is not None:
+                    try:
+                        ed = edit_fn(reasoning)
+                    except Exception:
+                        ed = None
+                    if ed is None:
                         n_edit_skipped += 1
                     else:
-                        body = eb
-            prompt = cot_prompt(task_lang, body)
+                        ed.pop("__edit_meta__", None)
+                        eb = build_cot_body(ed)
+                        if eb == body:
+                            n_edit_skipped += 1
+                        else:
+                            body = eb
+                cached_prompt = cot_prompt(task_lang, body)
+            prompt = cached_prompt
         a = decode(model, processor, img, task_lang, device=device,
                    pixel_dtype=pixel_dtype, prompt=prompt, **dec_kw)
         a = _apply_gripper_transform(a, args.gripper_transform)
@@ -441,6 +463,7 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
     return {"arm": arm, "family": family, "success": bool(success),
             "steps": steps, "n_cot_structured": n_cot_ok,
             "n_cot_unstructured": n_cot_bad, "n_edit_skipped": n_edit_skipped,
+            "n_cot_generated": n_cot_gen, "cot_refresh_steps": refresh,
             "n_delta_recorded": len(deltas)}
 
 
@@ -486,8 +509,9 @@ def run(args):
 
     suite = benchmark.get_benchmark_dict()[args.suite]()
     fams = [f.strip() for f in args.families.split(",") if f.strip()]
-    arms = [("nocot", None), ("cot_clean", None)] + [
-        (f"cot_{f}", f) for f in fams]
+    arms = select_arms(fams, args.arms)
+    print(f"[rollout-edit] arms={[n for n, _ in arms]} "
+          f"cot_refresh_steps={args.cot_refresh_steps}")
 
     episodes = []
     rep_path = out_dir / "rollout_edit_report.json"
@@ -548,6 +572,45 @@ def run(args):
     print(f"[rollout-edit] done -> {rep_path}")
 
 
+def should_refresh_cot(step: int, refresh: int, have_cached: bool) -> bool:
+    """Is this the step that regenerates the CoT?
+
+    Pulled out of run_arm's loop so it is checkable without a simulator: with
+    k=1 this must be True at every step (that is what makes the periodic
+    protocol reduce exactly to the per-step one bolt nskmsunnpb ran), and with
+    k>1 it must fire ceil(n/k) times over n steps -- the count the report
+    publishes as n_cot_generated, which is the only thing distinguishing the two
+    protocols for a reader.
+    """
+    return (not have_cached) or step % max(1, refresh) == 0
+
+
+def select_arms(families: list, spec: str) -> list:
+    """Resolve --arms against the arms this run actually has.
+
+    `--arms` exists so the precondition can be measured without paying for the
+    edit arms. SR(cot_clean) > 0 is what makes DSR defined at all (see
+    _summarize), and it is the one arm no artifact of ours has ever reported for
+    our own fine-tune -- only upstream's four LIBERO checkpoints were gated. A
+    typo here would silently roll out the wrong set for hours, so an unknown name
+    raises instead of being dropped: a run of two arms when three were asked for
+    is indistinguishable in the report from a run that was configured that way.
+    """
+    all_arms = [("nocot", None), ("cot_clean", None)] + [
+        (f"cot_{f}", f) for f in families]
+    if not spec:
+        return all_arms
+    want = [a.strip() for a in spec.split(",") if a.strip()]
+    known = {n for n, _ in all_arms}
+    unknown = [a for a in want if a not in known]
+    if unknown:
+        raise ValueError(
+            f"--arms names {unknown}, which are not arms of this run. "
+            f"Available: {sorted(known)} (edit arms come from --families="
+            f"{','.join(families)}). Refusing to run a subset nobody asked for.")
+    return [(n, f) for n, f in all_arms if n in want]
+
+
 def _summarize(args, arms, episodes, status: str) -> dict:
     by_arm = {}
     for arm, fam in arms:
@@ -559,6 +622,12 @@ def _summarize(args, arms, episodes, status: str) -> dict:
                        "wilson95": [lo, hi],
                        "n_cot_structured": sum(e.get("n_cot_structured", 0) for e in rows),
                        "n_cot_unstructured": sum(e.get("n_cot_unstructured", 0) for e in rows),
+                       # How many times the CoT was actually generated, versus
+                       # how many steps ran under it. With --cot-refresh-steps>1
+                       # these differ, and a reader cannot otherwise tell a
+                       # per-step run from a periodically-refreshed one.
+                       "n_cot_generated": sum(e.get("n_cot_generated", 0) for e in rows),
+                       "n_steps": sum(e.get("steps", 0) for e in rows),
                        "n_edit_skipped": sum(e.get("n_edit_skipped", 0) for e in rows)}
 
     clean = by_arm.get("cot_clean", {})
@@ -594,11 +663,16 @@ def _summarize(args, arms, episodes, status: str) -> dict:
         "experiment": "rollout_level_cot_edit",
         "status": status,
         "config": {k: v for k, v in vars(args).items()},
+        "arms_run": [n for n, _ in arms],
         "precondition_met": precondition,
         "precondition_note": (
             "cot_clean solves the task at least once, so a drop under editing "
             "is attributable to the edit."
             if precondition else
+            "cot_clean was not among --arms, so this run measures SR only and "
+            "makes no claim about the precondition either way. It cannot be "
+            "read as a null: no clean-CoT episode was attempted."
+            if "cot_clean" not in {n for n, _ in arms} else
             "cot_clean NEVER succeeds, so DSR is 0 for every family by "
             "construction and carries no information about CoT causality. "
             "This is reported as an undefined measurement rather than as a "
@@ -622,6 +696,16 @@ def main():
                          "so a drop has its own control in the same run.")
     ap.add_argument("--n-tasks", type=int, default=0, help="0 = all in suite")
     ap.add_argument("--n-eps-per-task", type=int, default=1)
+    ap.add_argument("--arms", default="",
+                    help="comma-separated subset of nocot,cot_clean,cot_<fam>. "
+                         "Empty = all. Use 'nocot,cot_clean' to measure the "
+                         "SR precondition without paying for the edit arms.")
+    ap.add_argument("--cot-refresh-steps", type=int, default=1,
+                    help="regenerate the CoT every k steps and reuse it in "
+                         "between. 1 = upstream-style per-step reasoning (what "
+                         "bolt nskmsunnpb runs). k>1 is a different protocol, "
+                         "recorded as such: it trades reasoning freshness for "
+                         "~k x the episodes per GPU-hour.")
     ap.add_argument("--max-steps", type=int, default=0,
                     help="0 = upstream's per-suite budget")
     ap.add_argument("--max-new-tokens", type=int, default=320,

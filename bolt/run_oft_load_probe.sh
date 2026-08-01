@@ -6,8 +6,7 @@
 # one claim in the paper with no artifact behind it, and it is the one that
 # excuses a coverage gap -- so it gets measured like everything else.
 #
-# Four stages, in one job, deliberately in this order:
-#
+# Five stages, in one job, deliberately in this order:
 #   1. BASELINE: attempt the load in the environment the paper names, and record
 #      the exception. Without this the claim stays unfalsifiable even if a later
 #      stage succeeds, because we would not have shown what we originally hit.
@@ -20,6 +19,12 @@
 #      the paper's own pins are restored before re-measuring.
 #   4. PRISMATIC_UPGRADED: the last cell of the 2x2, which separates "OFT needs
 #      a newer transformers than we pin" from "OFT does not load here at all".
+#   5. OFT_DECLARED_PINS: outside the 2x2, added in round 7. The four cells above
+#      all hold torch at ours so they stay comparable, and round 6 found that the
+#      one torch OFT itself declares (2.2.0) is therefore the one torch none of
+#      them ran. This cell runs the probe in a separate venv built from OFT's own
+#      declared dependency set, so "unloadable" is tested at the pin the
+#      checkpoint asks for and not only at ours.
 #
 # Every stage writes a report and the job exits 0 either way: a measured failure
 # IS the deliverable here. What the job must never do is exit 0 having measured
@@ -113,6 +118,16 @@ torch_watch () {
         echo "[oft] torch still $now before stage $1"
     fi
 }
+
+# The install policy under test here is the one that produced four rounds of
+# results about our own environment rather than about OFT. It costs a second and
+# it runs before anything is installed, while the image is still the one the
+# paper names. Report-only: a failure here does not stop the measurement, but it
+# tells the reader which of the two to trust.
+python tests/test_install_policy.py || \
+    echo "[oft] WARNING install-policy checks FAIL: read every verdict below as "\
+         "provisional -- the code deciding what gets installed is not behaving "\
+         "as its own tests specify."
 
 # ---- stage 1: the environment the paper names -------------------------------
 python -c "import torch, transformers, sys;
@@ -220,6 +235,61 @@ python experiments/probe_openvla_oft_load.py \
     --dtype "${DTYPE:-bfloat16}" \
     ${OFT_REPOS:+--repos "$OFT_REPOS"} || echo "[oft] prismatic_upgraded exited nonzero"
 
+# ---- stage 5: the pins OpenVLA-OFT itself declares --------------------------
+# Round 6 (bolt dxb6wu9rxy) is what makes this stage necessary. Its constraints
+# file worked -- torch held at 2.4.1+cu118 in all four cells, which round 5
+# failed to do -- and with `prismatic` present both prismatic_* cells got past
+# the processor to WEIGHT LOADING and died there with the same error:
+#
+#   TypeError: cumsum() received an invalid combination of arguments
+#              - got (bool, dim=int)
+#
+# and the resolver's own output names the reason to suspect the pin rather than
+# the checkpoint: `openvla-oft 0.0.1 wants torch==2.2.0` (also torchvision
+# 0.17.0, torchaudio 2.2.0, timm 0.9.10, tokenizers 0.19.1), all REFUSED because
+# holding torch is what makes the 2x2 comparable. So the one torch OFT names is
+# the one torch no cell ran, and "remains unloadable in our environment" is not
+# yet established at the pin the checkpoint asks for. That is the difference
+# between a coverage gap we measured and one we declined to close.
+#
+# It runs in a SEPARATE venv, deliberately:
+#   * `pip install git+...openvla-oft.git` there resolves OFT's own declared
+#     dependency set with nothing hand-pinned by us, which is the purest form of
+#     the question. In the main environment the same install would either be
+#     refused by the constraints file or would break the four cells above.
+#   * SG_PIP_CONSTRAINTS is NOT passed to it. The constraints file exists to
+#     freeze torch, and moving torch is the entire content of this cell -- a
+#     constraint here would turn the measurement into a resolution failure.
+# Nothing in this stage can affect stages 1-4: different interpreter, different
+# site-packages, and it comes last.
+VENV=/tmp/oft_declared
+python -m venv "$VENV" && "$VENV/bin/pip" install --quiet --upgrade pip
+# No -c: see above. Failures are echoed, not fatal -- a stage that cannot be
+# built is itself a recorded cost of supporting OFT.
+"$VENV/bin/pip" install --quiet "git+https://github.com/moojink/openvla-oft.git" \
+    || echo "[oft] declared-pin install of openvla-oft failed"
+# The probe imports only torch, transformers and numpy beyond stdlib, so this is
+# the whole extra surface it needs.
+"$VENV/bin/pip" install --quiet "huggingface_hub>=0.23,<0.30" "pillow" \
+    || echo "[oft] declared-pin probe deps failed"
+"$VENV/bin/python" -c "import torch, transformers, sys;
+print('[oft] oft_declared_pins python', sys.version.split()[0],
+      'torch', torch.__version__, 'transformers', transformers.__version__)" || true
+"$VENV/bin/python" -c "
+import json
+try:
+    import importlib.metadata as md
+    print('[oft] venv pins:', {p: md.version(p) for p in
+          ('torch','torchvision','transformers','tokenizers','timm')})
+except Exception as e:
+    print('[oft] venv pin readout failed:', e)
+" || true
+"$VENV/bin/python" experiments/probe_openvla_oft_load.py \
+    --out   "$OUT_DIR" \
+    --stage oft_declared_pins \
+    --dtype "${DTYPE:-bfloat16}" \
+    ${OFT_REPOS:+--repos "$OFT_REPOS"} || echo "[oft] oft_declared_pins exited nonzero"
+
 # ---- the job reads its own output -------------------------------------------
 # A probe nobody reads is how two rollout defects in this paper survived: each
 # exited 0 with a well-formed report. So the verdict is printed here, and a job
@@ -228,6 +298,11 @@ python - "$OUT_DIR" <<'PY' || exit 6
 import json, pathlib, sys
 d = pathlib.Path(sys.argv[1])
 found = sorted(d.glob("oft_load_probe_*.json"))
+# The declared-pin cell is outside the 2x2 BY CONSTRUCTION: it is the only cell
+# that moves torch, so folding it into the cross-stage torch check below would
+# make that check fire on the one stage whose whole purpose is to differ.
+DECLARED = "oft_load_probe_oft_declared_pins.json"
+grid = [p for p in found if p.name != DECLARED]
 if not found:
     print("[FATAL] no stage wrote a report: this job measured nothing, "
           "which is worse than a failure it could have recorded.")
@@ -262,17 +337,36 @@ for p in sorted(d.glob("pin_doctor_*.json")):
               "side to CONSTRAINT_LINES in bolt/install_prismatic.py")
     for f in c.get("remaining", []) or []:
         print(f"    UNRESOLVED: {f['holder']} wants {f['requirement']}")
-# Did torch hold across all four stages? Round 5's reports each looked fine on
-# their own and only disagreed with each other, which no single report can show.
+# Did torch hold across the four 2x2 stages? Round 5's reports each looked fine
+# on their own and only disagreed with each other, which no single report can
+# show. `grid`, not `found`: stage 5 moves torch deliberately.
 torches = {}
-for p in found:
+for p in grid:
     torches[p.stem] = (json.loads(p.read_text()).get("environment") or {}).get("torch")
 if len(set(torches.values())) > 1:
-    print(f"[FATAL-ISH] torch is not the same in every stage: {torches}. The 2x2 "
-          f"compares cells that do not share a torch, so no cell's failure can be "
-          f"attributed to the variable that cell was meant to vary.")
+    print(f"[FATAL-ISH] torch is not the same in every 2x2 stage: {torches}. The "
+          f"2x2 compares cells that do not share a torch, so no cell's failure can "
+          f"be attributed to the variable that cell was meant to vary.")
 else:
-    print(f"[oft] torch held across all stages: {sorted(set(torches.values()))}")
+    print(f"[oft] torch held across the 2x2 stages: {sorted(set(torches.values()))}")
+# Round 7. The declared-pin cell is only worth reading if it actually got the
+# torch OFT asks for -- if pip refused or the venv build failed, it is a second
+# copy of the 2x2's torch and says nothing new. Reported either way; a stage that
+# silently measured the wrong stack is exactly what round 5 did.
+dp = d / DECLARED
+if not dp.exists():
+    print("[oft] stage 5 (oft_declared_pins) wrote NO report: the declared-pin "
+          "environment could not be built or the probe died before writing. "
+          "Limitation (ix) therefore still rests on our own pin only -- say so.")
+else:
+    e = (json.loads(dp.read_text()).get("environment") or {})
+    gridt = sorted(set(torches.values()))
+    print(f"--- oft_declared_pins: torch={e.get('torch')} "
+          f"transformers={e.get('transformers')} (2x2 ran {gridt})")
+    if e.get("torch") and e["torch"] in gridt:
+        print("    INCONCLUSIVE: this cell ran the same torch as the 2x2, so it is "
+              "not a test at OFT's declared pin. Check the install log above for a "
+              "refused resolution before citing it.")
 loaded_anywhere = False
 for p in found:
     r = json.loads(p.read_text())
@@ -298,7 +392,8 @@ for p in found:
         if a.get("stuck_on"):
             print(f"      stuck_on: {a['stuck_on']} -- installing it did not "
                   f"clear the import, so this is the real blocker")
-print(f"[oft] {len(found)}/4 stages reported; any_loaded={loaded_anywhere}")
+print(f"[oft] {len(found)}/5 stages reported ({len(grid)}/4 in the 2x2); "
+      f"any_loaded={loaded_anywhere}")
 if loaded_anywhere:
     print("[oft] ACTION REQUIRED: a checkpoint loaded. Limitation (ix) says OFT "
           "is unloadable in our environment and must be rewritten -- either the "
