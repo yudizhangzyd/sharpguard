@@ -1,0 +1,60 @@
+{
+  "mode": "pip_check_only",
+  "pins": {
+    "torch": "2.4.1+cu118",
+    "transformers": "4.53.2",
+    "tokenizers": "0.21.4",
+    "timm": "0.9.16"
+  },
+  "consistency": {
+    "rounds": [
+      {
+        "findings": [
+          {
+            "kind": "missing",
+            "holder": "robomimic",
+            "holder_version": "0.3.0",
+            "requirement": "egl-probe",
+            "name": "egl-probe"
+          },
+          {
+            "kind": "missing",
+            "holder": "robomimic",
+            "holder_version": "0.3.0",
+            "requirement": "tensorboard",
+            "name": "tensorboard"
+          },
+          {
+            "kind": "missing",
+            "holder": "robomimic",
+            "holder_version": "0.3.0",
+            "requirement": "tensorboardx",
+            "name": "tensorboardx"
+          }
+        ],
+        "repairs": [
+          {
+            "spec": "egl-probe",
+            "ok": true,
+            "pip_tail": null
+          },
+          {
+            "spec": "tensorboard",
+            "ok": true,
+            "pip_tail": null
+          },
+          {
+            "spec": "tensorboardx",
+            "ok": true,
+            "pip_tail": null
+          }
+        ]
+      }
+    ],
+    "refused": [],
+    "unsatisfiable": [],
+    "oscillated": false,
+    "clean": true,
+    "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+  }
+}

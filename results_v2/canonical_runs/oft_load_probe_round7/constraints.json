@@ -1,0 +1,19 @@
+{
+  "mode": "write_constraints",
+  "path": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt",
+  "lines": [
+    "protobuf<5",
+    "wandb<0.18",
+    "tensorflow-metadata<1.15",
+    "torch==2.4.1+cu118"
+  ],
+  "frozen": [
+    "torch"
+  ],
+  "pins_at_write": {
+    "torch": "2.4.1+cu118",
+    "transformers": "4.40.1",
+    "tokenizers": "0.19.1",
+    "timm": "0.9.10"
+  }
+}

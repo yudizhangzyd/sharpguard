@@ -1,0 +1,18 @@
+{
+  "out": "/mnt/task_wrapper/user_output/artifacts/cotfaith-bridge-subset",
+  "base_model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "reasoning_repo": "Embodied-CoT/embodied_features_bridge",
+  "dataset_repo": "IPEC-COMMUNITY/bridge_orig_lerobot",
+  "n_trajectories": 4000,
+  "max_steps_per_ep": 0,
+  "lora_r": 32,
+  "lora_alpha": 16,
+  "lr": 2e-05,
+  "steps": 15000,
+  "batch_size": 2,
+  "dtype": "bfloat16",
+  "seed": 0,
+  "reasoning_mode": "full",
+  "preflight_n": 8,
+  "preflight_only": false
+}

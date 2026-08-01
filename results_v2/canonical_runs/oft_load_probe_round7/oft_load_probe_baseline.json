@@ -1,0 +1,254 @@
+{
+  "probe": "openvla_oft_load",
+  "stage": "baseline",
+  "why": "Limitation (ix) claims OpenVLA-OFT is unloadable in our environment. No artifact backed that claim; this measures it, in the environment the paper names and again on an upgraded stack, and records the exception rather than the conclusion.",
+  "environment": {
+    "python": "3.10.14",
+    "torch": "2.4.1+cu118",
+    "transformers": "4.40.1",
+    "timm": "0.9.10",
+    "tokenizers": "0.19.1",
+    "accelerate": "0.30.1",
+    "peft": "0.11.1",
+    "prismatic": "<absent: ModuleNotFoundError>",
+    "prismatic_path": null,
+    "prismatic_has_vla": false,
+    "cuda_available": true,
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "sm": "8.0"
+  },
+  "reexec_count": 0,
+  "candidate_resolution": {
+    "source": "hub_search",
+    "query": "openvla-oft",
+    "n_hits": 50,
+    "n_official": 5,
+    "third_party_ignored": 45,
+    "resolved": [
+      "moojink/openvla-7b-oft-finetuned-libero-10",
+      "moojink/openvla-7b-oft-finetuned-libero-goal",
+      "moojink/openvla-7b-oft-finetuned-libero-object",
+      "moojink/openvla-7b-oft-finetuned-libero-spatial",
+      "moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10"
+    ]
+  },
+  "n_candidates": 5,
+  "n_candidates_existing": 5,
+  "n_loaded": 0,
+  "any_loaded": false,
+  "hub_info": {
+    "moojink/openvla-7b-oft-finetuned-libero-10": {
+      "exists": true,
+      "sha": "95220f9a3421a7ff12d4218e73d09ade830fa9a3",
+      "license": "mit",
+      "n_files": 25,
+      "has_config_json": true,
+      "has_remote_code": true,
+      "weight_files": [
+        "lora_adapter/adapter_model.safetensors",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors"
+      ],
+      "config_arch": null
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-goal": {
+      "exists": true,
+      "sha": "c2d0f9fbbd82674683b397ff923168a12f6a307b",
+      "license": "mit",
+      "n_files": 25,
+      "has_config_json": true,
+      "has_remote_code": true,
+      "weight_files": [
+        "lora_adapter/adapter_model.safetensors",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors"
+      ],
+      "config_arch": null
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-object": {
+      "exists": true,
+      "sha": "4c89574e1c538b6c102f43f0526d60a9d3650148",
+      "license": "mit",
+      "n_files": 25,
+      "has_config_json": true,
+      "has_remote_code": true,
+      "weight_files": [
+        "lora_adapter/adapter_model.safetensors",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors"
+      ],
+      "config_arch": null
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-spatial": {
+      "exists": true,
+      "sha": "6d0231af0e48c5985f1ff86908f4674b84bc049b",
+      "license": "mit",
+      "n_files": 25,
+      "has_config_json": true,
+      "has_remote_code": true,
+      "weight_files": [
+        "lora_adapter/adapter_model.safetensors",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors"
+      ],
+      "config_arch": null
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10": {
+      "exists": true,
+      "sha": "638918f3d1c2e43a39a8a20772bdb8b91835e4b7",
+      "license": "mit",
+      "n_files": 25,
+      "has_config_json": true,
+      "has_remote_code": true,
+      "weight_files": [
+        "lora_adapter/adapter_model.safetensors",
+        "model-00001-of-00004.safetensors",
+        "model-00002-of-00004.safetensors",
+        "model-00003-of-00004.safetensors",
+        "model-00004-of-00004.safetensors"
+      ],
+      "config_arch": null
+    }
+  },
+  "load_attempts": {
+    "moojink/openvla-7b-oft-finetuned-libero-10": {
+      "repo": "moojink/openvla-7b-oft-finetuned-libero-10",
+      "stage_reached": "processor",
+      "ok": false,
+      "config_arch": [
+        "OpenVLAForActionPrediction"
+      ],
+      "config_model_type": "openvla",
+      "norm_stats_keys": [
+        "austin_buds_dataset_converted_externally_to_rlds",
+        "austin_sailor_dataset_converted_externally_to_rlds",
+        "austin_sirius_dataset_converted_externally_to_rlds",
+        "bc_z",
+        "berkeley_autolab_ur5",
+        "berkeley_cable_routing",
+        "berkeley_fanuc_manipulation",
+        "bridge_orig",
+        "cmu_stretch",
+        "dlr_edan_shared_control_converted_externally_to_rlds",
+        "dobbe",
+        "fmb_dataset"
+      ],
+      "error_type": "ImportError",
+      "error": "This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`",
+      "traceback_tail": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/experiments/probe_openvla_oft_load.py\", line 198, in try_load\n    model = AutoModelForVision2Seq.from_pretrained(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py\", line 550, in from_pretrained\n    model_class = get_class_from_dynamic_module(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 489, in get_class_from_dynamic_module\n    final_module = get_cached_module_file(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 315, in get_cached_module_file\n    modules_needed = check_imports(resolved_module_file)\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 180, in check_imports\n    raise ImportError(\nImportError: This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`\n"
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-goal": {
+      "repo": "moojink/openvla-7b-oft-finetuned-libero-goal",
+      "stage_reached": "processor",
+      "ok": false,
+      "config_arch": [
+        "OpenVLAForActionPrediction"
+      ],
+      "config_model_type": "openvla",
+      "norm_stats_keys": [
+        "austin_buds_dataset_converted_externally_to_rlds",
+        "austin_sailor_dataset_converted_externally_to_rlds",
+        "austin_sirius_dataset_converted_externally_to_rlds",
+        "bc_z",
+        "berkeley_autolab_ur5",
+        "berkeley_cable_routing",
+        "berkeley_fanuc_manipulation",
+        "bridge_orig",
+        "cmu_stretch",
+        "dlr_edan_shared_control_converted_externally_to_rlds",
+        "dobbe",
+        "fmb_dataset"
+      ],
+      "error_type": "ImportError",
+      "error": "This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`",
+      "traceback_tail": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/experiments/probe_openvla_oft_load.py\", line 198, in try_load\n    model = AutoModelForVision2Seq.from_pretrained(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py\", line 550, in from_pretrained\n    model_class = get_class_from_dynamic_module(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 489, in get_class_from_dynamic_module\n    final_module = get_cached_module_file(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 315, in get_cached_module_file\n    modules_needed = check_imports(resolved_module_file)\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 180, in check_imports\n    raise ImportError(\nImportError: This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`\n"
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-object": {
+      "repo": "moojink/openvla-7b-oft-finetuned-libero-object",
+      "stage_reached": "processor",
+      "ok": false,
+      "config_arch": [
+        "OpenVLAForActionPrediction"
+      ],
+      "config_model_type": "openvla",
+      "norm_stats_keys": [
+        "austin_buds_dataset_converted_externally_to_rlds",
+        "austin_sailor_dataset_converted_externally_to_rlds",
+        "austin_sirius_dataset_converted_externally_to_rlds",
+        "bc_z",
+        "berkeley_autolab_ur5",
+        "berkeley_cable_routing",
+        "berkeley_fanuc_manipulation",
+        "bridge_orig",
+        "cmu_stretch",
+        "dlr_edan_shared_control_converted_externally_to_rlds",
+        "dobbe",
+        "fmb_dataset"
+      ],
+      "error_type": "ImportError",
+      "error": "This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`",
+      "traceback_tail": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/experiments/probe_openvla_oft_load.py\", line 198, in try_load\n    model = AutoModelForVision2Seq.from_pretrained(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py\", line 550, in from_pretrained\n    model_class = get_class_from_dynamic_module(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 489, in get_class_from_dynamic_module\n    final_module = get_cached_module_file(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 315, in get_cached_module_file\n    modules_needed = check_imports(resolved_module_file)\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 180, in check_imports\n    raise ImportError(\nImportError: This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`\n"
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-spatial": {
+      "repo": "moojink/openvla-7b-oft-finetuned-libero-spatial",
+      "stage_reached": "processor",
+      "ok": false,
+      "config_arch": [
+        "OpenVLAForActionPrediction"
+      ],
+      "config_model_type": "openvla",
+      "norm_stats_keys": [
+        "austin_buds_dataset_converted_externally_to_rlds",
+        "austin_sailor_dataset_converted_externally_to_rlds",
+        "austin_sirius_dataset_converted_externally_to_rlds",
+        "bc_z",
+        "berkeley_autolab_ur5",
+        "berkeley_cable_routing",
+        "berkeley_fanuc_manipulation",
+        "bridge_orig",
+        "cmu_stretch",
+        "dlr_edan_shared_control_converted_externally_to_rlds",
+        "dobbe",
+        "fmb_dataset"
+      ],
+      "error_type": "ImportError",
+      "error": "This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`",
+      "traceback_tail": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/experiments/probe_openvla_oft_load.py\", line 198, in try_load\n    model = AutoModelForVision2Seq.from_pretrained(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py\", line 550, in from_pretrained\n    model_class = get_class_from_dynamic_module(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 489, in get_class_from_dynamic_module\n    final_module = get_cached_module_file(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 315, in get_cached_module_file\n    modules_needed = check_imports(resolved_module_file)\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 180, in check_imports\n    raise ImportError(\nImportError: This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`\n"
+    },
+    "moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10": {
+      "repo": "moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10",
+      "stage_reached": "processor",
+      "ok": false,
+      "config_arch": [
+        "OpenVLAForActionPrediction"
+      ],
+      "config_model_type": "openvla",
+      "norm_stats_keys": [
+        "austin_buds_dataset_converted_externally_to_rlds",
+        "austin_sailor_dataset_converted_externally_to_rlds",
+        "austin_sirius_dataset_converted_externally_to_rlds",
+        "bc_z",
+        "berkeley_autolab_ur5",
+        "berkeley_cable_routing",
+        "berkeley_fanuc_manipulation",
+        "bridge_orig",
+        "cmu_stretch",
+        "dlr_edan_shared_control_converted_externally_to_rlds",
+        "dobbe",
+        "fmb_dataset"
+      ],
+      "error_type": "ImportError",
+      "error": "This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`",
+      "traceback_tail": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/experiments/probe_openvla_oft_load.py\", line 198, in try_load\n    model = AutoModelForVision2Seq.from_pretrained(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py\", line 550, in from_pretrained\n    model_class = get_class_from_dynamic_module(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 489, in get_class_from_dynamic_module\n    final_module = get_cached_module_file(\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 315, in get_cached_module_file\n    modules_needed = check_imports(resolved_module_file)\n  File \"/miniforge/lib/python3.10/site-packages/transformers/dynamic_module_utils.py\", line 180, in check_imports\n    raise ImportError(\nImportError: This modeling file requires the following packages that were not found in your environment: prismatic. Run `pip install prismatic`\n"
+    }
+  },
+  "verdict": "does not load in this environment; see load_attempts[*].error_type"
+}

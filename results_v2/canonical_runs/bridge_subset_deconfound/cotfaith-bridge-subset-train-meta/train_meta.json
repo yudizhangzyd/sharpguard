@@ -1,0 +1,23 @@
+{
+  "status": "trained",
+  "corpus": "IPEC-COMMUNITY/bridge_orig_lerobot",
+  "reasoning_repo": "Embodied-CoT/embodied_features_bridge",
+  "join_strategy": "by_task_text",
+  "example_budget": 4000,
+  "steps_requested": 15000,
+  "steps_with_gradient": 15000,
+  "n_stream_wraps": 7,
+  "n_forward_failures": 0,
+  "loss_first_100_mean": 1.1754889023303985,
+  "loss_last_100_mean": 0.2373313569277525,
+  "recipe_source": "experiments/cotfaith_train.py (imported, not copied)",
+  "lora": {
+    "r": 32,
+    "alpha": 16,
+    "lr": 2e-05,
+    "batch_size": 2,
+    "dtype": "bfloat16",
+    "seed": 0,
+    "reasoning_mode": "full"
+  }
+}

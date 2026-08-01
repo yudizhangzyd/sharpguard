@@ -1,0 +1,656 @@
+{
+  "target": "prismatic.extern.hf.modeling_prismatic",
+  "pins_before": {
+    "torch": "2.4.1+cu118",
+    "transformers": "4.40.1",
+    "tokenizers": "0.19.1",
+    "timm": "0.9.10"
+  },
+  "attempts": [
+    {
+      "source": "pypi:prismatic",
+      "spec": [
+        "prismatic"
+      ],
+      "pip_ok": true,
+      "importable": false,
+      "error": "Traceback (most recent call last):\n  File \"/mnt/task_runtime/bolt/install_prismatic.py\", line 415, in target_importable\n    importlib.import_module(TARGET)\n  File \"/miniforge/lib/python3.10/importlib/__init__.py\", line 126, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n  File \"<frozen importlib._bootstrap>\", line 1050, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1027, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 992, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"<frozen importlib._bootstrap>\", line 1050, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1027, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 992, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"<frozen importlib._bootstrap>\", line 1050, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1027, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1004, in _find_and_load_unlocked\nModuleNotFoundError: No module named 'prismatic.extern'\n"
+    },
+    {
+      "source": "git:moojink/openvla-oft",
+      "spec": [
+        "git+https://github.com/moojink/openvla-oft.git"
+      ],
+      "pip_ok": true,
+      "importable": true,
+      "error": null
+    }
+  ],
+  "transitive_installs": [
+    {
+      "pip": "isodate",
+      "ok": true,
+      "no_deps": false,
+      "pins": {
+        "moved": {},
+        "restored": {},
+        "unrestorable": []
+      },
+      "consistency": {
+        "rounds": [],
+        "refused": [],
+        "unsatisfiable": [],
+        "oscillated": false,
+        "clean": true,
+        "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+      },
+      "import": "isodate"
+    },
+    {
+      "pip": "draccus",
+      "ok": true,
+      "no_deps": false,
+      "pins": {
+        "moved": {},
+        "restored": {},
+        "unrestorable": []
+      },
+      "consistency": {
+        "rounds": [
+          {
+            "findings": [
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "diffusers",
+                "name": "diffusers"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "dlimp",
+                "name": "dlimp"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "fastapi",
+                "name": "fastapi"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "json-numpy",
+                "name": "json-numpy"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "jsonlines",
+                "name": "jsonlines"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "rich",
+                "name": "rich"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "tensorflow",
+                "name": "tensorflow"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "tensorflow-datasets",
+                "name": "tensorflow-datasets"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "tensorflow-graphics",
+                "name": "tensorflow-graphics"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchaudio",
+                "name": "torchaudio"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "uvicorn",
+                "name": "uvicorn"
+              },
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "wandb",
+                "name": "wandb"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "draccus==0.8.0",
+                "name": "draccus",
+                "installed": "draccus 0.11.6"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "sentencepiece==0.1.99",
+                "name": "sentencepiece",
+                "installed": "sentencepiece 0.2.2"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torch==2.2.0",
+                "name": "torch",
+                "installed": "torch 2.4.1+cu118"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchvision==0.17.0",
+                "name": "torchvision",
+                "installed": "torchvision 0.19.1+cu118"
+              }
+            ],
+            "repairs": [
+              {
+                "spec": "diffusers",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "dlimp",
+                "ok": false,
+                "pip_tail": "ERROR: Could not find a version that satisfies the requirement dlimp (from versions: none)\nERROR: No matching distribution found for dlimp\n"
+              },
+              {
+                "spec": "fastapi",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "json-numpy",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "jsonlines",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "rich",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "tensorflow",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "tensorflow-datasets",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "tensorflow-graphics",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "torchaudio",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "uvicorn",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "wandb",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "draccus==0.8.0",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "sentencepiece==0.1.99",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "torchvision==0.17.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              }
+            ]
+          },
+          {
+            "findings": [
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "dlimp",
+                "name": "dlimp"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "diffusers==0.30.3",
+                "name": "diffusers",
+                "installed": "diffusers 0.39.0"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "tensorflow==2.15.0",
+                "name": "tensorflow",
+                "installed": "tensorflow 2.19.1"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "tensorflow_datasets==4.9.3",
+                "name": "tensorflow_datasets",
+                "installed": "tensorflow-datasets 4.9.10"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torch==2.2.0",
+                "name": "torch",
+                "installed": "torch 2.4.1+cu118"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchaudio==2.2.0",
+                "name": "torchaudio",
+                "installed": "torchaudio 2.11.0+default"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchvision==0.17.0",
+                "name": "torchvision",
+                "installed": "torchvision 0.19.1+cu118"
+              }
+            ],
+            "repairs": [
+              {
+                "spec": "dlimp",
+                "ok": false,
+                "pip_tail": "ERROR: Could not find a version that satisfies the requirement dlimp (from versions: none)\nERROR: No matching distribution found for dlimp\n"
+              },
+              {
+                "spec": "diffusers==0.30.3",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "tensorflow==2.15.0",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "tensorflow_datasets==4.9.3",
+                "ok": true,
+                "pip_tail": null
+              },
+              {
+                "spec": "torchaudio==2.2.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchaudio==2.2.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              },
+              {
+                "spec": "torchvision==0.17.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              }
+            ]
+          },
+          {
+            "findings": [
+              {
+                "kind": "missing",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "dlimp",
+                "name": "dlimp"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torch==2.2.0",
+                "name": "torch",
+                "installed": "torch 2.4.1+cu118"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchaudio==2.2.0",
+                "name": "torchaudio",
+                "installed": "torchaudio 2.11.0+default"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchvision==0.17.0",
+                "name": "torchvision",
+                "installed": "torchvision 0.19.1+cu118"
+              }
+            ],
+            "repairs": [
+              {
+                "spec": "dlimp",
+                "ok": false,
+                "pip_tail": "ERROR: Could not find a version that satisfies the requirement dlimp (from versions: none)\nERROR: No matching distribution found for dlimp\n"
+              },
+              {
+                "spec": "torchaudio==2.2.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchaudio==2.2.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              },
+              {
+                "spec": "torchvision==0.17.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              }
+            ]
+          }
+        ],
+        "refused": [
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          }
+        ],
+        "unsatisfiable": [],
+        "oscillated": true,
+        "clean": false,
+        "remaining": [
+          {
+            "kind": "missing",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "dlimp",
+            "name": "dlimp"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchaudio==2.2.0",
+            "name": "torchaudio",
+            "installed": "torchaudio 2.11.0+default"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchvision==0.17.0",
+            "name": "torchvision",
+            "installed": "torchvision 0.19.1+cu118"
+          }
+        ],
+        "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+      },
+      "import": "draccus"
+    },
+    {
+      "pip": "git+https://github.com/kvablack/dlimp.git",
+      "ok": true,
+      "no_deps": false,
+      "pins": {
+        "moved": {},
+        "restored": {},
+        "unrestorable": []
+      },
+      "consistency": {
+        "rounds": [
+          {
+            "findings": [
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torch==2.2.0",
+                "name": "torch",
+                "installed": "torch 2.4.1+cu118"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchaudio==2.2.0",
+                "name": "torchaudio",
+                "installed": "torchaudio 2.11.0+default"
+              },
+              {
+                "kind": "conflict",
+                "holder": "openvla-oft",
+                "holder_version": "0.0.1",
+                "requirement": "torchvision==0.17.0",
+                "name": "torchvision",
+                "installed": "torchvision 0.19.1+cu118"
+              }
+            ],
+            "repairs": [
+              {
+                "spec": "torchaudio==2.2.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchaudio==2.2.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              },
+              {
+                "spec": "torchvision==0.17.0",
+                "ok": false,
+                "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+              }
+            ]
+          }
+        ],
+        "refused": [
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          }
+        ],
+        "unsatisfiable": [],
+        "oscillated": true,
+        "clean": false,
+        "remaining": [
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchaudio==2.2.0",
+            "name": "torchaudio",
+            "installed": "torchaudio 2.11.0+default"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchvision==0.17.0",
+            "name": "torchvision",
+            "installed": "torchvision 0.19.1+cu118"
+          }
+        ],
+        "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+      },
+      "import": "dlimp"
+    }
+  ],
+  "resolved_by": "git:moojink/openvla-oft",
+  "importable": true,
+  "pins_after": {
+    "torch": "2.4.1+cu118",
+    "transformers": "4.40.1",
+    "tokenizers": "0.19.1",
+    "timm": "0.9.10"
+  },
+  "pins_moved": {},
+  "consistency_final": {
+    "rounds": [
+      {
+        "findings": [
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchaudio==2.2.0",
+            "name": "torchaudio",
+            "installed": "torchaudio 2.11.0+default"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchvision==0.17.0",
+            "name": "torchvision",
+            "installed": "torchvision 0.19.1+cu118"
+          }
+        ],
+        "repairs": [
+          {
+            "spec": "torchaudio==2.2.0",
+            "ok": false,
+            "pip_tail": "ERROR: Cannot install torchaudio==2.2.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+          },
+          {
+            "spec": "torchvision==0.17.0",
+            "ok": false,
+            "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+          }
+        ]
+      }
+    ],
+    "refused": [
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torch==2.2.0",
+        "name": "torch",
+        "installed": "torch 2.4.1+cu118"
+      }
+    ],
+    "unsatisfiable": [],
+    "oscillated": true,
+    "clean": false,
+    "remaining": [
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torch==2.2.0",
+        "name": "torch",
+        "installed": "torch 2.4.1+cu118"
+      },
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torchaudio==2.2.0",
+        "name": "torchaudio",
+        "installed": "torchaudio 2.11.0+default"
+      },
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torchvision==0.17.0",
+        "name": "torchvision",
+        "installed": "torchvision 0.19.1+cu118"
+      }
+    ],
+    "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+  }
+}

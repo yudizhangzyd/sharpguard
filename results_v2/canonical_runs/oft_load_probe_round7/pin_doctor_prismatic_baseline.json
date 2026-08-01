@@ -1,0 +1,93 @@
+{
+  "mode": "pip_check_only",
+  "pins": {
+    "torch": "2.4.1+cu118",
+    "transformers": "4.40.1",
+    "tokenizers": "0.19.1",
+    "timm": "0.9.10"
+  },
+  "consistency": {
+    "rounds": [
+      {
+        "findings": [
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torch==2.2.0",
+            "name": "torch",
+            "installed": "torch 2.4.1+cu118"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchaudio==2.2.0",
+            "name": "torchaudio",
+            "installed": "torchaudio 2.11.0+default"
+          },
+          {
+            "kind": "conflict",
+            "holder": "openvla-oft",
+            "holder_version": "0.0.1",
+            "requirement": "torchvision==0.17.0",
+            "name": "torchvision",
+            "installed": "torchvision 0.19.1+cu118"
+          }
+        ],
+        "repairs": [
+          {
+            "spec": "torchaudio==2.2.0",
+            "ok": false,
+            "pip_tail": "ERROR: Cannot install torchaudio==2.2.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+          },
+          {
+            "spec": "torchvision==0.17.0",
+            "ok": false,
+            "pip_tail": "ERROR: Cannot install torchvision==0.17.0 because these package versions have conflicting dependencies.\nERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts\n"
+          }
+        ]
+      }
+    ],
+    "refused": [
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torch==2.2.0",
+        "name": "torch",
+        "installed": "torch 2.4.1+cu118"
+      }
+    ],
+    "unsatisfiable": [],
+    "oscillated": true,
+    "clean": false,
+    "remaining": [
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torch==2.2.0",
+        "name": "torch",
+        "installed": "torch 2.4.1+cu118"
+      },
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torchaudio==2.2.0",
+        "name": "torchaudio",
+        "installed": "torchaudio 2.11.0+default"
+      },
+      {
+        "kind": "conflict",
+        "holder": "openvla-oft",
+        "holder_version": "0.0.1",
+        "requirement": "torchvision==0.17.0",
+        "name": "torchvision",
+        "installed": "torchvision 0.19.1+cu118"
+      }
+    ],
+    "constraints": "/mnt/task_wrapper/user_output/artifacts/cotfaith-oft-probe/constraints.txt"
+  }
+}

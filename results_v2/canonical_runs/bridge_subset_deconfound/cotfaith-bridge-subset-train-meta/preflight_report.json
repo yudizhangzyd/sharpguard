@@ -1,0 +1,192 @@
+{
+  "n_requested": 8,
+  "n_yielded": 8,
+  "shapes": [
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        262
+      ],
+      "attention_mask": [
+        262
+      ],
+      "labels": [
+        262
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        284
+      ],
+      "attention_mask": [
+        284
+      ],
+      "labels": [
+        284
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        284
+      ],
+      "attention_mask": [
+        284
+      ],
+      "labels": [
+        284
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        332
+      ],
+      "attention_mask": [
+        332
+      ],
+      "labels": [
+        332
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        308
+      ],
+      "attention_mask": [
+        308
+      ],
+      "labels": [
+        308
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        308
+      ],
+      "attention_mask": [
+        308
+      ],
+      "labels": [
+        308
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        260
+      ],
+      "attention_mask": [
+        260
+      ],
+      "labels": [
+        260
+      ]
+    },
+    {
+      "pixel_values": [
+        3,
+        224,
+        224
+      ],
+      "input_ids": [
+        300
+      ],
+      "attention_mask": [
+        300
+      ],
+      "labels": [
+        300
+      ]
+    }
+  ],
+  "join_strategy": "by_task_text",
+  "join_stats": {
+    "id_probe_hits": 20,
+    "id_probe_agrees": 0,
+    "by_episode_id": 0,
+    "by_task_text": 8,
+    "merge_filled_from_features": 16,
+    "task_key_rejected_degenerate": 56,
+    "shape_deviations": 0,
+    "task_keys_dropped_high_fanout": 241
+  },
+  "join_id_disabled": true,
+  "stream_stats": {
+    "yielded": 8,
+    "no_reasoning": 26,
+    "no_frame": 0,
+    "encode_failed": 0
+  },
+  "n_parquets": 53192,
+  "n_video_streams": 216,
+  "n_episode_task_strings": 53192,
+  "n_reasoning_entries": 3200,
+  "cot_tags": [
+    "TASK",
+    "PLAN",
+    "VISIBLE OBJECTS",
+    "SUBTASK REASONING",
+    "SUBTASK",
+    "MOVE REASONING",
+    "MOVE",
+    "GRIPPER POSITION"
+  ],
+  "n_rendered_inspected": 8,
+  "empty_tag_counts": {},
+  "rendered_samples": [
+    {
+      "episode_index": 1,
+      "step": 0,
+      "instruction": "put the blue cube on the right side of the table on top of the rectangular block",
+      "strategy": "by_task_text",
+      "target_text": "TASK: Start execution PLAN: [] VISIBLE OBJECTS: a wooden block [196, 69, 227, 112], a wooden table [16, 6, 229, 245], the red blue cubes [123, 58, 214, 159], cube the blue cube the red blue cubes [189, 120, 213, 158] SUBTASK REASONING: The task is not progressing. No obstacles are detected. The arm is in a safe default position. SUBTASK: Start the plan MOVE REASONING: No movement is required. MOVE: Stop GRIPPER POSITION: [174, 74]"
+    },
+    {
+      "episode_index": 1,
+      "step": 1,
+      "instruction": "put the blue cube on the right side of the table on top of the rectangular block",
+      "strategy": "by_task_text",
+      "target_text": "TASK: Start execution PLAN: [] VISIBLE OBJECTS: a wooden table [16, 6, 229, 245], a wooden block [196, 69, 227, 113], the red blue cubes [123, 58, 214, 159], and a wooden cylinder [150, 1, 219, 70], cube the blue cube the red blue cubes [187, 120, 213, 159] SUBTASK REASONING: The task is not progressing. No obstacles are detected. The arm is in a safe default position. SUBTASK: Start the plan MOVE REASONING: No movement is required. MOVE: Stop GRIPPER POSITION: [173, 74]"
+    },
+    {
+      "episode_index": 1,
+      "step": 2,
+      "instruction": "put the blue cube on the right side of the table on top of the rectangular block",
+      "strategy": "by_task_text",
+      "target_text": "TASK: Start execution PLAN: [] VISIBLE OBJECTS: and a wooden cylinder [148, 1, 218, 76], a wooden block [197, 68, 227, 112], a wooden table [17, 6, 225, 243], cube the blue cube the red blue cubes [189, 120, 213, 158], the red blue cubes [122, 58, 211, 160] SUBTASK REASONING: The task is not progressing. No obstacles are detected. The arm is in a safe default position. SUBTASK: Start the plan MOVE REASONING: No movement is required. MOVE: Stop GRIPPER POSITION: [172, 81]"
+    }
+  ],
+  "recipe_source": "experiments/cotfaith_train.py (imported, not copied)"
+}
