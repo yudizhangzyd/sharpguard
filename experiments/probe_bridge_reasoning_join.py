@@ -1,42 +1,54 @@
 """Measure the Bridge V2 reasoning <-> LeRobot trajectory join, CPU only.
 
 Bolt `fnwfaq9bq6` (the F4/O4 deconfound LoRA run) died in preflight with
-`no_reasoning: 606677` -- every frame of every parquet missed. Its own logs say
-why, and the reason is structural rather than a coverage gap:
+`no_reasoning: 606677` -- every frame of every parquet missed. Round 1 of this
+probe (bolt `j2kqu7k3m7`) settled the structural question and, in the process,
+showed that its own strategy scores were void. Both facts are recorded here
+because the second is the more instructive one.
 
-    reasoning top-level keys (first 4):
-      ['/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/
-        bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/out.npy',
-       ...]
-      raw['/nfs/.../out.npy'] subkeys: ['43', '11', '27', '17', ...]
-    task-text index: 0 distinct tasks
+THE MEASURED LAYOUT (round 1, `bridge_join_probe.json`, 1.4 GB / 3200 path keys):
 
-The annotations are keyed by the *original authors' absolute NFS paths*, and the
-second level is an episode index within that shard. So the JSON is three levels
-deep -- path -> episode -> step -> reasoning -- and `_ReasoningIndex` assumed
-two. `by_episode_index` compared `str(ep_idx)` against path strings and could
-never hit; `by_task_text` then read a level-2 value (a dict of steps) as if it
-were a reasoning dict, so `first.get("task")` was always None and the index came
-out empty. Two strategies, one shared wrong assumption, which is why the
-fallback did not save it.
+    raw[<authors' absolute NFS path>][<episode index within that shard>] = {
+        "features":  {"move_primitive": [...], "gripper_position": [...],
+                      "bboxes": [...]},          # per-step lists
+        "metadata":  {"episode_id": int, "file_path": str, "n_steps": int,
+                      "language_instruction": str},
+        "reasoning": {"0": {...}, "1": {...}, ...},   # per-step, keyed by index
+    }
 
-This probe exists so the fix is written against measured structure instead of a
-guess about it. A wrong guess costs a GPU job and half a day; this costs a CPU
-pod and downloads the same 1.4 GB the training run would have.
+Four levels, not three. `leaf_field_frequency` is what pins it down:
+`episode_id`, `file_path`, `language_instruction` and `n_steps` each appear
+exactly 60062 times, which is exactly the total number of episode keys -- so they
+are per-episode metadata, one level above the per-step reasoning.
 
-It reports three things:
+WHY ROUND 1's MATCH COUNTS WERE WORTHLESS. `_ReasoningIndex` assumed two levels,
+so `by_episode_index` compared `str(ep_idx)` against path strings and
+`by_task_text` read a dict-of-steps as a reasoning record. Round 1 diagnosed
+that correctly and then made the same class of mistake one level down: it scored
+`by_episode_index` against the *top-level* keys (which are paths, so 0 by
+construction) and `by_task_text` against `rec["task"]`/`rec["instruction"]`,
+neither of which exists -- the field is `language_instruction`. It reported
+`n_distinct_annotation_tasks: 0` and `verdict: no strategy matches`, and that
+verdict was an artifact of the probe rather than a fact about the data.
 
-1.  The actual nesting: depth, key shapes at each level, and the leaf's field
-    names. Everything the join needs to be written correctly.
-2.  For each candidate join strategy, how many of the LeRobot side's episodes it
-    matches -- against `meta/episodes.jsonl`, which is small, so no parquet or
-    video is touched. Match *counts*, not a yes/no: a strategy that matches 40
-    of 53192 is a different finding from one that matches 50000.
-3.  A verbatim sample of matched and unmatched keys from both sides, so a zero
-    stays diagnosable without a third run.
+The lesson is the one this file was written to apply and did not apply far
+enough: do not score a join against a *guess* about where its key lives. So this
+round reads the known layout directly instead of walking generically, `assert`s
+the shape it was told to expect and records every episode that deviates, and
+scores three strategies against fields that were measured to exist:
 
-Deliberately makes no fix and trains nothing. Its output is the input to the
-fix.
+  1. `metadata.episode_id` vs LeRobot `episode_index` -- an exact key if the
+     LeRobot conversion preserved the upstream episode ordering.
+  2. `metadata.language_instruction` vs LeRobot task text, normalized. A
+     fallback, and a weak one: Bridge instructions are crowdsourced and the
+     LeRobot side contains `3wsws` and `12345678` among its 19542 distinct
+     "tasks", so text collisions are expected to be many-to-many.
+  3. `metadata.file_path` vs whatever provenance the LeRobot conversion kept.
+     Reported as the full key set of a LeRobot episode record, because if that
+     conversion stored the source path this is an exact join and the other two
+     are unnecessary.
+
+Deliberately makes no fix and trains nothing. Its output is the input to the fix.
 """
 from __future__ import annotations
 
@@ -70,6 +82,11 @@ def _load_file_with_retry():
 REASONING_REPO = "Embodied-CoT/embodied_features_bridge"
 REASONING_FILE = "embodied_features_bridge.json"
 DATASET_REPO = "IPEC-COMMUNITY/bridge_orig_lerobot"
+
+# The L2 keys round 1 measured. Named rather than discovered, so an export whose
+# shape differs shows up as a counted deviation instead of as a silent zero --
+# which is the failure mode both round 1 and the trainer had.
+EXPECTED_L2 = {"features", "metadata", "reasoning"}
 
 
 def norm_task(s) -> str:
@@ -106,9 +123,9 @@ def probe_structure(raw: dict) -> dict:
     out["levels"].append(describe_level(raw, "top"))
 
     cur, names = raw, ["top"]
-    # Four is one more than the three levels the logs imply, so an unexpected
+    # Five is one more than the four levels round 1 measured, so an unexpected
     # extra wrapper shows up as data rather than as a silent truncation.
-    for depth in range(4):
+    for depth in range(5):
         if not isinstance(cur, dict) or not cur:
             break
         k0 = next(iter(cur))
@@ -129,11 +146,11 @@ def probe_structure(raw: dict) -> dict:
     return out
 
 
-def collect_leaves(raw: dict, limit=None):
-    """Yield (path_key, ep_key, step_key, record) over the 3-level layout.
+def collect_episodes(raw: dict, limit=None):
+    """Yield (path_key, ep_key, episode_dict) over the measured 4-level layout.
 
-    Tolerant of the layout being 2-level for some entries: the ECoT release is
-    a concatenation of several export runs and nothing promises uniformity.
+    One record per *episode*, not per step: the metadata that carries every
+    candidate join key lives at this level, and round 1 flattened past it.
     """
     n = 0
     for pkey, pv in raw.items():
@@ -142,24 +159,56 @@ def collect_leaves(raw: dict, limit=None):
         for ekey, ev in pv.items():
             if not isinstance(ev, dict):
                 continue
-            vals = list(ev.values())
-            if vals and isinstance(vals[0], dict):
-                for skey, rec in ev.items():
-                    if isinstance(rec, dict):
-                        yield pkey, ekey, skey, rec
-                        n += 1
-                        if limit and n >= limit:
-                            return
-            else:
-                yield pkey, ekey, "0", ev
-                n += 1
-                if limit and n >= limit:
-                    return
+            yield pkey, ekey, ev
+            n += 1
+            if limit and n >= limit:
+                return
 
 
-def load_lerobot_tasks(fetch) -> dict:
-    """episode_index -> instruction, from meta/episodes.jsonl (small)."""
-    out = {}
+def episode_facts(raw: dict, limit=None) -> dict:
+    """Per-episode join keys plus an accounting of every shape deviation.
+
+    Returns counted deviations rather than raising on them: the ECoT release is
+    a concatenation of several export runs and nothing promises uniformity, so
+    "how many episodes are not the shape we expect" is itself a number the fix
+    needs. It only becomes a failure if it is large.
+    """
+    facts = []
+    dev = Counter()
+    for pkey, ekey, ev in collect_episodes(raw, limit):
+        keys = set(ev.keys())
+        if keys != EXPECTED_L2:
+            dev["l2_keys:" + ",".join(sorted(keys))[:80]] += 1
+        md = ev.get("metadata")
+        if not isinstance(md, dict):
+            dev["metadata_missing_or_not_dict"] += 1
+            md = {}
+        rz = ev.get("reasoning")
+        n_steps_reasoning = len(rz) if isinstance(rz, dict) else 0
+        if not n_steps_reasoning:
+            dev["reasoning_empty_or_missing"] += 1
+        facts.append({
+            "path": pkey,
+            "ep_key": ekey,
+            "episode_id": md.get("episode_id"),
+            "file_path": md.get("file_path"),
+            "n_steps": md.get("n_steps"),
+            "instruction": md.get("language_instruction"),
+            "n_steps_reasoning": n_steps_reasoning,
+        })
+    return {"facts": facts, "deviations": dict(dev.most_common(20))}
+
+
+def load_lerobot_episodes(fetch) -> tuple[dict, list]:
+    """episode_index -> record, from meta/episodes.jsonl (small).
+
+    The whole record is kept, not just the instruction. Round 1 kept only the
+    task text and therefore could not answer the one question that would settle
+    the join outright: does the LeRobot conversion carry the upstream source
+    path? That is a field-name question, and it is answered by reporting the key
+    set rather than by guessing at it.
+    """
+    out, keysets = {}, Counter()
     for rel in ("meta/episodes.jsonl", "meta/episodes.json"):
         try:
             p = fetch(DATASET_REPO, rel, repo_type="dataset")
@@ -175,28 +224,38 @@ def load_lerobot_tasks(fetch) -> dict:
                     d = json.loads(line)
                 except Exception:
                     continue
-                t = d.get("tasks")
-                if isinstance(t, list):
-                    t = t[0] if t else ""
-                if d.get("episode_index") is not None:
-                    out[int(d["episode_index"])] = str(t or "")
+                if d.get("episode_index") is None:
+                    continue
+                keysets[",".join(sorted(d.keys()))] += 1
+                out[int(d["episode_index"])] = d
         if out:
             break
-    return out
+    return out, keysets.most_common(5)
+
+
+def lerobot_task(rec) -> str:
+    t = rec.get("tasks")
+    if isinstance(t, list):
+        t = t[0] if t else ""
+    return str(t or "")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--max-leaves", type=int, default=0,
-                    help="0 = walk every leaf")
+    ap.add_argument("--max-episodes", type=int, default=0,
+                    help="0 = walk every episode")
     args = ap.parse_args()
     fetch = _load_file_with_retry()
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     report = {"probe": "bridge_reasoning_join",
-              "why": "bolt fnwfaq9bq6 joined 0 of 606677 frames; measure the "
-                     "real key layout before rewriting the join",
+              "round": 2,
+              "why": "bolt fnwfaq9bq6 joined 0 of 606677 frames; round 1 "
+                     "(j2kqu7k3m7) measured the 4-level layout but scored both "
+                     "strategies against fields that do not exist, so its "
+                     "'no strategy matches' verdict was void. This round scores "
+                     "the three keys measured to be present.",
               "reasoning_repo": REASONING_REPO,
               "dataset_repo": DATASET_REPO}
 
@@ -218,81 +277,120 @@ def main() -> int:
         return 1
 
     report["structure"] = probe_structure(raw)
-    dump()
-
-    # ---- the annotation side, counted rather than assumed ----
-    leaves = list(collect_leaves(raw, args.max_leaves or None))
-    report["n_leaf_records"] = len(leaves)
     report["n_path_keys"] = len(raw)
     report["n_episode_keys_total"] = sum(
         len(v) for v in raw.values() if isinstance(v, dict))
-
-    field_counts = Counter()
-    for _, _, _, rec in leaves:
-        field_counts.update(rec.keys())
-    report["leaf_field_frequency"] = dict(field_counts.most_common(30))
-
-    # Which leaf field carries the instruction? Named explicitly, because the
-    # by_task_text strategy hinges on it and the old code guessed two names.
-    task_fields = {}
-    for cand in ("task", "instruction", "language_instruction", "prompt"):
-        vals = [rec.get(cand) for _, _, _, rec in leaves[:5000]
-                if isinstance(rec.get(cand), str) and rec.get(cand).strip()]
-        if vals:
-            task_fields[cand] = {"n_nonempty_in_first_5000": len(vals),
-                                 "sample": vals[:5]}
-    report["task_field_candidates"] = task_fields
     dump()
 
-    tasks = load_lerobot_tasks(fetch)
-    report["n_lerobot_episodes"] = len(tasks)
-    report["lerobot_task_sample"] = [tasks[k] for k in sorted(tasks)[:5]]
+    # ---- the annotation side, at the level the join keys actually live ----
+    ef = episode_facts(raw, args.max_episodes or None)
+    facts, report["shape_deviations"] = ef["facts"], ef["deviations"]
+    report["n_episodes_walked"] = len(facts)
+    for field in ("episode_id", "file_path", "instruction", "n_steps"):
+        present = [f for f in facts if f[field] not in (None, "")]
+        report[f"n_with_{field}"] = len(present)
+    report["episode_facts_sample"] = [
+        {k: (str(v)[:120] if isinstance(v, str) else v)
+         for k, v in f.items()} for f in facts[:5]]
+    report["n_annotated_steps_total"] = sum(f["n_steps_reasoning"]
+                                           for f in facts)
     dump()
 
-    # ---- candidate strategies, each scored by episodes matched ----
-    lero_norm = {}
-    for ep, t in tasks.items():
-        lero_norm.setdefault(norm_task(t), []).append(ep)
-    report["n_distinct_lerobot_tasks"] = len(lero_norm)
+    lero, lero_keysets = load_lerobot_episodes(fetch)
+    report["n_lerobot_episodes"] = len(lero)
+    # THE field-name question: if this key set contains a source path, the join
+    # is exact and neither heuristic below is needed.
+    report["lerobot_episode_keysets"] = lero_keysets
+    report["lerobot_episode_sample"] = [
+        {k: str(v)[:160] for k, v in lero[k0].items()}
+        for k0 in sorted(lero)[:3]]
+    dump()
 
-    ann_tasks = {}
-    for pkey, ekey, _skey, rec in leaves:
-        t = norm_task(rec.get("task") or rec.get("instruction"))
-        if t:
-            ann_tasks.setdefault(t, set()).add((pkey, ekey))
-    report["n_distinct_annotation_tasks"] = len(ann_tasks)
-
-    shared = set(ann_tasks) & set(lero_norm)
+    # ---- strategy 1: metadata.episode_id vs LeRobot episode_index ----
+    ep_ids = {}
+    for f in facts:
+        if isinstance(f["episode_id"], int):
+            ep_ids.setdefault(f["episode_id"], []).append((f["path"], f["ep_key"]))
+    collisions = {k: len(v) for k, v in ep_ids.items() if len(v) > 1}
+    hit = sorted(set(ep_ids) & set(lero))
+    # A shared integer key is necessary but not sufficient: two exports can both
+    # number episodes from 0 and mean different episodes. So agreement of the
+    # instruction text ON THE MATCHED PAIRS is the confirmation, and it is the
+    # number that decides whether this strategy is trustworthy at all.
+    by_id = {}
+    for f in facts:
+        if isinstance(f["episode_id"], int):
+            by_id.setdefault(f["episode_id"], f)
+    agree = sum(1 for k in hit
+                if norm_task(by_id[k]["instruction"])
+                == norm_task(lerobot_task(lero[k])))
     report["strategies"] = {
-        "by_episode_index": {
-            "n_top_level_digit_keys": sum(1 for k in raw if str(k).isdigit()),
-            "verdict": "cannot match: top-level keys are absolute NFS paths",
-        },
-        "by_task_text": {
-            "n_shared_normalized_tasks": len(shared),
-            "n_lerobot_episodes_covered": sum(
-                len(lero_norm[t]) for t in shared),
-            "frac_lerobot_episodes_covered": round(
-                sum(len(lero_norm[t]) for t in shared)
-                / max(1, len(tasks)), 4),
-            "shared_sample": sorted(shared)[:10],
-            "annotation_only_sample": sorted(set(ann_tasks) - set(lero_norm))[:10],
-            "lerobot_only_sample": sorted(set(lero_norm) - set(ann_tasks))[:10],
+        "by_episode_id": {
+            "n_annotation_ids": len(ep_ids),
+            "n_id_collisions": len(collisions),
+            "id_range": [min(ep_ids), max(ep_ids)] if ep_ids else None,
+            "n_matched_lerobot_episodes": len(hit),
+            "frac_lerobot_matched": round(len(hit) / max(1, len(lero)), 4),
+            "n_instruction_agrees_on_matched": agree,
+            "frac_instruction_agrees_on_matched": (
+                round(agree / len(hit), 4) if hit else None),
+            "verdict": ("exact key, confirmed by instruction agreement"
+                        if hit and agree and agree / len(hit) >= 0.95 else
+                        "ids overlap but the instructions disagree, so the two "
+                        "exports number different episodes -- do NOT join on this"
+                        if hit else
+                        "no shared integer id"),
         },
     }
-    # The number that decides whether the deconfound is runnable at all: how
-    # many distinct (task -> annotated episode) pairs are reachable. 4k
-    # trajectories were requested; anything under that bounds the run.
+    dump()
+
+    # ---- strategy 2: instruction text ----
+    lero_norm = {}
+    for ep, rec in lero.items():
+        lero_norm.setdefault(norm_task(lerobot_task(rec)), []).append(ep)
+    lero_norm.pop("", None)
+    ann_norm = {}
+    for f in facts:
+        t = norm_task(f["instruction"])
+        if t:
+            ann_norm.setdefault(t, []).append((f["path"], f["ep_key"]))
+    shared = set(ann_norm) & set(lero_norm)
+    report["n_distinct_lerobot_tasks"] = len(lero_norm)
+    report["n_distinct_annotation_tasks"] = len(ann_norm)
+    report["strategies"]["by_task_text"] = {
+        "n_shared_normalized_tasks": len(shared),
+        "n_lerobot_episodes_covered": sum(len(lero_norm[t]) for t in shared),
+        "frac_lerobot_episodes_covered": round(
+            sum(len(lero_norm[t]) for t in shared) / max(1, len(lero)), 4),
+        # The reason this is a fallback and not a join: Bridge instructions are
+        # crowdsourced, so one string maps to many episodes on both sides and a
+        # match is a task-level match, not an episode-level one.
+        "max_lerobot_episodes_per_shared_task": max(
+            (len(lero_norm[t]) for t in shared), default=0),
+        "median_lerobot_episodes_per_shared_task": (
+            sorted(len(lero_norm[t]) for t in shared)[len(shared) // 2]
+            if shared else 0),
+        "shared_sample": sorted(shared)[:10],
+        "annotation_only_sample": sorted(set(ann_norm) - set(lero_norm))[:10],
+        "lerobot_only_sample": sorted(set(lero_norm) - set(ann_norm))[:10],
+    }
     report["n_reachable_annotated_episodes"] = sum(
-        len(ann_tasks[t]) for t in shared)
+        len(ann_norm[t]) for t in shared)
+
+    st = report["strategies"]
     report["verdict"] = (
-        "by_task_text is viable"
-        if report["strategies"]["by_task_text"]["n_shared_normalized_tasks"]
-        else "no strategy matches; the two exports do not share task strings")
+        "join on metadata.episode_id"
+        if st["by_episode_id"]["verdict"].startswith("exact")
+        else f"fall back to task text: {st['by_task_text']['n_shared_normalized_tasks']} "
+             f"shared tasks covering "
+             f"{st['by_task_text']['frac_lerobot_episodes_covered']} of LeRobot"
+        if st["by_task_text"]["n_shared_normalized_tasks"]
+        else "no strategy matches on measured fields; inspect "
+             "lerobot_episode_keysets for a source-path field")
     dump()
     print(json.dumps({k: v for k, v in report.items()
-                      if k not in ("structure", "leaf_field_frequency")},
-                     indent=1)[:4000])
+                      if k not in ("structure", "episode_facts_sample")},
+                     indent=1)[:6000])
     return 0
 
 

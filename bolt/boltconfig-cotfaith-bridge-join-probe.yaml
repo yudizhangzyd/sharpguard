@@ -1,5 +1,14 @@
-name: 'CoT-Faith #11 diag: measure the Bridge reasoning <-> LeRobot join (CPU)'
-description: 'Diagnostic for the F4/O4 deconfound. Bolt fnwfaq9bq6 died in preflight having joined 0 of 606677 frames, and its log names the cause: the ECoT annotations are keyed by the authors'' absolute NFS paths, level 2 is an episode index in that shard, level 3 the step. The file is three levels deep; _ReasoningIndex assumed two. by_episode_index compared str(ep_idx) against path strings and could never hit; by_task_text then read a level-2 value (a dict of steps) as a reasoning dict, so first.get(''task'') was always None -- the log shows ''task-text index: 0 distinct tasks''. Two strategies, one shared wrong assumption, so the fallback did not save it. Rather than guess the fix and risk a second wasted GPU day, this measures the layout on CPU: nesting depth, key shapes per level, leaf fields, which field holds the instruction, and a per-strategy match count against LeRobot meta/episodes.jsonl. Also reports how many annotated episodes are reachable, since the LoRA config asks for 4000.'
+name: 'CoT-Faith #11b diag: score the Bridge join on the keys round 1 measured (CPU)'
+description: 'Round 2 of the F4/O4 deconfound join diagnostic. Round 1 (j2kqu7k3m7) settled the structure
+  and voided its own answer: it scored by_episode_index against the TOP-level keys, which are absolute
+  NFS paths, so 0 by construction, and by_task_text against rec[''task''], a field that does not exist.
+  The field that does is metadata.language_instruction, and metadata.episode_id is present on all 60062
+  episodes and nothing had looked at it. So round 1''s ''no strategy matches'' was a fact about the probe,
+  not the data. This round scores keys measured to be present: episode_id vs LeRobot episode_index, CONFIRMED
+  by instruction agreement on the matched pairs; instruction text as fallback with its fanout reported.
+  An id overlap whose instructions disagree is flagged loudly -- it is the one outcome that would produce
+  a full, plausible, WRONG join index. It also reports the LeRobot episode record''s full key set, since
+  a source-path field there would make the join exact.'
 tags:
 - cotfaith
 - bridge
@@ -21,6 +30,6 @@ environment_variables:
   HF_HOME: /tmp/hf
   HF_HUB_OFFLINE: '0'
   TRANSFORMERS_VERBOSITY: error
-  MAX_LEAVES: '0'
+  MAX_EPISODES: '0'
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_bridge_join_probe.sh
