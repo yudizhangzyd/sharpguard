@@ -242,6 +242,55 @@ def _resolver():
     return mod
 
 
+# A compiled extension that is already imported cannot be replaced in-process.
+# Round 4 (bolt `s6arkzytjr`) installed pydantic-core==2.46.4, called
+# `importlib.invalidate_caches()`, and got the byte-identical SystemError, on
+# every checkpoint. The only fix is a new interpreter, so the probe restarts
+# itself -- bounded, because an install that does not actually help would
+# otherwise restart forever, and each restart re-downloads nothing but does
+# re-query the Hub.
+_REEXEC_ENV = "OFT_PROBE_REEXEC"
+_CARRY_ENV = "OFT_PROBE_CARRY"
+_MAX_REEXEC = 2
+
+# What the pre-exec process had already installed. Carried through the exec so
+# the report still answers "what would supporting OFT cost" with the full list:
+# the installs happened, and a report that lost them would understate the cost
+# and could re-attempt the same package on every restart.
+try:
+    _CARRIED = json.loads(os.environ.get(_CARRY_ENV) or "[]")
+    if not isinstance(_CARRIED, list):
+        _CARRIED = []
+except ValueError:
+    _CARRIED = []
+
+
+def _reexec(reason: str, installs: list) -> None:
+    """Restart this probe in a fresh interpreter. Returns only if it cannot.
+
+    Not an error path: the install succeeded and the environment is now correct
+    on disk. What is stale is this process.
+    """
+    n = int(os.environ.get(_REEXEC_ENV, "0"))
+    if n >= _MAX_REEXEC:
+        # Said out loud rather than silently continuing: if two restarts did not
+        # clear the conflict, the remaining failure is the finding, and it must
+        # not be reported as if no restart had been attempted.
+        print(f"[oft-probe] re-exec budget spent ({n}/{_MAX_REEXEC}); "
+              f"reporting the conflict instead: {reason}")
+        sys.stdout.flush()
+        return
+    env = dict(os.environ)
+    env[_REEXEC_ENV] = str(n + 1)
+    # Bounded: the environment block is not a database, and the last thing this
+    # probe should die of is E2BIG while reporting somebody else's ImportError.
+    carry = [{k: v for k, v in i.items() if k != "pip_tail"} for i in installs]
+    env[_CARRY_ENV] = json.dumps(carry)[:8000]
+    print(f"[oft-probe] re-exec {n + 1}/{_MAX_REEXEC}: {reason}")
+    sys.stdout.flush()
+    os.execve(sys.executable, [sys.executable, *sys.argv], env)
+
+
 def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
                        max_installs: int = 12) -> dict:
     """`try_load`, retried while the failure is a nameable missing module.
@@ -265,22 +314,42 @@ def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
     budget instead of reporting the real blocker, so it is recorded in
     `stuck_on` and the loop stops.
 
-    `--no-deps` for the same reason install_prismatic uses it: the pins ARE the
-    environment the paper names, and a transitive upgrade would silently make
-    the result describe a different stack. Every install is recorded, so the
-    output still answers "what would supporting OFT cost" rather than just
-    yes/no.
+    Installs used to be `--no-deps`, for the reason install_prismatic still is
+    for the prismatic tree itself: the pins ARE the environment the paper names,
+    and a transitive upgrade would silently make the result describe a different
+    stack. Every install is recorded either way, so the output still answers
+    "what would supporting OFT cost" rather than just yes/no.
 
     Round 3 (bolt `gvvhgg4d4c`) showed the cost of that policy. With prismatic
     resolved, all five checkpoints reached the *processor* stage -- further than
     any prior round -- and failed on a pydantic/pydantic-core skew that this
-    loop's own `--no-deps` install of pydantic_core had created. So the loop now
-    repairs a skew it can read out of the exception before declaring it the
-    blocker; see `version_skew`. The distinction matters for what the paper is
-    allowed to say: a self-inflicted skew is not evidence that OFT is unloadable.
+    loop's own `--no-deps` install of pydantic_core had created.
+
+    Round 4 (bolt `s6arkzytjr`) showed that repairing the skew here does not work
+    and that `--no-deps` was the wrong policy, not a fixable one:
+
+      * the repair installed pydantic-core==2.46.4 successfully and the identical
+        `SystemError` came back, because `pydantic_core` is a compiled extension
+        that was already imported -- `invalidate_caches()` cannot swap it. So a
+        skew that survives its own repair now triggers a RE-EXEC (`_reexec`),
+        which is the only way to pick up a compiled module from disk;
+      * the one stage that got past pydantic died on `AttributeError: partially
+        initialized module 'wandb' has no attribute 'errors' (most likely due to
+        a circular import)` -- what wandb does when its requirements are absent.
+        That is `--no-deps` producing a partial install, so installs now go
+        through `install_prismatic.install`: deps resolved normally, the paper's
+        four pins re-asserted afterwards and any movement reported.
+
+    Both failures looked like OFT incompatibilities and neither was one, which is
+    the whole reason this probe exists rather than a sentence in limitation (ix).
     """
     res = _resolver()
-    installs, seen, repairs = [], set(), set()
+    installs, seen, repairs = list(_CARRIED), set(), set()
+    for c in _CARRIED:                  # do not repeat work a prior exec did
+        if c.get("import"):
+            seen.add(c["import"])
+        if c.get("repair") == "version_skew":
+            repairs.add(str(c.get("pip", "")).split("==")[0])
     out = try_load(repo, dtype_name, do_forward)
     while not out.get("ok") and len(installs) < max_installs:
         blob = f"{out.get('error') or ''}\n{out.get('traceback_tail') or ''}"
@@ -305,6 +374,14 @@ def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
                 if not ok:
                     out["stuck_on"] = f"{pkg}=={want}"
                     break
+                # The on-disk fix is in place, but this process may already hold
+                # the wrong copy. If the module is a compiled extension there is
+                # no in-process route at all -- round 4 proved that by trying --
+                # so hand the fix to a fresh interpreter. `_reexec` returns only
+                # when it has run out of attempts, and then the loop reports the
+                # skew as the blocker rather than pretending to have fixed it.
+                _reexec(f"{pkg}=={want} installed but {pkg} is already loaded",
+                        installs)
                 importlib.invalidate_caches()
                 out = try_load(repo, dtype_name, do_forward)
                 continue
@@ -314,15 +391,19 @@ def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
             break
         seen.add(mod)
         pkg = res.IMPORT_TO_PIP.get(mod, mod)
-        ok, tail = res.pip("install", "--quiet", "--no-deps", pkg)
-        installs.append({"import": mod, "pip": pkg, "ok": ok,
-                         "pip_tail": None if ok else tail[-400:]})
-        if not ok:
+        # WITH its dependencies (see `install`): round 4's wandb circular-import
+        # was a partial install of our own making, and the pins are protected by
+        # re-asserting them after the fact rather than by starving the package.
+        rec = res.install(pkg)
+        rec["import"] = mod
+        installs.append(rec)
+        if not rec["ok"]:
             out["stuck_on"] = mod
             break
         importlib.invalidate_caches()
         out = try_load(repo, dtype_name, do_forward)
     out["dependency_installs"] = installs
+    out["reexec_count"] = int(os.environ.get(_REEXEC_ENV, "0"))
     return out
 
 
@@ -398,6 +479,10 @@ def main() -> int:
                 "in the environment the paper names and again on an upgraded "
                 "stack, and records the exception rather than the conclusion."),
         "environment": env_snapshot(),
+        # How many times the probe restarted itself to pick up a compiled module
+        # it had just installed (see `_reexec`). A nonzero value here is what
+        # separates round 5 from round 4, whose in-process repair could not work.
+        "reexec_count": int(os.environ.get(_REEXEC_ENV, "0")),
         "candidate_resolution": resolution,
         "n_candidates": len(repos),
         "n_candidates_existing": len(live),

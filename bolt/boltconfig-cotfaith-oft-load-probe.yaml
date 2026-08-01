@@ -1,11 +1,11 @@
-name: 'CoT-Faith #15d: OpenVLA-OFT load, round 4 (repair the version skew round 3 caused)'
-description: 'Round 3 (bolt gvvhgg4d4c) got further than any prior round and then failed on its own doing: with prismatic resolved, all 5 OFT checkpoints reached the PROCESSOR stage, then died on SystemError -- installed pydantic-core 2.47.0 vs a pydantic requiring 2.46.4. That skew was created by the probe itself: its --no-deps retry loop installed pydantic_core alone to satisfy a missing-module error, leaving the coupled pair mismatched. A self-inflicted skew is not evidence that OFT is unloadable, so the paper cannot cite round 3 for limitation (ix). This round adds version_skew(): when a failure is not a missing module, the loop reads the version the exception itself names and pins to it, once per package, before reporting anything as the blocker. --no-deps is kept otherwise, because the pins ARE the environment the paper names. Every install is still recorded, so the output answers what supporting OFT would cost rather than just yes/no.'
+name: 'CoT-Faith #15e: OpenVLA-OFT load, round 5 (fix the install policy, not the symptom)'
+description: 'Round 4 (bolt s6arkzytjr) failed twice and both failures were ours, not OFT''s. (1) Its skew repair installed pydantic-core==2.46.4 successfully and the identical SystemError returned: pydantic_core is a compiled extension already imported, so no reinstall and no invalidate_caches() can swap the loaded object. (2) The stage that got past pydantic died on AttributeError: partially initialized module ''wandb'' has no attribute ''errors'' -- what wandb does when its requirements are absent. Both are --no-deps-everything producing partial installs, and both read in a log exactly like an OFT incompatibility. Round 5 fixes the policy: deps installed WITH their own deps, the four pins the paper names re-asserted afterwards with any movement reported; a pip-check repair before each stage in its OWN process, the only point at which a compiled-module conflict is fixable; a surviving skew triggers a bounded re-exec, not an in-process retry.'
 tags:
 - cotfaith
 - openvla-oft
 - limitation-ix
 - load-probe
-- round3
+- round5
 project_id: ads_algo_signal_qucacheoffline
 permissions:
   owners: yudi_zhang2

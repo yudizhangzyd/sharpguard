@@ -23,14 +23,30 @@ Two kinds of source are tried in order:
   2. the OFT / OpenVLA source trees, whose package IS `prismatic`. Both install
      cleanly and move no pins.
 
-Every install uses --no-deps: the pinned torch 2.4.1+cu118 is the environment
-the paper names, and a transitive upgrade would silently make the load result
-describe a different stack. Missing transitive imports are then resolved one at
-a time, by reading the module name out of the ImportError and installing it --
-each one logged, so the output doubles as the answer to "what would supporting
-OFT take". So far that answer is: isodate, draccus, mergedeep, typing_inspect,
-mypy_extensions, and then whatever the logging handler needs (see
-`target_importable` on why that one was invisible at first).
+The prismatic tree itself is installed with --no-deps, and only it: its setup
+pins a torch of its own, and letting the package under test re-pin the stack
+would make the load result describe an environment the paper does not name.
+
+Its ordinary PyPI dependencies are installed *with* their own dependencies --
+see `install`. Round 4 (bolt `s6arkzytjr`) is why. Suppressing deps for every
+package produced two different broken partial installs in one job: a
+pydantic/pydantic-core version skew, and
+
+    AttributeError: partially initialized module 'wandb' has no attribute
+    'errors' (most likely due to a circular import)
+
+which is what `wandb` does when its own requirements are absent. Both were
+self-inflicted, and neither is evidence about OFT. So deps are resolved
+normally and the four pins the paper names are re-asserted afterwards, which
+protects the stack without breaking the packages -- and any pin that moved is
+reported rather than quietly restored.
+
+Missing transitive imports are resolved one at a time, by reading the module
+name out of the ImportError and installing it -- each one logged, so the output
+doubles as the answer to "what would supporting OFT take". So far that answer
+is: isodate, draccus, mergedeep, typing_inspect, mypy_extensions, and then
+whatever the logging handler needs (see `target_importable` on why that one was
+invisible at first).
 """
 from __future__ import annotations
 
@@ -93,6 +109,176 @@ def pins() -> dict:
     return out
 
 
+# Which of the four the paper names can be RESTORED by a plain PyPI install if a
+# dependency resolution moves it. torch is deliberately absent: the image's build
+# carries a local version suffix (2.4.1+cu118) that PyPI does not serve, so a
+# "restore" would install a different build than the paper names -- worse than
+# reporting the move. If torch moves, the stage is not comparable and says so.
+REPINNABLE = ("transformers", "tokenizers", "timm")
+
+
+def reassert_pins(before: dict) -> dict:
+    """Put back any of the paper's pins that an install moved, and report both.
+
+    Restoring silently would be the wrong shape: "we installed OFT's deps and
+    nothing moved" and "we installed them, transformers jumped two minor
+    versions, and we forced it back" are different facts about what supporting
+    OFT costs, and only the first one lets a stage's load result be read as being
+    about the pinned stack. So `moved` is kept even when `restored` succeeds.
+    """
+    after = pins()
+    moved = {k: [v, after.get(k)] for k, v in before.items()
+             if after.get(k) != v and not str(v).startswith("<absent")}
+    rec: dict = {"moved": moved, "restored": {}, "unrestorable": []}
+    for name, (want, saw) in moved.items():
+        if name not in REPINNABLE:
+            rec["unrestorable"].append({"pin": name, "want": want, "saw": saw})
+            continue
+        ok, tail = pip("install", "--quiet", "--no-deps", f"{name}=={want}")
+        rec["restored"][name] = {"want": want, "saw": saw, "repin_ok": ok,
+                                 "pip_tail": None if ok else tail[-300:]}
+    return rec
+
+
+def install(pkg: str, no_deps: bool = False) -> dict:
+    """Install one dependency, repair what it broke, then re-assert the pins.
+
+    `no_deps=True` is for the prismatic tree itself -- the package under test
+    must not be allowed to re-pin the stack it is being tested against. For
+    everything else deps are resolved normally, because round 4 showed what
+    suppressing them costs: `wandb` installed without its requirements raised
+
+        AttributeError: partially initialized module 'wandb' has no attribute
+        'errors' (most likely due to a circular import)
+
+    and a lone `pydantic_core` landed a version its sibling `pydantic` rejects.
+    Both look exactly like an OFT incompatibility in a log, and neither is one.
+
+    A with-deps install can still fail where --no-deps would have worked -- pip
+    refuses the resolution rather than moving the installed torch. That is the
+    only case that falls back, and the fallback is recorded, because a partial
+    install is then a known risk for that package rather than the default.
+    """
+    before = pins()
+    ok, tail = pip("install", "--quiet", *(("--no-deps",) if no_deps else ()),
+                   pkg)
+    rec: dict = {"pip": pkg, "ok": ok, "no_deps": no_deps}
+    if not ok and not no_deps:
+        ok, tail = pip("install", "--quiet", "--no-deps", pkg)
+        rec.update(ok=ok, no_deps=True, fallback="no_deps_after_resolution_failed")
+    if not ok:
+        rec["pip_tail"] = tail[-400:]
+        return rec
+    rec["pins"] = reassert_pins(before)
+    rec["consistency"] = pip_check_repair()
+    return rec
+
+
+# `pip check` says exactly two things, and each needs a different repair.
+_RE_MISSING = re.compile(
+    r"^(\S+) (\S+) requires ([A-Za-z0-9_.\-]+), which is not installed", re.M)
+_RE_CONFLICT = re.compile(
+    r"^(\S+) (\S+) has requirement (\S+), but you have (\S+) (\S+)", re.M)
+
+# Never repaired automatically. These four ARE the environment the paper names,
+# so a dependency that wants a different one is a fact to report, not a number
+# to change underneath the measurement.
+PROTECTED = {"torch", "transformers", "tokenizers", "timm"}
+
+_NORM = re.compile(r"[-_.]+")
+
+
+def _norm_dist(name: str) -> str:
+    return _NORM.sub("-", name.strip().lower())
+
+
+def _req_name(requirement: str) -> str:
+    """`pydantic-core==2.46.4` -> `pydantic-core`; `numpy<2` -> `numpy`."""
+    return re.split(r"[<>=!~\[;]", requirement, 1)[0].strip()
+
+
+def parse_pip_check(text: str) -> list[dict]:
+    """The unsatisfied requirements `pip check` found, as repair instructions.
+
+    Split by kind because the fix differs: a missing requirement is installed by
+    name and pip picks a compatible version, whereas a conflict must be installed
+    to the exact specifier `pip check` printed -- installing `pydantic-core` by
+    name is what produced the conflict in the first place.
+    """
+    found = []
+    for holder, hver, dep in _RE_MISSING.findall(text or ""):
+        found.append({"kind": "missing", "holder": holder,
+                      "holder_version": hver, "requirement": dep, "name": dep})
+    for holder, hver, req, have, hav in _RE_CONFLICT.findall(text or ""):
+        found.append({"kind": "conflict", "holder": holder,
+                      "holder_version": hver, "requirement": req,
+                      "name": _req_name(req),
+                      # pip check ends the line with a full stop, and the
+                      # version's own `\S+` happily takes it for a version.
+                      "installed": f"{have} {hav.rstrip('.')}"})
+    return found
+
+
+def pip_check_repair(max_rounds: int = 4) -> dict:
+    """Make the installed set self-consistent, and report what it took.
+
+    This is the fix for round 4 (bolt `s6arkzytjr`), whose two failures were both
+    a broken install set rather than anything about OFT:
+
+        SystemError: The installed pydantic-core version (2.47.0) is
+        incompatible with the current pydantic version, which requires 2.46.4
+        AttributeError: partially initialized module 'wandb' has no attribute
+        'errors' (most likely due to a circular import)
+
+    `pip check` names both -- as a conflict and as a missing requirement -- and
+    it names them BEFORE anything imports them, which is the only point at which
+    the first one is fixable: `pydantic_core` is a compiled extension, so once it
+    is imported no on-disk reinstall and no `invalidate_caches()` can swap the
+    loaded object. Round 4's in-process repair ran, succeeded, and changed
+    nothing for exactly that reason.
+
+    Bounded and monotone: a round that does not shrink the finding set stops the
+    loop, so an unrepairable conflict is reported as one instead of consuming the
+    budget. Repairs that would touch the paper's pins are refused, not applied.
+
+    `max_rounds=0` is report-only, and stage 1 uses it. That stage exists to
+    measure the environment the paper names, so it must record whether the image
+    arrived consistent without changing it -- otherwise "our installs broke this"
+    and "it was already broken" become indistinguishable, and the baseline stops
+    being the thing that keeps limitation (ix) falsifiable.
+    """
+    rec: dict = {"rounds": [], "refused": [], "clean": None}
+    prev: set[tuple] = set()
+    for _ in range(max_rounds):
+        _ok, text = pip("check")
+        found = parse_pip_check(text)
+        if not found:
+            rec["clean"] = True
+            break
+        key = {(f["kind"], f["holder"], f["requirement"]) for f in found}
+        if key == prev:                 # no progress: repairing again cannot help
+            break
+        prev = key
+        rnd: dict = {"findings": found, "repairs": []}
+        for f in found:
+            if _norm_dist(f["name"]) in {_norm_dist(p) for p in PROTECTED}:
+                rec["refused"].append(f)
+                continue
+            spec = f["requirement"] if f["kind"] == "conflict" else f["name"]
+            got, tail = pip("install", "--quiet", spec)
+            rnd["repairs"].append({"spec": spec, "ok": got,
+                                   "pip_tail": None if got else tail[-300:]})
+        rec["rounds"].append(rnd)
+        if not rnd["repairs"]:          # everything left is refused
+            break
+    if rec["clean"] is None:
+        _ok, text = pip("check")
+        remaining = parse_pip_check(text)
+        rec["clean"] = not remaining
+        rec["remaining"] = remaining
+    return rec
+
+
 def target_importable() -> tuple[bool, str | None]:
     """Can the OFT modeling module be imported right now?
 
@@ -140,11 +326,9 @@ def missing_module(err: str) -> str | None:
 def version_skew(err: str) -> tuple[str, str] | None:
     """The (pip_name, required_version) a version-skew error is complaining about.
 
-    `--no-deps` is the right default here -- the pins ARE the environment the
-    paper names -- but it has a failure mode this repo just paid for. Installing
-    `pydantic_core` alone to satisfy a missing-module error pulled 2.47.0 next to
-    the image's pydantic, which requires 2.46.4, and every OFT checkpoint then
-    died at the processor stage on:
+    Installing `pydantic_core` alone to satisfy a missing-module error pulled
+    2.47.0 next to the image's pydantic, which requires 2.46.4, and every OFT
+    checkpoint then died at the processor stage on:
 
         SystemError: The installed pydantic-core version (2.47.0) is
         incompatible with the current pydantic version, which requires 2.46.4.
@@ -155,6 +339,14 @@ def version_skew(err: str) -> tuple[str, str] | None:
     own install. The exception prints the version it wants, so read that rather
     than guessing a pin: same principle as reading the module name out of an
     ImportError instead of maintaining a dependency list by hand.
+
+    Round 5 demoted this from the fix to a detector. `pip_check_repair` now
+    prevents the skew before anything imports the module, which is the only point
+    at which it is repairable -- round 4 (bolt `s6arkzytjr`) installed the right
+    pin, in-process, and hit the identical SystemError, because `pydantic_core`
+    is a compiled extension and an already-imported one cannot be swapped. So a
+    skew reaching here means the repair either did not run or could not fix it,
+    and the caller re-execs rather than retrying in place.
     """
     m = re.search(r"installed (\S+?) version \(\S+?\) is incompatible with the "
                   r"current \S+ version, which requires (\d\S*)", err or "")
@@ -176,6 +368,9 @@ def resolve() -> dict:
 
     for label, spec in SOURCES:
         entry = {"source": label, "spec": spec}
+        # --no-deps, and only here: prismatic's own setup pins a torch of its
+        # own, so resolving ITS dependencies would re-pin the stack it is being
+        # tested against. Its ordinary PyPI dependencies go through `install`.
         installed, tail = pip("install", "--quiet", "--no-deps", *spec)
         entry["pip_ok"] = installed
         if not installed:
@@ -202,10 +397,10 @@ def resolve() -> dict:
                 break
             seen.add(mod)
             pkg = IMPORT_TO_PIP.get(mod, mod)
-            got, _tail = pip("install", "--quiet", "--no-deps", pkg)
-            log["transitive_installs"].append(
-                {"import": mod, "pip": pkg, "ok": got})
-            if not got:
+            rec = install(pkg)
+            rec["import"] = mod
+            log["transitive_installs"].append(rec)
+            if not rec["ok"]:
                 break
             ok, err = target_importable()
 
@@ -222,14 +417,59 @@ def resolve() -> dict:
     log["pins_moved"] = {k: [v, log["pins_after"].get(k)]
                          for k, v in log["pins_before"].items()
                          if log["pins_after"].get(k) != v}
+    # Last word on the install set, after every source and every dependency:
+    # the next process to start is the one that loads a 7B checkpoint, and it
+    # should not discover a conflict we could have named here.
+    log["consistency_final"] = pip_check_repair()
     return log
+
+
+def _print_consistency(label: str, c: dict) -> None:
+    n_rep = sum(len(r["repairs"]) for r in c.get("rounds", []))
+    print(f"[{label}] pip check: clean={c.get('clean')} repairs={n_rep}")
+    for r in c.get("rounds", []):
+        for f in r["findings"]:
+            print(f"[{label}]   {f['kind']}: {f['holder']} "
+                  f"{f['holder_version']} wants {f['requirement']}"
+                  + (f" (have {f['installed']})" if f.get("installed") else ""))
+        for rep in r["repairs"]:
+            print(f"[{label}]   -> pip install {rep['spec']}: ok={rep['ok']}")
+    for f in c.get("refused", []):
+        # Refused rather than applied, so it has to be visible: a dependency
+        # that wants a different torch/transformers than the paper names is a
+        # finding about what supporting OFT costs.
+        print(f"[{label}]   REFUSED (paper pin): {f['holder']} wants "
+              f"{f['requirement']}")
+    for f in c.get("remaining", []) or []:
+        print(f"[{label}]   UNRESOLVED: {f['holder']} wants {f['requirement']}")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True,
                     help="where to write the resolution log (JSON)")
+    ap.add_argument("--pip-check-only", action="store_true",
+                    help="only run pip_check_repair and exit. The runner calls "
+                         "this before each probe stage, in its own process, "
+                         "because that is the only place a compiled-extension "
+                         "conflict can be fixed: once pydantic_core is imported "
+                         "no reinstall can swap the loaded object (bolt "
+                         "s6arkzytjr repaired it in-process and changed nothing).")
+    ap.add_argument("--report-only", action="store_true",
+                    help="with --pip-check-only, record the consistency of the "
+                         "install set without repairing it. Used for stage 1, "
+                         "which must measure the image the paper names rather "
+                         "than an image we tidied first.")
     args = ap.parse_args()
+
+    if args.pip_check_only:
+        c = pip_check_repair(max_rounds=0 if args.report_only else 4)
+        with open(args.out, "w") as f:
+            json.dump({"mode": "pip_check_report" if args.report_only
+                       else "pip_check_only",
+                       "pins": pins(), "consistency": c}, f, indent=2)
+        _print_consistency("pin-doctor", c)
+        return 0
 
     log = resolve()
     with open(args.out, "w") as f:
@@ -250,9 +490,22 @@ def main() -> int:
         print("[prismatic]   transitive: " + ", ".join(
             f"{t['import']}({'ok' if t['ok'] else 'FAILED'})"
             for t in log["transitive_installs"]))
+        # What the with-deps policy actually moved, per dependency. Round 4's
+        # log could not show this: every install was --no-deps, so nothing ever
+        # moved and nothing was ever consistent either.
+        for t in log["transitive_installs"]:
+            mv = (t.get("pins") or {}).get("moved") or {}
+            if mv:
+                print(f"[prismatic]     {t['import']} moved pins: {mv} "
+                      f"restored={list((t['pins'].get('restored') or {}))}")
+            if t.get("fallback"):
+                print(f"[prismatic]     {t['import']}: {t['fallback']} -- "
+                      f"partial install possible for this one")
     if log["pins_moved"]:
         # Loud, because it invalidates the comparison the stages exist to make.
         print(f"[prismatic] WARNING pins moved: {log['pins_moved']}")
+    if log.get("consistency_final"):
+        _print_consistency("prismatic", log["consistency_final"])
     # Exit 0 either way: an unresolvable dependency is a measurement, and the
     # caller decides what to do with it. Only a crash here is a failure.
     return 0

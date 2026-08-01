@@ -24,6 +24,14 @@
 # Every stage writes a report and the job exits 0 either way: a measured failure
 # IS the deliverable here. What the job must never do is exit 0 having measured
 # nothing, so the final check below fails loudly if no report exists.
+#
+# Round 5 adds `pin_doctor` before each probe stage. Round 4 (bolt s6arkzytjr)
+# failed twice, and both failures were this job's own install set rather than
+# anything about OFT: a pydantic/pydantic-core conflict and a wandb installed
+# without its requirements. `pip check` names both. It runs in a SEPARATE process
+# from the probe on purpose -- a compiled extension can only be replaced before
+# the process that imports it starts, which is why round 4's in-process repair
+# installed the right version and changed nothing.
 set -x
 cd "$(dirname "$0")/.."
 if [ -f /tmp/sharpguard.env ]; then set -a; . /tmp/sharpguard.env; set +a; fi
@@ -36,11 +44,23 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export HF_HOME="${HF_HOME:-/tmp/hf}"
 
+# Repair whatever the last pip command left inconsistent, in a fresh process,
+# before the probe imports anything. Never repairs torch/transformers/tokenizers
+# /timm -- those four ARE the environment the paper names, so a dependency that
+# wants a different one is printed as a finding instead.
+pin_doctor () {
+    python bolt/install_prismatic.py --pip-check-only ${2:-} \
+        --out "$OUT_DIR/pin_doctor_$1.json" || echo "[oft] pin doctor $1 crashed"
+}
+
 # ---- stage 1: the environment the paper names -------------------------------
 python -c "import torch, transformers, sys;
 print('[oft] baseline python', sys.version.split()[0],
       'torch', torch.__version__, 'transformers', transformers.__version__)" || true
 
+# Report-only here, on purpose: stage 1 measures the environment the paper names,
+# so it records whether the image arrived consistent instead of tidying it first.
+pin_doctor baseline --report-only
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage baseline \
@@ -60,6 +80,7 @@ python -c "import torch, transformers, sys;
 print('[oft] upgraded python', sys.version.split()[0],
       'torch', torch.__version__, 'transformers', transformers.__version__)" || true
 
+pin_doctor upgraded
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage upgraded \
@@ -89,6 +110,7 @@ python -c "import torch, transformers, sys;
 print('[oft] prismatic_baseline python', sys.version.split()[0],
       'torch', torch.__version__, 'transformers', transformers.__version__)" || true
 
+pin_doctor prismatic_baseline
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage prismatic_baseline \
@@ -104,6 +126,7 @@ pip install --quiet --upgrade \
     "transformers==4.53.2" "tokenizers>=0.21,<0.22" "timm>=1.0.11" \
     "accelerate>=0.34" "peft>=0.13" || echo "[oft] second upgrade failed"
 
+pin_doctor prismatic_upgraded
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage prismatic_upgraded \
@@ -131,6 +154,18 @@ if res.exists():
           f"transitive={[t['import'] for t in r.get('transitive_installs', [])]}")
     if r.get("pins_moved"):
         print(f"    WARNING pins moved during resolution: {r['pins_moved']}")
+# What the install set looked like going into each stage. Round 4 had no such
+# record, which is why two self-inflicted broken installs were read for a whole
+# round as evidence about OFT.
+for p in sorted(d.glob("pin_doctor_*.json")):
+    c = json.loads(p.read_text()).get("consistency", {})
+    fixed = [rep["spec"] for rnd in c.get("rounds", []) for rep in rnd["repairs"]]
+    print(f"--- {p.stem}: clean={c.get('clean')} repaired={fixed}")
+    for f in c.get("refused", []):
+        print(f"    REFUSED (would move a paper pin): {f['holder']} "
+              f"{f['holder_version']} wants {f['requirement']}")
+    for f in c.get("remaining", []) or []:
+        print(f"    UNRESOLVED: {f['holder']} wants {f['requirement']}")
 loaded_anywhere = False
 for p in found:
     r = json.loads(p.read_text())
@@ -139,7 +174,8 @@ for p in found:
           f"transformers={env.get('transformers')} "
           f"prismatic={env.get('prismatic')}")
     print(f"    existing={r.get('n_candidates_existing')}/"
-          f"{r.get('n_candidates')} loaded={r.get('n_loaded')}")
+          f"{r.get('n_candidates')} loaded={r.get('n_loaded')}"
+          + (f" reexecs={r['reexec_count']}" if r.get("reexec_count") else ""))
     print(f"    verdict: {r.get('verdict')}")
     loaded_anywhere = loaded_anywhere or bool(r.get("any_loaded"))
     for repo, a in (r.get("load_attempts") or {}).items():
