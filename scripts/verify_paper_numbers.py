@@ -2877,6 +2877,133 @@ def audit_gripper_ab_null(a):
             source="cot_faith_iclr.tex")
 
 
+def audit_bridge_join_probe(a: Audit) -> None:
+    """The Bridge V2 join, against the probe that measured it.
+
+    The O4 section asks the reader to accept an uncontrolled comparison, and now
+    explains that the missing control is blocked by a property of the public
+    data rather than by a budget we declined to spend. That explanation rests on
+    measured numbers, so they are checked here.
+
+    Several of these checks are deliberately of the UNFAVOURABLE number. The
+    whole point of the probe is that `episode_id` is a trap: an overlap of 2.1%
+    whose instructions agree 0.280 of the time yields a complete, plausible,
+    wrong index, and a training run on it completes normally. If someone later
+    "fixes" the join by keying on episode_id, the number that refutes it has to
+    fail an assertion rather than quietly vanish from a regenerated report.
+    Likewise `merge_required` is asserted True: the day it reads False without
+    the export layout having changed is the day the renderability measurement
+    stopped measuring anything.
+
+    The instruction-agreement number is ALSO checked as an upper bound, for the
+    same reason the judge audit bounds its negative control from above. A probe
+    that reported high agreement here would be reporting that the trap is safe,
+    which is the one wrong answer that looks like good news.
+    """
+    sec = "Bridge V2 join (episode-level joinability of the two public exports)"
+    rel = ROOT / "results_v2" / "canonical_runs" / "bridge_join_probe"
+    src = "results_v2/canonical_runs/bridge_join_probe/bridge_join_probe.json"
+    rep = load(rel / "bridge_join_probe.json")
+    if not rep:
+        a.check(sec, "bridge_join_probe.json is released", True, False, source=src)
+        return
+
+    tex = TEX.read_text() if TEX.exists() else ""
+    trainer = (ROOT / "experiments" / "cotfaith_train_bridge.py").read_text()
+    st = rep.get("strategies") or {}
+    bi = st.get("by_episode_id") or {}
+    bt = st.get("by_task_text") or {}
+    rd = rep.get("renderability") or {}
+
+    a.check(sec, "bolt task id is recorded with the artifact", "754ru9usqe",
+            (rel / "bolt_task_id.txt").read_text().strip()
+            if (rel / "bolt_task_id.txt").exists() else None,
+            source="bridge_join_probe/bolt_task_id.txt")
+    a.check(sec, "annotated episodes in the CoT export", 60062,
+            rep.get("n_episode_keys_total"), source=src)
+    a.check(sec, "every annotated episode was walked, not sampled", 60062,
+            rep.get("n_episodes_walked"), source=src)
+    a.check(sec, "LeRobot trajectory episodes", 53192,
+            rep.get("n_lerobot_episodes"), source=src)
+
+    # ---- the trap, asserted as a trap ----
+    a.check(sec, "episode_id matches only 1111 LeRobot episodes", 1111,
+            bi.get("n_matched_lerobot_episodes"), source=src)
+    a.check(sec, "...which is 2.1% of them", 0.0209,
+            bi.get("frac_lerobot_matched"), tol=1e-4, source=src)
+    a.check(sec, "episode_id is per-shard, not global: max id < n episodes",
+            True, (bi.get("id_range") or [0, 10 ** 9])[1] < 60062,
+            source=src + " (id_range)")
+    a.check(sec, "episode_id collides", 879, bi.get("n_id_collisions"), source=src)
+    a.check(sec, "instructions agree on only 0.280 of matched pairs", 0.2799,
+            bi.get("frac_instruction_agrees_on_matched"), tol=1e-4, source=src)
+    a.check(sec, "that agreement stays well BELOW a joinable level (upper bound)",
+            True, (bi.get("frac_instruction_agrees_on_matched") or 1.0) <= 0.5,
+            source=src)
+    a.check(sec, "the probe's verdict refuses the episode_id join", True,
+            str(bi.get("verdict", "")).startswith("ids overlap but"), source=src)
+
+    # ---- no exact route ----
+    a.check(sec, "LeRobot episode records carry no upstream source path", True,
+            (rep.get("lerobot_episode_keysets") or [["", 0]])[0][0]
+            == "episode_index,length,tasks", source=src)
+
+    # ---- the route that is used ----
+    a.check(sec, "shared normalized instructions", 19541,
+            bt.get("n_shared_normalized_tasks"), source=src)
+    a.check(sec, "LeRobot episodes covered by instruction text", 38660,
+            bt.get("n_lerobot_episodes_covered"), source=src)
+    a.check(sec, "...i.e. 72.7% coverage", 0.7268,
+            bt.get("frac_lerobot_episodes_covered"), tol=1e-4, source=src)
+    a.check(sec, "median fanout is 1, so the typical key is unique", 1,
+            bt.get("median_lerobot_episodes_per_shared_task"), source=src)
+    a.check(sec, "max fanout is 963, which is why degenerate keys are refused",
+            963, bt.get("max_lerobot_episodes_per_shared_task"), source=src)
+    a.check(sec, "reachable annotated episodes", 41634,
+            rep.get("n_reachable_annotated_episodes"), source=src)
+    a.check(sec, "reachable episodes exceed the ~4k the ablation needs", True,
+            (rep.get("n_reachable_annotated_episodes") or 0) >= 4000,
+            source=src + " (n_reachable_annotated_episodes)")
+
+    # ---- renderability: a correct join is necessary but not sufficient ----
+    a.check(sec, "the per-step features+reasoning merge is required", True,
+            rd.get("merge_required") is True, source=src)
+    a.check(sec, "steps inspected for renderability", 4000,
+            rd.get("n_reasoning_steps_inspected"), source=src)
+    ro = rd.get("tag_fill_rate_from_reasoning_only") or {}
+    fo = rd.get("tag_fill_rate_from_features_only") or {}
+    mg = rd.get("tag_fill_rate_from_merge") or {}
+    for tag in ("VISIBLE OBJECTS", "GRIPPER POSITION"):
+        a.check(sec, f"reasoning alone leaves {tag} empty", 0.0, ro.get(tag),
+                tol=1e-9, source=src)
+        a.check(sec, f"features alone fills {tag}", 1.0, fo.get(tag),
+                tol=1e-9, source=src)
+    for tag in ("TASK", "PLAN", "SUBTASK", "SUBTASK REASONING",
+                "MOVE REASONING", "MOVE"):
+        a.check(sec, f"reasoning alone already fills {tag}", 1.0, ro.get(tag),
+                tol=1e-9, source=src)
+    a.check(sec, "the merge fills all eight tags at 1.0", True,
+            len(mg) == 8 and all(abs(v - 1.0) < 1e-9 for v in mg.values()),
+            source=src)
+    a.check(sec, "no tag is unfillable by either subtree", [],
+            rd.get("tags_unfillable_by_either"), source=src)
+
+    # ---- the manuscript and the consumer state the same thing ----
+    for frag, why in (
+            ("754ru9usqe", "cites the bolt task id"),
+            ("$0.280$ of the time", "states the instruction-agreement number"),
+            ("$41{,}634$", "states the reachable-episode count"),
+            ("$963$", "states the max fanout that motivates refusing keys")):
+        a.check(sec, f"the manuscript {why}", True, frag in tex,
+                source="cot_faith_iclr.tex (O4 section)")
+    a.check(sec, "the trainer probes the id join instead of trusting it", True,
+            "_ID_MIN_AGREE" in trainer,
+            source="experiments/cotfaith_train_bridge.py")
+    a.check(sec, "the trainer refuses degenerate instruction keys", True,
+            "_usable_task_key" in trainer,
+            source="experiments/cotfaith_train_bridge.py")
+
+
 def audit_gate_factorial(a):
     """The 2x2 gripper x image factorial, and the null it returned.
 
@@ -3586,6 +3713,7 @@ def main() -> int:
     audit_gripper_ab_null(a)
     audit_p3_frame_check(a)
     audit_judge_edit_families(a)
+    audit_bridge_join_probe(a)
     audit_gate_factorial(a)
     audit_derived_paths_are_portable(a)
 

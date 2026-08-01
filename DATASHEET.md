@@ -351,6 +351,35 @@ store actions only. `results_v2/canonical_runs/judge_edit_families/` (bolt
 `jhcgnqbmf2`) carries the report, all 437 judged pairs with both traces verbatim,
 and a README.
 
+**The two public Bridge V2 exports cannot be joined per episode, and we measured
+that rather than assuming it.** The O4 observation asks for a same-data ablation
+(fine-tune on a ~4k Bridge subset matched to LIBERO-90 scale), which needs the CoT
+annotations (`Embodied-CoT/embodied_features_bridge`, 60,062 annotated episodes)
+joined to the trajectories (`IPEC-COMMUNITY/bridge_orig_lerobot`, 53,192 episodes)
+per episode. No shared key exists. All three candidates were measured on the full
+exports (bolt `754ru9usqe`): the annotations' `episode_id` matches only 1,111 of
+53,192 LeRobot episodes (2.1%), ranges over `[0,1110]` against 60,062 annotated
+episodes (per-shard, not global), collides 879 times, and on the pairs it does
+match **the two sides' instructions agree only 0.280 of the time**. That is the
+number that matters: a join on `episode_id` fails *invisibly*, returning a
+complete plausible index that trains to completion and yields a checkpoint nobody
+can audit after the fact. The LeRobot records carry only
+`episode_index, length, tasks`, so there is no exact route either. Instruction
+text works with two caveats: 19,541 shared normalized instructions cover 38,660 of
+53,192 episodes (72.7%) at median fanout 1 (41,634 reachable annotated episodes),
+but the join is *task*-level wherever fanout exceeds 1, and the shared keys include
+crowdsourced strings that are not language (`"1"`, `"9"`, `"3wsws"`) with a max
+fanout of **963**, which a consumer must refuse rather than sample within.
+Separately, **a correct join is still not a renderable trace**: the eight CoT tags
+are split across the export's `features` and `reasoning` subtrees, and over 4,000
+inspected steps `reasoning` alone fills six and leaves VISIBLE OBJECTS and GRIPPER
+POSITION at 0.0. Rendering from `reasoning` alone trains a model to emit two
+permanently blank tags, which no metric here can detect. Anyone reusing these two
+artifacts together inherits all of the above.
+`results_v2/canonical_runs/bridge_join_probe/` carries the report and a README;
+`tests/test_bridge_reasoning_join.py` checks the consumer offline (41 checks, no
+GPU), keeping both of our own historical join bugs as negative controls.
+
 ---
 
 ## Uses

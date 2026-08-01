@@ -1,0 +1,270 @@
+{
+ "dataset_repo": "IPEC-COMMUNITY/bridge_orig_lerobot",
+ "episode_facts_sample": [
+  {
+   "ep_key": "43",
+   "episode_id": 43,
+   "file_path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/",
+   "instruction": "move the wooden arch to the table",
+   "n_steps": 40,
+   "n_steps_reasoning": 40,
+   "path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/"
+  },
+  {
+   "ep_key": "11",
+   "episode_id": 11,
+   "file_path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/",
+   "instruction": "Put the blue arc on top of the yellow prism",
+   "n_steps": 46,
+   "n_steps_reasoning": 46,
+   "path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/"
+  },
+  {
+   "ep_key": "27",
+   "episode_id": 27,
+   "file_path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/",
+   "instruction": "put the white block on the tower",
+   "n_steps": 38,
+   "n_steps_reasoning": 38,
+   "path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/"
+  },
+  {
+   "ep_key": "17",
+   "episode_id": 17,
+   "file_path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/",
+   "instruction": "move the red block to right side of the table",
+   "n_steps": 23,
+   "n_steps_reasoning": 23,
+   "path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/"
+  },
+  {
+   "ep_key": "32",
+   "episode_id": 32,
+   "file_path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/",
+   "instruction": "pick up the arch and put it back down in the same spot",
+   "n_steps": 48,
+   "n_steps_reasoning": 47,
+   "path": "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/"
+  }
+ ],
+ "lerobot_episode_keysets": [
+  [
+   "episode_index,length,tasks",
+   53192
+  ]
+ ],
+ "lerobot_episode_sample": [
+  {
+   "episode_index": "0",
+   "length": "26",
+   "tasks": "['put small spoon from basket to tray']"
+  },
+  {
+   "episode_index": "1",
+   "length": "45",
+   "tasks": "['put the blue cube on the right side of the table on top of the rectangular block']"
+  },
+  {
+   "episode_index": "2",
+   "length": "45",
+   "tasks": "['put the red object into the pot']"
+  }
+ ],
+ "n_annotated_steps_total": 1670937,
+ "n_distinct_annotation_tasks": 21701,
+ "n_distinct_lerobot_tasks": 19541,
+ "n_episode_keys_total": 60062,
+ "n_episodes_walked": 60062,
+ "n_lerobot_episodes": 53192,
+ "n_path_keys": 3200,
+ "n_reachable_annotated_episodes": 41634,
+ "n_with_episode_id": 60062,
+ "n_with_file_path": 60062,
+ "n_with_instruction": 43805,
+ "n_with_n_steps": 60062,
+ "probe": "bridge_reasoning_join",
+ "reasoning_local_bytes": 1402179594,
+ "reasoning_repo": "Embodied-CoT/embodied_features_bridge",
+ "renderability": {
+  "merge_required": true,
+  "n_reasoning_steps_inspected": 4000,
+  "reasoning_step_field_frequency": {
+   "move": 4000,
+   "move_reason": 4000,
+   "plan": 4000,
+   "subtask": 4000,
+   "subtask_reason": 4000,
+   "task": 4000
+  },
+  "reasoning_step_field_samples": {
+   "move": "stop",
+   "move_reason": "The arm is already in a good position to reach for the wooden arch.",
+   "plan": "Reach for the wooden arch. Grasp the wooden arch. Move the wooden arch to the table. Drop the wooden arch onto the table.",
+   "subtask": "Reach for the wooden arch.",
+   "subtask_reason": "The wooden arch is the object that needs to be moved, so the first step is to reach for it.",
+   "task": "Move the wooden arch onto the table."
+  },
+  "tag_fill_rate_from_features_only": {
+   "GRIPPER POSITION": 1.0,
+   "MOVE": 0.0,
+   "MOVE REASONING": 0.0,
+   "PLAN": 0.0,
+   "SUBTASK": 0.0,
+   "SUBTASK REASONING": 0.0,
+   "TASK": 0.0,
+   "VISIBLE OBJECTS": 1.0
+  },
+  "tag_fill_rate_from_merge": {
+   "GRIPPER POSITION": 1.0,
+   "MOVE": 1.0,
+   "MOVE REASONING": 1.0,
+   "PLAN": 1.0,
+   "SUBTASK": 1.0,
+   "SUBTASK REASONING": 1.0,
+   "TASK": 1.0,
+   "VISIBLE OBJECTS": 1.0
+  },
+  "tag_fill_rate_from_reasoning_only": {
+   "GRIPPER POSITION": 0.0,
+   "MOVE": 1.0,
+   "MOVE REASONING": 1.0,
+   "PLAN": 1.0,
+   "SUBTASK": 1.0,
+   "SUBTASK REASONING": 1.0,
+   "TASK": 1.0,
+   "VISIBLE OBJECTS": 0.0
+  },
+  "tags_unfillable_by_either": []
+ },
+ "round": 2,
+ "shape_deviations": {
+  "l2_keys:features,metadata": 4237,
+  "reasoning_empty_or_missing": 13740
+ },
+ "strategies": {
+  "by_episode_id": {
+   "frac_instruction_agrees_on_matched": 0.2799,
+   "frac_lerobot_matched": 0.0209,
+   "id_range": [
+    0,
+    1110
+   ],
+   "n_annotation_ids": 1111,
+   "n_id_collisions": 879,
+   "n_instruction_agrees_on_matched": 311,
+   "n_matched_lerobot_episodes": 1111,
+   "verdict": "ids overlap but the instructions disagree, so the two exports number different episodes -- do NOT join on this"
+  },
+  "by_task_text": {
+   "annotation_only_sample": [
+    "bring the blue cloth to the front edge from the back",
+    "bring the green cloth to the front edge of the table",
+    "bring the orange to the front edge from back",
+    "bring the yellow cloth to the front edge of the table",
+    "can put on the bottom right part of the table",
+    "cerr  el caj n",
+    "change the position of the yellow thing from vertical to horizontal",
+    "cierra el caj n de madera",
+    "clean the object",
+    "close the pot and place on the upper left side of the table"
+   ],
+   "frac_lerobot_episodes_covered": 0.7268,
+   "lerobot_only_sample": [],
+   "max_lerobot_episodes_per_shared_task": 963,
+   "median_lerobot_episodes_per_shared_task": 1,
+   "n_lerobot_episodes_covered": 38660,
+   "n_shared_normalized_tasks": 19541,
+   "shared_sample": [
+    "1",
+    "12345678",
+    "3wsws",
+    "7 object were moved",
+    "7210 2199 5955 2055 534",
+    "89o khfn  dfdrjr dffhhmj hgjgm ghmkf gytjk ghmj hj kgh ghghjh hikhnh",
+    "9",
+    "a fruit place on  the coumter",
+    "abre la gaveta",
+    "abri  el caj n"
+   ]
+  }
+ },
+ "structure": {
+  "depth_walked": 4,
+  "leaf_fields": [
+   "bboxes",
+   "gripper_position",
+   "move_primitive"
+  ],
+  "leaf_sample": {
+   "bboxes": "[[[0.3405100107192993, 'wooden blocks', [150, 4, 188, 100]]], [[0.3481900095939636, 'wooden blocks', [150, 4, 188, 100]]], [[0.3499700129032135, 'table table', [5, 0, 245, 251]], [0.3280400037765503, 'wooden blocks', [149, 4, 189, 101]]], [[0.3536899983882904, 'wooden blocks', [150, 4, 188, 100]], [",
+   "gripper_position": "[[97, 45], [97, 45], [89, 52], [83, 58], [82, 57], [84, 55], [85, 55], [85, 55], [85, 55], [85, 55], [85, 55], [85, 55], [85, 55], [85, 55], [152, 89], [152, 89], [152, 89], [152, 89], [152, 89], [152, 89], [152, 89], [152, 89], [152, 89], [153, 88], [153, 88], [163, 79], [163, 79], [173, 52], [173,",
+   "move_primitive": "['stop', 'stop', 'move up', 'move up', 'move up', 'move right up', 'move right up', 'move right', 'move right', 'move right', 'move right', 'move right', 'move right', 'stop', 'stop', 'stop', 'stop', 'stop', 'close gripper', 'close gripper', 'close gripper', 'close gripper', 'close gripper', 'stop',"
+  },
+  "levels": [
+   {
+    "all_digit_keys": false,
+    "key_sample": [
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/deepthought_folding_table/stack_blocks/19/train/out.npy",
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/scripted_numpy_256/2022-12-09_pnp_soft_toys/train/out.npy",
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/bridge_data_v2/datacol2_toykitchen2/pnp_push_sweep/09/train/out.npy",
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/scripted_numpy_256/2022-12-08_pnp_rigid_objects/train/out.npy",
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/numpy_256/rss/toykitchen2/pnp_sweep/203/train/out.npy",
+     "/nfs/kun2/users/homer/datasets/bridge_data_all/scripted_numpy_256/pnp_utensils_12-07_rigid_objects/train/out.npy"
+    ],
+    "level": "top",
+    "n_keys": 3200,
+    "type": "dict",
+    "value_types": {
+     "dict": 3200
+    }
+   },
+   {
+    "all_digit_keys": true,
+    "key_sample": [
+     "43",
+     "11",
+     "27",
+     "17",
+     "32",
+     "16"
+    ],
+    "level": "L1",
+    "n_keys": 45,
+    "type": "dict",
+    "value_types": {
+     "dict": 45
+    }
+   },
+   {
+    "all_digit_keys": false,
+    "key_sample": [
+     "features",
+     "metadata",
+     "reasoning"
+    ],
+    "level": "L2",
+    "n_keys": 3,
+    "type": "dict",
+    "value_types": {
+     "dict": 3
+    }
+   },
+   {
+    "all_digit_keys": false,
+    "key_sample": [
+     "move_primitive",
+     "gripper_position",
+     "bboxes"
+    ],
+    "level": "L3",
+    "n_keys": 3,
+    "type": "dict",
+    "value_types": {
+     "list": 3
+    }
+   }
+  ]
+ },
+ "verdict": "fall back to task text: 19541 shared tasks covering 0.7268 of LeRobot",
+ "why": "bolt fnwfaq9bq6 joined 0 of 606677 frames; round 1 (j2kqu7k3m7) measured the 4-level layout but scored both strategies against fields that do not exist, so its 'no strategy matches' verdict was void. This round scores the three keys measured to be present."
+}
