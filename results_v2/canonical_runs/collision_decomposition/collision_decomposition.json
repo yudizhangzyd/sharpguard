@@ -1,0 +1,2614 @@
+{
+  "tau": 0.05,
+  "min_cell_n": 20,
+  "n_scored_records": 28443,
+  "n_cells": 324,
+  "delta_distribution": {
+    "exactly_zero": 13133,
+    "zero_to_0.005": 25,
+    "0.005_to_tau": 1480,
+    "tau_to_0.10": 1143,
+    "above_0.10": 12662
+  },
+  "frac_nonzero_below_tau": 0.09830176355323318,
+  "pearson_r": 0.9625059927490757,
+  "r_squared": 0.9264177860778837,
+  "n_cells_exactly_equal": 80,
+  "global_F_at_tau": 0.48535667826881834,
+  "global_F_at_tau_zero": 0.5382695214991386,
+  "interpretation": "F_mag tracks 1 - P(Delta_inf == 0) at R^2 = 0.926 over 324 cells, with only 9.8% of nonzero deltas falling below tau. The magnitude score is therefore close to a count of how often the policy's argmax over action bins fails to land on the identical bin under a perturbed prompt. Threshold-insensitivity follows from that structure rather than indicating robustness, and the quantity being measured is decode stability rather than magnitude of action change.",
+  "cells": [
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.36666666666666664,
+      "one_minus_collision": 0.8,
+      "gap": 0.4333333333333334
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.31,
+      "one_minus_collision": 0.78,
+      "gap": 0.47000000000000003
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.21,
+      "one_minus_collision": 0.52,
+      "gap": 0.31000000000000005
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.12857142857142856,
+      "one_minus_collision": 0.5428571428571428,
+      "gap": 0.41428571428571426
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.91,
+      "gap": 0.39
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.86,
+      "gap": 0.51
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.31666666666666665,
+      "one_minus_collision": 0.75,
+      "gap": 0.43333333333333335
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.28,
+      "one_minus_collision": 0.59,
+      "gap": 0.30999999999999994
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.41,
+      "one_minus_collision": 0.93,
+      "gap": 0.52
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.37,
+      "one_minus_collision": 0.92,
+      "gap": 0.55
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.11,
+      "one_minus_collision": 0.31,
+      "gap": 0.2
+    },
+    {
+      "run": "bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.38,
+      "one_minus_collision": 0.97,
+      "gap": 0.59
+    },
+    {
+      "run": "cross_corpus_bcz_n100.json",
+      "family": "direction_flip",
+      "n": 81,
+      "F_at_tau": 0.9506172839506173,
+      "one_minus_collision": 0.9876543209876543,
+      "gap": 0.03703703703703698
+    },
+    {
+      "run": "cross_corpus_bcz_n100.json",
+      "family": "gripper_flip",
+      "n": 63,
+      "F_at_tau": 0.746031746031746,
+      "one_minus_collision": 0.8095238095238095,
+      "gap": 0.06349206349206349
+    },
+    {
+      "run": "cross_corpus_bridge_v2_n100.json",
+      "family": "direction_flip",
+      "n": 92,
+      "F_at_tau": 0.9130434782608695,
+      "one_minus_collision": 0.967391304347826,
+      "gap": 0.05434782608695654
+    },
+    {
+      "run": "cross_corpus_bridge_v2_n100.json",
+      "family": "gripper_flip",
+      "n": 51,
+      "F_at_tau": 0.803921568627451,
+      "one_minus_collision": 0.8431372549019608,
+      "gap": 0.039215686274509776
+    },
+    {
+      "run": "cross_corpus_fractal_n100.json",
+      "family": "direction_flip",
+      "n": 77,
+      "F_at_tau": 0.974025974025974,
+      "one_minus_collision": 0.987012987012987,
+      "gap": 0.012987012987012991
+    },
+    {
+      "run": "cross_corpus_fractal_n100.json",
+      "family": "gripper_flip",
+      "n": 74,
+      "F_at_tau": 0.7702702702702703,
+      "one_minus_collision": 0.8513513513513513,
+      "gap": 0.08108108108108103
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 1.0,
+      "one_minus_collision": 1.0,
+      "gap": 0.0
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.97,
+      "one_minus_collision": 0.98,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.91,
+      "gap": 0.08000000000000007
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "location_swap",
+      "n": 58,
+      "F_at_tau": 0.8793103448275862,
+      "one_minus_collision": 0.9310344827586207,
+      "gap": 0.051724137931034475
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.99,
+      "one_minus_collision": 1.0,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.99,
+      "one_minus_collision": 1.0,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.9666666666666667,
+      "one_minus_collision": 0.9833333333333333,
+      "gap": 0.016666666666666607
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.91,
+      "one_minus_collision": 0.99,
+      "gap": 0.07999999999999996
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.98,
+      "one_minus_collision": 1.0,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.99,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "deepthink_base_13family.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.95,
+      "one_minus_collision": 0.99,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.85,
+      "one_minus_collision": 0.9666666666666667,
+      "gap": 0.1166666666666667
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.64,
+      "one_minus_collision": 0.85,
+      "gap": 0.20999999999999996
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.54,
+      "one_minus_collision": 0.7,
+      "gap": 0.15999999999999992
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "location_swap",
+      "n": 58,
+      "F_at_tau": 0.5517241379310345,
+      "one_minus_collision": 0.7068965517241379,
+      "gap": 0.15517241379310343
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.73,
+      "one_minus_collision": 0.94,
+      "gap": 0.20999999999999996
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.86,
+      "one_minus_collision": 0.98,
+      "gap": 0.12
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.9,
+      "one_minus_collision": 0.9666666666666667,
+      "gap": 0.06666666666666665
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.55,
+      "one_minus_collision": 0.73,
+      "gap": 0.17999999999999994
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.94,
+      "one_minus_collision": 0.98,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.82,
+      "one_minus_collision": 0.92,
+      "gap": 0.10000000000000009
+    },
+    {
+      "run": "deepthink_rl_13family.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.89,
+      "one_minus_collision": 0.99,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.8833333333333333,
+      "one_minus_collision": 0.9833333333333333,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.65,
+      "one_minus_collision": 0.86,
+      "gap": 0.20999999999999996
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.43,
+      "one_minus_collision": 0.69,
+      "gap": 0.25999999999999995
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "location_swap",
+      "n": 58,
+      "F_at_tau": 0.46551724137931033,
+      "one_minus_collision": 0.6551724137931034,
+      "gap": 0.1896551724137931
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.73,
+      "one_minus_collision": 0.92,
+      "gap": 0.19000000000000006
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.96,
+      "gap": 0.13
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.9166666666666666,
+      "one_minus_collision": 0.9833333333333333,
+      "gap": 0.06666666666666665
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.59,
+      "one_minus_collision": 0.77,
+      "gap": 0.18000000000000005
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 1.0,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.81,
+      "one_minus_collision": 0.91,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "deepthink_sft_13family.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.87,
+      "one_minus_collision": 0.99,
+      "gap": 0.12
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.9666666666666667,
+      "one_minus_collision": 0.9833333333333333,
+      "gap": 0.016666666666666607
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.98,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.67,
+      "one_minus_collision": 0.75,
+      "gap": 0.07999999999999996
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.6142857142857143,
+      "one_minus_collision": 0.6857142857142857,
+      "gap": 0.0714285714285714
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.98,
+      "one_minus_collision": 1.0,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.98,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.9333333333333333,
+      "one_minus_collision": 1.0,
+      "gap": 0.06666666666666665
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.88,
+      "one_minus_collision": 0.94,
+      "gap": 0.05999999999999994
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.97,
+      "one_minus_collision": 0.99,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.99,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.46,
+      "one_minus_collision": 0.54,
+      "gap": 0.08000000000000002
+    },
+    {
+      "run": "ecot_bridge_edit_13family_calibration.json",
+      "family": "instr_random_sub",
+      "n": 99,
+      "F_at_tau": 0.98989898989899,
+      "one_minus_collision": 1.0,
+      "gap": 0.010101010101010055
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.9666666666666667,
+      "one_minus_collision": 0.9833333333333333,
+      "gap": 0.016666666666666607
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.98,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.67,
+      "one_minus_collision": 0.75,
+      "gap": 0.07999999999999996
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.6142857142857143,
+      "one_minus_collision": 0.6857142857142857,
+      "gap": 0.0714285714285714
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.98,
+      "one_minus_collision": 1.0,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.98,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.9333333333333333,
+      "one_minus_collision": 1.0,
+      "gap": 0.06666666666666665
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.88,
+      "one_minus_collision": 0.94,
+      "gap": 0.05999999999999994
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.97,
+      "one_minus_collision": 0.99,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ecot_bridge_edit_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.99,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.08333333333333337
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.72,
+      "one_minus_collision": 0.72,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.17,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.69,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.6,
+      "one_minus_collision": 0.6,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.03333333333333338
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.48,
+      "gap": 0.03999999999999998
+    },
+    {
+      "run": "ours_data-50A_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.74,
+      "one_minus_collision": 0.76,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.38333333333333336,
+      "one_minus_collision": 0.4666666666666667,
+      "gap": 0.08333333333333331
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.76,
+      "one_minus_collision": 0.76,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.21,
+      "one_minus_collision": 0.24,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.17142857142857143,
+      "one_minus_collision": 0.2714285714285714,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.72,
+      "one_minus_collision": 0.72,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.7,
+      "one_minus_collision": 0.7,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.45,
+      "one_minus_collision": 0.48333333333333334,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.42,
+      "one_minus_collision": 0.45,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.87,
+      "one_minus_collision": 0.88,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.58,
+      "one_minus_collision": 0.62,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.05,
+      "one_minus_collision": 0.08,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_data-50A_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.53,
+      "one_minus_collision": 0.59,
+      "gap": 0.05999999999999994
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.08333333333333337
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.72,
+      "one_minus_collision": 0.72,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.17,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.11428571428571428,
+      "one_minus_collision": 0.12857142857142856,
+      "gap": 0.014285714285714277
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.69,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.6,
+      "one_minus_collision": 0.6,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.03333333333333338
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.48,
+      "gap": 0.03999999999999998
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.74,
+      "one_minus_collision": 0.76,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.6,
+      "one_minus_collision": 0.6,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.07,
+      "one_minus_collision": 0.1,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_data-50A_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.55,
+      "gap": 0.11000000000000004
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.36666666666666664,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.66,
+      "one_minus_collision": 0.66,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.19,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.53,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.52,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.3,
+      "one_minus_collision": 0.4,
+      "gap": 0.10000000000000003
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.38,
+      "one_minus_collision": 0.45,
+      "gap": 0.07
+    },
+    {
+      "run": "ours_data-50B_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.73,
+      "one_minus_collision": 0.77,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.4166666666666667,
+      "gap": 0.016666666666666663
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.72,
+      "one_minus_collision": 0.72,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.19,
+      "one_minus_collision": 0.19,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.15714285714285714,
+      "one_minus_collision": 0.17142857142857143,
+      "gap": 0.01428571428571429
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.69,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.68,
+      "one_minus_collision": 0.68,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.36666666666666664,
+      "one_minus_collision": 0.4166666666666667,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.42,
+      "one_minus_collision": 0.44,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.86,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.62,
+      "one_minus_collision": 0.65,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.08,
+      "one_minus_collision": 0.1,
+      "gap": 0.020000000000000004
+    },
+    {
+      "run": "ours_data-50B_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.47,
+      "one_minus_collision": 0.5,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.36666666666666664,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.66,
+      "one_minus_collision": 0.66,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.19,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.07142857142857142,
+      "one_minus_collision": 0.12857142857142856,
+      "gap": 0.057142857142857134
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.53,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.52,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.3,
+      "one_minus_collision": 0.4,
+      "gap": 0.10000000000000003
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.38,
+      "one_minus_collision": 0.45,
+      "gap": 0.07
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.73,
+      "one_minus_collision": 0.77,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.48,
+      "one_minus_collision": 0.5,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.04,
+      "one_minus_collision": 0.07,
+      "gap": 0.030000000000000006
+    },
+    {
+      "run": "ours_data-50B_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.24,
+      "one_minus_collision": 0.29,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.5,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.78,
+      "one_minus_collision": 0.78,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.23,
+      "gap": 0.07
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.73,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.7,
+      "one_minus_collision": 0.75,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.31666666666666665,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.48,
+      "gap": 0.03999999999999998
+    },
+    {
+      "run": "ours_lora-r16_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.91,
+      "one_minus_collision": 0.93,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4166666666666667,
+      "one_minus_collision": 0.4666666666666667,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.72,
+      "one_minus_collision": 0.72,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.16,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.17142857142857143,
+      "one_minus_collision": 0.18571428571428572,
+      "gap": 0.01428571428571429
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.67,
+      "one_minus_collision": 0.7,
+      "gap": 0.029999999999999916
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.68,
+      "one_minus_collision": 0.68,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.4166666666666667,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.4,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.87,
+      "one_minus_collision": 0.87,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.51,
+      "one_minus_collision": 0.6,
+      "gap": 0.08999999999999997
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.08,
+      "one_minus_collision": 0.08,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.43,
+      "one_minus_collision": 0.51,
+      "gap": 0.08000000000000002
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.5,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.78,
+      "one_minus_collision": 0.78,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.23,
+      "gap": 0.07
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.15714285714285714,
+      "one_minus_collision": 0.15714285714285714,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.73,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.7,
+      "one_minus_collision": 0.75,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.31666666666666665,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.48,
+      "gap": 0.03999999999999998
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.91,
+      "one_minus_collision": 0.93,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.58,
+      "one_minus_collision": 0.67,
+      "gap": 0.09000000000000008
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.12,
+      "one_minus_collision": 0.15,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_lora-r16_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.5,
+      "one_minus_collision": 0.58,
+      "gap": 0.07999999999999996
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.68,
+      "one_minus_collision": 0.68,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.13,
+      "one_minus_collision": 0.15,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.6,
+      "one_minus_collision": 0.6,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.61,
+      "one_minus_collision": 0.61,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.4,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.39,
+      "one_minus_collision": 0.4,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r32_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.83,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.25,
+      "one_minus_collision": 0.2833333333333333,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 99,
+      "F_at_tau": 0.6868686868686869,
+      "one_minus_collision": 0.6868686868686869,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.18,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.14285714285714285,
+      "one_minus_collision": 0.18571428571428572,
+      "gap": 0.04285714285714287
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.78,
+      "one_minus_collision": 0.78,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.63,
+      "one_minus_collision": 0.63,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.36666666666666664,
+      "gap": 0.016666666666666663
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.37,
+      "one_minus_collision": 0.4,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.83,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.62,
+      "one_minus_collision": 0.63,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.18,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.39,
+      "one_minus_collision": 0.45,
+      "gap": 0.06
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.68,
+      "one_minus_collision": 0.68,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.13,
+      "one_minus_collision": 0.15,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.17142857142857143,
+      "one_minus_collision": 0.18571428571428572,
+      "gap": 0.01428571428571429
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.6,
+      "one_minus_collision": 0.6,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.61,
+      "one_minus_collision": 0.61,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.4,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.39,
+      "one_minus_collision": 0.4,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.83,
+      "one_minus_collision": 0.83,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.55,
+      "one_minus_collision": 0.55,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.11,
+      "one_minus_collision": 0.11,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r32_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.38,
+      "one_minus_collision": 0.42,
+      "gap": 0.03999999999999998
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.4,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.82,
+      "one_minus_collision": 0.82,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.22,
+      "one_minus_collision": 0.24,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.84,
+      "one_minus_collision": 0.84,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.78,
+      "one_minus_collision": 0.8,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.4,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.47,
+      "one_minus_collision": 0.49,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.94,
+      "one_minus_collision": 0.96,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.3,
+      "one_minus_collision": 0.4,
+      "gap": 0.10000000000000003
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.85,
+      "one_minus_collision": 0.85,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.16,
+      "one_minus_collision": 0.16,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.11428571428571428,
+      "one_minus_collision": 0.15714285714285714,
+      "gap": 0.04285714285714286
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.79,
+      "one_minus_collision": 0.8,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.8,
+      "one_minus_collision": 0.82,
+      "gap": 0.019999999999999907
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.2833333333333333,
+      "one_minus_collision": 0.36666666666666664,
+      "gap": 0.08333333333333331
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 99,
+      "F_at_tau": 0.45454545454545453,
+      "one_minus_collision": 0.47474747474747475,
+      "gap": 0.02020202020202022
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.91,
+      "one_minus_collision": 0.92,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.61,
+      "one_minus_collision": 0.7,
+      "gap": 0.08999999999999997
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.07,
+      "one_minus_collision": 0.08,
+      "gap": 0.009999999999999995
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.43,
+      "one_minus_collision": 0.53,
+      "gap": 0.10000000000000003
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.4,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.82,
+      "one_minus_collision": 0.82,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.22,
+      "one_minus_collision": 0.24,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.2,
+      "one_minus_collision": 0.22857142857142856,
+      "gap": 0.028571428571428553
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.84,
+      "one_minus_collision": 0.84,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.78,
+      "one_minus_collision": 0.8,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.35,
+      "one_minus_collision": 0.4,
+      "gap": 0.050000000000000044
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.47,
+      "one_minus_collision": 0.49,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.94,
+      "one_minus_collision": 0.96,
+      "gap": 0.020000000000000018
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.67,
+      "one_minus_collision": 0.71,
+      "gap": 0.039999999999999925
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.1,
+      "one_minus_collision": 0.13,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_lora-r64_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.52,
+      "one_minus_collision": 0.58,
+      "gap": 0.05999999999999994
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.5166666666666667,
+      "gap": 0.1166666666666667
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.74,
+      "one_minus_collision": 0.74,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.1,
+      "one_minus_collision": 0.14,
+      "gap": 0.04000000000000001
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.7,
+      "one_minus_collision": 0.71,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.71,
+      "one_minus_collision": 0.74,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.38333333333333336,
+      "one_minus_collision": 0.48333333333333334,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.5,
+      "gap": 0.06
+    },
+    {
+      "run": "ours_lora-r8_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.86,
+      "one_minus_collision": 0.89,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.26666666666666666,
+      "one_minus_collision": 0.38333333333333336,
+      "gap": 0.1166666666666667
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.68,
+      "one_minus_collision": 0.68,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.13,
+      "one_minus_collision": 0.22,
+      "gap": 0.09
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.1,
+      "one_minus_collision": 0.15714285714285714,
+      "gap": 0.057142857142857134
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.96,
+      "one_minus_collision": 0.96,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.69,
+      "one_minus_collision": 0.7,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.3333333333333333,
+      "one_minus_collision": 0.4,
+      "gap": 0.06666666666666671
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.51,
+      "one_minus_collision": 0.55,
+      "gap": 0.040000000000000036
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.84,
+      "one_minus_collision": 0.84,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.66,
+      "one_minus_collision": 0.7,
+      "gap": 0.039999999999999925
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.08,
+      "one_minus_collision": 0.15,
+      "gap": 0.06999999999999999
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_RETRAIN.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.38,
+      "one_minus_collision": 0.48,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.4,
+      "one_minus_collision": 0.5166666666666667,
+      "gap": 0.1166666666666667
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.74,
+      "one_minus_collision": 0.74,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.1,
+      "one_minus_collision": 0.14,
+      "gap": 0.04000000000000001
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.1,
+      "one_minus_collision": 0.14285714285714285,
+      "gap": 0.042857142857142844
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.7,
+      "one_minus_collision": 0.71,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.71,
+      "one_minus_collision": 0.74,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.38333333333333336,
+      "one_minus_collision": 0.48333333333333334,
+      "gap": 0.09999999999999998
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.44,
+      "one_minus_collision": 0.5,
+      "gap": 0.06
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.86,
+      "one_minus_collision": 0.89,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.62,
+      "one_minus_collision": 0.65,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.08,
+      "one_minus_collision": 0.09,
+      "gap": 0.009999999999999995
+    },
+    {
+      "run": "ours_lora-r8_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.31,
+      "one_minus_collision": 0.49,
+      "gap": 0.18
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.13333333333333333,
+      "one_minus_collision": 0.16666666666666666,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.23,
+      "one_minus_collision": 0.26,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.07,
+      "one_minus_collision": 0.09,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.17,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.2,
+      "gap": 0.06
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.11666666666666667,
+      "one_minus_collision": 0.16666666666666666,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.11,
+      "one_minus_collision": 0.15,
+      "gap": 0.039999999999999994
+    },
+    {
+      "run": "ours_no-cot_edit.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.24,
+      "one_minus_collision": 0.27,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.13333333333333333,
+      "one_minus_collision": 0.16666666666666666,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.27,
+      "one_minus_collision": 0.28,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.06,
+      "one_minus_collision": 0.07,
+      "gap": 0.010000000000000009
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.07142857142857142,
+      "one_minus_collision": 0.08571428571428572,
+      "gap": 0.01428571428571429
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.13,
+      "one_minus_collision": 0.16,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.17,
+      "one_minus_collision": 0.2,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.03333333333333333,
+      "one_minus_collision": 0.06666666666666667,
+      "gap": 0.03333333333333333
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.09,
+      "one_minus_collision": 0.12,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.22,
+      "one_minus_collision": 0.26,
+      "gap": 0.04000000000000001
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.11,
+      "one_minus_collision": 0.13,
+      "gap": 0.020000000000000004
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.05,
+      "one_minus_collision": 0.07,
+      "gap": 0.020000000000000004
+    },
+    {
+      "run": "ours_no-cot_edit_13family_calibration.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.19,
+      "one_minus_collision": 0.22,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "subject_swap",
+      "n": 60,
+      "F_at_tau": 0.13333333333333333,
+      "one_minus_collision": 0.16666666666666666,
+      "gap": 0.033333333333333326
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "direction_flip",
+      "n": 100,
+      "F_at_tau": 0.23,
+      "one_minus_collision": 0.26,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "gripper_flip",
+      "n": 100,
+      "F_at_tau": 0.07,
+      "one_minus_collision": 0.09,
+      "gap": 0.01999999999999999
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "location_swap",
+      "n": 70,
+      "F_at_tau": 0.14285714285714285,
+      "one_minus_collision": 0.15714285714285714,
+      "gap": 0.01428571428571429
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "verb_swap",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.17,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "negation",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.2,
+      "gap": 0.06
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "adversarial_plausible",
+      "n": 60,
+      "F_at_tau": 0.11666666666666667,
+      "one_minus_collision": 0.16666666666666666,
+      "gap": 0.04999999999999999
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "selfsplice_control",
+      "n": 60,
+      "F_at_tau": 0.0,
+      "one_minus_collision": 0.0,
+      "gap": 0.0
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "syntactic_scramble",
+      "n": 100,
+      "F_at_tau": 0.11,
+      "one_minus_collision": 0.15,
+      "gap": 0.039999999999999994
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "cross_task_swap",
+      "n": 100,
+      "F_at_tau": 0.24,
+      "one_minus_collision": 0.27,
+      "gap": 0.030000000000000027
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "paraphrase_null",
+      "n": 100,
+      "F_at_tau": 0.14,
+      "one_minus_collision": 0.17,
+      "gap": 0.03
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "bbox_jitter_null",
+      "n": 100,
+      "F_at_tau": 0.05,
+      "one_minus_collision": 0.07,
+      "gap": 0.020000000000000004
+    },
+    {
+      "run": "ours_no-cot_edit_13family_seed0.json",
+      "family": "instr_random_sub",
+      "n": 100,
+      "F_at_tau": 0.21,
+      "one_minus_collision": 0.24,
+      "gap": 0.03
+    }
+  ]
+}

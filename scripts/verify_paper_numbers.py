@@ -1416,7 +1416,7 @@ def audit_release(a: Audit) -> None:
         return int(re.sub(r"[^\d]", "", m.group(1))) if m else None
 
     want_edit = tex_int(r"\\textbf\{([\d{},]+)\} per-sample edit records")
-    want_scored = tex_int(r"\$([\d{},]+)\$ carry a scored action pair")
+    want_scored = tex_int(r"\$([\d{},]+)\$ carry a scored delta")
     want_skipped = tex_int(r"\$([\d{},]+)\$ are recorded as skipped")
     a.check(sec, "the per-sample edit-record count the manuscript quotes is "
                  "the number released", want_edit, n["edit"][0],
@@ -1503,6 +1503,83 @@ def audit_release(a: Audit) -> None:
         a.check(sec, label, True, needle in tex, source=f"searched for '{needle}'")
     a.check(sec, "no [URL] placeholder left in the manuscript", True,
             "\\url{[URL]}" not in tex and "[URL]" not in tex)
+
+    # --- what the records CONTAIN, not just how many there are ---
+    #
+    # This block exists because of a specific failure: the release paragraph
+    # claimed the edited CoT text was included on every record, this script
+    # reported 869/869 claims reproduced, and the claim was false on every
+    # record in the release. Counting records cannot catch that. The paragraph
+    # describes the schema, so the schema is what has to be asserted.
+    #
+    # Each entry is (field, claimed-present, why-it-matters).
+    fields = {}
+    pairless = {}
+    for f in sorted(can.glob("*.json")):
+        rec = load(f)
+        if not isinstance(rec, dict):
+            continue
+        ps = rec.get("per_sample_edit") or rec.get("per_sample")
+        if not (isinstance(ps, list) and ps):
+            continue
+        keys = set().union(*(r.keys() for r in ps if isinstance(r, dict)))
+        if not ({"delta_linf", "a_edit"} & keys):
+            continue
+        scored = [r for r in ps if isinstance(r, dict) and not r.get("skipped")]
+        if not scored:
+            continue
+        n_pairless = sum(1 for r in scored if "a_orig" not in r)
+        if n_pairless:
+            pairless[f.name] = n_pairless
+        for k in ("a_orig", "a_edit", "delta_linf", "edit_meta", "instruction",
+                  "file_base", "cot_edited", "cot_text"):
+            have, tot = fields.setdefault(k, [0, 0])
+            fields[k] = [have + sum(1 for r in scored if k in r),
+                         tot + len(scored)]
+
+    # delta_linf is the only field EVERY scored record must have: it is the
+    # quantity every F in the paper is computed from.
+    have, tot = fields.get("delta_linf", [0, 0])
+    a.check(sec, "every scored edit record carries 'delta_linf', which is the "
+                 "quantity every F in the paper is computed from", tot, have,
+            source="schema check over all scored edit records")
+
+    # The action pair and edit metadata are present everywhere EXCEPT the three
+    # cross-corpus runs, whose earlier harness stored deltas only. That is a
+    # real reproducibility limit, so it is pinned to those exact three files
+    # rather than absorbed into a tolerance: if a fourth file starts dropping
+    # the pair, this fails.
+    a.check(sec, "the only scored records without an action pair are the three "
+                 "cross-corpus runs, which an earlier harness wrote "
+                 "delta-only", {"cross_corpus_bcz_n100.json": 144,
+                                "cross_corpus_bridge_v2_n100.json": 143,
+                                "cross_corpus_fractal_n100.json": 151},
+            pairless, source="schema check over all scored edit records")
+    for k in ("a_orig", "a_edit", "edit_meta"):
+        have, tot = fields.get(k, [0, 0])
+        a.check(sec, f"every OTHER scored edit record carries '{k}', as the "
+                     f"release paragraph claims", tot - 438, have,
+                source="schema check over all scored edit records")
+    want_pair = tex_int(r"\$([\d{},]+)\$ of those carry the full action pair")
+    a.check(sec, "the full-action-pair count the manuscript quotes is the "
+                 "number released", want_pair, fields.get("a_orig", [0, 0])[0],
+            source="cot_faith_iclr.tex, 'Public release' paragraph")
+
+    # The negative half, and the one that actually caught the bug. The paper
+    # must NOT claim to release the edited CoT text, because it does not: the
+    # records carry the metadata that regenerates it and nothing more. If a
+    # future run starts shipping the text, this flips and the sentence has to
+    # be rewritten -- which is the coupling we want in both directions.
+    for k in ("cot_edited", "cot_text"):
+        have, _ = fields.get(k, [0, 0])
+        a.check(sec, f"no scored edit record carries '{k}' (the manuscript "
+                     f"must not claim the edited trace text is released)",
+                0, have, source="schema check over all scored edit records")
+    a.check(sec, "the release paragraph says the edited CoT text is NOT "
+                 "included, and says so as a correction rather than silently",
+            True, "not the edited text itself" in tex
+            and "an earlier version of this sentence" in tex,
+            source="cot_faith_iclr.tex, 'Public release' paragraph")
 
 
 def _config_values(root: Path, key: str) -> set:
@@ -2714,13 +2791,37 @@ def audit_p3_frame_check(a):
                  "manuscript at the precision the paper prints AUROCs to",
             [], sorted(set(quoted)), source=src)
 
+    # The two L1 numbers used to be forbidden in the manuscript, on the reasoning
+    # that a report whose frame check FAILED had no business supplying paper
+    # numbers. That guard was inverted by the disclosure it was meant to force:
+    # six of the eight leaderboard rows come from this checkpoint, and stating
+    # that its open-loop prediction does not beat a constant requires quoting the
+    # two numbers that establish it. Quoting them as a WITHDRAWAL is the opposite
+    # failure mode from quoting them as a result, so the check now asserts the
+    # disclosure is present and correctly framed rather than that the digits are
+    # absent -- and it still fails loudly if the digits appear without it.
+    disclosure = ("whose single-step open-loop prediction does not beat a "
+                  "constant" in tex)
     for field in ("policy", "predict_mean"):
         v = (r.get("action_error_baselines_l1") or {}).get(field)
         if v is None:
             continue
-        a.check(sec, f"the report's {field} L1 is not quoted as a paper number",
-                [], [s for s in {f"{v:.5f}", f"{v:.4f}"} if s in tex],
-                source=src)
+        digits = [s for s in {f"{v:.5f}", f"{v:.4f}"} if s in tex]
+        a.check(sec, f"the report's {field} L1 is quoted only alongside the "
+                     f"disclosure that this checkpoint fails the gate",
+                True, (not digits) or disclosure, source=src)
+
+    # The disclosure must name the scope -- "six of eight leaderboard rows" -- or
+    # it degrades into a footnote about one auxiliary run. The count is derived
+    # from the leaderboard, not hardcoded in prose we could drift away from.
+    a.check(sec, "the W2 disclosure states how many leaderboard rows the failed "
+                 "checkpoint is behind, so it cannot be read as an aside",
+            True, "Six of eight leaderboard rows" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and it states what the failure does NOT undermine, because a "
+                 "bare disclosure would over-withdraw the edit metric",
+            True, "It does not invalidate" in tex and "self" in tex,
+            source="cot_faith_iclr.tex")
 
     # The claim-level guard, which is the one that actually holds. Digits can be
     # re-rounded and re-derived; the sentence cannot be quietly widened. As long
@@ -3586,6 +3687,195 @@ def audit_p2_decode_equivalence(a: Audit) -> None:
             source="cot_faith_iclr.tex")
 
 
+def audit_floor_invariance(a: Audit) -> None:
+    """Does the headline's sign depend on which meaning-preserving family we
+    nominate as the floor? A reviewer observed that paraphrase_null is the only
+    family in the taxonomy that changes sequence length, so F_diff might be
+    subtracting a length effect. The answer is worse than the objection: BOTH
+    floors are meaning-preserving by our own validated judge, they disagree by
+    more than either disagrees with the semantic mean, and the sign of F_diff
+    flips between them on every configuration. This section asserts that the
+    manuscript reports the weaker claim the data supports rather than either
+    sign."""
+    sec = "Floor invariance (is F_diff's sign a choice of floor?)"
+    root = Path(__file__).resolve().parent.parent
+    src = ("results_v2/canonical_runs/floor_invariance/floor_invariance.json")
+    r = load(root / src)
+    if r is None:
+        a.check(sec, "the floor-invariance artifact is readable", True, None,
+                source=src)
+        return
+    tex = TEX.read_text() if TEX.exists() else ""
+    n = r.get("n_configs")
+
+    a.check(sec, "all twelve configurations scored, so the rate is over the "
+                 "whole benchmark rather than a subset", 12, n, source=src)
+    a.check(sec, "F_diff is negative against paraphrase_null on every "
+                 "configuration", n, r.get("n_negative_vs_paraphrase"),
+            source=src)
+    a.check(sec, "and positive against the length-exact floor on every "
+                 "configuration, so the sign is not a property of the data",
+            0, r.get("n_negative_vs_scramble"), source=src)
+    a.check(sec, "the sign therefore flips between the two floors on all "
+                 "twelve", n, r.get("n_sign_flips_between_floors"), source=src)
+
+    # The decisive statistic. A sign flip alone would license "use the other
+    # floor"; this is what forbids that move.
+    a.check(sec, "the gap between the two meaning-preserving floors exceeds "
+                 "the gap between the semantic mean and EITHER floor, on all "
+                 "twelve -- which is what makes both floors unusable rather "
+                 "than one of them right",
+            n, r.get("n_null_spread_exceeds_margin"), source=src)
+
+    # Both floors have to be meaning-preserving by the SAME judge, or the whole
+    # argument collapses into "one of these families isn't a floor".
+    j = load(root / "results_v2/canonical_runs/judge_edit_families/"
+                    "judge_report.json") or {}
+    fams = {f.get("family"): f for f in (j.get("per_family") or [])} \
+        if isinstance(j.get("per_family"), list) else (j.get("per_family") or {})
+
+    def preserved(name):
+        blk = fams.get(name) or {}
+        for k in ("meaning_preserved", "meaning_preserved_rate", "preserved"):
+            if k in blk:
+                return blk[k]
+        return None
+
+    for fam, want in (("paraphrase_null", 0.975), ("syntactic_scramble", 1.0)):
+        a.check(sec, f"the same judge certifies {fam} as meaning-preserving, "
+                     f"so both really are floors", want, preserved(fam),
+                tol=0.001, source="judge_edit_families/judge_report.json")
+
+    # And the manuscript must land on the weaker claim, not on either sign.
+    a.check(sec, "the manuscript concedes the length confound explicitly "
+                 "rather than defending the submitted floor", True,
+            "we did not test this before submission" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and reports BOTH floors everywhere rather than swapping to "
+                 "whichever one is favourable", True,
+            "report both floors everywhere" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "and states the resulting claim is weaker than the submitted "
+                 "one, which is the thing a reader must not have to infer",
+            True, "a weaker claim than our submitted one" in tex,
+            source="cot_faith_iclr.tex")
+
+
+def audit_fdir_null(a: Audit) -> None:
+    """The constructive half. F_mag has no null it clears; F_dir does. This is
+    the one instrument in the paper that separates signal from floor, so its
+    calibration is the claim most worth attacking and most worth asserting --
+    including the two results that cut against us: the no-CoT control failing
+    (which is correct) and all three DeepThinkVLA checkpoints failing (which is
+    a coverage loss we report rather than omit)."""
+    sec = "F_dir null calibration (the one instrument with a measured floor)"
+    root = Path(__file__).resolve().parent.parent
+    src = "results_v2/canonical_runs/fdir_null/fdir_null.json"
+    r = load(root / src)
+    if r is None:
+        a.check(sec, "the F_dir null artifact is readable", True, None,
+                source=src)
+        return
+    tex = TEX.read_text() if TEX.exists() else ""
+    per = {c["config"]: c for c in (r.get("per_config") or [])}
+
+    a.check(sec, "all eleven calibratable configurations scored", 11,
+            r.get("n_configs"), source=src)
+    a.check(sec, "the null is built from more than one family, so the ceiling "
+                 "is a ceiling rather than one arbitrary comparison", True,
+            len(r.get("null_families") or []) >= 5, source=src)
+    a.check(sec, "the manuscript's headline clearance rate matches the "
+                 "artifact", 7, r.get("n_clearing_null"), source=src)
+    a.check(sec, "and the manuscript states it", True,
+            "$7$ of $11$ configurations clear their own null" in tex,
+            source="cot_faith_iclr.tex")
+
+    # The negative control is the load-bearing one: an instrument that "clears
+    # its null" on a model trained without any CoT target would be measuring
+    # something other than CoT.
+    nc = per.get("ours_no-cot") or {}
+    a.check(sec, "the no-CoT control does NOT clear its own floor, which is "
+                 "the behaviour that makes the other seven interpretable",
+            False, nc.get("clears_null"), source=src)
+    a.check(sec, "and the manuscript reports the control's failure rather than "
+                 "only the successes", True,
+            "the no-CoT control sits \\emph{below} its own floor" in tex,
+            source="cot_faith_iclr.tex")
+
+    # The margins the paper quotes.
+    for cfg, treat, ceil in (("ours_lora-r64", 0.779, 0.070),
+                             ("ours_lora-r32", 0.589, 0.077),
+                             ("ecot_bridge", 0.150, 0.040)):
+        blk = per.get(cfg) or {}
+        a.check(sec, f"{cfg}: the F_dir the manuscript quotes", treat,
+                (blk.get("treatment") or {}).get("F_dir"), tol=0.0015,
+                source=src)
+        a.check(sec, f"{cfg}: the null ceiling the manuscript quotes", ceil,
+                blk.get("null_ceiling"), tol=0.0015, source=src)
+
+    # The adverse result. Reporting only the seven that clear would make this a
+    # cross-family instrument, which it is not.
+    dt = [k for k in per if k.startswith("deepthink")]
+    a.check(sec, "all three DeepThinkVLA checkpoints fail the direction check, "
+                 "so the instrument does not transfer to the second "
+                 "architecture family", [False] * 3,
+            [bool((per[k] or {}).get("clears_null")) for k in sorted(dt)],
+            source=src)
+    a.check(sec, "and the manuscript reports that as a negative row rather "
+                 "than as coverage", True,
+            "we report that as a negative row, not as coverage" in tex,
+            source="cot_faith_iclr.tex")
+
+
+def audit_collision_decomposition(a: Audit) -> None:
+    """How much of F_mag is a decode-collision counter? The paper argued from
+    the bimodality of the Delta distribution that F is robust to tau. The same
+    bimodality implies something less flattering -- that F is close to
+    1 - P(Delta = 0) -- and that is the reading the manuscript now leads with."""
+    sec = "Collision decomposition (what F_mag actually counts)"
+    root = Path(__file__).resolve().parent.parent
+    src = ("results_v2/canonical_runs/collision_decomposition/"
+           "collision_decomposition.json")
+    r = load(root / src)
+    if r is None:
+        a.check(sec, "the collision-decomposition artifact is readable", True,
+                None, source=src)
+        return
+    tex = TEX.read_text() if TEX.exists() else ""
+
+    a.check(sec, "the decomposition is computed over the whole release rather "
+                 "than a sample", 28443, r.get("n_scored_records"), source=src)
+    a.check(sec, "and over enough cells that the correlation is not driven by "
+                 "a handful of them", 324, r.get("n_cells"), source=src)
+    a.check(sec, "the R^2 the manuscript quotes between F and 1-P(Delta=0)",
+            0.926, r.get("r_squared"), tol=0.001, source=src)
+    a.check(sec, "the number of cells where the two are identical", 80,
+            r.get("n_cells_exactly_equal"), source=src)
+
+    # The mechanism: the threshold does almost nothing because almost nothing
+    # lands near it. If this fraction were large, F would be a real magnitude
+    # measure and the whole paragraph would be wrong.
+    a.check(sec, "under 10% of the records that move at all land below tau, "
+                 "which is why the threshold is nearly inert", True,
+            (r.get("frac_nonzero_below_tau") or 1.0) < 0.10, source=src)
+
+    d = r.get("delta_distribution") or {}
+    tot = r.get("n_scored_records") or 1
+    a.check(sec, "the exactly-zero mass the manuscript quotes", 0.462,
+            round((d.get("exactly_zero") or 0) / tot, 3), tol=0.001, source=src)
+
+    a.check(sec, "the manuscript states the metric is close to a collision "
+                 "counter rather than leaving the correlation unexplained",
+            True, "not evidence that it is robust" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "P(Delta=0) is reported as a first-class column, so a reader "
+                 "can see both quantities without recomputing them", True,
+            "\\label{tab:collision}" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "and the manuscript says what this does NOT invalidate, "
+                 "because over-withdrawing is its own error", True,
+            "a collision rate is a well-defined and self-consistent quantity"
+            in tex, source="cot_faith_iclr.tex")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -3715,6 +4005,9 @@ def main() -> int:
     audit_judge_edit_families(a)
     audit_bridge_join_probe(a)
     audit_gate_factorial(a)
+    audit_floor_invariance(a)
+    audit_fdir_null(a)
+    audit_collision_decomposition(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script

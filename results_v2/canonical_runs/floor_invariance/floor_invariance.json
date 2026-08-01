@@ -1,0 +1,761 @@
+{
+  "tau": 0.05,
+  "semantic_families": [
+    "direction_flip",
+    "verb_swap",
+    "cross_task_swap",
+    "instr_random_sub",
+    "subject_swap",
+    "negation",
+    "gripper_flip",
+    "location_swap",
+    "adversarial_plausible"
+  ],
+  "n_configs": 12,
+  "n_negative_vs_paraphrase": 12,
+  "n_negative_vs_scramble": 0,
+  "n_sign_flips_between_floors": 12,
+  "n_null_spread_exceeds_margin": 12,
+  "judge_meaning_preserved": {
+    "paraphrase_null": 0.975,
+    "syntactic_scramble": 1.0,
+    "source": "results_v2/canonical_runs/judge_edit_families/judge_report.json"
+  },
+  "interpretation": "Both floors are meaning-preserving by the same validated judge. They disagree by more than either differs from the semantic mean on 12/12 configurations, so the sign of F_diff is determined by which meaning-preserving family is nominated as the floor rather than by the semantic content of the edit. Swapping to the length-exact floor does not rescue the metric; it selects a different unlicensed sign.",
+  "per_config": [
+    {
+      "config": "ours_no-cot",
+      "sources": [
+        "ours_no-cot_edit_13family_seed0.json",
+        "ours_no-cot_edit_13family_seed1.json",
+        "ours_no-cot_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.1873949716263425,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.27424749163879597,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.16333333333333333,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.26,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.2633333333333333,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.1650485436893204,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.19666666666666666,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.06666666666666667,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.11764705882352941,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.1796116504854369,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.19333333333333333,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.15384615384615385,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.00593836170699083,
+      "f_diff_vs_scramble": 0.033548817780188644,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.039487179487179475,
+      "max_semantic_margin": 0.033548817780188644,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_lora-r8",
+      "sources": [
+        "ours_lora-r8_edit_13family_seed0.json",
+        "ours_lora-r8_edit_13family_seed1.json",
+        "ours_lora-r8_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.44813617502143316,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.6956521739130435,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.6433333333333333,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.8566666666666667,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.3333333333333333,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.3106796116504854,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.6733333333333333,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.11,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.09954751131221719,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.3106796116504854,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.5866666666666667,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.4080267558528428,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.1385304916452335,
+      "f_diff_vs_scramble": 0.04010941916859034,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.17863991081382385,
+      "max_semantic_margin": 0.1385304916452335,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_lora-r16",
+      "sources": [
+        "ours_lora-r16_edit_13family_seed0.json",
+        "ours_lora-r16_edit_13family_seed1.json",
+        "ours_lora-r16_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.49397537943139214,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.7491638795986622,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.6766666666666666,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.8833333333333333,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.43666666666666665,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.36893203883495146,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.66,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.16666666666666666,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.14027149321266968,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.3640776699029126,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.5466666666666666,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.43812709030100333,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.0526912872352745,
+      "f_diff_vs_scramble": 0.055848289130388806,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.1085395763656633,
+      "max_semantic_margin": 0.055848289130388806,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_lora-r32",
+      "sources": [
+        "ours_lora-r32_edit_13family_seed0.json",
+        "ours_lora-r32_edit_13family_seed1.json",
+        "ours_lora-r32_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.4381442827913168,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.6521739130434783,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.5866666666666667,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.81,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.37,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.33495145631067963,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.5933333333333334,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.13,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.13122171945701358,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.33495145631067963,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.5666666666666667,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.34782608695652173,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.12852238387534987,
+      "f_diff_vs_scramble": 0.09031819583479506,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.21884057971014492,
+      "max_semantic_margin": 0.12852238387534987,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_lora-r64",
+      "sources": [
+        "ours_lora-r64_edit_13family_seed0.json",
+        "ours_lora-r64_edit_13family_seed1.json",
+        "ours_lora-r64_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.554272041323664,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.822742474916388,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.84,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.8866666666666667,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.5,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.4029126213592233,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.7766666666666666,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.17333333333333334,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.2171945701357466,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.36893203883495146,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.6566666666666666,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.47157190635451507,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.10239462534300259,
+      "f_diff_vs_scramble": 0.08270013496914896,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.18509476031215155,
+      "max_semantic_margin": 0.10239462534300259,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_data-50A",
+      "sources": [
+        "ours_data-50A_edit_13family_seed0.json",
+        "ours_data-50A_edit_13family_seed1.json",
+        "ours_data-50A_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.43480408038499063,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.6989966555183946,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.6466666666666666,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.73,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.43333333333333335,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.3058252427184466,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.5666666666666667,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.11666666666666667,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.09954751131221719,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.3155339805825243,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.5366666666666666,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.391304347826087,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.10186258628167599,
+      "f_diff_vs_scramble": 0.04349973255890366,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.14536231884057965,
+      "max_semantic_margin": 0.10186258628167599,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ours_data-50B",
+      "sources": [
+        "ours_data-50B_edit_13family_seed0.json",
+        "ours_data-50B_edit_13family_seed1.json",
+        "ours_data-50B_edit_13family_seed2.json"
+      ],
+      "f_bar_semantic": 0.38527441239183596,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.6387959866220736,
+          "n": 299
+        },
+        "verb_swap": {
+          "F": 0.54,
+          "n": 300
+        },
+        "cross_task_swap": {
+          "F": 0.7333333333333333,
+          "n": 300
+        },
+        "instr_random_sub": {
+          "F": 0.27,
+          "n": 300
+        },
+        "subject_swap": {
+          "F": 0.27184466019417475,
+          "n": 206
+        },
+        "negation": {
+          "F": 0.51,
+          "n": 300
+        },
+        "gripper_flip": {
+          "F": 0.14666666666666667,
+          "n": 300
+        },
+        "location_swap": {
+          "F": 0.09954751131221719,
+          "n": 221
+        },
+        "adversarial_plausible": {
+          "F": 0.25728155339805825,
+          "n": 206
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.44666666666666666,
+        "n": 300
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.34782608695652173,
+        "n": 299
+      },
+      "f_diff_vs_paraphrase": -0.06139225427483069,
+      "f_diff_vs_scramble": 0.037448325435314234,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.09884057971014493,
+      "max_semantic_margin": 0.06139225427483069,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "ecot_bridge",
+      "sources": [
+        "ecot_bridge_edit_13family_calibration.json"
+      ],
+      "f_bar_semantic": 0.8937983004649672,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.96,
+          "n": 100
+        },
+        "verb_swap": {
+          "F": 0.98,
+          "n": 100
+        },
+        "cross_task_swap": {
+          "F": 0.97,
+          "n": 100
+        },
+        "instr_random_sub": {
+          "F": 0.98989898989899,
+          "n": 99
+        },
+        "subject_swap": {
+          "F": 0.9666666666666667,
+          "n": 60
+        },
+        "negation": {
+          "F": 0.96,
+          "n": 100
+        },
+        "gripper_flip": {
+          "F": 0.67,
+          "n": 100
+        },
+        "location_swap": {
+          "F": 0.6142857142857143,
+          "n": 70
+        },
+        "adversarial_plausible": {
+          "F": 0.9333333333333333,
+          "n": 60
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.96,
+        "n": 100
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.88,
+        "n": 100
+      },
+      "f_diff_vs_paraphrase": -0.06620169953503274,
+      "f_diff_vs_scramble": 0.013798300464967217,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.07999999999999996,
+      "max_semantic_margin": 0.06620169953503274,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "deepthink_sft",
+      "sources": [
+        "deepthink_sft_13family.json"
+      ],
+      "f_bar_semantic": 0.7483908045977011,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.65,
+          "n": 100
+        },
+        "verb_swap": {
+          "F": 0.73,
+          "n": 100
+        },
+        "cross_task_swap": {
+          "F": 0.96,
+          "n": 100
+        },
+        "instr_random_sub": {
+          "F": 0.87,
+          "n": 100
+        },
+        "subject_swap": {
+          "F": 0.8833333333333333,
+          "n": 60
+        },
+        "negation": {
+          "F": 0.83,
+          "n": 100
+        },
+        "gripper_flip": {
+          "F": 0.43,
+          "n": 100
+        },
+        "location_swap": {
+          "F": 0.46551724137931033,
+          "n": 58
+        },
+        "adversarial_plausible": {
+          "F": 0.9166666666666666,
+          "n": 60
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.81,
+        "n": 100
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.59,
+        "n": 100
+      },
+      "f_diff_vs_paraphrase": -0.06160919540229892,
+      "f_diff_vs_scramble": 0.15839080459770116,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.22000000000000008,
+      "max_semantic_margin": 0.15839080459770116,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "deepthink_rl",
+      "sources": [
+        "deepthink_rl_13family.json"
+      ],
+      "f_bar_semantic": 0.7668582375478927,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.64,
+          "n": 100
+        },
+        "verb_swap": {
+          "F": 0.73,
+          "n": 100
+        },
+        "cross_task_swap": {
+          "F": 0.94,
+          "n": 100
+        },
+        "instr_random_sub": {
+          "F": 0.89,
+          "n": 100
+        },
+        "subject_swap": {
+          "F": 0.85,
+          "n": 60
+        },
+        "negation": {
+          "F": 0.86,
+          "n": 100
+        },
+        "gripper_flip": {
+          "F": 0.54,
+          "n": 100
+        },
+        "location_swap": {
+          "F": 0.5517241379310345,
+          "n": 58
+        },
+        "adversarial_plausible": {
+          "F": 0.9,
+          "n": 60
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.82,
+        "n": 100
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.55,
+        "n": 100
+      },
+      "f_diff_vs_paraphrase": -0.05314176245210722,
+      "f_diff_vs_scramble": 0.21685823754789268,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.2699999999999999,
+      "max_semantic_margin": 0.21685823754789268,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "deepthink_base",
+      "sources": [
+        "deepthink_base_13family.json"
+      ],
+      "f_bar_semantic": 0.9506641123882503,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.97,
+          "n": 100
+        },
+        "verb_swap": {
+          "F": 0.99,
+          "n": 100
+        },
+        "cross_task_swap": {
+          "F": 0.98,
+          "n": 100
+        },
+        "instr_random_sub": {
+          "F": 0.95,
+          "n": 100
+        },
+        "subject_swap": {
+          "F": 1.0,
+          "n": 60
+        },
+        "negation": {
+          "F": 0.99,
+          "n": 100
+        },
+        "gripper_flip": {
+          "F": 0.83,
+          "n": 100
+        },
+        "location_swap": {
+          "F": 0.8793103448275862,
+          "n": 58
+        },
+        "adversarial_plausible": {
+          "F": 0.9666666666666667,
+          "n": 60
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.96,
+        "n": 100
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.91,
+        "n": 100
+      },
+      "f_diff_vs_paraphrase": -0.009335887611749638,
+      "f_diff_vs_scramble": 0.040664112388250295,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.04999999999999993,
+      "max_semantic_margin": 0.040664112388250295,
+      "spread_exceeds_margin": true
+    },
+    {
+      "config": "bridge_subset_4k",
+      "sources": [
+        "results_v2/canonical_runs/bridge_subset_deconfound/cotfaith-bridge-subset-edit/cot_edit_report.json"
+      ],
+      "f_bar_semantic": 0.3324338624338624,
+      "n_semantic_families": 9,
+      "per_family": {
+        "direction_flip": {
+          "F": 0.31,
+          "n": 100
+        },
+        "verb_swap": {
+          "F": 0.52,
+          "n": 100
+        },
+        "cross_task_swap": {
+          "F": 0.41,
+          "n": 100
+        },
+        "instr_random_sub": {
+          "F": 0.38,
+          "n": 100
+        },
+        "subject_swap": {
+          "F": 0.36666666666666664,
+          "n": 60
+        },
+        "negation": {
+          "F": 0.35,
+          "n": 100
+        },
+        "gripper_flip": {
+          "F": 0.21,
+          "n": 100
+        },
+        "location_swap": {
+          "F": 0.12857142857142856,
+          "n": 70
+        },
+        "adversarial_plausible": {
+          "F": 0.31666666666666665,
+          "n": 60
+        }
+      },
+      "floor_paraphrase_null": {
+        "F": 0.37,
+        "n": 100
+      },
+      "floor_syntactic_scramble": {
+        "F": 0.28,
+        "n": 100
+      },
+      "f_diff_vs_paraphrase": -0.03756613756613758,
+      "f_diff_vs_scramble": 0.05243386243386239,
+      "sign_flips_between_floors": true,
+      "null_spread": 0.08999999999999997,
+      "max_semantic_margin": 0.05243386243386239,
+      "spread_exceeds_margin": true
+    }
+  ]
+}
