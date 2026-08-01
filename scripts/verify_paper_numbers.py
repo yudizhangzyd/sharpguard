@@ -2477,6 +2477,163 @@ def audit_tf_env_probe(a):
             r"\texttt{USE\_TF=0}" in tex, source="cot_faith_iclr.tex")
 
 
+def audit_p3_frame_check(a):
+    """A report whose frame check FAILED must not be citable as a P3 row.
+
+    bolt wmi3nxd454 scored all 200 samples and then failed its own precondition:
+    the policy's action error does not beat predicting the dataset mean, in any
+    frame the checkpoint ships. The report is released anyway -- withholding the
+    numbers a failed gate produced is how a gate becomes unfalsifiable -- and it
+    therefore contains four perfectly presentable AUROCs, one of them 0.798.
+
+    That combination is the hazard this function exists for. The artifact looks
+    exactly like the artifact of a passing run, and the only thing separating
+    them is a boolean nobody has to read. So the numbers are enumerated out of
+    the JSON and matched against the manuscript: if any of them ever appears,
+    the audit fails and names the file. Enumerated rather than hard-coded on
+    purpose -- a hard-coded list stops protecting the paper the moment the run
+    is repeated with a different seed.
+    """
+    sec = "P3 frame check (a failed precondition is not a result)"
+    path = ROOT / "results_v2" / "canonical_runs" / "auroc_indomain_ours_null" / \
+        "cot_auroc_report.json"
+    src = "results_v2/canonical_runs/auroc_indomain_ours_null/cot_auroc_report.json"
+    r = load(path)
+    if not r:
+        a.check(sec, "the failed-frame-check report is released, not discarded",
+                True, False, source=str(path))
+        return
+
+    fc = r.get("frame_check") or {}
+    a.check(sec, "the report carries a frame_check block at all -- without one "
+                 "there is nothing to gate on", True, isinstance(fc, dict) and
+            bool(fc), source=src)
+    a.check(sec, "the frame check is recorded as FAILED, which is what makes "
+                 "this a null rather than a P3 row", False, fc.get("passed"),
+            source=src)
+
+    # Both preconditions are reported, not just the one that fired. If a future
+    # run drops the passing check, the verdict stops being interpretable.
+    checks = {c.get("check"): c for c in (fc.get("checks") or [])}
+    a.check(sec, "both preconditions are reported, the passing one included",
+            ["gt_actions_inside_token_grid", "policy_beats_predict_mean"],
+            sorted(checks), source=src)
+    a.check(sec, "ground-truth actions do lie inside the token grid, so the "
+                 "failure is not a range error", True,
+            (checks.get("gt_actions_inside_token_grid") or {}).get("passed"),
+            source=src)
+
+    # The competing-frame sweep is the whole basis of the verdict: one frame's
+    # ratio cannot tell "wrong units" from "weak policy".
+    frames = fc.get("baselines_by_frame") or {}
+    a.check(sec, "more than one frame was scored, so 'no frame beats the mean' "
+                 "is a measurement rather than an assumption",
+            True, len(frames) >= 2, source=src)
+    a.check(sec, "no frame the checkpoint ships beats predicting the dataset "
+                 "mean", True,
+            bool(frames) and all(b.get("policy_over_predict_mean", 0) >= 1.0
+                                 for b in frames.values()), source=src)
+    a.check(sec, "the frame we scored is the BEST available one, so the null is "
+                 "not an artefact of picking the wrong map",
+            (fc.get("measured") or {}).get("scored_frame")
+            if fc.get("measured") else "identity",
+            (fc.get("measured") or {}).get("best_frame")
+            if fc.get("measured") else
+            (min(frames, key=lambda k: frames[k]["policy_over_predict_mean"])
+             .split(":")[-1] if frames else None),
+            source=src)
+    a.check(sec, "the verdict names competence rather than units, so it cannot "
+                 "be written up as a fixable scale bug", True,
+            "NOT A FRAME ERROR" in str(fc.get("diagnosis")), source=src)
+
+    # predict_zero is why the verdict says "no better than a constant" instead
+    # of "the actions are tiny": the mean is a strong baseline here.
+    ident = frames.get("identity") or {}
+    a.check(sec, "predicting the dataset mean is much better than predicting "
+                 "zero, so the beaten baseline is informative", True,
+            bool(ident) and ident.get("predict_zero", 0)
+            > 2 * ident.get("predict_mean", 1), source=src)
+
+    # --- the actual guard: none of it may reach the manuscript ---
+    #
+    # Matched at 4 decimals and at the JSON's own precision, and NOT at 3.
+    # A 3-decimal match looked stricter and was simply wrong: it flagged
+    # $0.643$ (F2's control-ceiling-normalized score) and $0.357$ (a CI lower
+    # bound for alpha(visual)) as citations of this report's 0.6426 and 0.3574.
+    # Both are unrelated quantities that happen to round the same way. An audit
+    # that cries wolf gets switched off, which is worse protection than none, so
+    # the digit check is kept at the precision the manuscript actually prints
+    # AUROCs to and the claim-level check below carries the real weight.
+    tex = TEX.read_text() if TEX.exists() else ""
+    quoted = []
+    for name, block in (r.get("aurocs") or {}).items():
+        for field in ("raw_auroc", "abs_auroc"):
+            v = block.get(field)
+            if v is None:
+                continue
+            for s in {f"{v:.4f}", f"{v:.5f}", repr(round(v, 5))}:
+                if s in tex:
+                    quoted.append(f"{name}.{field}={s}")
+    a.check(sec, "no AUROC from the failed-frame-check report is quoted in the "
+                 "manuscript at the precision the paper prints AUROCs to",
+            [], sorted(set(quoted)), source=src)
+
+    for field in ("policy", "predict_mean"):
+        v = (r.get("action_error_baselines_l1") or {}).get(field)
+        if v is None:
+            continue
+        a.check(sec, f"the report's {field} L1 is not quoted as a paper number",
+                [], [s for s in {f"{v:.5f}", f"{v:.4f}"} if s in tex],
+                source=src)
+
+    # The claim-level guard, which is the one that actually holds. Digits can be
+    # re-rounded and re-derived; the sentence cannot be quietly widened. As long
+    # as this checkpoint's frame check fails, P3 covers ONE model, and the
+    # manuscript has to keep saying so. Promoting this run to a second row means
+    # both of these flip together -- which is exactly the coupling we want,
+    # because it is impossible to satisfy by editing prose alone.
+    scoped = "on the single model where we can run it in-domain" in tex
+    a.check(sec, "P3 is still scoped to one model in the text, because the only "
+                 "second candidate failed its own precondition",
+            True, scoped, source="cot_faith_iclr.tex")
+    a.check(sec, "the text's model count and the gate agree: a second P3 row "
+                 "requires frame_check.passed, and it is false",
+            True, scoped is not bool(fc.get("passed")), source=src)
+
+    # --- the release-wide invariant ---
+    #
+    # "and nothing else claims to be a P3 run" (audit_release) globs
+    # canonical_runs/*.json -- one level only. This report has the full P3
+    # schema (per_sample + aurocs) and lives one directory deeper, so it passed
+    # that check by being invisible to it rather than by being accounted for.
+    # That is the kind of accident that turns into a wrong claim later: flatten
+    # the release layout and a null starts counting as a P3 run.
+    #
+    # So the sweep is done recursively here, and the invariant is stated in the
+    # form that survives a re-layout: every P3-schema file in the release is
+    # either one of the two runs the paper cites, or is marked as a failed frame
+    # check. There is no third category.
+    can = ROOT / "results_v2" / "canonical_runs"
+    cited = {"auroc_ecot_bridge_n200.json",
+             "auroc_ecot_bridge_indomain_n153.json"}
+    unaccounted = []
+    for f in sorted(can.rglob("*.json")):
+        rec = load(f)
+        if not isinstance(rec, dict):
+            continue
+        ps = rec.get("per_sample")
+        if not (isinstance(ps, list) and ps and "aurocs" in rec):
+            continue
+        if f.name in cited:
+            continue
+        if (rec.get("frame_check") or {}).get("passed") is False:
+            continue
+        unaccounted.append(str(f.relative_to(ROOT)))
+    a.check(sec, "every P3-schema file in the release is either a run the paper "
+                 "cites or is marked frame_check.passed=false -- no third kind",
+            [], unaccounted, source="results_v2/canonical_runs/**/*.json")
+
+
 def audit_gripper_ab_null(a):
     """The negative result Section 6 now reports, checked against its artifact.
 
@@ -3291,6 +3448,7 @@ def main() -> int:
     audit_citations(a)
     audit_tf_env_probe(a)
     audit_gripper_ab_null(a)
+    audit_p3_frame_check(a)
     audit_gate_factorial(a)
     audit_derived_paths_are_portable(a)
 
