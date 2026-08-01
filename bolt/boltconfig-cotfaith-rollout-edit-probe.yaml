@@ -1,0 +1,42 @@
+name: 'CoT-Faith: rollout-level CoT-edit PROBE (preconditions before a 24h run)'
+description: 'Limitation (v) is that every leaderboard number is a first-step quantity: we perturb the CoT, decode one action, measure how far it moved. That shows the CoT is read, not that reading it matters for completing the task. experiments/cotfaith_rollout_edit.py closes that by running the same episode twice from one canonical init state -- once with the model''s own CoT, once with it edited -- and comparing task SR, paired, with an exact McNemar test. This job is the PROBE, not the run. It answers in minutes the three things that would each waste a 24h job: (1) which norm_stats keys this checkpoint carries, because a missing suite key sends every action to env.step() at raw [-1,1] scale and pins SR at 0 for a reason that has nothing to do with CoT; (2) whether the checkpoint emits parseable 9-tag CoT online at all, and how many seconds per step that costs, which is what decides whether a full run fits the wall clock; (3) whether each edit family actually changes the RENDERED prefix -- a family that renders byte-identically is inapplicable here for exactly the reason bbox_jitter_null is inapplicable on DeepThinkVLA, and must be recorded as such rather than scored as a passing null. It also decodes one action per arm on a real LIBERO frame so a shape or dtype error surfaces here instead of six hours in. ECoT-bridge is the subject because it is the leaderboard''s own headline CoT model and is public; the expected finding is that it carries bridge_orig and no libero key, which would make the scale blocker a measured fact rather than a suspicion.'
+tags: ['cotfaith', 'rollout-edit', 'probe', 'limitation-v']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  CKPT_PATH: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  SUITE: 'libero_spatial'
+  # Deliberately the key we expect to be ABSENT. The probe reports every key the
+  # checkpoint actually carries, so asking for the one a LIBERO rollout needs is
+  # what turns "we think the scale is wrong" into a recorded fact.
+  UNNORM_KEY: 'libero_spatial_no_noops'
+  # One semantic edit plus the paraphrase null, so any effect has its own
+  # control inside the same run rather than across jobs.
+  FAMILIES: 'direction_flip,paraphrase_null,subject_swap,gripper_flip'
+  MAX_NEW_TOKENS: '320'
+  GRIPPER_TRANSFORM: 'openvla'
+  IMAGE_PREPROC: 'none'
+  DTYPE: 'bfloat16'
+  PROBE_ONLY: '1'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_edit.sh

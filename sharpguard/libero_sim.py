@@ -320,7 +320,8 @@ ACTION_DECODERS = ("ours", "upstream")
 def predict_action_upstream(model, processor, image: np.ndarray,
                             instruction: str, *, device: torch.device,
                             pixel_dtype: torch.dtype = torch.bfloat16,
-                            unnorm_key: str = "") -> np.ndarray:
+                            unnorm_key: str = "",
+                            prompt: Optional[str] = None) -> np.ndarray:
     """Decode an action by calling the checkpoint's OWN predict_action.
 
     Why this exists. Three source-level differences from upstream have now been
@@ -338,11 +339,21 @@ def predict_action_upstream(model, processor, image: np.ndarray,
     published SR was measured with. The point of the whole exercise is to stop
     reimplementing decisions that the checkpoint already encodes.
 
-    Deliberately NOT reimplemented here, because reimplementing it is the thing
-    under suspicion: prompt construction is left to upstream too, since
-    OpenVLA's predict_action does its own input-id surgery (it appends the
-    SentencePiece empty token when absent) and doing that ourselves would put
-    the same class of bug back in.
+    What is and is not upstream's here. The de-quantization and the generate
+    call are upstream's. The prompt is OURS: we build the string, tokenize it,
+    and pass `input_ids` in. What upstream's copy does to it is input-id
+    *surgery* (it appends the SentencePiece empty token when absent), not
+    construction. We keep the prompt byte-identical to upstream's published
+    format because that is what the published SR was measured with -- a choice,
+    not a constraint.
+
+    That distinction matters and an earlier version of this note blurred it,
+    which led to the claim that a CoT prefix "cannot" be fed to the upstream
+    decoder. It can: put the CoT in the prompt string and this function decodes
+    the action tokens that follow it, with upstream's de-quantization intact.
+    That is exactly what experiments/cotfaith_rollout_edit.py does, so its CoT
+    arms and the passing gate share one decoder instead of differing by both
+    the CoT and the de-quantizer.
     """
     from PIL import Image
     if not hasattr(model, "predict_action"):
@@ -352,7 +363,11 @@ def predict_action_upstream(model, processor, image: np.ndarray,
             "trust_remote_code=True (OpenVLA ships predict_action in "
             "modeling_prismatic.py), or use action_decoder='ours' and read the "
             "result as decoded by our reimplementation.")
-    prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
+    # An explicit prompt is how the CoT arms get their reasoning prefix in here
+    # while keeping upstream's de-quantization. None reproduces the exact string
+    # every published gate number was measured with.
+    prompt = prompt if prompt is not None else (
+        f"In: What action should the robot take to {instruction.lower()}?\nOut:")
     pil = Image.fromarray(np.asarray(image, dtype=np.uint8)).convert("RGB")
     proc = processor(images=pil, text=prompt, return_tensors="pt")
     inputs = {"input_ids": proc["input_ids"].to(device),
