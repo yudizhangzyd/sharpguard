@@ -211,6 +211,23 @@ MIRROR = {
     "/tmp/cc100/qzvywaxg6u/cotfaith-lerobot/bridge_report.json": "cross_corpus_bridge_v2_n100.json",
     "/tmp/cc100/ae8ikp2zv7/cotfaith-lerobot/bridge_report.json": "cross_corpus_fractal_n100.json",
     "/tmp/cc100/q27nbyr3w8/cotfaith-lerobot/bridge_report.json": "cross_corpus_bcz_n100.json",
+    # Second training run of five more leaderboard configurations (bolt
+    # qitzw52zg6 / ppuejvcdbz / azs8cvei7q / 47kvt5ck6x / wpr7xd7iai). Each was
+    # trained at the recipe its run A used and then scored with the SAME
+    # 13-family edit protocol at the same evaluation seed on the same 100
+    # samples, so within a pair only the training run differs. Their args.json
+    # are recorded in results_v2/canonical_runs/retrain2_provenance.json rather
+    # than asserted in prose.
+    "/tmp/cf_retrain2/qitzw52zg6/cotfaith-edit/cot_edit_report.json": "ours_lora-r8_edit_13family_RETRAIN.json",
+    "/tmp/cf_retrain2/ppuejvcdbz/cotfaith-edit/cot_edit_report.json": "ours_lora-r16_edit_13family_RETRAIN.json",
+    "/tmp/cf_retrain2/azs8cvei7q/cotfaith-edit/cot_edit_report.json": "ours_lora-r64_edit_13family_RETRAIN.json",
+    "/tmp/cf_retrain2/47kvt5ck6x/cotfaith-edit/cot_edit_report.json": "ours_data-50A_edit_13family_RETRAIN.json",
+    "/tmp/cf_retrain2/wpr7xd7iai/cotfaith-edit/cot_edit_report.json": "ours_data-50B_edit_13family_RETRAIN.json",
+    "/tmp/cf_retrain2/qitzw52zg6/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r8_rvis_RETRAIN.json",
+    "/tmp/cf_retrain2/ppuejvcdbz/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r16_rvis_RETRAIN.json",
+    "/tmp/cf_retrain2/azs8cvei7q/cotfaith-rvis/rvis_cot_report.json": "ours_lora-r64_rvis_RETRAIN.json",
+    "/tmp/cf_retrain2/47kvt5ck6x/cotfaith-rvis/rvis_cot_report.json": "ours_data-50A_rvis_RETRAIN.json",
+    "/tmp/cf_retrain2/wpr7xd7iai/cotfaith-rvis/rvis_cot_report.json": "ours_data-50B_rvis_RETRAIN.json",
 }
 # Second model with all three floors: an independent retrain of the no-CoT
 # variant (identical config, reasoning_mode=no_cot, r=32, 15k steps, seed 0)
@@ -222,13 +239,18 @@ CALIB_RUN_NO_COT = os.path.join(CANON, "ours_no-cot_edit_13family_calibration.js
 # Sampling seeds cannot supply it: they redraw observations from one frozen
 # checkpoint, so they bound sampling noise only.
 #
-# Two such pairs exist. The r=32 pair was previously written off as "two runs
-# that differed in configuration"; their args.json disagree only in keys the
-# older training script did not yet emit (reasoning_mode, data_fraction), whose
-# defaults are the values the newer run records. Same base model, r, alpha, lr,
-# steps, and seed -- an independent training run of one configuration, which is
-# exactly the replicate the leaderboard needs and the reason its 1.45pp gap
-# cannot be dismissed.
+# Seven such pairs now exist, one per trained row. The r=32 pair was previously
+# written off as "two runs that differed in configuration"; their args.json
+# disagree only in keys the older training script did not yet emit
+# (reasoning_mode, data_fraction), whose defaults are the values the newer run
+# records. Same base model, r, alpha, lr, steps, and seed -- an independent
+# training run of one configuration, which is exactly the replicate the
+# leaderboard needs and the reason its 1.45pp gap cannot be dismissed.
+#
+# The five added below close the gap that made this a magnitude rather than a
+# distribution: every trained variant on the leaderboard now has a second
+# training run, so a reader can ask how far F moves under retraining and get a
+# spread over seven configurations instead of an anecdote from two.
 TRAIN_REPLICATE_PAIRS = [
     {"label": "ours-no-cot",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, no_cot, seed 0",
@@ -243,6 +265,31 @@ TRAIN_REPLICATE_PAIRS = [
      # attention moves 1.45pp between these two trainings, F moves up to 0.180.
      "edit": ("ours_lora-r32_edit.json",
               "ours_lora-r32_edit_13family_RETRAIN.json")},
+    {"label": "ours-r8",
+     "config": "r=8, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+     "rvis": ("ours_lora-r8_rvis.json", "ours_lora-r8_rvis_RETRAIN.json"),
+     "edit": ("ours_lora-r8_edit.json",
+              "ours_lora-r8_edit_13family_RETRAIN.json")},
+    {"label": "ours-r16",
+     "config": "r=16, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+     "rvis": ("ours_lora-r16_rvis.json", "ours_lora-r16_rvis_RETRAIN.json"),
+     "edit": ("ours_lora-r16_edit.json",
+              "ours_lora-r16_edit_13family_RETRAIN.json")},
+    {"label": "ours-r64",
+     "config": "r=64, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+     "rvis": ("ours_lora-r64_rvis.json", "ours_lora-r64_rvis_RETRAIN.json"),
+     "edit": ("ours_lora-r64_edit.json",
+              "ours_lora-r64_edit_13family_RETRAIN.json")},
+    {"label": "ours-data50A",
+     "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 100",
+     "rvis": ("ours_data-50A_rvis.json", "ours_data-50A_rvis_RETRAIN.json"),
+     "edit": ("ours_data-50A_edit.json",
+              "ours_data-50A_edit_13family_RETRAIN.json")},
+    {"label": "ours-data50B",
+     "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 200",
+     "rvis": ("ours_data-50B_rvis.json", "ours_data-50B_rvis_RETRAIN.json"),
+     "edit": ("ours_data-50B_edit.json",
+              "ours_data-50B_edit_13family_RETRAIN.json")},
 ]
 
 # 3 sampling seeds x 5 layer sets on the frozen public ECoT-bridge checkpoint.
@@ -1460,10 +1507,18 @@ def main():
                                             if tr_cot else None,
             "within_family_ordering_supported": bool(
                 tr_cot and noise.get("cluster_spread_pp", 0) > 3 * tr_cot),
-            "caveat": ("two replicate pairs give a magnitude, not a "
-                       "distribution; a 2.30pp spread against a 1.45pp "
-                       "same-config training difference does not establish "
-                       "any within-family ordering"),
+            # Derived, not written down. The previous version of this string
+            # hardcoded "two replicate pairs" and "1.45pp", both of which went
+            # stale the moment the remaining five configurations acquired a
+            # second training run -- and a stale caveat is worse than none,
+            # because it understates the noise it exists to warn about.
+            "caveat": (
+                "%d replicate pairs; a %.2fpp spread across variants against a "
+                "%.2fpp worst-case same-config training difference (%.1fx) does "
+                "not establish any within-family ordering, which needs >3x"
+                % (train_rep.get("n_pairs") or 0,
+                   noise.get("cluster_spread_pp") or 0.0, tr_cot or 0.0,
+                   (noise.get("cluster_spread_pp") / tr_cot) if tr_cot else 0.0)),
         }
 
     out = {

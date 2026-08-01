@@ -287,12 +287,20 @@ def audit_f2_calib(a: Audit, d: Optional[dict]) -> None:
             (ratios.get("ours-no-cot") or 9) < 1.0)
     noise = max((dig(d, "training_replicate", "F_bar_abs_diff_per_pair")
                  or {}).values() or [0])
-    a.check(sec, "but only 2 of those 5 clear the control by more than the "
-                 "retraining noise, so F2 narrows to absolute effect size", 2,
+    # Zero, not two. The retraining floor this is measured against was
+    # estimated from two pairs when the manuscript said two of the five
+    # survived it; with a replicate on every trained row the worst-case move in
+    # F_bar is 0.092 and the widest margin is 0.083, so none of them do. The
+    # count is asserted rather than the names, because "which two" was the part
+    # that went stale.
+    a.check(sec, "none of those 5 clear the control by more than the "
+                 "retraining noise, so F2 narrows to a direction-only claim", 0,
             sum(1 for m in cot_trained
                 if (ratios.get(m) or 0) > 1.0
                 and ((by.get(m) or {}).get("F_bar_diff_vs_instr_random_sub")
-                     or 0) > noise))
+                     or 0) > noise),
+            source=f"retraining moves F_bar by up to {r3(noise)}; widest margin "
+                   f"{r3(max((by.get(m) or {}).get('F_bar_diff_vs_instr_random_sub') or 0 for m in cot_trained))}")
     tex = TEX.read_text()
     a.check(sec, "the manuscript states F2 does not dissolve", True,
             r"\textbf{F2 therefore does not dissolve.}" in tex, source=str(TEX))
@@ -962,17 +970,22 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
             sorted(CALIB_DT),
             sorted((su.get("families_inapplicable_by_model") or {})))
 
-    # Only 2 of the 5 passing models clear the control by more than the
-    # 0.021-0.030 that retraining alone moves F_bar. That bound is what keeps
-    # the corrected F2 from being overclaimed, so it is asserted, not prose.
+    # NONE of the 5 passing models clears the control by more than the amount
+    # retraining alone moves F_bar. When that bound came from two replicate
+    # pairs it was 0.030 and two models cleared it; with a replicate on every
+    # trained row the worst case is 0.092, which is above the widest margin
+    # (0.083). The count is asserted rather than the surviving names, because
+    # "which ones" is precisely the part that went stale.
     noise = max((dig(d, "training_replicate", "F_bar_abs_diff_per_pair")
                  or {}).values() or [0])
     robust = sorted(v["label"] for v in gt1
                     if (v.get("F_bar_diff_vs_instr_random_sub") or 0) > noise)
-    a.check(sec, "only ours-r8 and ours-data50B clear the out-of-CoT control "
-                 "by more than same-config retraining noise",
-            ["ours-data50B", "ours-r8"], robust,
-            source=f"retraining moves F_bar by up to {r3(noise)}")
+    widest = max((v.get("F_bar_diff_vs_instr_random_sub") or 0) for v in gt1)
+    a.check(sec, "no model clears the out-of-CoT control by more than "
+                 "same-config retraining noise, so F2 is direction-only", [],
+            robust,
+            source="retraining moves F_bar by up to %s; widest margin is %s"
+                   % (r3(noise), r3(widest)))
 
     tex = TEX.read_text()
     for frag in (r"\label{tab:calibration}",
@@ -1255,7 +1268,8 @@ def audit_attention_seeds_and_depth(a: Audit, d: Optional[dict]) -> None:
 
 def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
     """The error bar a leaderboard owes its readers is same-config retraining,
-    not reseeded sampling. Two pairs exist; they do not license any ordering."""
+    not reseeded sampling. Seven pairs exist -- one for every trained row --
+    and they do not license any ordering."""
     sec = "Same-config training-run replicates (leaderboard error bar)"
     tr = dig(d, "training_replicate") or {}
     if not tr:
@@ -1263,12 +1277,13 @@ def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
                 source="derived_metrics.training_replicate")
         return
 
-    a.check(sec, "2 independent same-config retraining pairs", 2, tr.get("n_pairs"))
+    a.check(sec, "7 independent same-config retraining pairs, one per trained "
+                 "row", 7, tr.get("n_pairs"))
     per = sorted(round(v, 2) for v in (tr.get("cot_abs_diff_pp_per_pair") or []))
-    a.check(sec, "|delta alpha(cot)| across retrainings = 0.56 and 1.45 pp",
-            [0.56, 1.45], per)
-    a.check(sec, "largest same-config training difference on any bucket = 1.45 pp",
-            1.45, round(tr.get("any_bucket_abs_diff_pp_max"), 2), tol=0.006)
+    a.check(sec, "|delta alpha(cot)| across retrainings spans 0.12-1.95 pp",
+            [0.12, 0.14, 0.56, 0.56, 0.73, 1.45, 1.95], per)
+    a.check(sec, "largest same-config training difference on any bucket = 1.95 pp",
+            1.95, round(tr.get("any_bucket_abs_diff_pp_max"), 2), tol=0.006)
 
     # Keyed by label, not by position. This loop used to be
     # `for pr in pairs: if pr["F_per_family"]: fp = pr["F_per_family"]`, i.e.
@@ -1281,8 +1296,13 @@ def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
         return dig(by_label.get(label), "F_per_family")
 
     for label, n_fam, mean_d, max_d, worst in (
-            ("ours-no-cot", 9, 0.024, 0.083, "adversarial_plausible"),
-            ("ours-r32",    9, 0.040, 0.180, "verb_swap")):
+            ("ours-no-cot",   9, 0.024, 0.083, "adversarial_plausible"),
+            ("ours-r32",      9, 0.040, 0.180, "verb_swap"),
+            ("ours-r8",       9, 0.072, 0.260, "verb_swap"),
+            ("ours-r16",      9, 0.026, 0.060, "direction_flip"),
+            ("ours-r64",      9, 0.036, 0.067, "adversarial_plausible"),
+            ("ours-data50A",  9, 0.064, 0.130, "cross_task_swap"),
+            ("ours-data50B",  9, 0.079, 0.170, "verb_swap")):
         fp = fpf(label)
         a.check(sec, "[%s] F is compared across retrainings on %d families "
                      "at N>=50" % (label, n_fam), n_fam,
@@ -1300,31 +1320,41 @@ def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
                      "training)" % label,
                 True, "location_swap" in (dig(fp, "excluded_low_n") or []))
 
-    a.check(sec, "the worst single-family retraining move over both pairs is "
-                 "0.180 on ours-r32:verb_swap", "ours-r32:verb_swap",
+    a.check(sec, "the worst single-family retraining move over all seven pairs "
+                 "is 0.260 on ours-r8:verb_swap", "ours-r8:verb_swap",
             tr.get("F_max_abs_diff_where"))
-    a.check(sec, "manuscript limitation (viii) quotes that 0.180", True,
-            "$\\mathbf{0.180}$" in TEX.read_text(), source=str(TEX))
+    a.check(sec, "manuscript limitation (viii) quotes that 0.260", True,
+            "$\\mathbf{0.260}$" in TEX.read_text(), source=str(TEX))
+    # verb_swap is the worst-reproducing family on three of the seven pairs.
+    # The manuscript says so in order to rule out "one anomalous cell", which
+    # is exactly the reading a single 0.260 invites.
+    worst_fams = [dig(v, "F_per_family", "max_abs_diff_family")
+                  for v in (tr.get("by_label") or {}).values()]
+    a.check(sec, "verb_swap is the worst-reproducing family on 3 of the 7 "
+                 "pairs (so 0.260 is not one anomalous cell)",
+            3, worst_fams.count("verb_swap"))
 
     # F_bar itself across retraining: the unit every CoT-specificity margin in
     # Section f2_calib is measured against, so it has to be asserted, not
     # eyeballed off the per-family table.
     fb = tr.get("F_bar_abs_diff_per_pair") or {}
-    a.check(sec, "F_bar moves 0.030 when the no-CoT config is retrained",
-            0.030, r3(fb.get("ours-no-cot")), tol=0.0015)
-    a.check(sec, "F_bar moves 0.021 when the r=32 config is retrained",
-            0.021, r3(fb.get("ours-r32")), tol=0.0015)
+    for label, mv in (("ours-no-cot", 0.030), ("ours-r32", 0.021),
+                      ("ours-r8", 0.006), ("ours-r16", 0.018),
+                      ("ours-r64", 0.045), ("ours-data50A", 0.061),
+                      ("ours-data50B", 0.092)):
+        a.check(sec, "F_bar moves %.3f when the %s config is retrained"
+                % (mv, label), mv, r3(fb.get(label)), tol=0.0015)
     a.check(sec, "the manuscript quotes the F_bar retraining move as "
-                 "0.021--0.030", True,
-            "$0.021$--$0.030$" in TEX.read_text(), source=str(TEX))
+                 "0.006--0.092", True,
+            "$0.006$--$\\mathbf{0.092}$" in TEX.read_text(), source=str(TEX))
 
     # The hierarchy, which is the actual claim.
     h = dig(d, "noise_hierarchy") or {}
-    a.check(sec, "sampling noise (0.09 pp) is far below training-run noise "
-                 "(1.45 pp)", True,
+    a.check(sec, "sampling noise (0.26 pp) is far below training-run noise "
+                 "(1.95 pp)", True,
             (h.get("sampling_std_pp") or 9) < 0.2 * (h.get("training_run_diff_pp") or 0))
-    a.check(sec, "within-ECoT spread is only 1.6x the training-run difference",
-            1.6, round(h.get("spread_over_training_run_cot"), 1)
+    a.check(sec, "within-ECoT spread is only 1.2x the training-run difference",
+            1.2, round(h.get("spread_over_training_run_cot"), 1)
             if h.get("spread_over_training_run_cot") else None, tol=0.06)
     a.check(sec, "no within-ECoT attention ordering is supported", False,
             h.get("within_family_ordering_supported"),

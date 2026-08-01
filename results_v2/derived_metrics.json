@@ -7357,7 +7357,7 @@
   }
  },
  "training_replicate": {
-  "n_pairs": 2,
+  "n_pairs": 7,
   "pairs": [
    {
     "label": "ours-no-cot",
@@ -7604,15 +7604,635 @@
      "F_bar_run_B": 0.428532261389,
      "F_bar_abs_diff": 0.0209132137704
     }
+   },
+   {
+    "label": "ours-r8",
+    "config": "r=8, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r8_rvis.json",
+      "ours_lora-r8_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.35810546875,
+       "run_B": 0.3386328125,
+       "abs_diff_pp": 1.947265625
+      },
+      "visual": {
+       "run_A": 0.28162109375,
+       "run_B": 0.29595703125,
+       "abs_diff_pp": 1.43359375
+      },
+      "instr": {
+       "run_A": 0.284609375,
+       "run_B": 0.2901953125,
+       "abs_diff_pp": 0.55859375
+      },
+      "action_prev": {
+       "run_A": 0.0757568359375,
+       "run_B": 0.07515625,
+       "abs_diff_pp": 0.06005859375
+      }
+     },
+     "max_abs_diff_pp": 1.947265625,
+     "cot_abs_diff_pp": 1.947265625
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r8_edit.json",
+      "ours_lora-r8_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.383333333333,
+       "run_B": 0.333333333333,
+       "abs_diff": 0.05,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.86,
+       "run_B": 0.84,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.74,
+       "run_B": 0.68,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.1,
+       "run_B": 0.13,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.166666666667,
+       "run_B": 0.1,
+       "abs_diff": 0.0666666666667,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.71,
+       "run_B": 0.69,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.4,
+       "run_B": 0.266666666667,
+       "abs_diff": 0.133333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.51,
+       "abs_diff": 0.07,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.7,
+       "run_B": 0.96,
+       "abs_diff": 0.26,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.26,
+     "max_abs_diff_family": "verb_swap",
+     "mean_abs_diff": 0.0714814814815,
+     "F_bar_run_A": 0.457142857143,
+     "F_bar_run_B": 0.451428571429,
+     "F_bar_abs_diff": 0.00571428571429
+    }
+   },
+   {
+    "label": "ours-r16",
+    "config": "r=16, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r16_rvis.json",
+      "ours_lora-r16_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.3525390625,
+       "run_B": 0.35376953125,
+       "abs_diff_pp": 0.123046875
+      },
+      "visual": {
+       "run_A": 0.2866796875,
+       "run_B": 0.28279296875,
+       "abs_diff_pp": 0.388671875
+      },
+      "instr": {
+       "run_A": 0.28826171875,
+       "run_B": 0.287421875,
+       "abs_diff_pp": 0.083984375
+      },
+      "action_prev": {
+       "run_A": 0.07236328125,
+       "run_B": 0.0758544921875,
+       "abs_diff_pp": 0.34912109375
+      }
+     },
+     "max_abs_diff_pp": 0.388671875,
+     "cot_abs_diff_pp": 0.123046875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r16_edit.json",
+      "ours_lora-r16_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.316666666667,
+       "run_B": 0.35,
+       "abs_diff": 0.0333333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.91,
+       "run_B": 0.87,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.78,
+       "run_B": 0.72,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.16,
+       "run_B": 0.16,
+       "abs_diff": 0.0,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.25,
+       "run_B": 0.171428571429,
+       "abs_diff": 0.0785714285714,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.7,
+       "run_B": 0.68,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.4,
+       "run_B": 0.416666666667,
+       "abs_diff": 0.0166666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.4,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.69,
+       "run_B": 0.67,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.06,
+     "max_abs_diff_family": "direction_flip",
+     "mean_abs_diff": 0.0255555555556,
+     "F_bar_run_A": 0.470952380952,
+     "F_bar_run_B": 0.452585034014,
+     "F_bar_abs_diff": 0.0183673469388
+    }
+   },
+   {
+    "label": "ours-r64",
+    "config": "r=64, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r64_rvis.json",
+      "ours_lora-r64_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.335078125,
+       "run_B": 0.33646484375,
+       "abs_diff_pp": 0.138671875
+      },
+      "visual": {
+       "run_A": 0.301484375,
+       "run_B": 0.30255859375,
+       "abs_diff_pp": 0.107421875
+      },
+      "instr": {
+       "run_A": 0.2961328125,
+       "run_B": 0.29537109375,
+       "abs_diff_pp": 0.076171875
+      },
+      "action_prev": {
+       "run_A": 0.067314453125,
+       "run_B": 0.0656030273437,
+       "abs_diff_pp": 0.171142578125
+      }
+     },
+     "max_abs_diff_pp": 0.171142578125,
+     "cot_abs_diff_pp": 0.138671875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r64_edit.json",
+      "ours_lora-r64_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.35,
+       "run_B": 0.283333333333,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.94,
+       "run_B": 0.91,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.82,
+       "run_B": 0.85,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.22,
+       "run_B": 0.16,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.25,
+       "run_B": 0.114285714286,
+       "abs_diff": 0.135714285714,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.78,
+       "run_B": 0.8,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.35,
+       "run_B": 0.3,
+       "abs_diff": 0.05,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.47,
+       "run_B": 0.454545454545,
+       "abs_diff": 0.0154545454545,
+       "n_A": 100,
+       "n_B": 99
+      },
+      "verb_swap": {
+       "run_A": 0.84,
+       "run_B": 0.79,
+       "abs_diff": 0.05,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.0666666666667,
+     "max_abs_diff_family": "adversarial_plausible",
+     "mean_abs_diff": 0.0357912457912,
+     "F_bar_run_A": 0.515714285714,
+     "F_bar_run_B": 0.471088435374,
+     "F_bar_abs_diff": 0.0446258503401
+    }
+   },
+   {
+    "label": "ours-data50A",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 100",
+    "attention": {
+     "runs": [
+      "ours_data-50A_rvis.json",
+      "ours_data-50A_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.35015625,
+       "run_B": 0.3428515625,
+       "abs_diff_pp": 0.73046875
+      },
+      "visual": {
+       "run_A": 0.2869140625,
+       "run_B": 0.2935546875,
+       "abs_diff_pp": 0.6640625
+      },
+      "instr": {
+       "run_A": 0.29443359375,
+       "run_B": 0.29833984375,
+       "abs_diff_pp": 0.390625
+      },
+      "action_prev": {
+       "run_A": 0.0684423828125,
+       "run_B": 0.0651220703125,
+       "abs_diff_pp": 0.33203125
+      }
+     },
+     "max_abs_diff_pp": 0.73046875,
+     "cot_abs_diff_pp": 0.73046875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_data-50A_edit.json",
+      "ours_data-50A_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.35,
+       "run_B": 0.45,
+       "abs_diff": 0.1,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.74,
+       "run_B": 0.87,
+       "abs_diff": 0.13,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.72,
+       "run_B": 0.76,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.14,
+       "run_B": 0.21,
+       "abs_diff": 0.07,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.166666666667,
+       "run_B": 0.171428571429,
+       "abs_diff": 0.0047619047619,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.6,
+       "run_B": 0.7,
+       "abs_diff": 0.1,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.3,
+       "run_B": 0.383333333333,
+       "abs_diff": 0.0833333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.42,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.69,
+       "run_B": 0.72,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.13,
+     "max_abs_diff_family": "cross_task_swap",
+     "mean_abs_diff": 0.0637037037037,
+     "F_bar_run_A": 0.42380952381,
+     "F_bar_run_B": 0.484965986395,
+     "F_bar_abs_diff": 0.061156462585
+    }
+   },
+   {
+    "label": "ours-data50B",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 200",
+    "attention": {
+     "runs": [
+      "ours_data-50B_rvis.json",
+      "ours_data-50B_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.3490625,
+       "run_B": 0.3434765625,
+       "abs_diff_pp": 0.55859375
+      },
+      "visual": {
+       "run_A": 0.2872265625,
+       "run_B": 0.2924609375,
+       "abs_diff_pp": 0.5234375
+      },
+      "instr": {
+       "run_A": 0.29236328125,
+       "run_B": 0.29435546875,
+       "abs_diff_pp": 0.19921875
+      },
+      "action_prev": {
+       "run_A": 0.0712451171875,
+       "run_B": 0.0698095703125,
+       "abs_diff_pp": 0.1435546875
+      }
+     },
+     "max_abs_diff_pp": 0.55859375,
+     "cot_abs_diff_pp": 0.55859375
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_data-50B_edit.json",
+      "ours_data-50B_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.3,
+       "run_B": 0.366666666667,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.73,
+       "run_B": 0.83,
+       "abs_diff": 0.1,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.66,
+       "run_B": 0.72,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.14,
+       "run_B": 0.19,
+       "abs_diff": 0.05,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.0833333333333,
+       "run_B": 0.157142857143,
+       "abs_diff": 0.0738095238095,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.52,
+       "run_B": 0.68,
+       "abs_diff": 0.16,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.333333333333,
+       "run_B": 0.4,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.38,
+       "run_B": 0.42,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.52,
+       "run_B": 0.69,
+       "abs_diff": 0.17,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.17,
+     "max_abs_diff_family": "verb_swap",
+     "mean_abs_diff": 0.0792592592593,
+     "F_bar_run_A": 0.365238095238,
+     "F_bar_run_B": 0.45768707483,
+     "F_bar_abs_diff": 0.0924489795918
+    }
    }
   ],
   "cot_abs_diff_pp_per_pair": [
    0.564453125,
-   1.451171875
+   1.451171875,
+   1.947265625,
+   0.123046875,
+   0.138671875,
+   0.73046875,
+   0.55859375
   ],
-  "cot_abs_diff_pp_max": 1.451171875,
-  "cot_abs_diff_pp_mean": 1.0078125,
-  "any_bucket_abs_diff_pp_max": 1.451171875,
+  "cot_abs_diff_pp_max": 1.947265625,
+  "cot_abs_diff_pp_mean": 0.787667410714,
+  "any_bucket_abs_diff_pp_max": 1.947265625,
   "by_label": {
    "ours-no-cot": {
     "label": "ours-no-cot",
@@ -7859,43 +8479,678 @@
      "F_bar_run_B": 0.428532261389,
      "F_bar_abs_diff": 0.0209132137704
     }
+   },
+   "ours-r8": {
+    "label": "ours-r8",
+    "config": "r=8, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r8_rvis.json",
+      "ours_lora-r8_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.35810546875,
+       "run_B": 0.3386328125,
+       "abs_diff_pp": 1.947265625
+      },
+      "visual": {
+       "run_A": 0.28162109375,
+       "run_B": 0.29595703125,
+       "abs_diff_pp": 1.43359375
+      },
+      "instr": {
+       "run_A": 0.284609375,
+       "run_B": 0.2901953125,
+       "abs_diff_pp": 0.55859375
+      },
+      "action_prev": {
+       "run_A": 0.0757568359375,
+       "run_B": 0.07515625,
+       "abs_diff_pp": 0.06005859375
+      }
+     },
+     "max_abs_diff_pp": 1.947265625,
+     "cot_abs_diff_pp": 1.947265625
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r8_edit.json",
+      "ours_lora-r8_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.383333333333,
+       "run_B": 0.333333333333,
+       "abs_diff": 0.05,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.86,
+       "run_B": 0.84,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.74,
+       "run_B": 0.68,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.1,
+       "run_B": 0.13,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.166666666667,
+       "run_B": 0.1,
+       "abs_diff": 0.0666666666667,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.71,
+       "run_B": 0.69,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.4,
+       "run_B": 0.266666666667,
+       "abs_diff": 0.133333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.51,
+       "abs_diff": 0.07,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.7,
+       "run_B": 0.96,
+       "abs_diff": 0.26,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.26,
+     "max_abs_diff_family": "verb_swap",
+     "mean_abs_diff": 0.0714814814815,
+     "F_bar_run_A": 0.457142857143,
+     "F_bar_run_B": 0.451428571429,
+     "F_bar_abs_diff": 0.00571428571429
+    }
+   },
+   "ours-r16": {
+    "label": "ours-r16",
+    "config": "r=16, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r16_rvis.json",
+      "ours_lora-r16_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.3525390625,
+       "run_B": 0.35376953125,
+       "abs_diff_pp": 0.123046875
+      },
+      "visual": {
+       "run_A": 0.2866796875,
+       "run_B": 0.28279296875,
+       "abs_diff_pp": 0.388671875
+      },
+      "instr": {
+       "run_A": 0.28826171875,
+       "run_B": 0.287421875,
+       "abs_diff_pp": 0.083984375
+      },
+      "action_prev": {
+       "run_A": 0.07236328125,
+       "run_B": 0.0758544921875,
+       "abs_diff_pp": 0.34912109375
+      }
+     },
+     "max_abs_diff_pp": 0.388671875,
+     "cot_abs_diff_pp": 0.123046875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r16_edit.json",
+      "ours_lora-r16_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.316666666667,
+       "run_B": 0.35,
+       "abs_diff": 0.0333333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.91,
+       "run_B": 0.87,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.78,
+       "run_B": 0.72,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.16,
+       "run_B": 0.16,
+       "abs_diff": 0.0,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.25,
+       "run_B": 0.171428571429,
+       "abs_diff": 0.0785714285714,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.7,
+       "run_B": 0.68,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.4,
+       "run_B": 0.416666666667,
+       "abs_diff": 0.0166666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.4,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.69,
+       "run_B": 0.67,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.06,
+     "max_abs_diff_family": "direction_flip",
+     "mean_abs_diff": 0.0255555555556,
+     "F_bar_run_A": 0.470952380952,
+     "F_bar_run_B": 0.452585034014,
+     "F_bar_abs_diff": 0.0183673469388
+    }
+   },
+   "ours-r64": {
+    "label": "ours-r64",
+    "config": "r=64, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
+    "attention": {
+     "runs": [
+      "ours_lora-r64_rvis.json",
+      "ours_lora-r64_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.335078125,
+       "run_B": 0.33646484375,
+       "abs_diff_pp": 0.138671875
+      },
+      "visual": {
+       "run_A": 0.301484375,
+       "run_B": 0.30255859375,
+       "abs_diff_pp": 0.107421875
+      },
+      "instr": {
+       "run_A": 0.2961328125,
+       "run_B": 0.29537109375,
+       "abs_diff_pp": 0.076171875
+      },
+      "action_prev": {
+       "run_A": 0.067314453125,
+       "run_B": 0.0656030273437,
+       "abs_diff_pp": 0.171142578125
+      }
+     },
+     "max_abs_diff_pp": 0.171142578125,
+     "cot_abs_diff_pp": 0.138671875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_lora-r64_edit.json",
+      "ours_lora-r64_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.35,
+       "run_B": 0.283333333333,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.94,
+       "run_B": 0.91,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.82,
+       "run_B": 0.85,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.22,
+       "run_B": 0.16,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.25,
+       "run_B": 0.114285714286,
+       "abs_diff": 0.135714285714,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.78,
+       "run_B": 0.8,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.35,
+       "run_B": 0.3,
+       "abs_diff": 0.05,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.47,
+       "run_B": 0.454545454545,
+       "abs_diff": 0.0154545454545,
+       "n_A": 100,
+       "n_B": 99
+      },
+      "verb_swap": {
+       "run_A": 0.84,
+       "run_B": 0.79,
+       "abs_diff": 0.05,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.0666666666667,
+     "max_abs_diff_family": "adversarial_plausible",
+     "mean_abs_diff": 0.0357912457912,
+     "F_bar_run_A": 0.515714285714,
+     "F_bar_run_B": 0.471088435374,
+     "F_bar_abs_diff": 0.0446258503401
+    }
+   },
+   "ours-data50A": {
+    "label": "ours-data50A",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 100",
+    "attention": {
+     "runs": [
+      "ours_data-50A_rvis.json",
+      "ours_data-50A_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.35015625,
+       "run_B": 0.3428515625,
+       "abs_diff_pp": 0.73046875
+      },
+      "visual": {
+       "run_A": 0.2869140625,
+       "run_B": 0.2935546875,
+       "abs_diff_pp": 0.6640625
+      },
+      "instr": {
+       "run_A": 0.29443359375,
+       "run_B": 0.29833984375,
+       "abs_diff_pp": 0.390625
+      },
+      "action_prev": {
+       "run_A": 0.0684423828125,
+       "run_B": 0.0651220703125,
+       "abs_diff_pp": 0.33203125
+      }
+     },
+     "max_abs_diff_pp": 0.73046875,
+     "cot_abs_diff_pp": 0.73046875
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_data-50A_edit.json",
+      "ours_data-50A_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.35,
+       "run_B": 0.45,
+       "abs_diff": 0.1,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.74,
+       "run_B": 0.87,
+       "abs_diff": 0.13,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.72,
+       "run_B": 0.76,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.14,
+       "run_B": 0.21,
+       "abs_diff": 0.07,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.166666666667,
+       "run_B": 0.171428571429,
+       "abs_diff": 0.0047619047619,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.6,
+       "run_B": 0.7,
+       "abs_diff": 0.1,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.3,
+       "run_B": 0.383333333333,
+       "abs_diff": 0.0833333333333,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.44,
+       "run_B": 0.42,
+       "abs_diff": 0.02,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.69,
+       "run_B": 0.72,
+       "abs_diff": 0.03,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.13,
+     "max_abs_diff_family": "cross_task_swap",
+     "mean_abs_diff": 0.0637037037037,
+     "F_bar_run_A": 0.42380952381,
+     "F_bar_run_B": 0.484965986395,
+     "F_bar_abs_diff": 0.061156462585
+    }
+   },
+   "ours-data50B": {
+    "label": "ours-data50B",
+    "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 200",
+    "attention": {
+     "runs": [
+      "ours_data-50B_rvis.json",
+      "ours_data-50B_rvis_RETRAIN.json"
+     ],
+     "layers": "0,1,2,3",
+     "buckets": {
+      "cot": {
+       "run_A": 0.3490625,
+       "run_B": 0.3434765625,
+       "abs_diff_pp": 0.55859375
+      },
+      "visual": {
+       "run_A": 0.2872265625,
+       "run_B": 0.2924609375,
+       "abs_diff_pp": 0.5234375
+      },
+      "instr": {
+       "run_A": 0.29236328125,
+       "run_B": 0.29435546875,
+       "abs_diff_pp": 0.19921875
+      },
+      "action_prev": {
+       "run_A": 0.0712451171875,
+       "run_B": 0.0698095703125,
+       "abs_diff_pp": 0.1435546875
+      }
+     },
+     "max_abs_diff_pp": 0.55859375,
+     "cot_abs_diff_pp": 0.55859375
+    },
+    "F_per_family": {
+     "runs": [
+      "ours_data-50B_edit.json",
+      "ours_data-50B_edit_13family_RETRAIN.json"
+     ],
+     "n_families_compared": 9,
+     "families": {
+      "adversarial_plausible": {
+       "run_A": 0.3,
+       "run_B": 0.366666666667,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "cross_task_swap": {
+       "run_A": 0.73,
+       "run_B": 0.83,
+       "abs_diff": 0.1,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "direction_flip": {
+       "run_A": 0.66,
+       "run_B": 0.72,
+       "abs_diff": 0.06,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "gripper_flip": {
+       "run_A": 0.14,
+       "run_B": 0.19,
+       "abs_diff": 0.05,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "location_swap": {
+       "run_A": 0.0833333333333,
+       "run_B": 0.157142857143,
+       "abs_diff": 0.0738095238095,
+       "n_A": 12,
+       "n_B": 70
+      },
+      "negation": {
+       "run_A": 0.52,
+       "run_B": 0.68,
+       "abs_diff": 0.16,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "selfsplice_control": {
+       "run_A": 0.0,
+       "run_B": 0.0,
+       "abs_diff": 0.0,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "subject_swap": {
+       "run_A": 0.333333333333,
+       "run_B": 0.4,
+       "abs_diff": 0.0666666666667,
+       "n_A": 60,
+       "n_B": 60
+      },
+      "syntactic_scramble": {
+       "run_A": 0.38,
+       "run_B": 0.42,
+       "abs_diff": 0.04,
+       "n_A": 100,
+       "n_B": 100
+      },
+      "verb_swap": {
+       "run_A": 0.52,
+       "run_B": 0.69,
+       "abs_diff": 0.17,
+       "n_A": 100,
+       "n_B": 100
+      }
+     },
+     "excluded_low_n": [
+      "location_swap"
+     ],
+     "max_abs_diff": 0.17,
+     "max_abs_diff_family": "verb_swap",
+     "mean_abs_diff": 0.0792592592593,
+     "F_bar_run_A": 0.365238095238,
+     "F_bar_run_B": 0.45768707483,
+     "F_bar_abs_diff": 0.0924489795918
+    }
    }
   },
-  "F_n_pairs": 2,
-  "F_max_abs_diff_over_pairs": 0.18,
-  "F_max_abs_diff_where": "ours-r32:verb_swap",
+  "F_n_pairs": 7,
+  "F_max_abs_diff_over_pairs": 0.26,
+  "F_max_abs_diff_where": "ours-r8:verb_swap",
   "F_mean_abs_diff_per_pair": {
    "ours-no-cot": 0.0237037037037,
-   "ours-r32": 0.0396520763187
+   "ours-r32": 0.0396520763187,
+   "ours-r8": 0.0714814814815,
+   "ours-r16": 0.0255555555556,
+   "ours-r64": 0.0357912457912,
+   "ours-data50A": 0.0637037037037,
+   "ours-data50B": 0.0792592592593
   },
   "F_max_abs_diff_per_pair": {
    "ours-no-cot": 0.0833333333333,
-   "ours-r32": 0.18
+   "ours-r32": 0.18,
+   "ours-r8": 0.26,
+   "ours-r16": 0.06,
+   "ours-r64": 0.0666666666667,
+   "ours-data50A": 0.13,
+   "ours-data50B": 0.17
   },
   "F_bar_abs_diff_per_pair": {
    "ours-no-cot": 0.0302721088435,
-   "ours-r32": 0.0209132137704
+   "ours-r32": 0.0209132137704,
+   "ours-r8": 0.00571428571429,
+   "ours-r16": 0.0183673469388,
+   "ours-r64": 0.0446258503401,
+   "ours-data50A": 0.061156462585,
+   "ours-data50B": 0.0924489795918
   },
-  "F_bar_abs_diff_max": 0.0302721088435,
+  "F_bar_abs_diff_max": 0.0924489795918,
   "F_bar_noise_note": "how far F_bar moves when the same config is trained twice; the unit every cot_specificity_ratio margin is measured against"
  },
  "noise_hierarchy": {
   "sampling_std_pp": 0.261057155076,
   "sampling_note": "3 draws of n=100 from ONE frozen checkpoint",
-  "training_run_diff_pp": 1.451171875,
-  "training_run_cot_diff_pp": 1.451171875,
+  "training_run_diff_pp": 1.947265625,
+  "training_run_cot_diff_pp": 1.947265625,
   "training_run_diff_pp_per_pair": [
    0.564453125,
-   1.451171875
+   1.451171875,
+   1.947265625,
+   0.123046875,
+   0.138671875,
+   0.73046875,
+   0.55859375
   ],
-  "n_training_replicate_pairs": 2,
+  "n_training_replicate_pairs": 7,
   "training_run_note": "independent trainings of the SAME config; this is the quantity leaderboard rows differ in",
   "cross_variant_spread_pp": 2.302734375,
   "cross_variant_note": "spread of alpha(cot) across the 7 ECoT variants",
-  "spread_over_training_run": 1.5868102288,
-  "spread_over_training_run_cot": 1.5868102288,
+  "spread_over_training_run": 1.18254764293,
+  "spread_over_training_run_cot": 1.18254764293,
   "within_family_ordering_supported": false,
-  "caveat": "two replicate pairs give a magnitude, not a distribution; a 2.30pp spread against a 1.45pp same-config training difference does not establish any within-family ordering"
+  "caveat": "7 replicate pairs; a 2.30pp spread across variants against a 1.95pp worst-case same-config training difference (1.2x) does not establish any within-family ordering, which needs >3x"
  },
  "rollout_gate": {
   "suites": {
