@@ -7,13 +7,20 @@
 # substituted before submit, into a mode-600 temp file outside the repo, which
 # is removed afterwards. No credential ever reaches git.
 #
-# Usage: bash bolt/submit_rollout_edit_ckpt.sh [CKPT_TASK_ID]
+# Usage: bash bolt/submit_rollout_edit_ckpt.sh [CKPT_TASK_ID] [CONFIG]
+#
+# CONFIG defaults to the round-1 config. Round 2 (in-suite, libero_90) is
+# boltconfig-cotfaith-rollout-edit-ckpt-lm90.yaml -- passed rather than
+# hard-coded, because both configs point at the same checkpoint task and the
+# credential mechanism is identical.
 set -u
 cd "$(dirname "$0")/.."
 
-CFG="bolt/boltconfig-cotfaith-rollout-edit-ckpt.yaml"
+CFG="${2:-bolt/boltconfig-cotfaith-rollout-edit-ckpt.yaml}"
+[ -f "$CFG" ] || { echo "[submit] no such config: $CFG"; exit 2; }
 CKPT="${1:-$(sed -n "s/^  CKPT_TASK_ID: '\(.*\)'/\1/p" "$CFG")}"
 [ -n "$CKPT" ] || { echo "[submit] no CKPT_TASK_ID"; exit 2; }
+echo "[submit] config:         $CFG"
 echo "[submit] checkpoint task: $CKPT"
 
 # 36h: these jobs queue, and the sync happens after setup, so a token that

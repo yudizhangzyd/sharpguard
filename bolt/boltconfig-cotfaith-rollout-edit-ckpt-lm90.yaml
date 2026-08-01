@@ -1,0 +1,86 @@
+name: 'CoT-Faith #10b: paired rollout-level CoT edit, IN the suite the checkpoint trained on'
+description: 'Round 2, limitation (v). Round 1 (bolt 9jjmeny7mh) rolled out on libero_spatial while the checkpoint (bcihypv3gu) was LoRA-trained on libero_lm_90 -- out-of-suite, which explains SR=0 on its own and makes the zero uninterpretable as a statement about CoT. This fixes that. Two other suspects are not confounds: bolt f52r5nvnhb reached SR=1.0 with upstream|openvla+image_preproc=none, so the harness closes tasks and `none` is not what breaks it. MAX_STEPS=0 takes upstream own libero_90 budget of 400, not round 1 hard-coded 220, so no episode is truncated by construction. At ~2.3 h/episode FAMILIES drops to direction_flip alone: the binding question is whether SR(cot_clean) is nonzero at all, since the harness defines DSR as 0 by construction when it is not. A null is still expected -- the P3 frame check on these weights found the policy does not beat predicting the dataset mean in any frame it ships -- but an in-suite 0/N carries a binomial bound and out-of-suite carries nothing.'
+tags: ['cotfaith', 'rollout-edit', 'limitation-v', 'paired-mcnemar', 'round2', 'in-suite']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by `bolt task get-credentials $CKPT_TASK_ID`. The pod
+  # has no IAM role for this bucket; without these the sync dies at
+  # NoCredentialProviders.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  # The published ours-r=32 row's training task -- the same weights the
+  # first-step leaderboard number was measured on, so the rollout result
+  # extends that row rather than describing a different model.
+  CKPT_TASK_ID: 'bcihypv3gu'
+
+  # THE fix over round 1. bolt/boltconfig-cotfaith-train.yaml trains this
+  # checkpoint on TFDS_SUBDIR=libero_lm_90/1.0.0, so libero_90 is its own
+  # distribution and libero_spatial is a different suite with different objects
+  # and layouts. Round 1 rolled out on libero_spatial, so its SR=0 confounds
+  # "the CoT does not matter for task completion" with "the policy has never
+  # seen these tasks" -- and only the first is a claim about faithfulness.
+  SUITE: 'libero_90'
+  # Identity [-1,1] de-quantization. UNNORM_KEY stays empty on purpose: for
+  # these weights an unnorm_key would rescale an already-correct action.
+  #
+  # Not a free choice, and not the one that failed elsewhere: the 2x3 grid
+  # (results_v2/canonical_runs/decoder_gripper_grid) scored ours=0/10 in all
+  # three cells against upstream|openvla=10/10 -- but that grid ran an UPSTREAM
+  # model, whose native frame IS its norm_stats affine, so decoding it as
+  # identity was simply the wrong map. The reverse holds here.
+  ACTION_DECODER: 'ours'
+  UNNORM_KEY: ''
+  # One family, not two. Three arms at libero_90's 400-step budget is ~2.3 h
+  # per episode, so the second family costs a third of the episode count -- and
+  # cotfaith_rollout_edit.py already treats SR(cot_clean)==0 as making DSR zero
+  # by construction for every family. Until clean is nonzero, a second family
+  # measures nothing that the first does not; episodes are the scarce resource.
+  FAMILIES: 'direction_flip'
+  GRIPPER_TRANSFORM: 'openvla'
+  # Deliberately unchanged, and now with evidence rather than inertia behind it.
+  # 'none' was suspect because the four failed gates ran it, but bolt f52r5nvnhb
+  # reached 10/10 with upstream|openvla+none, and the gripper x image factorial
+  # (gate_factorial_tf) shows tf_upstream changes nothing once the frame is
+  # right. So INSTALL_TF is left off: it would cost setup time to reproduce a
+  # factor already measured to be inert.
+  IMAGE_PREPROC: 'none'
+  MAX_NEW_TOKENS: '320'
+  # 0 => upstream's own per-suite budget, which is 400 for libero_90. Round 1
+  # hard-coded 220 (libero_spatial's number). Carrying 220 into libero_90 would
+  # truncate every episode by construction -- the same defect that invalidated
+  # libero_10's 0/50 in the four-suite gate.
+  MAX_STEPS: '0'
+  # 0 tasks => all 90, one episode each, so the clock decides how many are
+  # reached and every episode lands on a different task. One episode across
+  # many tasks estimates the suite's SR better than many episodes on ten tasks,
+  # and finding any success at all is what this run is for.
+  N_TASKS: '0'
+  N_EPS_PER_TASK: '1'
+  TIME_BUDGET_H: '20'
+  DTYPE: 'bfloat16'
+  PROBE_ONLY: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_edit_s3.sh
