@@ -1,5 +1,5 @@
 name: 'CoT-Faith F4 deconfound: LoRA r=32 on 4k Bridge V2 subset (matched to LIBERO-90 scale)'
-description: 'F4 confound: every "ours" row is ECoT-bridge fine-tuned on LIBERO, and each scores differently from the base -- but two causes are entangled. Either fine-tuning changed the CoT-action coupling, or it moved the model in-domain for the evaluation corpus and the leaderboard is partly measuring domain match. This trains with the identical recipe on Bridge V2, the base model''s OWN domain, holding domain fixed so only the first can move. The recipe (prompt, 8-tag CoT render, action tokenizer, collator) is IMPORTED from cotfaith_train.py, not reimplemented: a deconfound whose recipe differs from what it deconfounds measures the difference in recipes. Four stages in one job because the deliverable is the calibration profile, not the checkpoint, and bolt pods cannot fetch cross-job artifacts. The join is unverified, so a preflight streams a few examples BEFORE the 7B load and exits 6 on zero; zero gradient steps refuses to save a checkpoint indistinguishable from the base.'
+description: 'F4 confound: every "ours" row is ECoT-bridge fine-tuned on LIBERO, so a score shift could be changed CoT-action coupling OR merely domain match with the eval corpus. This trains the identical recipe on Bridge V2 (the domain the base model was pretrained on), holding domain fixed so only the first cause can move. Join measured in bolt 754ru9usqe: episode_id is per-shard and its instructions agree on only 0.28 of matched pairs, so the trainer probes it at runtime, refuses it, and keys on instruction text -- 41634 reachable annotated episodes, median fanout 1. The 8 CoT tags are split across features and reasoning, so every step is merged from both; reasoning alone renders VISIBLE OBJECTS and GRIPPER POSITION empty. The preflight streams 8 examples BEFORE the 7B load: exit 6 on zero joins, exit 7 if a tag renders empty in all of them, since a model trained to emit empty reasoning is indistinguishable from the base downstream.'
 tags: ['cotfaith','deconfound','bridge-subset','F4']
 project_id: ads_algo_signal_qucacheoffline
 permissions:
@@ -28,7 +28,12 @@ environment_variables:
   # The preflight runs unconditionally; this only decides whether to stop after
   # it. Left at 0 so one job either produces the profile or dies cheaply.
   PREFLIGHT_ONLY: '0'
-  PREFLIGHT_N: '3'
+  # 8, not 3. The preflight now also checks what the joined CoT actually RENDERS,
+  # and refuses when a tag is empty in every inspected sample -- the signature of
+  # a missing features+reasoning merge (bolt 754ru9usqe: reasoning alone leaves
+  # VISIBLE OBJECTS and GRIPPER POSITION at 0.0). Three samples cannot tell that
+  # apart from an annotation that is merely sparse.
+  PREFLIGHT_N: '8'
   RVIS_N_SAMPLES: '100'
   EDIT_N_SAMPLES: '100'
   EDIT_THRESHOLD: '0.05'

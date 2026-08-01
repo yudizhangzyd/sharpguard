@@ -270,15 +270,45 @@ def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
     the result describe a different stack. Every install is recorded, so the
     output still answers "what would supporting OFT cost" rather than just
     yes/no.
+
+    Round 3 (bolt `gvvhgg4d4c`) showed the cost of that policy. With prismatic
+    resolved, all five checkpoints reached the *processor* stage -- further than
+    any prior round -- and failed on a pydantic/pydantic-core skew that this
+    loop's own `--no-deps` install of pydantic_core had created. So the loop now
+    repairs a skew it can read out of the exception before declaring it the
+    blocker; see `version_skew`. The distinction matters for what the paper is
+    allowed to say: a self-inflicted skew is not evidence that OFT is unloadable.
     """
     res = _resolver()
-    installs, seen = [], set()
+    installs, seen, repairs = [], set(), set()
     out = try_load(repo, dtype_name, do_forward)
     while not out.get("ok") and len(installs) < max_installs:
         blob = f"{out.get('error') or ''}\n{out.get('traceback_tail') or ''}"
         mod = res.missing_module(blob)
         if not mod:
-            break                       # not a missing-module failure: report it
+            # Not a missing module. Before reporting it as the blocker, check
+            # whether it is a version skew THIS LOOP caused: a `--no-deps`
+            # install satisfies the import and can leave a coupled pair
+            # mismatched, which is what stopped round 3 (bolt `gvvhgg4d4c`) at
+            # the processor stage on all 5 checkpoints. Pin to the version the
+            # exception names, once per package -- if it recurs after the repair
+            # the skew is not ours and belongs in the report.
+            skew = res.version_skew(blob)
+            if skew and skew[0] not in repairs:
+                pkg, want = skew
+                repairs.add(pkg)
+                ok, tail = res.pip("install", "--quiet", "--no-deps",
+                                   f"{pkg}=={want}")
+                installs.append({"import": pkg, "pip": f"{pkg}=={want}",
+                                 "ok": ok, "repair": "version_skew",
+                                 "pip_tail": None if ok else tail[-400:]})
+                if not ok:
+                    out["stuck_on"] = f"{pkg}=={want}"
+                    break
+                importlib.invalidate_caches()
+                out = try_load(repo, dtype_name, do_forward)
+                continue
+            break                       # genuinely not resolvable here: report it
         if mod in seen:
             out["stuck_on"] = mod
             break

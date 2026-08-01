@@ -137,6 +137,32 @@ def missing_module(err: str) -> str | None:
     return None
 
 
+def version_skew(err: str) -> tuple[str, str] | None:
+    """The (pip_name, required_version) a version-skew error is complaining about.
+
+    `--no-deps` is the right default here -- the pins ARE the environment the
+    paper names -- but it has a failure mode this repo just paid for. Installing
+    `pydantic_core` alone to satisfy a missing-module error pulled 2.47.0 next to
+    the image's pydantic, which requires 2.46.4, and every OFT checkpoint then
+    died at the processor stage on:
+
+        SystemError: The installed pydantic-core version (2.47.0) is
+        incompatible with the current pydantic version, which requires 2.46.4.
+
+    Measured in bolt `gvvhgg4d4c`, all 5 checkpoints, both transformers pins.
+    Not a missing module, so `missing_module` returns None and the resolver
+    stopped and reported it as the blocker -- when the blocker was the resolver's
+    own install. The exception prints the version it wants, so read that rather
+    than guessing a pin: same principle as reading the module name out of an
+    ImportError instead of maintaining a dependency list by hand.
+    """
+    m = re.search(r"installed (\S+?) version \(\S+?\) is incompatible with the "
+                  r"current \S+ version, which requires (\d\S*)", err or "")
+    # The version is matched greedily and then stripped: a non-greedy match stops
+    # at the first dot INSIDE the version and yields "2" for "2.46.4".
+    return (m.group(1), m.group(2).rstrip(".,;")) if m else None
+
+
 def resolve() -> dict:
     log: dict = {"target": TARGET, "pins_before": pins(), "attempts": [],
                  "transitive_installs": [], "resolved_by": None,

@@ -92,88 +92,278 @@ def _norm_task(s) -> str:
     return re.sub(r"[^a-z0-9 ]", "", str(s or "").lower()).strip()
 
 
-class _ReasoningIndex:
-    """Resolve (episode_index, step_index) -> reasoning dict.
+# Bridge-export `features` field names, for tags the `reasoning` subtree does not
+# supply. Bolt `754ru9usqe` measured which those are over 4000 steps: `reasoning`
+# fills TASK, PLAN, SUBTASK, SUBTASK REASONING, MOVE REASONING and MOVE at 1.0
+# (its step dicts are task/plan/subtask/subtask_reason/move_reason/move, all
+# already aliases in ECOT_TAGS_ORDER), and leaves VISIBLE OBJECTS and GRIPPER
+# POSITION at 0.0. `features` fills exactly those two. So the first two entries
+# below are load-bearing and `move_primitive` is a fallback that the measured
+# data never needs -- kept because a shard whose reasoning omits `move` would
+# otherwise render an empty MOVE, on the one tag the action head is most directly
+# conditioned on.
+#
+# This lives here and not in cotfaith_train.py on purpose. That module is
+# imported rather than copied so this run and the LIBERO runs share the recipe
+# byte for byte (see _load_libero_recipe); a corpus-specific field name is not
+# part of the recipe, and putting it there would make the shared surface depend
+# on which corpus happens to need it. The value is stored back under the
+# recipe's OWN first alias, so the renderer never learns about this table.
+_BRIDGE_FEATURE_ALIASES = {
+    "VISIBLE OBJECTS": ("bboxes",),
+    "GRIPPER POSITION": ("gripper_position",),
+    "MOVE": ("move_primitive",),
+}
 
-    This class exists because the join is genuinely unverified. The reasoning
-    JSON is published against Embodied-CoT's own Bridge V2 layout; the
-    trajectories here come from IPEC-COMMUNITY's LeRobot re-export. Nothing
-    guarantees the two share episode numbering, and no prior run in this repo
-    has ever confirmed a single joined sample (the old smoke pass produced no
-    artifact). So rather than assume one key convention, this tries the
-    plausible ones, records which one actually matched, and lets the caller
-    refuse to train if none did. A silent zero-join would train on nothing and
-    save a checkpoint indistinguishable from the base model.
 
-    Two strategies, in order:
-      by_episode_index -- reasoning[str(ep_idx)], the layout the old smoke
-          scaffold assumed.
-      by_task_text     -- match the LeRobot episode's instruction against the
-          reasoning entry's own `task` string, normalized. Weaker (many
-          episodes share an instruction) but corpus-correct: the CoT still
-          describes this task, which is what the training target needs.
+def empty_rendered_tags(target_text: str) -> list[str]:
+    """Which of the eight tags rendered with no content.
+
+    build_ecot_target_text emits `TAG: value` segments in ECOT_TAGS_ORDER order
+    and joins them with a space, substituting "" for a missing key -- so a tag
+    the join failed to supply is not an error, it is a `TAG: ` with nothing after
+    it. That is exactly the failure this run has to catch before training:
+    `n_yielded > 0` is satisfied by a trace of eight empty tags. Segments are
+    located in order from a running offset so that MOVE does not match inside
+    MOVE REASONING.
     """
+    tags = [t for _, t in ECOT_TAGS_ORDER]
+    found, off = [], 0
+    for t in tags:
+        i = target_text.find(f"{t}: ", off)
+        if i < 0:
+            found.append((t, None, None))
+            continue
+        found.append((t, i, i + len(t) + 2))
+        off = i + len(t) + 2
+    empty = []
+    for n, (t, _lstart, cstart) in enumerate(found):
+        if cstart is None:
+            empty.append(t)             # tag absent from the render entirely
+            continue
+        nxt = next((ls for _, ls, _ in found[n + 1:] if ls is not None), None)
+        if not target_text[cstart:nxt if nxt is not None
+                           else len(target_text)].strip():
+            empty.append(t)
+    return empty
+
+
+class _ReasoningIndex:
+    """Resolve (episode_index, step_index) -> a renderable per-step CoT dict.
+
+    Rewritten against the layout bolt `j2kqu7k3m7` measured. The previous
+    version assumed two levels and joined 0 of 606677 frames in bolt
+    `fnwfaq9bq6`; the export is four:
+
+        raw[<authors' absolute NFS path>][<episode index in that shard>] = {
+            "features":  {"move_primitive": [...], "gripper_position": [...],
+                          "bboxes": [...]},          # per-step LISTS
+            "metadata":  {"episode_id": int, "file_path": str, "n_steps": int,
+                          "language_instruction": str},
+            "reasoning": {"0": {...}, "1": {...}, ...},   # per-step DICTS
+        }
+
+    Two things follow, and the old code got both wrong.
+
+    THE JOIN KEY IS metadata.episode_id, not a top-level key. The top level is
+    paths, so `raw[str(ep_idx)]` could never hit -- and neither could the
+    task-text fallback, which read `rec["task"]` when the field is
+    `metadata.language_instruction`. Two strategies, both reading fields that do
+    not exist, which is why having a fallback did not help.
+
+    A SHARED INTEGER ID IS NOT A JOIN. Two exports can both number episodes from
+    0 and mean different episodes, and that failure is invisible: it produces a
+    complete, plausible index that pairs every trajectory with the wrong
+    reasoning, and training would run to completion on it. So the id strategy is
+    *probed* -- the first `_ID_PROBE_N` hits are checked for instruction
+    agreement against the LeRobot side, and if they do not agree the strategy is
+    disabled for the whole run rather than per episode. Better to fall back to a
+    coarse task-level join than to train on a fine-grained wrong one.
+
+    That is not hypothetical here. Bolt `754ru9usqe` measured it: `episode_id`
+    matches only 1111 of 53192 LeRobot episodes (2.1%), its range is [0, 1110]
+    against 60062 annotated episodes -- so it is per-shard, not global -- it has
+    879 collisions, and the instructions agree on just 0.280 of the matched
+    pairs. The probe is expected to disable this strategy on the real data. It is
+    kept live rather than replaced by a constant because a measurement the code
+    re-derives cannot go stale if the upstream export changes, and because the
+    same 0.280 is what makes the fallback defensible rather than lazy.
+
+    So the live route is `by_task_text`, and the same job bounds what it buys:
+    19541 shared normalized instructions covering 38660 of 53192 LeRobot
+    episodes (72.7%), with a median fanout of 1 -- so for most tasks the
+    "task-level" join is in fact unique -- and 41634 reachable annotated
+    episodes, comfortably above the 4000 this run requests. The LeRobot episode
+    records carry only `episode_index,length,tasks`, no upstream source path, so
+    there is no exact route to prefer over it.
+
+    Both strategies then go through `merged_step`, because a joined episode is
+    not yet a renderable one: `build_ecot_target_text` wants all eight tags in
+    one dict and this export splits them across `reasoning` and `features`. Also
+    measured, not assumed -- over 4000 inspected steps, `reasoning` alone fills
+    six of eight tags and leaves VISIBLE OBJECTS and GRIPPER POSITION at 0.0,
+    `features` alone fills exactly those two, and the merge fills all eight at
+    1.0. Training on the unmerged trace would have taught the model to emit two
+    permanently empty tags.
+    """
+
+    # Enough hits to distinguish agreement from coincidence, small enough that a
+    # poisoned join is caught in the first seconds of streaming rather than after
+    # an epoch. Instructions are crowdsourced free text, so 20 independent
+    # agreements is already decisive.
+    _ID_PROBE_N = 20
+    _ID_MIN_AGREE = 0.95
 
     def __init__(self, raw: dict):
         self.raw = raw
         self.strategy = None
-        self._by_task = None
-        top = list(raw.items())[:4]
-        print(f"[bridge-train] reasoning top-level keys (first 4): "
-              f"{[k for k, _ in top]}")
-        for k, v in top[:1]:
-            if isinstance(v, dict):
-                print(f"[bridge-train]   raw['{k}'] subkeys: "
-                      f"{list(v.keys())[:8]}")
+        self.by_id: dict[int, dict] = {}
+        self.by_task: dict[str, list] = {}
+        self.id_disabled = False
+        self.stats = {"id_probe_hits": 0, "id_probe_agrees": 0,
+                      "by_episode_id": 0, "by_task_text": 0,
+                      "merge_filled_from_features": 0,
+                      "shape_deviations": 0}
 
-    def _build_task_index(self):
-        idx = {}
-        for _, v in self.raw.items():
-            ep = self._episode_entries(v)
-            if not ep:
+        n_ep = 0
+        for pkey, pv in raw.items():
+            if not isinstance(pv, dict):
+                self.stats["shape_deviations"] += 1
                 continue
-            first = ep.get(min(ep, key=lambda s: int(s)) if all(
-                str(s).isdigit() for s in ep) else next(iter(ep)))
-            if not isinstance(first, dict):
-                continue
-            t = _norm_task(first.get("task") or first.get("instruction"))
-            if t:
-                idx.setdefault(t, ep)
-        print(f"[bridge-train] task-text index: {len(idx)} distinct tasks")
-        return idx
+            for ekey, ev in pv.items():
+                if not isinstance(ev, dict):
+                    self.stats["shape_deviations"] += 1
+                    continue
+                md = ev.get("metadata")
+                if not isinstance(md, dict):
+                    self.stats["shape_deviations"] += 1
+                    md = {}
+                rz = ev.get("reasoning")
+                if not isinstance(rz, dict) or not rz:
+                    continue          # nothing to train on for this episode
+                epi = {"path": pkey, "ep_key": ekey,
+                       "instruction": md.get("language_instruction") or "",
+                       "reasoning": rz,
+                       "features": ev.get("features")
+                       if isinstance(ev.get("features"), dict) else {}}
+                eid = md.get("episode_id")
+                if isinstance(eid, int):
+                    self.by_id.setdefault(eid, epi)
+                t = _norm_task(epi["instruction"])
+                if t:
+                    self.by_task.setdefault(t, []).append(epi)
+                n_ep += 1
 
-    @staticmethod
-    def _episode_entries(v):
-        """Normalize an episode's value to {step_key: reasoning_dict}."""
-        if not isinstance(v, dict):
+        print(f"[bridge-train] reasoning index: {len(raw)} path keys, "
+              f"{n_ep} usable episodes, {len(self.by_id)} distinct episode_ids, "
+              f"{len(self.by_task)} distinct instructions, "
+              f"{self.stats['shape_deviations']} shape deviations")
+        if not n_ep:
+            print("[bridge-train] WARNING the reasoning export yielded no "
+                  "usable episode; every lookup will miss.")
+
+    # ---- rendering ----
+
+    def merged_step(self, epi: dict, step_idx: int):
+        """One per-step dict carrying every tag the renderer can fill.
+
+        `reasoning[step]` is the base. Anything the renderer wants that is not
+        there but IS a per-step list in `features` is spliced in at this step's
+        index -- that is the whole reason this method exists, and without it
+        VISIBLE OBJECTS and GRIPPER POSITION render empty on every Bridge
+        sample. `task` falls back to the episode instruction, which is where
+        this export keeps it.
+        """
+        rz = epi["reasoning"]
+        skey = str(step_idx)
+        if skey not in rz:
+            digits = sorted((int(s) for s in rz if str(s).isdigit()))
+            if not digits:
+                return None
+            # Clamp rather than miss: annotation and trajectory lengths need not
+            # agree, and the last annotated step is the right answer for a frame
+            # past the end far more often than "no reasoning" is.
+            skey = str(min(digits, key=lambda d: abs(d - step_idx)))
+        rec = rz.get(skey)
+        if not isinstance(rec, dict) or not rec:
             return None
-        if "reasoning" in v and isinstance(v["reasoning"], dict):
-            v = v["reasoning"]
-        vals = list(v.values())[:1]
-        if vals and isinstance(vals[0], dict):
-            return v            # step-keyed
-        return {"0": v}         # episode-level constant
+
+        out = dict(rec)
+        sidx = int(skey) if str(skey).isdigit() else 0
+        for aliases, tag in ECOT_TAGS_ORDER:
+            if any(a in out and out[a] not in (None, "", [], {}) for a in aliases):
+                continue
+            for a in tuple(aliases) + _BRIDGE_FEATURE_ALIASES.get(tag, ()):
+                seq = epi["features"].get(a)
+                if isinstance(seq, list) and seq:
+                    # features are per-step lists parallel to the trajectory;
+                    # clamp for the same reason the step key is clamped.
+                    out[aliases[0]] = seq[min(sidx, len(seq) - 1)]
+                    self.stats["merge_filled_from_features"] += 1
+                    break
+            else:
+                self.stats.setdefault("tag_empty", {})
+                self.stats["tag_empty"][tag] = \
+                    self.stats["tag_empty"].get(tag, 0) + 1
+        out.setdefault("task", epi["instruction"])
+        return out
+
+    # ---- the join ----
 
     def lookup(self, ep_idx, step_idx, instruction):
-        if self.strategy in (None, "by_episode_index"):
-            v = self.raw.get(str(ep_idx))
-            ep = self._episode_entries(v) if v is not None else None
-            if ep:
-                r = ep.get(str(step_idx)) or ep.get(str(min(
-                    int(s) for s in ep if str(s).isdigit()) if any(
-                    str(s).isdigit() for s in ep) else next(iter(ep))))
-                if isinstance(r, dict) and r:
-                    self.strategy = "by_episode_index"
-                    return r
-            if self.strategy == "by_episode_index":
-                return None     # locked in; this episode simply has no entry
-        if self._by_task is None:
-            self._by_task = self._build_task_index()
-        ep = self._by_task.get(_norm_task(instruction))
-        if ep:
-            r = ep.get(str(step_idx)) or next(iter(ep.values()))
-            if isinstance(r, dict) and r:
-                self.strategy = "by_task_text"
+        if not self.id_disabled:
+            epi = self.by_id.get(int(ep_idx)) if str(ep_idx).lstrip("-").isdigit() \
+                else None
+            if epi is not None:
+                # Probe before trusting. An id join that pairs the wrong episodes
+                # is the failure that looks like success, so it has to be
+                # disproved on real data rather than assumed away.
+                if self.stats["id_probe_hits"] < self._ID_PROBE_N:
+                    self.stats["id_probe_hits"] += 1
+                    if instruction and _norm_task(epi["instruction"]) \
+                            == _norm_task(instruction):
+                        self.stats["id_probe_agrees"] += 1
+                    if self.stats["id_probe_hits"] == self._ID_PROBE_N:
+                        rate = (self.stats["id_probe_agrees"]
+                                / self._ID_PROBE_N)
+                        if rate < self._ID_MIN_AGREE:
+                            self.id_disabled = True
+                            print(f"[bridge-train] DISABLING by_episode_id: "
+                                  f"instructions agreed on only {rate:.2f} of "
+                                  f"{self._ID_PROBE_N} matched ids. The two "
+                                  f"exports number DIFFERENT episodes, so this "
+                                  f"key would pair every trajectory with the "
+                                  f"wrong reasoning. Falling back to task text.")
+                        else:
+                            print(f"[bridge-train] by_episode_id confirmed: "
+                                  f"instructions agree on {rate:.2f} of "
+                                  f"{self._ID_PROBE_N} probed matches")
+                if not self.id_disabled \
+                        and self.stats["id_probe_hits"] >= self._ID_PROBE_N:
+                    # Only after the probe concludes. While it is still running
+                    # the id-joined record is deliberately NOT used: if the join
+                    # turns out to be poisoned, using it during the probe would
+                    # have put up to _ID_PROBE_N mispaired samples into training
+                    # before the refusal fired. Falling through to the text join
+                    # for those first few frames costs nothing; a mispaired
+                    # sample is unrecoverable and invisible.
+                    r = self.merged_step(epi, step_idx)
+                    if r:
+                        self.strategy = "by_episode_id"
+                        self.stats["by_episode_id"] += 1
+                        return r
+
+        cands = self.by_task.get(_norm_task(instruction))
+        if cands:
+            # Many episodes share an instruction, so this is a task-level join:
+            # the CoT describes this task but not necessarily this trajectory.
+            # Deterministic pick by episode index so a re-run is reproducible.
+            epi = cands[int(ep_idx) % len(cands)] \
+                if str(ep_idx).lstrip("-").isdigit() else cands[0]
+            r = self.merged_step(epi, step_idx)
+            if r:
+                self.strategy = self.strategy or "by_task_text"
+                self.stats["by_task_text"] += 1
                 return r
         return None
 
@@ -203,6 +393,13 @@ class BridgeV2CotDataset(IterableDataset):
         self.max_steps_per_ep = max_steps_per_ep
         self.stats = {"yielded": 0, "no_reasoning": 0, "no_frame": 0,
                       "encode_failed": 0}
+        # First few rendered CoT traces, kept for the preflight. A join can now
+        # succeed and still be worthless: the Bridge export splits the eight tags
+        # across `features` and `reasoning`, so a merge that misses one renders a
+        # trace with an empty tag, and nothing downstream can see the difference
+        # between that and a real CoT. The preflight has to read what was
+        # actually rendered, not just count that something was.
+        self.sample_rendered = []
         api = HfApi()
         files = list(api.list_repo_files(dataset_repo, repo_type="dataset"))
         # Every parquet, not a slice: the old code sliced the parquet FILE list
@@ -304,6 +501,12 @@ class BridgeV2CotDataset(IterableDataset):
                 instr = instruction or str(r.get("task")
                                            or r.get("instruction") or "")
                 action = np.asarray(act_col[i], dtype=np.float32)[:7]
+                if len(self.sample_rendered) < 8:
+                    self.sample_rendered.append(
+                        {"episode_index": int(ep_idx), "step": step_idx,
+                         "instruction": instr,
+                         "strategy": self.index.strategy,
+                         "target_text": build_ecot_target_text(r)})
                 ex = self._encode(img.convert("RGB"), instr, r, action)
                 if ex is None:
                     self.stats["encode_failed"] += 1
@@ -406,21 +609,30 @@ def main():
         except StopIteration:
             break
         shapes.append({k: list(v.shape) for k, v in s.items()})
+    from collections import Counter
+    empty_counts = Counter()
+    for s in ds.sample_rendered:
+        empty_counts.update(empty_rendered_tags(s["target_text"]))
     preflight = {
         "n_requested": pre_n,
         "n_yielded": len(shapes),
         "shapes": shapes,
         "join_strategy": ds.index.strategy,
+        "join_stats": dict(ds.index.stats),
+        "join_id_disabled": ds.index.id_disabled,
         "stream_stats": dict(ds.stats),
         "n_parquets": len(ds.parquets),
         "n_video_streams": len(ds.video_dirs),
         "n_episode_task_strings": len(ds.tasks),
         "n_reasoning_entries": len(reasoning),
         "cot_tags": [t for _, t in ECOT_TAGS_ORDER],
+        "n_rendered_inspected": len(ds.sample_rendered),
+        "empty_tag_counts": dict(empty_counts),
+        "rendered_samples": ds.sample_rendered[:3],
         "recipe_source": "experiments/cotfaith_train.py (imported, not copied)",
     }
     (out / "preflight_report.json").write_text(json.dumps(preflight, indent=2))
-    print("[bridge-train] preflight: " + json.dumps(preflight, indent=2)[:1200])
+    print("[bridge-train] preflight: " + json.dumps(preflight, indent=2)[:1800])
 
     if not shapes:
         # Zero joined examples. Training would run 15k no-op steps and save the
@@ -431,6 +643,24 @@ def main():
               "strategy; see preflight_report.json for the key shapes.")
         sys.stdout.flush()
         os._exit(6)
+
+    # The other way this run can succeed at nothing. A joined sample whose CoT
+    # renders as eight empty tags trains the model to emit eight empty tags, and
+    # F4's whole claim is about what a CoT-trained model does -- so an
+    # always-empty tag is a silent corruption of the treatment, not a data-quality
+    # nit. Tolerate a tag that is merely sparse in the annotations; refuse when a
+    # tag is empty in EVERY inspected sample, which is the signature of a missing
+    # merge rather than of missing data.
+    always_empty = [t for t, c in empty_counts.items()
+                    if c == len(ds.sample_rendered)]
+    if ds.sample_rendered and always_empty:
+        print(f"[bridge-train] FATAL: these CoT tags rendered empty in all "
+              f"{len(ds.sample_rendered)} inspected samples: {always_empty}. "
+              f"The join found episodes but the per-step merge is not supplying "
+              f"every tag; training on this would fine-tune the model to emit "
+              f"empty reasoning. See rendered_samples in preflight_report.json.")
+        sys.stdout.flush()
+        os._exit(7)
 
     if args.preflight_only:
         print("[bridge-train] preflight only; no training run")
