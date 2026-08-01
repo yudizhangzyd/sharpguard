@@ -1,0 +1,127 @@
+{
+  "probe": true,
+  "ckpt": "/tmp/cotfaith_ckpt",
+  "suite": "libero_spatial",
+  "action_decoder": "ours",
+  "norm_stats_keys": [
+    "bridge_orig"
+  ],
+  "unnorm_key_requested": "",
+  "unnorm_key_present": false,
+  "norm_stats_usable": false,
+  "scale_precondition": "ok (identity [-1,1] de-quantization; --action-decoder=ours needs no norm_stats because our fine-tunes quantize raw LIBERO actions clipped to [-1,1]. norm_stats present: ['bridge_orig'])",
+  "instruction": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+  "cot_gen_seconds": 10.09,
+  "cot_tokens_generated": 298,
+  "cot_tags_parsed": [
+    "bboxes",
+    "gripper",
+    "movement",
+    "movement_reasoning",
+    "plan",
+    "subtask",
+    "subtask_reasoning",
+    "task"
+  ],
+  "cot_structured": true,
+  "cot_raw_head": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. USER: What action should the robot take to pick up the black bowl between the plate and the ramekin and place it on the plate? ASSISTANT: TASK:  PLAN: move to the black bowl. grasp the black bowl. move the black bowl to the plate. release the black bowl onto the plate VISIBLE OBJECTS: akita black bowl 1 [[135, 135], [161, 170]], plate 1 [[137, 169], [162, 203]], ketchup 1 [[97, 77], [133, 94]], wooden two layer shelf 1 [[70, 182], [170, 223]",
+  "cot_body_head": "TASK:  PLAN: move to the black bowl. grasp the black bowl. move the black bowl to the plate. release the black bowl onto the plate VISIBLE OBJECTS: akita black bowl 1 [[135, 135], [161, 170]], plate 1 [[137, 169], [162, 203]], ketchup 1 [[97, 77], [133, 94]], wooden two layer shelf 1 [[70, 182], [170, 223]], white yellow cheese 1 [[125, 170], [158, 206]] SUBTASK REASONING: The robot needs to move ",
+  "families": {
+    "direction_flip": "changes the rendered CoT",
+    "paraphrase_null": "changes the rendered CoT"
+  },
+  "one_frame_actions": {
+    "nocot": {
+      "raw": [
+        -0.86275,
+        0.00784,
+        -0.08627,
+        -0.11765,
+        0.02353,
+        0.99608,
+        0.99608
+      ],
+      "sent": [
+        -0.86275,
+        0.00784,
+        -0.08627,
+        -0.11765,
+        0.02353,
+        0.99608,
+        -1.0
+      ],
+      "seconds": 0.367
+    },
+    "cot_clean": {
+      "raw": [
+        0.55686,
+        0.66667,
+        -0.25882,
+        0.00784,
+        0.00784,
+        0.00784,
+        -0.99608
+      ],
+      "sent": [
+        0.55686,
+        0.66667,
+        -0.25882,
+        0.00784,
+        0.00784,
+        0.00784,
+        1.0
+      ],
+      "seconds": 0.499
+    },
+    "cot_direction_flip": {
+      "raw": [
+        -0.69804,
+        -0.18039,
+        0.00784,
+        0.00784,
+        0.00784,
+        0.00784,
+        -0.99608
+      ],
+      "sent": [
+        -0.69804,
+        -0.18039,
+        0.00784,
+        0.00784,
+        0.00784,
+        0.00784,
+        1.0
+      ],
+      "seconds": 0.471,
+      "delta_linf_vs_cot_clean": 1.2549
+    },
+    "cot_paraphrase_null": {
+      "raw": [
+        0.40784,
+        0.42353,
+        -0.16471,
+        0.00784,
+        0.00784,
+        0.00784,
+        -0.99608
+      ],
+      "sent": [
+        0.40784,
+        0.42353,
+        -0.16471,
+        0.00784,
+        0.00784,
+        0.00784,
+        1.0
+      ],
+      "seconds": 0.47,
+      "delta_linf_vs_cot_clean": 0.24314
+    }
+  },
+  "feasibility": {
+    "seconds_per_step_per_arm": 10.54,
+    "n_arms": 4,
+    "est_hours_full_run": 25.8,
+    "note": "est assumes every episode runs to max_steps; successful episodes terminate early, so this is an upper bound."
+  }
+}

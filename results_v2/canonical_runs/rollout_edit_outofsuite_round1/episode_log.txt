@@ -1,0 +1,4 @@
+[rollout-edit] t0 ep0 nocot: success=False steps=220 (2.3 min elapsed)
+[rollout-edit] t0 ep0 cot_clean: success=False steps=220 (39.1 min elapsed)
+[rollout-edit] t0 ep0 cot_direction_flip: success=False steps=220 (76.9 min elapsed)
+[rollout-edit] t0 ep0 cot_paraphrase_null: success=False steps=220 (113.6 min elapsed)

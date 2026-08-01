@@ -1,0 +1,146 @@
+{
+  "experiment": "rollout_level_cot_edit",
+  "status": "running",
+  "config": {
+    "ckpt_path": "/tmp/cotfaith_ckpt",
+    "out": "/mnt/task_wrapper/user_output/artifacts/cotfaith-rollout-edit",
+    "suite": "libero_spatial",
+    "families": "direction_flip,paraphrase_null",
+    "n_tasks": 10,
+    "n_eps_per_task": 2,
+    "max_steps": 220,
+    "max_new_tokens": 320,
+    "unnorm_key": "",
+    "action_decoder": "ours",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "dtype": "bfloat16",
+    "time_budget_h": 20.0,
+    "probe_only": false,
+    "n_tasks_est": 10
+  },
+  "precondition_met": false,
+  "precondition_note": "cot_clean NEVER succeeds, so DSR is 0 for every family by construction and carries no information about CoT causality. This is reported as an undefined measurement rather than as a null result. Check rollout_edit_probe.json: the usual cause is a missing norm_stats entry for this suite, i.e. a physical-scale error unrelated to any CoT.",
+  "by_arm": {
+    "nocot": {
+      "family": null,
+      "n": 2,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.6576280471103807
+      ],
+      "n_cot_structured": 0,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0
+    },
+    "cot_clean": {
+      "family": null,
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0
+    },
+    "cot_direction_flip": {
+      "family": "direction_flip",
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0
+    },
+    "cot_paraphrase_null": {
+      "family": "paraphrase_null",
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0
+    }
+  },
+  "delta_sr_vs_cot_clean": {},
+  "episodes": [
+    {
+      "arm": "nocot",
+      "family": null,
+      "success": false,
+      "steps": 220,
+      "n_cot_structured": 0,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_delta_recorded": 0,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+    },
+    {
+      "arm": "cot_clean",
+      "family": null,
+      "success": false,
+      "steps": 220,
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_delta_recorded": 0,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+    },
+    {
+      "arm": "cot_direction_flip",
+      "family": "direction_flip",
+      "success": false,
+      "steps": 220,
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_delta_recorded": 0,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+    },
+    {
+      "arm": "cot_paraphrase_null",
+      "family": "paraphrase_null",
+      "success": false,
+      "steps": 220,
+      "n_cot_structured": 220,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_delta_recorded": 0,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+    },
+    {
+      "arm": "nocot",
+      "family": null,
+      "success": false,
+      "steps": 220,
+      "n_cot_structured": 0,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_delta_recorded": 0,
+      "task_idx": 0,
+      "episode": 1,
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+    }
+  ]
+}
