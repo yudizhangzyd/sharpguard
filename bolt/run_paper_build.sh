@@ -82,18 +82,51 @@ fi
 
 # ---- Stage 4: the two numbers the conversion is steered by ----
 python3 - "$PAPER_OUT" <<'PY'
-import re, sys, pathlib
+import re, sys, zlib, pathlib
 out = pathlib.Path(sys.argv[1])
 pdf = out / "cot_faith_iclr.pdf"
+
+
+def count_pages(d: bytes):
+    """Page objects, counted through compressed object streams.
+
+    The obvious scan -- re.findall(rb'/Type\s*/Page[^s]', d) -- returns 0 on
+    anything modern pdflatex emits, because page objects are packed into
+    Flate-compressed /ObjStm streams and never appear as plaintext. That
+    version of this function reported '0 pages' for a 1 MB PDF that the
+    latexmk log said was 35, which is worse than no number at all: the 8-page
+    ARR limit is the one constraint the conversion is steered by, and a zero
+    reads as 'nothing to cut'.
+
+    So: scan the raw bytes first (older/uncompressed output), then decompress
+    every stream and scan again, and take the larger. Cross-checked against
+    the engine's own '(N pages, M bytes)' log line by the caller.
+    """
+    n = len(re.findall(rb'/Type\s*/Page[^s]', d))
+    inflated = 0
+    for m in re.finditer(rb'stream\r?\n', d):
+        start = m.end()
+        end = d.find(b'endstream', start)
+        if end < 0:
+            continue
+        try:
+            s = zlib.decompress(d[start:end])
+        except Exception:
+            continue
+        inflated += len(re.findall(rb'/Type\s*/Page[^s]', s))
+    return max(n, inflated)
+
+
 if pdf.exists():
     d = pdf.read_bytes()
-    n = len(re.findall(rb'/Type\s*/Page[^s]', d))
+    n = count_pages(d)
     print(f"[paper] PDF built: {n} pages, {len(d)/1e6:.1f} MB")
     (out / "page_count.txt").write_text(str(n))
 else:
     print("[paper] NO PDF. The ARR conversion cannot be checked against the "
           "8-page limit until this stage passes; the style files in "
           "artifacts/acl-style are still usable.")
+    n = None
 log = out / "cot_faith_iclr.log"
 if log.exists():
     t = log.read_text(errors="replace")
@@ -101,6 +134,20 @@ if log.exists():
     miss = re.findall(r'^(LaTeX Warning: (?:Citation|Reference).*)$', t, re.M)
     print(f"[paper] {len(over)} over/underfull boxes, {len(miss)} unresolved refs/cites")
     (out / "warnings.txt").write_text("\n".join(over + [m for m in miss]))
+    # The engine prints its own page count. Disagreeing with it means the
+    # object-stream scan above has drifted again, and a silently wrong page
+    # count is exactly how the last one survived.
+    m = re.search(r'\((\d+) pages?, \d+ bytes\)', t)
+    if m and n is not None:
+        engine_n = int(m.group(1))
+        if engine_n != n:
+            print(f"[paper] WARNING: scan says {n} pages, engine log says "
+                  f"{engine_n}; trusting the engine")
+            (out / "page_count.txt").write_text(str(engine_n))
+            n = engine_n
+    if n is not None:
+        print(f"[paper] ARR limit is 8 content pages; this build is {n}, "
+              f"{'OVER by ' + str(n - 8) if n > 8 else 'within'}")
 PY
 
 if [ -n "$FAILED" ]; then
