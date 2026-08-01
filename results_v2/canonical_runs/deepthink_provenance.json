@@ -1,0 +1,59 @@
+{
+  "note": "Bolt task provenance for the three DeepThinkVLA rows. Recorded separately because these runs are released as flat deepthink_*_13family.json files rather than in a directory with a bolt_task_id.txt, so the task id had no home and was, until this file, present only in a scratch copy of the downloaded artifact. artifact_identical_to_released is the check that the released file IS the job's output byte-for-byte, not a re-derived copy.",
+  "runs": {
+    "deepthinkvla_base": {
+      "bolt_task": "zz72kijen8",
+      "released_file": "deepthink_base_13family.json",
+      "released_sha256": "74e2c6ce4b56f4f995dce4620a278f14cce144cf18fadd1959e2462fde268db6",
+      "model": "yinchenghust/deepthinkvla_base",
+      "n_samples": 100,
+      "eval_seed": 0,
+      "n_families": 13,
+      "n_attn_ok": 100,
+      "action_decode_source": "sharpguard/vendor/deepthinkvla (upstream MIT, commit 4bbd0f4ea9010a421e4629e24177afc819f4b6d2)",
+      "unnormalization": "QUANTILE (q01/q99)",
+      "scored_chunk_step": 0,
+      "chunk_shape": [
+        10,
+        7
+      ],
+      "artifact_identical_to_released": true
+    },
+    "deepthinkvla_libero_cot_rl": {
+      "bolt_task": "4r729nfbte",
+      "released_file": "deepthink_rl_13family.json",
+      "released_sha256": "de45fbaaab9e3bcec34caeb4007294d91b03d00e39c413c1356c74ed97998201",
+      "model": "yinchenghust/deepthinkvla_libero_cot_rl",
+      "n_samples": 100,
+      "eval_seed": 0,
+      "n_families": 13,
+      "n_attn_ok": 100,
+      "action_decode_source": "sharpguard/vendor/deepthinkvla (upstream MIT, commit 4bbd0f4ea9010a421e4629e24177afc819f4b6d2)",
+      "unnormalization": "QUANTILE (q01/q99)",
+      "scored_chunk_step": 0,
+      "chunk_shape": [
+        10,
+        7
+      ],
+      "artifact_identical_to_released": true
+    },
+    "deepthinkvla_libero_cot_sft": {
+      "bolt_task": "j456ef4usj",
+      "released_file": "deepthink_sft_13family.json",
+      "released_sha256": "ee5bd2ae029be10cc961b12ef3128854aec8c6a6fb77f34d85519e5c3dc61e9a",
+      "model": "yinchenghust/deepthinkvla_libero_cot_sft",
+      "n_samples": 100,
+      "eval_seed": 0,
+      "n_families": 13,
+      "n_attn_ok": 100,
+      "action_decode_source": "sharpguard/vendor/deepthinkvla (upstream MIT, commit 4bbd0f4ea9010a421e4629e24177afc819f4b6d2)",
+      "unnormalization": "QUANTILE (q01/q99)",
+      "scored_chunk_step": 0,
+      "chunk_shape": [
+        10,
+        7
+      ],
+      "artifact_identical_to_released": true
+    }
+  }
+}

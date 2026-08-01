@@ -23,6 +23,7 @@ artifact.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -1946,6 +1947,50 @@ def audit_normstats_probe(a: Audit) -> None:
                 frag in tex, source=str(TEX))
 
 
+def audit_deepthink_provenance(a: Audit) -> None:
+    """Every released number should be traceable to the job that produced it.
+
+    The three DeepThinkVLA rows were the only released runs whose bolt task id
+    lived nowhere in the repository -- they ship as flat
+    `deepthink_*_13family.json` files rather than in a directory carrying a
+    `bolt_task_id.txt`, so the id survived only in a scratch copy of the
+    downloaded artifact and would have been lost the moment that scratch
+    directory was cleaned up.
+
+    The recorded sha256 is re-computed here rather than trusted. A provenance
+    file that records a hash nobody re-checks documents the artifact that existed
+    when it was written, not the one in the repository now; recomputing turns it
+    into a tamper-evident seal on three of the eight leaderboard rows.
+    """
+    sec = "DeepThinkVLA provenance (bolt task ids, hash-sealed)"
+    can = ROOT / "results_v2" / "canonical_runs"
+    p = can / "deepthink_provenance.json"
+    prov = load(p)
+    if not prov:
+        a.check(sec, "deepthink_provenance.json exists so the three "
+                     "DeepThinkVLA rows are traceable to their bolt jobs",
+                True, False, source=str(p))
+        return
+    runs = prov.get("runs") or {}
+    a.check(sec, "all three DeepThinkVLA rows have a recorded bolt task", 3,
+            sum(1 for v in runs.values() if v.get("bolt_task")), source=str(p))
+    a.check(sec, "the recorded task ids are distinct (one job per row, not one "
+                 "job's id pasted onto three rows)", 3,
+            len({v.get("bolt_task") for v in runs.values()}))
+    for name, v in sorted(runs.items()):
+        f = can / str(v.get("released_file"))
+        got = (hashlib.sha256(f.read_bytes()).hexdigest() if f.exists()
+               else "<missing>")
+        a.check(sec, f"{name}: the released artifact still hashes to the "
+                     f"sha256 recorded for bolt {v.get('bolt_task')}",
+                v.get("released_sha256"), got, source=str(f))
+        a.check(sec, f"{name}: the released file was the job's own output, "
+                     f"byte-for-byte, not a re-derived copy",
+                True, bool(v.get("artifact_identical_to_released")))
+        a.check(sec, f"{name}: scored on all 13 families", 13,
+                v.get("n_families"))
+
+
 def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
     """P2 de-quantizes bin b to -1+(b+0.5)*2/256; the checkpoint's own tokenizer
     uses the midpoints of linspace(-1,1,256), a spacing of 2/255. The paper
@@ -3192,6 +3237,7 @@ def main() -> int:
     audit_no_published_ranking(a)
     audit_edit_decode_is_unnorm_free(a)
     audit_normstats_probe(a)
+    audit_deepthink_provenance(a)
     audit_dequant_convention(a, d)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
