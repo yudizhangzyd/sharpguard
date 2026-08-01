@@ -1,0 +1,60 @@
+name: 'CoT-Faith #10: paired rollout-level CoT edit on our LIBERO-trained CoT-VLA'
+description: 'Limitation (v): every leaderboard number is a first-step quantity -- perturb the CoT, decode one action, measure the shift. That shows the CoT is read, not that reading it matters for finishing the task. This runs the same episode from one canonical init state per arm (nocot, cot_clean, one per edit family), comparing task SR paired via exact McNemar. Probe phenc9ygb4 ruled out the public CoT checkpoint: ECoT-bridge carries norm_stats for bridge_orig only, so on LIBERO its actions cannot be de-quantized to world scale and SR is pinned at 0 for reasons unrelated to CoT. Our r=32 LIBERO fine-tune (bcihypv3gu) has none of that: it trained on raw LIBERO actions clipped to [-1,1], so action-decoder=ours is its native scale and needs no norm_stats. Every arm shares that decoder and differs in the PROMPT only. The job probes first and reads its own probe: a failed precondition stops it, since a full run past one yields SR=0 everywhere and reads as a null result rather than a broken setup.'
+tags: ['cotfaith', 'rollout-edit', 'limitation-v', 'paired-mcnemar']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the training task's artifact prefix,
+  # issued at submit time by `bolt task get-credentials $CKPT_TASK_ID`. The pod
+  # has no IAM role for this bucket; without these the sync dies at
+  # NoCredentialProviders.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  # The published ours-r=32 row's training task -- the same weights the
+  # first-step leaderboard number was measured on, so the rollout result
+  # extends that row rather than describing a different model.
+  CKPT_TASK_ID: 'bcihypv3gu'
+
+  SUITE: 'libero_spatial'
+  # Identity [-1,1] de-quantization. UNNORM_KEY stays empty on purpose: for
+  # these weights an unnorm_key would rescale an already-correct action.
+  ACTION_DECODER: 'ours'
+  UNNORM_KEY: ''
+  # One semantic edit plus the paraphrase null, so the effect has its own
+  # control inside the same run rather than across jobs.
+  FAMILIES: 'direction_flip,paraphrase_null'
+  GRIPPER_TRANSFORM: 'openvla'
+  IMAGE_PREPROC: 'none'
+  MAX_NEW_TOKENS: '320'
+  # 4 arms x 8.6 s/step of CoT generation is the binding cost, so the episode
+  # count is set by the clock, not by taste. TIME_BUDGET_H stops it cleanly and
+  # the report is flushed every episode, so a timeout still yields partial SRs.
+  N_TASKS: '10'
+  N_EPS_PER_TASK: '2'
+  MAX_STEPS: '220'
+  TIME_BUDGET_H: '20'
+  DTYPE: 'bfloat16'
+  PROBE_ONLY: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_edit_s3.sh

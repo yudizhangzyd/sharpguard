@@ -255,15 +255,28 @@ def _get_norm_stats(model, unnorm_key: str):
 def predict_action(model, processor, image: np.ndarray, instruction: str,
                    *, device: torch.device,
                    pixel_dtype: torch.dtype = torch.bfloat16,
-                   unnorm_key: str = "") -> np.ndarray:
+                   unnorm_key: str = "",
+                   prompt: Optional[str] = None) -> np.ndarray:
     """Predict a 7-DoF action from (image, instruction).
 
     If `unnorm_key` is set AND the model exposes a matching norm_stats
     entry, the returned action is un-normalized to the world-frame scale
     that LIBERO env.step() expects. Otherwise the raw [-1, 1] normalized
-    action is returned (a legacy path that CAUSES the robot to move at
-    the wrong physical scale; see rollout Task SR bug diagnosis
-    2026-07-07).
+    action is returned.
+
+    Which of those two is correct depends on the CHECKPOINT, not on a
+    preference. Upstream's LIBERO checkpoints emit dataset-normalized values
+    and must be un-normalized -- that is the whole gate result (SR 0.00 ->
+    0.74 on libero_spatial). Our fine-tunes quantize raw LIBERO actions
+    clipped to [-1, 1] with no dataset normalization (see
+    experiments/cotfaith_train.py:_quantize_action), so for them the identity
+    path IS the native scale and passing an unnorm_key would rescale an
+    already-correct action. An earlier version of this docstring called the
+    identity path a "legacy" bug, which is only true for upstream weights.
+
+    `prompt` overrides the constructed prompt string. That is how a CoT
+    prefix gets in front of the action tokens while the de-quantization stays
+    byte-identical to the no-CoT arm.
     """
     from PIL import Image
     vocab = processor.tokenizer.vocab_size
@@ -271,7 +284,9 @@ def predict_action(model, processor, image: np.ndarray, instruction: str,
     # trailing space after "Out:" (both details affect tokenization; a
     # trailing space produces a different first token than the model saw
     # at training time, degrading action prediction quality).
-    prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
+    if prompt is None:
+        prompt = (f"In: What action should the robot take to "
+                  f"{instruction.lower()}?\nOut:")
     pil = Image.fromarray(np.asarray(image, dtype=np.uint8)).convert("RGB")
     proc = processor(images=pil, text=prompt, return_tensors="pt")
     input_ids = proc["input_ids"].to(device)

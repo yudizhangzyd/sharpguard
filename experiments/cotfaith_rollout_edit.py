@@ -42,12 +42,25 @@ Two preconditions this script REFUSES to paper over:
      reason that has nothing to do with CoT. The probe reports every available
      key so this is decided by looking rather than by hoping.
 
-Decoder. All arms go through predict_action_upstream, i.e. the checkpoint's own
-predict_action with upstream's de-quantization -- the same decoder as the
-passing gate. The CoT arms differ from `nocot` in the PROMPT only. An earlier
-plan had the CoT arms on our reimplemented decoder, which would have confounded
-"the CoT was edited" with "the de-quantizer changed"; there is no need, since
-predict_action takes input_ids we build.
+Decoder. Every arm in a run shares ONE decoder and differs in the PROMPT only,
+so "the CoT was edited" is never confounded with "the de-quantizer changed".
+Which decoder is right depends on the checkpoint, and --action-decoder makes
+that explicit rather than assumed:
+
+  upstream  the checkpoint's own predict_action with upstream's
+            de-quantization, driven by norm_stats[unnorm_key]. Correct for
+            weights that emit dataset-normalized values -- upstream's LIBERO
+            checkpoints, which is what the passing gate used.
+  ours      the identity [-1,1] de-quantization, no norm_stats. Correct for OUR
+            fine-tunes, whose training target quantizes raw LIBERO actions
+            clipped to [-1,1] with no dataset normalization
+            (cotfaith_train.py:_quantize_action). For these weights an
+            unnorm_key would rescale an already-correct action.
+
+This matters because probe phenc9ygb4 established that ECoT-bridge carries
+norm_stats for 'bridge_orig' only: the CoT checkpoint the leaderboard is built
+on cannot be rolled out on LIBERO through the upstream decoder at all. Our
+LIBERO fine-tunes can, through 'ours'.
 """
 from __future__ import annotations
 
@@ -182,6 +195,21 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple:
 # probe: answer the two preconditions in minutes, not GPU-hours
 # ----------------------------------------------------------------------
 
+def _decoder(args):
+    """Return the (fn, kwargs) pair every arm in this run will use.
+
+    Resolved once, and the choice is recorded in the report: an arm that
+    silently used a different de-quantizer than its pair would make the paired
+    delta meaningless.
+    """
+    from sharpguard.libero_sim import predict_action, predict_action_upstream
+    if args.action_decoder == "ours":
+        # No unnorm_key on purpose: for our fine-tunes the identity map IS the
+        # native scale, so passing one would rescale a correct action.
+        return predict_action, {"unnorm_key": ""}
+    return predict_action_upstream, {"unnorm_key": args.unnorm_key}
+
+
 def probe(args, model, processor, device, pixel_dtype) -> dict:
     """Report what a full run depends on, without running one.
 
@@ -193,11 +221,13 @@ def probe(args, model, processor, device, pixel_dtype) -> dict:
       * whether an edit family actually changes the rendered prefix;
       * whether all three arms decode a 7-vector on one real frame.
     """
-    from sharpguard.libero_sim import (predict_action_upstream, _get_norm_stats,
-                                       _preprocess_image, _apply_gripper_transform)
+    from sharpguard.libero_sim import (_get_norm_stats, _preprocess_image,
+                                       _apply_gripper_transform)
     from sharpguard.attacks import EDIT_FAMILIES
 
-    out = {"probe": True, "ckpt": args.ckpt_path, "suite": args.suite}
+    decode, dec_kw = _decoder(args)
+    out = {"probe": True, "ckpt": args.ckpt_path, "suite": args.suite,
+           "action_decoder": args.action_decoder}
 
     stats = getattr(model, "norm_stats", None) or getattr(
         getattr(model, "config", object()), "norm_stats", None) or {}
@@ -213,11 +243,20 @@ def probe(args, model, processor, device, pixel_dtype) -> dict:
         out["q99"] = [round(float(v), 4) for v in q99]
         out["mask"] = [bool(v) for v in mask]
     # The blocker this exists to catch, stated as a fact rather than a guess.
-    out["scale_precondition"] = (
-        "ok" if q01 is not None else
-        f"MISSING: no usable norm_stats for unnorm_key={args.unnorm_key!r}; "
-        f"available={keys}. Actions would reach env.step() at raw [-1,1] "
-        f"scale, which pins SR at 0 independently of any CoT edit.")
+    if args.action_decoder == "ours":
+        # The identity path needs no norm_stats, so their absence is not a
+        # blocker here -- it would be a blocker only for --action-decoder
+        # upstream. Saying "ok" without saying why would hide that distinction.
+        out["scale_precondition"] = (
+            "ok (identity [-1,1] de-quantization; --action-decoder=ours needs "
+            "no norm_stats because our fine-tunes quantize raw LIBERO actions "
+            f"clipped to [-1,1]. norm_stats present: {keys})")
+    else:
+        out["scale_precondition"] = (
+            "ok" if q01 is not None else
+            f"MISSING: no usable norm_stats for unnorm_key={args.unnorm_key!r}; "
+            f"available={keys}. Actions would reach env.step() at raw [-1,1] "
+            f"scale, which pins SR at 0 independently of any CoT edit.")
 
     frame, instruction = _probe_frame(args)
     out["instruction"] = instruction
@@ -275,10 +314,8 @@ def probe(args, model, processor, device, pixel_dtype) -> dict:
         for name, pr in arms.items():
             try:
                 t1 = time.time()
-                a = predict_action_upstream(
-                    model, processor, img, instruction, device=device,
-                    pixel_dtype=pixel_dtype, unnorm_key=args.unnorm_key,
-                    prompt=pr)
+                a = decode(model, processor, img, instruction, device=device,
+                           pixel_dtype=pixel_dtype, prompt=pr, **dec_kw)
                 a2 = _apply_gripper_transform(a, args.gripper_transform)
                 acts[name] = {"raw": [round(float(v), 5) for v in a],
                               "sent": [round(float(v), 5) for v in a2],
@@ -348,8 +385,9 @@ def _probe_frame(args):
 def run_arm(model, processor, env, task_lang, *, arm, family, device,
             pixel_dtype, args, edit_fn=None) -> dict:
     """One episode under one arm. Env must already be at its init state."""
-    from sharpguard.libero_sim import (predict_action_upstream, _preprocess_image,
+    from sharpguard.libero_sim import (_preprocess_image,
                                        _apply_gripper_transform)
+    decode, dec_kw = _decoder(args)
     no_op = np.array([0., 0., 0., 0., 0., 0., -1.], dtype=np.float32)
     obs = None
     for _ in range(10):                       # Kim's NUM_STEPS_WAIT settling
@@ -391,9 +429,8 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
                     else:
                         body = eb
             prompt = cot_prompt(task_lang, body)
-        a = predict_action_upstream(model, processor, img, task_lang,
-                                    device=device, pixel_dtype=pixel_dtype,
-                                    unnorm_key=args.unnorm_key, prompt=prompt)
+        a = decode(model, processor, img, task_lang, device=device,
+                   pixel_dtype=pixel_dtype, prompt=prompt, **dec_kw)
         a = _apply_gripper_transform(a, args.gripper_transform)
         obs, reward, done, info = env.step(a)
         if ((isinstance(info, dict) and info.get("success", False))
@@ -590,6 +627,12 @@ def main():
     ap.add_argument("--max-new-tokens", type=int, default=320,
                     help="cap on generated CoT length per step")
     ap.add_argument("--unnorm-key", default="")
+    ap.add_argument("--action-decoder", default="upstream",
+                    choices=["upstream", "ours"],
+                    help="'upstream' for weights that emit dataset-normalized "
+                         "values (upstream's LIBERO checkpoints, the passing "
+                         "gate); 'ours' for the identity [-1,1] map our "
+                         "fine-tunes were trained against.")
     ap.add_argument("--gripper-transform", default="openvla")
     ap.add_argument("--image-preproc", default="none")
     ap.add_argument("--dtype", default="bfloat16")
