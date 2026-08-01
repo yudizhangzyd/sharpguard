@@ -210,6 +210,23 @@ deliberately incomplete in ways the paper states as limitations:
   rather than take it on our word. **No number in the
   paper is conditioned on a rollout** — the gate validates the harness, it does
   not turn the leaderboard into a rollout metric.
+- **Norm-stats provenance is now measured, and it rules the public CoT
+  checkpoint out of the rollout-level protocol.**
+  `results_v2/canonical_runs/rollout_probe_ecot_bridge/` (bolt `phenc9ygb4`)
+  records that `Embodied-CoT/ecot-openvla-7b-bridge` ships `norm_stats` for
+  `bridge_orig` **only**; requesting `libero_spatial_no_noops` raises upstream's
+  own `ValueError` rather than degrading. Without LIBERO percentiles the policy's
+  actions reach `env.step()` at raw `[-1,1]` scale, so Task SR is pinned at 0 in
+  every arm including the unedited control — five identically-zero arms are a
+  broken setup, not a null result about CoT faithfulness. This is also the
+  mechanism behind the withdrawn P3 run below: there was never a LIBERO
+  percentile set to use. The probe records the independent half too, which is
+  what kept the protocol alive: the checkpoint emits a well-formed CoT online on
+  LIBERO frames (255 tokens, 8 parsed tags) and 3 of the 4 probed families change
+  the rendered trace, so the *intervention* side transfers and only the
+  *action-scale* side does not. The paired rollout is therefore run on our own
+  r=32 LIBERO fine-tune, which trained on raw LIBERO actions clipped to `[-1,1]`
+  and consults no `norm_stats` on any path.
 - **Probe P3 (attention->action-error AUROC) is withdrawn**, not merely
   caveated: a decoder audit showed it was computed cross-domain. The
   implementation and the audit that killed it are both released
@@ -371,7 +388,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 759 claims, one of which is that this
+The audit script currently checks 773 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 

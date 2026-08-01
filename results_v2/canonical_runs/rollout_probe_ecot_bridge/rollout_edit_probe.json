@@ -1,0 +1,57 @@
+{
+  "probe": true,
+  "ckpt": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "suite": "libero_spatial",
+  "norm_stats_keys": [
+    "bridge_orig"
+  ],
+  "unnorm_key_requested": "libero_spatial_no_noops",
+  "unnorm_key_present": false,
+  "norm_stats_usable": false,
+  "scale_precondition": "MISSING: no usable norm_stats for unnorm_key='libero_spatial_no_noops'; available=['bridge_orig']. Actions would reach env.step() at raw [-1,1] scale, which pins SR at 0 independently of any CoT edit.",
+  "instruction": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+  "cot_gen_seconds": 8.57,
+  "cot_tokens_generated": 255,
+  "cot_tags_parsed": [
+    "bboxes",
+    "gripper",
+    "movement",
+    "movement_reasoning",
+    "plan",
+    "subtask",
+    "subtask_reasoning",
+    "task"
+  ],
+  "cot_structured": true,
+  "cot_raw_head": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. USER: What action should the robot take to pick up the black bowl between the plate and the ramekin and place it on the plate? ASSISTANT: TASK: Pick up the black bowl between the plate and the ramekin and place it on the plate. PLAN: Move to the black bowl, grasp the black bowl, move the black bowl to the plate, release the black bowl SUBTASK REASONING: The black bowl is the first object that needs to be manipulated, so the arm needs to move",
+  "cot_body_head": "TASK: Pick up the black bowl between the plate and the ramekin and place it on the plate. PLAN: Move to the black bowl, grasp the black bowl, move the black bowl to the plate, release the black bowl VISIBLE OBJECTS: a black robot arm [80, 1, 168, 87], a wooden table [19, 69, 238, 249], a black robot arm [88, 1, 176, 102], a black bowl [158, 87, 186, 135] SUBTASK REASONING: The black bowl is the fi",
+  "families": {
+    "direction_flip": "changes the rendered CoT",
+    "paraphrase_null": "changes the rendered CoT",
+    "subject_swap": "not applicable to this CoT (returned None)",
+    "gripper_flip": "changes the rendered CoT"
+  },
+  "one_frame_actions": {
+    "nocot": {
+      "error": "ValueError: The `unnorm_key` you chose (unnorm_key = 'libero_spatial_no_noops') is not in the available statistics. Please choose from: dict_keys(['bridge_orig'])"
+    },
+    "cot_clean": {
+      "error": "ValueError: The `unnorm_key` you chose (unnorm_key = 'libero_spatial_no_noops') is not in the available statistics. Please choose from: dict_keys(['bridge_orig'])"
+    },
+    "cot_direction_flip": {
+      "error": "ValueError: The `unnorm_key` you chose (unnorm_key = 'libero_spatial_no_noops') is not in the available statistics. Please choose from: dict_keys(['bridge_orig'])"
+    },
+    "cot_paraphrase_null": {
+      "error": "ValueError: The `unnorm_key` you chose (unnorm_key = 'libero_spatial_no_noops') is not in the available statistics. Please choose from: dict_keys(['bridge_orig'])"
+    },
+    "cot_gripper_flip": {
+      "error": "ValueError: The `unnorm_key` you chose (unnorm_key = 'libero_spatial_no_noops') is not in the available statistics. Please choose from: dict_keys(['bridge_orig'])"
+    }
+  },
+  "feasibility": {
+    "seconds_per_step_per_arm": 8.57,
+    "n_arms": 5,
+    "est_hours_full_run": 26.2,
+    "note": "est assumes every episode runs to max_steps; successful episodes terminate early, so this is an upper bound."
+  }
+}

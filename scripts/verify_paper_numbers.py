@@ -1880,6 +1880,72 @@ def audit_edit_decode_is_unnorm_free(a: Audit) -> None:
             source="the audit's provenance is the bridge_orig AUROC run")
 
 
+def audit_normstats_probe(a: Audit) -> None:
+    """The manuscript's reason for not rolling out the public CoT checkpoint is
+    a measured precondition failure, not a judgement: the checkpoint ships
+    norm_stats for 'bridge_orig' only. Everything the paragraph says is read
+    back out of the probe artifact, including the parts that are FAVOURABLE to
+    the checkpoint -- a probe cited only for the half that supports the decision
+    not to run is the same defect as a caveat replacing a measurement."""
+    sec = "Norm-stats provenance probe (why ECoT-bridge cannot be rolled out)"
+    d = ROOT / "results_v2" / "canonical_runs" / "rollout_probe_ecot_bridge"
+    p = load(d / "rollout_edit_probe.json")
+    if not isinstance(p, dict):
+        a.check(sec, "the norm-stats probe artifact is released", True, None,
+                source=str(d / "rollout_edit_probe.json"))
+        return
+
+    a.check(sec, "the probe is attributable to its own bolt task id",
+            "phenc9ygb4", (d / "bolt_task_id.txt").read_text().strip()
+            if (d / "bolt_task_id.txt").exists() else None,
+            source=str(d / "bolt_task_id.txt"))
+    a.check(sec, "the probed checkpoint is the public CoT one",
+            "Embodied-CoT/ecot-openvla-7b-bridge", p.get("ckpt"))
+    a.check(sec, "it ships norm_stats for 'bridge_orig' and nothing else",
+            ["bridge_orig"], p.get("norm_stats_keys"))
+    a.check(sec, "the LIBERO key the suite needs is absent", False,
+            p.get("unnorm_key_present"),
+            source="unnorm_key_requested=%r" % p.get("unnorm_key_requested"))
+    a.check(sec, "so the scale precondition fails rather than degrading", False,
+            p.get("norm_stats_usable"))
+    a.check(sec, "and every arm fails at decode, control included --- which is "
+                 "why 5 zero arms would not be a null result",
+            5, sum(1 for v in (p.get("one_frame_actions") or {}).values()
+                   if isinstance(v, dict) and "error" in v))
+
+    # The independent half: the intervention side of the protocol DOES transfer.
+    # This is what re-points the rollout at our own fine-tune instead of
+    # abandoning limitation (v), so it is asserted, not narrated.
+    a.check(sec, "the checkpoint nonetheless emits a structured CoT online on "
+                 "LIBERO frames", True, bool(p.get("cot_structured")))
+    a.check(sec, "with 8 parsed reasoning tags", 8,
+            len(p.get("cot_tags_parsed") or []))
+    a.check(sec, "3 of the 4 probed families change the rendered CoT", 3,
+            sum(1 for v in (p.get("families") or {}).values()
+                if v == "changes the rendered CoT"))
+    a.check(sec, "and subject_swap is reported inapplicable rather than scored "
+                 "as a no-effect edit", True,
+            "not applicable" in str(dig(p, "families", "subject_swap")))
+
+    # The gate that reads it. A probe nobody reads is how the two earlier
+    # rollout defects survived, so the reading is checked in the shell source.
+    sh = ROOT / "bolt" / "run_cotfaith_rollout_edit_s3.sh"
+    src = sh.read_text() if sh.exists() else ""
+    a.check(sec, "the rollout job reads its own probe and refuses to launch "
+                 "past a failed precondition", True,
+            'startswith("ok")' in src and "exit 5" in src, source=str(sh))
+
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    for frag in (r"\texttt{bridge\_orig}, and no LIBERO key at all",
+                 "Five identically-zero arms are not a null result",
+                 r"rollout\_probe\_ecot\_bridge"):
+        a.check(sec, f"the manuscript states the probe result ({frag!r})", True,
+                frag in tex, source=str(TEX))
+
+
 def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
     """P2 de-quantizes bin b to -1+(b+0.5)*2/256; the checkpoint's own tokenizer
     uses the midpoints of linspace(-1,1,256), a spacing of 2/255. The paper
@@ -3125,6 +3191,7 @@ def main() -> int:
     audit_manuscript_hygiene(a)
     audit_no_published_ranking(a)
     audit_edit_decode_is_unnorm_free(a)
+    audit_normstats_probe(a)
     audit_dequant_convention(a, d)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
