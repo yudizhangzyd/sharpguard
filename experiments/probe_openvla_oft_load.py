@@ -227,9 +227,84 @@ def try_load(repo: str, dtype_name: str, do_forward: bool) -> dict:
     return out
 
 
+def _resolver():
+    """`missing_module` and `pip` from bolt/install_prismatic.py, by path.
+
+    Loaded rather than reimplemented: `missing_module` is the function that
+    round 2 had to fix (it must search the whole chained traceback, not just the
+    top-level message), and a second copy here would be a second thing to get
+    wrong the same way.
+    """
+    path = Path(__file__).resolve().parent.parent / "bolt" / "install_prismatic.py"
+    spec = importlib.util.spec_from_file_location("_install_prismatic", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def try_load_resolving(repo: str, dtype_name: str, do_forward: bool,
+                       max_installs: int = 12) -> dict:
+    """`try_load`, retried while the failure is a nameable missing module.
+
+    Round 2 of this probe (bolt `fshsqxp53m`) got prismatic importing -- the
+    dictConfig wall came down and `prismatic_has_vla` went True -- and then died
+    one layer further in:
+
+        ModuleNotFoundError: No module named 'jsonlines'
+
+    on four of five checkpoints. That is the same finding as round 1 for the
+    third time: the blocker is a package name printed in the exception. The
+    reason it recurred is that `bolt/install_prismatic.py` resolves imports of
+    *its* target, `prismatic.extern.hf.modeling_prismatic`, and stops there --
+    but `from_pretrained(trust_remote_code=True)` executes the checkpoint's own
+    remote code, which imports things prismatic itself does not.
+
+    So the retry loop belongs here, at the import site, not only around the
+    prismatic target. Bounded and de-duplicated: a name that reappears after its
+    install means installing it did not help, and looping on it would burn the
+    budget instead of reporting the real blocker, so it is recorded in
+    `stuck_on` and the loop stops.
+
+    `--no-deps` for the same reason install_prismatic uses it: the pins ARE the
+    environment the paper names, and a transitive upgrade would silently make
+    the result describe a different stack. Every install is recorded, so the
+    output still answers "what would supporting OFT cost" rather than just
+    yes/no.
+    """
+    res = _resolver()
+    installs, seen = [], set()
+    out = try_load(repo, dtype_name, do_forward)
+    while not out.get("ok") and len(installs) < max_installs:
+        blob = f"{out.get('error') or ''}\n{out.get('traceback_tail') or ''}"
+        mod = res.missing_module(blob)
+        if not mod:
+            break                       # not a missing-module failure: report it
+        if mod in seen:
+            out["stuck_on"] = mod
+            break
+        seen.add(mod)
+        pkg = res.IMPORT_TO_PIP.get(mod, mod)
+        ok, tail = res.pip("install", "--quiet", "--no-deps", pkg)
+        installs.append({"import": mod, "pip": pkg, "ok": ok,
+                         "pip_tail": None if ok else tail[-400:]})
+        if not ok:
+            out["stuck_on"] = mod
+            break
+        importlib.invalidate_caches()
+        out = try_load(repo, dtype_name, do_forward)
+    out["dependency_installs"] = installs
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
+    ap.add_argument("--resolve-deps", action="store_true",
+                    help="on a missing-module failure, pip-install the named "
+                         "module (--no-deps) and retry the load. Off by "
+                         "default: stages 1 and 2 must measure the environment "
+                         "the paper names, and installing into them would make "
+                         "the result describe a different stack.")
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--stage", default="baseline",
                     choices=["baseline", "upgraded",
@@ -262,10 +337,20 @@ def main() -> int:
     attempts = {}
     for r in live:
         print(f"[oft-probe] attempting load: {r}")
-        attempts[r] = try_load(r, args.dtype, not args.no_forward)
+        # Resolution is opt-in per stage, not always on. Stages 1 and 2 must
+        # measure the environment the paper names, and pip-installing into them
+        # would make their result describe a different stack -- the baseline is
+        # what keeps the claim falsifiable. Stages 3 and 4 already exist to
+        # resolve dependencies, so that is where the retry belongs.
+        loader = try_load_resolving if args.resolve_deps else try_load
+        attempts[r] = loader(r, args.dtype, not args.no_forward)
+        inst = attempts[r].get("dependency_installs") or []
         print(f"[oft-probe]   stage_reached={attempts[r]['stage_reached']} "
               f"ok={attempts[r]['ok']} "
-              f"{attempts[r].get('error_type', '')}")
+              f"{attempts[r].get('error_type', '')}"
+              + (f" installs={[i['import'] for i in inst]}" if inst else "")
+              + (f" stuck_on={attempts[r]['stuck_on']}"
+                 if attempts[r].get("stuck_on") else ""))
         # One successful load answers the question; the rest would only cost
         # GPU time to re-confirm it. Stated so the stop is not mistaken for a
         # silent cap.

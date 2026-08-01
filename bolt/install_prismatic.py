@@ -67,6 +67,11 @@ IMPORT_TO_PIP = {
     "dateutil": "python-dateutil",
     "pkg_resources": "setuptools",
     "json_numpy": "json-numpy",
+    # Not on PyPI at all -- the ECoT/OpenVLA data pipeline depends on it by git
+    # URL. `pip install dlimp` fails outright, so without this entry the
+    # resolver stops on the one name whose fix is a URL rather than a rename.
+    # This is what stopped the 4.40.1 path in bolt fshsqxp53m.
+    "dlimp": "git+https://github.com/kvablack/dlimp.git",
 }
 
 MAX_TRANSITIVE = 24

@@ -92,6 +92,7 @@ print('[oft] prismatic_baseline python', sys.version.split()[0],
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage prismatic_baseline \
+    --resolve-deps \
     --dtype "${DTYPE:-bfloat16}" \
     ${OFT_REPOS:+--repos "$OFT_REPOS"} || echo "[oft] prismatic_baseline exited nonzero"
 
@@ -106,6 +107,7 @@ pip install --quiet --upgrade \
 python experiments/probe_openvla_oft_load.py \
     --out   "$OUT_DIR" \
     --stage prismatic_upgraded \
+    --resolve-deps \
     --dtype "${DTYPE:-bfloat16}" \
     ${OFT_REPOS:+--repos "$OFT_REPOS"} || echo "[oft] prismatic_upgraded exited nonzero"
 
@@ -143,6 +145,16 @@ for p in found:
     for repo, a in (r.get("load_attempts") or {}).items():
         print(f"    {repo}: stage={a.get('stage_reached')} ok={a.get('ok')} "
               f"{a.get('error_type', '')} {str(a.get('error', ''))[:160]}")
+        # Round 3 added a retry loop at the load site (see try_load_resolving).
+        # What it installed, and where it gave up, is the answer to "what would
+        # supporting OFT cost" -- so it is printed, not just stored.
+        inst = a.get("dependency_installs") or []
+        if inst:
+            print(f"      installed: "
+                  f"{[(i['import'], i['ok']) for i in inst]}")
+        if a.get("stuck_on"):
+            print(f"      stuck_on: {a['stuck_on']} -- installing it did not "
+                  f"clear the import, so this is the real blocker")
 print(f"[oft] {len(found)}/4 stages reported; any_loaded={loaded_anywhere}")
 if loaded_anywhere:
     print("[oft] ACTION REQUIRED: a checkpoint loaded. Limitation (ix) says OFT "

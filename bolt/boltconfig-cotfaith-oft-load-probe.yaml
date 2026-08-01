@@ -1,31 +1,28 @@
-name: 'CoT-Faith #15b: OFT load probe, round 2 -- resolve the dependency the dictConfig error hid'
-description: 'Round 2 of the limitation-(ix) probe. Round 1 (bolt 9n7zqdxy9b) settled one thing: OFT does not fail for a transformers-version reason -- all 5 official checkpoints exist, and stages 1 and 2 failed identically on 4.40.1 and 4.53.2 with the same ImportError naming prismatic, the OpenVLA/OFT codebase we had never installed. So the paper cannot cite an incompatibility. Stage 3 installed it and then hit ValueError: Unable to configure handler console, which names nothing installable, so the resolver gave up. That was our bug: prismatic.overwatch configures logging via dictConfig, which swallows the handler ImportError and re-raises this, leaving the module name only in the __cause__ chain while the resolver read str(e). It now reads the whole chained traceback, verified to recover rich on a reconstruction of it. Either OFT loads and generates, closing a coverage gap, or it fails on something genuinely not a missing dependency and the limitation finally has an exception behind it.'
-tags: ['cotfaith', 'oft', 'limitation-ix', 'load-probe', 'coverage', 'round2']
-
+name: 'CoT-Faith #15c: OpenVLA-OFT load, round 3 (retry at the load site)'
+description: 'Round 3 of limitation (ix). Round 2 (bolt fshsqxp53m) broke the wall it was built for: prismatic now installs AND imports (prismatic_has_vla true, pins_moved {}). The load then died one layer in: jsonlines on 4 of 5 checkpoints, dlimp on the 4.40.1 path. That is the same finding a third time -- the blocker is always a package name printed in the exception. It recurred because install_prismatic resolves imports of ITS target and stops, while from_pretrained(trust_remote_code=True) runs the checkpoint''s own remote code, which imports more. So round 3 puts the retry at the load site (try_load_resolving), bounded and deduplicated, recording every install and the name it gets stuck on. dlimp maps to its git URL, not being on PyPI. Only the prismatic_* stages resolve; stages 1-2 stay a clean measurement of the environment the paper names. Round 1''s blocker was ours: a resolver that read only an exception''s top-level message, where dictConfig hides the handler''s real ImportError.'
+tags:
+- cotfaith
+- openvla-oft
+- limitation-ix
+- load-probe
+- round3
 project_id: ads_algo_signal_qucacheoffline
-
 permissions:
-  owners: 'yudi_zhang2'
-  viewers: 'yudi_zhang2'
-
+  owners: yudi_zhang2
+  viewers: yudi_zhang2
 priority: 1
-
 resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
   task_type: 1gpu
   disk_gb: 512
   timeout: 4h
   cluster: aws_6
-
 environment_variables:
   HF_HOME: /tmp/hf
   HF_HUB_OFFLINE: '0'
   HF_TOKEN: ${HF_TOKEN}
-  TRANSFORMERS_VERBOSITY: 'error'
-  DTYPE: 'bfloat16'
-  # Empty => the probe resolves the official OFT checkpoints from the Hub search
-  # API. Set to a comma-separated list only to pin the candidates by hand.
+  TRANSFORMERS_VERBOSITY: error
+  DTYPE: bfloat16
   OFT_REPOS: ''
-
 setup_command: bash bolt/setup-openvla.sh
 command: bash bolt/run_oft_load_probe.sh
