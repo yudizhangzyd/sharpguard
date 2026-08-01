@@ -1947,6 +1947,49 @@ def audit_normstats_probe(a: Audit) -> None:
                 frag in tex, source=str(TEX))
 
 
+def audit_cited_environment(a: Audit) -> None:
+    """The environment limitation (ix) names must be the one we actually install.
+
+    Added because it was not. The manuscript said OpenVLA-OFT "failed to load
+    cleanly in our environment (Python 3.10, torch 2.2.0)" while
+    `bolt/setup-openvla.sh` pinned torch 2.4.1 and transformers 4.40.1 -- so the
+    one claim in the paper with no released artifact behind it was also
+    describing an environment this release no longer runs. That is the worst
+    combination available: unfalsifiable and stale, excusing a coverage gap.
+
+    A version string in prose has no artifact to check it against, so this check
+    reads the pins out of the setup script the jobs actually run. It is the
+    cheapest possible guard against the general failure -- an environment claim
+    aging out of truth silently -- and it belongs in the audit rather than in a
+    reviewer's memory.
+    """
+    sec = "Cited environment matches the installed one"
+    sh = ROOT / "bolt" / "setup-openvla.sh"
+    if not sh.exists():
+        a.check(sec, "the setup script the cited environment refers to exists",
+                True, False, source=str(sh))
+        return
+    src = sh.read_text()
+    try:
+        tex = TEX.read_text()
+    except Exception:
+        return
+    cited = re.search(r"failed to load cleanly in our environment \(([^)]*)\)",
+                      tex)
+    cited_txt = cited.group(1) if cited else ""
+    for pkg in ("torch", "transformers"):
+        m = re.search(rf'"{pkg}==([0-9][^"]*)"', src)
+        ver = m.group(1) if m else None
+        a.check(sec, f"the {pkg} version the manuscript cites is the one "
+                     f"setup-openvla.sh pins", True,
+                bool(ver) and f"{pkg} {ver}" in cited_txt,
+                source=f"{sh} pins {pkg}=={ver}; manuscript says "
+                       f"'{cited_txt[:90]}'")
+    a.check(sec, "the manuscript names the setup script, so the pin it cites is "
+                 "checkable rather than recalled", True,
+            r"\texttt{bolt/setup-openvla.sh}" in tex, source=str(TEX))
+
+
 def audit_deepthink_provenance(a: Audit) -> None:
     """Every released number should be traceable to the job that produced it.
 
@@ -3238,6 +3281,7 @@ def main() -> int:
     audit_edit_decode_is_unnorm_free(a)
     audit_normstats_probe(a)
     audit_deepthink_provenance(a)
+    audit_cited_environment(a)
     audit_dequant_convention(a, d)
     audit_deepthink_tau_units(a)
     audit_rollout_gate(a, d)
