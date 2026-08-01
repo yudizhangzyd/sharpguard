@@ -1,0 +1,42 @@
+name: 'CoT-Faith #14: LLM-judge validation of the edit families semantic premises'
+description: 'Two premises the whole benchmark rests on have never been checked. paraphrase_null claims to preserve meaning and is the calibration FLOOR that F_diff subtracts, so if it quietly changes meaning every F_diff is wrong by an unknown amount. adversarial_plausible claims the swapped-in object leaves a still-plausible trace; if it reads as nonsense the family is just a noisier subject_swap. Both are claims about language, so an open-weights judge (Qwen2.5-7B-Instruct) scores each rendered original/edited CoT pair. The judge is not trusted by default: identity pairs test for bias toward finding differences, seven by-construction meaning-changing families test whether it can detect meaning change at all, and every pair is judged in both orders to catch position bias. Failing any gate sets judge_valid=false and withholds the verdict rather than reporting a number that merely looks like validation. Text only, no VLA, so this uses the light setup, not the OpenVLA-pinned one.'
+tags: ['cotfaith', 'judge', 'edit-families', 'paraphrase-null', 'reviewer-14']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 256
+  timeout: 6h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  JUDGE_MODELS: 'Qwen/Qwen2.5-7B-Instruct,mistralai/Mistral-7B-Instruct-v0.2'
+  REASONING_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  REASONING_FILE: 'libero_reasonings.json'
+  # Restricts the sampled corpus to the demo files that were actually scored.
+  # Not per-record correspondence -- the released records store actions, not CoT
+  # text, and demo/step identity needs the 17GB shards to recover -- but it does
+  # keep the judged population inside the evaluated scenes.
+  FILE_BASE_FROM: 'results_v2/canonical_runs/ecot_bridge_edit_seed1.json'
+  N_SAMPLES: '40'
+  FAMILIES: 'paraphrase_null,bbox_jitter_null,syntactic_scramble,direction_flip,negation,subject_swap,verb_swap,gripper_flip,location_swap,cross_task_swap,adversarial_plausible'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+  MAX_NEW_TOKENS: '160'
+  TIME_BUDGET_H: '5'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_cotfaith_judge_edits.sh
