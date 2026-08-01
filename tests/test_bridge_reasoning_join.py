@@ -153,5 +153,41 @@ ck("after a PASSING probe the id join is used",
    idx6.lookup(1, 0, "open the drawer") is not None
    and idx6.stats["by_episode_id"] >= 1, f"{idx6.stats['by_episode_id']}")
 
+# ---- degenerate instruction keys, verbatim from bolt 754ru9usqe -------------
+# These are real entries in the 19541 keys the two exports share. Joining on them
+# pools unrelated trajectories -- max fanout on the real data was 963.
+JUNK = ["1", "9", "12345678", "3wsws", "7210 2199 5955 2055 534", ""]
+REAL = ["abre la gaveta", "close the pot and place on the upper left side",
+        "bring the orange to the front edge from back", "7 object were moved"]
+for t in JUNK:
+    ck(f"rejects degenerate key {t!r}", not btr._usable_task_key(t))
+for t in REAL:
+    ck(f"keeps real instruction {t[:34]!r}", btr._usable_task_key(t))
+
+RAW_J = {"/p": {str(i): episode(100 + i, "9") for i in range(4)}}
+RAW_J["/p"]["9"] = episode(200, "fold the blue cloth neatly")
+idxj = btr._ReasoningIndex(RAW_J)
+ck("a junk instruction never becomes a join key", "9" not in idxj.by_task)
+ck("...and is counted, not silently dropped",
+   idxj.stats["task_key_rejected_degenerate"] == 4,
+   f"{idxj.stats['task_key_rejected_degenerate']}")
+ck("...while the real instruction beside it survives",
+   btr._norm_task("fold the blue cloth neatly") in idxj.by_task)
+
+# Fanout cap: above it the key names a bucket, so refuse rather than pick by modulo.
+RAW_F = {"/p": {str(i): episode(300 + i, "put the spoon on the towel")
+                for i in range(btr._MAX_TASK_FANOUT + 1)}}
+idxf = btr._ReasoningIndex(RAW_F)
+ck(f"drops instruction keys with fanout > {btr._MAX_TASK_FANOUT}",
+   idxf.by_task == {} and idxf.stats["task_keys_dropped_high_fanout"] == 1,
+   f"keys={len(idxf.by_task)} dropped={idxf.stats['task_keys_dropped_high_fanout']}")
+ck("...so the text join returns nothing rather than an arbitrary pairing",
+   idxf.lookup(999, 0, "put the spoon on the towel") is None)
+RAW_OK = {"/p": {str(i): episode(400 + i, "put the spoon on the towel")
+                 for i in range(btr._MAX_TASK_FANOUT)}}
+idxk = btr._ReasoningIndex(RAW_OK)
+ck("a key exactly AT the cap is kept (boundary, not off-by-one)",
+   len(idxk.by_task) == 1 and idxk.stats["task_keys_dropped_high_fanout"] == 0)
+
 print("\n" + (f"{len(fails)} FAILED: {fails}" if fails else "ALL PASS"))
 sys.exit(1 if fails else 0)

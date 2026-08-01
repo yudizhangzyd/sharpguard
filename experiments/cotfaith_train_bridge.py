@@ -92,6 +92,33 @@ def _norm_task(s) -> str:
     return re.sub(r"[^a-z0-9 ]", "", str(s or "").lower()).strip()
 
 
+# A normalized instruction is usable as a join key only if it actually identifies
+# a task. Bridge V2 instructions are crowdsourced free text and a visible slice of
+# them is not language at all -- bolt `754ru9usqe` found "1", "9", "12345678",
+# "3wsws" and "7210 2199 5955 2055 534" among the 19541 keys the two exports
+# share, and a max fanout of 963 LeRobot episodes on a single key against a median
+# of 1. Joining on those pairs hundreds of unrelated trajectories with whichever
+# episode the modulo happens to select, which is the same defect as the poisoned
+# episode_id join, just concentrated in a minority of keys. Two guards, both
+# measured rather than guessed:
+_MIN_TASK_CHARS = 8          # "9" and "3wsws" are not instructions
+_MIN_TASK_WORDS = 2          # a manipulation instruction is at least verb+object
+_MAX_TASK_FANOUT = 8         # above this the key identifies a bucket, not a task
+
+
+def _usable_task_key(t: str) -> bool:
+    """Is this normalized instruction specific enough to join on?
+
+    Deliberately conservative: turning a junk key into *no* join costs coverage,
+    which the preflight reports; turning it into an arbitrary pairing costs
+    training-data validity, which nothing downstream can detect.
+    """
+    if len(t) < _MIN_TASK_CHARS:
+        return False
+    words = [w for w in t.split() if len(w) >= 2 and any(c.isalpha() for c in w)]
+    return len(words) >= _MIN_TASK_WORDS
+
+
 # Bridge-export `features` field names, for tags the `reasoning` subtree does not
 # supply. Bolt `754ru9usqe` measured which those are over 4000 steps: `reasoning`
 # fills TASK, PLAN, SUBTASK, SUBTASK REASONING, MOVE REASONING and MOVE at 1.0
@@ -223,6 +250,7 @@ class _ReasoningIndex:
         self.stats = {"id_probe_hits": 0, "id_probe_agrees": 0,
                       "by_episode_id": 0, "by_task_text": 0,
                       "merge_filled_from_features": 0,
+                      "task_key_rejected_degenerate": 0,
                       "shape_deviations": 0}
 
         n_ep = 0
@@ -250,13 +278,26 @@ class _ReasoningIndex:
                 if isinstance(eid, int):
                     self.by_id.setdefault(eid, epi)
                 t = _norm_task(epi["instruction"])
-                if t:
+                if t and _usable_task_key(t):
                     self.by_task.setdefault(t, []).append(epi)
+                elif t:
+                    self.stats["task_key_rejected_degenerate"] += 1
                 n_ep += 1
+
+        # Fanout guard, applied after the index is complete because it is a
+        # property of the whole key, not of one episode.
+        self.stats["task_keys_dropped_high_fanout"] = 0
+        for t in [k for k, v in self.by_task.items()
+                  if len(v) > _MAX_TASK_FANOUT]:
+            self.stats["task_keys_dropped_high_fanout"] += 1
+            del self.by_task[t]
 
         print(f"[bridge-train] reasoning index: {len(raw)} path keys, "
               f"{n_ep} usable episodes, {len(self.by_id)} distinct episode_ids, "
-              f"{len(self.by_task)} distinct instructions, "
+              f"{len(self.by_task)} usable instruction keys "
+              f"({self.stats['task_key_rejected_degenerate']} rejected as "
+              f"degenerate, {self.stats['task_keys_dropped_high_fanout']} "
+              f"dropped for fanout > {_MAX_TASK_FANOUT}), "
               f"{self.stats['shape_deviations']} shape deviations")
         if not n_ep:
             print("[bridge-train] WARNING the reasoning export yielded no "
