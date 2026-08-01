@@ -1,0 +1,31 @@
+name: 'CoT-Faith #15: measure the OpenVLA-OFT load failure instead of asserting it'
+description: 'Limitation (ix) says OpenVLA-OFT "failed to load cleanly in our environment (Python 3.10, torch 2.2.0)" and "remains unloadable". It is the only claim in the paper with no released artifact behind it, and it is the one that excuses a coverage gap -- so it gets measured like everything else. The probe resolves the official checkpoints from the Hub API rather than from memory (this repo hand-wrote an asset list and got it wrong twice), and reports exists/gated/absent distinctly, since an unauthenticated 401 cannot tell them apart. It then attempts the load twice: in the environment the paper names, recording the exact exception type and traceback tail, and again on transformers 4.53, which postdates the OFT release -- "unloadable" is only honest if a current stack was tried, and a stale pin is our problem, not a property of the checkpoint. A checkpoint that loads must also generate; importing without raising is not usability. Both outcomes are useful.'
+tags: ['cotfaith', 'oft', 'limitation-ix', 'load-probe', 'coverage']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  DTYPE: 'bfloat16'
+  # Empty => the probe resolves the official OFT checkpoints from the Hub search
+  # API. Set to a comma-separated list only to pin the candidates by hand.
+  OFT_REPOS: ''
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_oft_load_probe.sh
