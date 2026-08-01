@@ -67,6 +67,24 @@ print("--- join-key presence: " + ", ".join(
     for k in ("episode_id", "file_path", "instruction", "n_steps")))
 dev = r.get("shape_deviations") or {}
 print(f"--- shape deviations: {dev if dev else 'none'}")
+# Whether the join is even worth having. The LIBERO export carries all 8 CoT tags
+# in one per-step dict; the Bridge export splits them across `features` and
+# `reasoning`, so a perfect join into an unrenderable trace is still a dead end.
+rd = r.get("renderability") or {}
+print(f"--- reasoning step fields ({rd.get('n_reasoning_steps_inspected')} steps "
+      f"inspected): {list((rd.get('reasoning_step_field_frequency') or {}))}")
+for k, v in (rd.get("reasoning_step_field_samples") or {}).items():
+    print(f"      {k} = {v[:140]}")
+print(f"--- tag fill from reasoning only: {rd.get('tag_fill_rate_from_reasoning_only')}")
+print(f"--- tag fill from features only:  {rd.get('tag_fill_rate_from_features_only')}")
+print(f"--- tag fill from the merge:      {rd.get('tag_fill_rate_from_merge')}")
+if rd.get("merge_required"):
+    print("[join] the trainer MUST merge features+reasoning per step: at least "
+          "one CoT tag is fillable only from `features`. build_ecot_target_text "
+          "on reasoning[step] alone would render it empty.")
+if rd.get("tags_unfillable_by_either"):
+    print(f"[join] tags NO source can fill, so they render empty in every "
+          f"Bridge CoT: {rd['tags_unfillable_by_either']}")
 print(f"--- lerobot: {r.get('n_lerobot_episodes')} episodes, "
       f"{r.get('n_distinct_lerobot_tasks')} distinct tasks")
 # The field-name question that could make the join exact.

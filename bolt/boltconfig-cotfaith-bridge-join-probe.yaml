@@ -1,14 +1,14 @@
 name: 'CoT-Faith #11b diag: score the Bridge join on the keys round 1 measured (CPU)'
-description: 'Round 2 of the F4/O4 deconfound join diagnostic. Round 1 (j2kqu7k3m7) settled the structure
-  and voided its own answer: it scored by_episode_index against the TOP-level keys, which are absolute
-  NFS paths, so 0 by construction, and by_task_text against rec[''task''], a field that does not exist.
-  The field that does is metadata.language_instruction, and metadata.episode_id is present on all 60062
-  episodes and nothing had looked at it. So round 1''s ''no strategy matches'' was a fact about the probe,
-  not the data. This round scores keys measured to be present: episode_id vs LeRobot episode_index, CONFIRMED
-  by instruction agreement on the matched pairs; instruction text as fallback with its fanout reported.
-  An id overlap whose instructions disagree is flagged loudly -- it is the one outcome that would produce
-  a full, plausible, WRONG join index. It also reports the LeRobot episode record''s full key set, since
-  a source-path field there would make the join exact.'
+description: 'Round 2 of the F4/O4 deconfound join diagnostic. Round 1 (j2kqu7k3m7) fixed the structure
+  and voided its own answer: it scored both strategies against fields that do not exist (top-level keys
+  are NFS paths; rec[''task''] is absent -- it is metadata.language_instruction), so ''no strategy matches''
+  was a fact about the probe. This round scores keys measured present: metadata.episode_id vs LeRobot
+  episode_index, CONFIRMED by instruction agreement on matched pairs, plus instruction text as fallback.
+  An id overlap whose instructions disagree is flagged loudly -- the one outcome that yields a full, plausible,
+  WRONG join index. It also measures RENDERABILITY: LIBERO packs all 8 CoT tags in one per-step dict,
+  Bridge splits them across features (lists) and reasoning (dicts nobody has read), so the trainer must
+  merge two subtrees per step and a perfect join into an unrenderable trace is still a dead end. Per-tag
+  fill rate is reported from reasoning alone, features alone, and the merge.'
 tags:
 - cotfaith
 - bridge

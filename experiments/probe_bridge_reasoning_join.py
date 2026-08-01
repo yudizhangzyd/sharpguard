@@ -88,6 +88,23 @@ DATASET_REPO = "IPEC-COMMUNITY/bridge_orig_lerobot"
 # which is the failure mode both round 1 and the trainer had.
 EXPECTED_L2 = {"features", "metadata", "reasoning"}
 
+# The eight tags experiments/cotfaith_train.py::build_ecot_target_text renders,
+# with its alias lists, duplicated here rather than imported -- that module pulls
+# in torch and the LIBERO recipe at import time and this probe runs on a CPU pod.
+# Duplicated deliberately and narrowly: the probe's job is to report which of
+# these the Bridge export can actually fill, and the answer is worthless if it is
+# computed against a different tag list than the trainer uses.
+ECOT_TAG_ALIASES = [
+    ("TASK", ("task",)),
+    ("PLAN", ("plan",)),
+    ("VISIBLE OBJECTS", ("bboxes",)),
+    ("SUBTASK REASONING", ("subtask_reasoning", "subtask_reason")),
+    ("SUBTASK", ("subtask",)),
+    ("MOVE REASONING", ("movement_reasoning", "move_reasoning", "move_reason")),
+    ("MOVE", ("movement", "move")),
+    ("GRIPPER POSITION", ("gripper", "gripper_position")),
+]
+
 
 def norm_task(s) -> str:
     """Same normalization the trainer's `_norm_task` uses, kept in sync by eye.
@@ -199,6 +216,77 @@ def episode_facts(raw: dict, limit=None) -> dict:
     return {"facts": facts, "deviations": dict(dev.most_common(20))}
 
 
+def renderable_tags(raw: dict, limit=4000) -> dict:
+    """Which of the trainer's 8 CoT tags can the Bridge export actually fill?
+
+    The reason this exists is a requirement that only became visible once the
+    layout was known. The LIBERO reasoning export the trainer was written
+    against carries all eight tags in ONE per-step dict. The Bridge export
+    splits them: `features` holds bboxes / gripper_position / move_primitive as
+    per-step *lists*, and `reasoning` holds per-step *dicts* of something else.
+    So `build_ecot_target_text(reasoning[step])` cannot render a full trace here
+    no matter how the join is keyed -- the trainer has to merge the two subtrees
+    per step, and until now nobody had measured what is in either half.
+
+    Reported three ways, because the difference is the whole point: what the
+    reasoning subtree alone resolves, what features alone resolves, and what the
+    merge resolves. A tag that no source fills is a tag the Bridge CoT will
+    render empty, and that is a fact the deconfound's write-up needs whether or
+    not it changes the plan.
+    """
+    step_fields = Counter()
+    step_samples: dict = {}
+    n_steps_seen = 0
+    from_reasoning = Counter()
+    from_features = Counter()
+    from_merge = Counter()
+
+    for _pkey, _ekey, ev in collect_episodes(raw, None):
+        rz, ft = ev.get("reasoning"), ev.get("features")
+        if not isinstance(rz, dict):
+            continue
+        fkeys = set(ft) if isinstance(ft, dict) else set()
+        for skey in sorted(rz, key=lambda s: int(s) if str(s).isdigit() else 0):
+            rec = rz[skey]
+            if not isinstance(rec, dict):
+                continue
+            step_fields.update(rec.keys())
+            for k, v in rec.items():
+                step_samples.setdefault(k, str(v)[:220])
+            for tag, aliases in ECOT_TAG_ALIASES:
+                in_r = any(a in rec for a in aliases)
+                in_f = any(a in fkeys for a in aliases)
+                if in_r:
+                    from_reasoning[tag] += 1
+                if in_f:
+                    from_features[tag] += 1
+                if in_r or in_f:
+                    from_merge[tag] += 1
+            n_steps_seen += 1
+            if limit and n_steps_seen >= limit:
+                break
+        if limit and n_steps_seen >= limit:
+            break
+
+    def frac(c):
+        return {tag: round(c.get(tag, 0) / max(1, n_steps_seen), 4)
+                for tag, _ in ECOT_TAG_ALIASES}
+
+    merged = frac(from_merge)
+    return {
+        "n_reasoning_steps_inspected": n_steps_seen,
+        "reasoning_step_field_frequency": dict(step_fields.most_common(30)),
+        "reasoning_step_field_samples": step_samples,
+        "tag_fill_rate_from_reasoning_only": frac(from_reasoning),
+        "tag_fill_rate_from_features_only": frac(from_features),
+        "tag_fill_rate_from_merge": merged,
+        "tags_unfillable_by_either": [t for t, v in merged.items() if v == 0.0],
+        "merge_required": any(
+            frac(from_reasoning)[t] == 0.0 and frac(from_features)[t] > 0.0
+            for t, _ in ECOT_TAG_ALIASES),
+    }
+
+
 def load_lerobot_episodes(fetch) -> tuple[dict, list]:
     """episode_index -> record, from meta/episodes.jsonl (small).
 
@@ -294,6 +382,12 @@ def main() -> int:
          for k, v in f.items()} for f in facts[:5]]
     report["n_annotated_steps_total"] = sum(f["n_steps_reasoning"]
                                            for f in facts)
+    dump()
+
+    # Can the trainer's renderer even be fed from this export? Measured before
+    # the join is scored, because a perfect join into an unrenderable trace is
+    # still a dead end, and this is the phase that would answer it.
+    report["renderability"] = renderable_tags(raw)
     dump()
 
     lero, lero_keysets = load_lerobot_episodes(fetch)
