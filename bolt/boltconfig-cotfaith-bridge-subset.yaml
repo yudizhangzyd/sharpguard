@@ -1,5 +1,5 @@
 name: 'CoT-Faith F4 deconfound: LoRA r=32 on 4k Bridge V2 subset (matched to LIBERO-90 scale)'
-description: 'Fine-tune ECoT-bridge base on Bridge V2 4k-trajectory subset with Embodied-CoT reasoning annotations. Same rank/steps/base as Ours-r=32 LIBERO fine-tune. Isolates corpus effect from data quantity (reviewer-flagged F4 confound).'
+description: 'F4 confound: every "ours" row is ECoT-bridge fine-tuned on LIBERO, and each scores differently from the base -- but two causes are entangled. Either fine-tuning changed the CoT-action coupling, or it moved the model in-domain for the evaluation corpus and the leaderboard is partly measuring domain match. This trains with the identical recipe on Bridge V2, the base model''s OWN domain, holding domain fixed so only the first can move. The recipe (prompt, 8-tag CoT render, action tokenizer, collator) is IMPORTED from cotfaith_train.py, not reimplemented: a deconfound whose recipe differs from what it deconfounds measures the difference in recipes. Four stages in one job because the deliverable is the calibration profile, not the checkpoint, and bolt pods cannot fetch cross-job artifacts. The reasoning<->trajectory join is unverified, so a preflight streams a few examples BEFORE the 7B load and exits 6 if it joins nothing; zero gradient steps refuses to save a checkpoint indistinguishable from the base.'
 tags: ['cotfaith','deconfound','bridge-subset','F4']
 project_id: ads_algo_signal_qucacheoffline
 permissions:
@@ -23,6 +23,12 @@ environment_variables:
   BATCH_SIZE: '2'
   DTYPE: 'bfloat16'
   SEED: '0'
+  REASONING_MODE: 'full'
+  MAX_STEPS_PER_EP: '0'
+  # The preflight runs unconditionally; this only decides whether to stop after
+  # it. Left at 0 so one job either produces the profile or dies cheaply.
+  PREFLIGHT_ONLY: '0'
+  PREFLIGHT_N: '3'
   RVIS_N_SAMPLES: '100'
   EDIT_N_SAMPLES: '100'
   EDIT_THRESHOLD: '0.05'
