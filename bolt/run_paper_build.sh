@@ -66,7 +66,7 @@ echo "[paper] engine: ${ENGINE:-NONE}"
 if [ -n "$ENGINE" ]; then
     cp "$STYLE_OUT"/*.sty "$STYLE_OUT"/*.bst . 2>/dev/null
     case "$ENGINE" in
-        latexmk)  latexmk -pdf -interaction=nonstopmode -halt-on-error=false \
+        latexmk)  latexmk -pdf -interaction=nonstopmode \
                       -outdir="$PAPER_OUT" cot_faith_iclr.tex ;;
         pdflatex) for i in 1 2 3; do
                       pdflatex -interaction=nonstopmode -output-directory="$PAPER_OUT" \
