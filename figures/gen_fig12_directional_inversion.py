@@ -15,11 +15,16 @@ All values from results_v2/derived_metrics.json.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
-from _data import MODELS, ORDER, LABELS, fam
+from _data import MODELS, ORDER, LABELS, OURS, fam
 import numpy as np
 import matplotlib.pyplot as plt
 
 MS = [m for m in ORDER if m in MODELS]
+# Only panels (a) and (b) carry a model axis; (c) is a family axis. See
+# paper_plot_style.ours_bracket for why the "Ours" prefix left the labels.
+N_OURS = sum(1 for m in MS if m in OURS)
+assert all(m in OURS for m in MS[:N_OURS]), \
+    "ORDER no longer puts our fine-tunes first; the bracket would mislabel"
 COL = {m: (C_NO_COT if m == "ours-no-cot" else
            C_ECOT_BRIDGE if m == "ecot-bridge" else C_COT_TRAINED) for m in MS}
 
@@ -50,6 +55,7 @@ ax1.legend(handles=_h, frameon=False, fontsize=FONT_SIZE - 3, loc="upper left")
 ax1.set_title("(a) The flagship edit: magnitude vs direction",
               loc="left", fontsize=FONT_SIZE, style="italic")
 ax1.set_axisbelow(True); ax1.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
+ours_bracket(ax1, N_OURS)
 
 # ---- (b) signed cosine ----------------------------------------------------
 cs = [fam(m, "direction_flip", "cos_xyz") for m in MS]
@@ -72,6 +78,7 @@ ax2.legend(handles=_h2, frameon=False, fontsize=FONT_SIZE - 3, loc="upper left")
 ax2.set_title("(b) Sign of the response after left$\\leftrightarrow$right is reversed",
               loc="left", fontsize=FONT_SIZE, style="italic")
 ax2.set_axisbelow(True); ax2.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
+ours_bracket(ax2, N_OURS)
 
 # ---- (c) F_diff for the model with a measured paraphrase floor -------------
 HAVE = [m for m in MS if MODELS[m].get("paraphrase_null_floor") is not None]

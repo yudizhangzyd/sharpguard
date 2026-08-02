@@ -34,12 +34,19 @@ def fam(model, family, key="F_mag"):
     return None if e is None else e.get(key)
 
 
-# Display order + colors used consistently across figures
+# Display order + colors used consistently across figures.
+# The labels carry no "Ours" prefix: repeating it on seven of eight ticks made
+# every label wider than its slot, and `data-50A`/`data-50B` visibly ran into
+# each other in fig4 and fig12. The distinction is drawn instead as a bracket
+# under the axis (paper_plot_style.ours_bracket), which is both legible and
+# where a reader looks for a grouping.
 ORDER = ["ours-no-cot", "ours-data50A", "ours-data50B", "ours-r8",
          "ours-r16", "ours-r32", "ours-r64", "ecot-bridge"]
-LABELS = {"ours-no-cot": "Ours\nno-CoT", "ours-data50A": "Ours\ndata-50A",
-          "ours-data50B": "Ours\ndata-50B", "ours-r8": "Ours\nr=8",
-          "ours-r16": "Ours\nr=16", "ours-r32": "Ours\nr=32",
-          "ours-r64": "Ours\nr=64", "ecot-bridge": "ECoT-\nbridge"}
+LABELS = {"ours-no-cot": "no-CoT", "ours-data50A": "data-\n50A",
+          "ours-data50B": "data-\n50B", "ours-r8": "r=8",
+          "ours-r16": "r=16", "ours-r32": "r=32",
+          "ours-r64": "r=64", "ecot-bridge": "ECoT-\nbridge"}
+# Which entries in ORDER are this paper's own fine-tunes, for that bracket.
+OURS = [m for m in ORDER if m.startswith("ours-")]
 NON_CONTROL = ["direction_flip", "gripper_flip", "verb_swap", "negation",
                "subject_swap", "location_swap", "adversarial_plausible"]

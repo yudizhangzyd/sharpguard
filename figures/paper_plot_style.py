@@ -47,6 +47,26 @@ BUCKET_COLORS = {
 
 FIG_DIR = "/Users/yudizhang/Documents/sharpguard/figures"
 
+
+def ours_bracket(ax, n_ours, label="our fine-tunes", y=-0.20, pad=0.32):
+    """Draw a bracket under the first ``n_ours`` x-positions.
+
+    The model axis mixes this paper's fine-tunes with a released checkpoint.
+    Tagging every one of ours with an "Ours" prefix made the tick labels wider
+    than their slots -- `data-50A` and `data-50B` overlapped outright. A single
+    bracket says the same thing once, in the place readers expect a grouping.
+
+    ``y`` is in axes coordinates, below the tick labels.
+    """
+    x0, x1 = -pad, n_ours - 1 + pad
+    tr = ax.get_xaxis_transform()          # x in data, y in axes fraction
+    ax.plot([x0, x0, x1, x1], [y + 0.022, y, y, y + 0.022],
+            transform=tr, color="0.35", lw=0.7, clip_on=False)
+    ax.text((x0 + x1) / 2, y - 0.012, label, transform=tr, ha="center",
+            va="top", fontsize=FONT_SIZE - 3, color="0.35", style="italic",
+            clip_on=False)
+
+
 def save(fig, name, fmt=FMT):
     p = f"{FIG_DIR}/{name}.{fmt}"
     fig.savefig(p, dpi=DPI, bbox_inches="tight", pad_inches=0.05)
