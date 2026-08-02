@@ -4172,6 +4172,88 @@ def audit_rollout_insuite(a: Audit) -> None:
             source="results_v2/canonical_runs/rollout_edit_outofsuite_round1/")
 
 
+def audit_rollout_edited_arm(a: Audit) -> None:
+    """The one run that executed a CoT-EDITED rollout arm.
+
+    r2kpkqsim4 ran the two control arms to 40 episodes and stopped before
+    adding an edited one. nskmsunnpb added `cot_direction_flip` under the same
+    wall-clock budget, which cost episodes (10/10/9 instead of 40/40) and
+    bought the only closed-loop evidence in the release about an edit.
+
+    The temptation this artifact creates is precise: three arms now exist, so
+    a reader -- or a later draft -- can present 0/9 against 0/10 as a
+    comparison. It is not one. The control never succeeds, so the difference
+    is zero because both terms are, and the harness still reports
+    precondition_met=false with an empty DSR map. Those two facts are asserted
+    here exactly as they are for the two-arm run.
+
+    What the run does add is two numbers the offline first-step protocol
+    cannot produce, and both are unflattering, which is why they are pinned:
+    381 edits were SKIPPED mid-rollout because the CoT carried no direction
+    word to reverse, and the edited arm's next-generation parse failure rate
+    is 10.2% against the clean arm's 0.2%.
+    """
+    sec = "In-suite paired rollout, edited arm (the only closed-loop edit)"
+    base = ROOT / "results_v2" / "canonical_runs" / "rollout_edit_insuite_flip"
+    src = "results_v2/canonical_runs/rollout_edit_insuite_flip/"
+    d = load(base / "rollout_edit_report.json")
+    if not d:
+        a.check(sec, "the edited-arm rollout report is released", True, False,
+                source=src)
+        return
+    arms = d.get("by_arm") or {}
+    cfg = d.get("config") or {}
+
+    a.check(sec, "the edited arm exists and names the family it applied",
+            "direction_flip",
+            (arms.get("cot_direction_flip") or {}).get("family"), source=src)
+    for arm, n in (("nocot", 10), ("cot_clean", 10),
+                   ("cot_direction_flip", 9)):
+        v = arms.get(arm) or {}
+        a.check(sec, f"{arm}: 0 successes over {n} episodes",
+                [0, n], [v.get("successes"), v.get("n")], source=src)
+
+    # Same suite and budget as the two-arm run: a different suite here would
+    # make the two runs incomparable and the zero attributable to the mismatch.
+    a.check(sec, "ran on libero_90, the suite the checkpoint trained on",
+            "libero_90", cfg.get("suite"), source=src)
+    a.check(sec, "at upstream's 400-step budget", 400, cfg.get("max_steps"),
+            source=src)
+    a.check(sec, "and applied direction_flip, the family with a signed "
+                 "prediction", "direction_flip", cfg.get("families"),
+            source=src)
+
+    # The load-bearing pair. An edited arm does not make DSR definable.
+    a.check(sec, "adding an edited arm does NOT make the comparison defined: "
+                 "the harness still reports its precondition as failed",
+            False, d.get("precondition_met"), source=src)
+    a.check(sec, "and still reports no per-family DSR, because 0 against a "
+                 "control that never succeeds is 0 by construction", {},
+            d.get("delta_sr_vs_cot_clean"), source=src)
+
+    # The two numbers only a rollout can produce.
+    flip = arms.get("cot_direction_flip") or {}
+    a.check(sec, "381 edits were skipped mid-rollout for want of a direction "
+                 "word to reverse -- an applicability limit the first-step "
+                 "protocol cannot see", 381, flip.get("n_edit_skipped"),
+            source=src)
+    tot = (flip.get("n_cot_structured") or 0) + (flip.get("n_cot_unstructured") or 0)
+    cc = arms.get("cot_clean") or {}
+    tot_c = (cc.get("n_cot_structured") or 0) + (cc.get("n_cot_unstructured") or 0)
+    a.check(sec, "editing the CoT raises the next generation's parse-failure "
+                 "rate to 10.2% from the clean arm's 0.2%", [10.2, 0.2],
+            [round(100 * (flip.get("n_cot_unstructured") or 0) / tot, 1) if tot else None,
+             round(100 * (cc.get("n_cot_unstructured") or 0) / tot_c, 1) if tot_c else None],
+            source=src)
+
+    # Same scale precondition as its companion; the ecot-bridge failure mode
+    # would make this zero uninterpretable for an unrelated reason.
+    probe = load(base / "rollout_edit_probe.json") or {}
+    a.check(sec, "the action-scale precondition held here too", True,
+            str(probe.get("scale_precondition", "")).startswith("ok"),
+            source=src + "rollout_edit_probe.json")
+
+
 def audit_dt_decode_equivalence(a: Audit) -> None:
     """The cross-family decode-equivalence bound, and the row it does not cover.
 
@@ -4430,6 +4512,7 @@ def main() -> int:
     audit_collision_decomposition(a)
     audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
+    audit_rollout_edited_arm(a)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 
