@@ -1,0 +1,152 @@
+{
+ "family": "direction_flip",
+ "interpretation": "Spearman rho and Kendall tau-b between the magnitude and direction-aware orderings of the leaderboard cohort on direction_flip. Reported on the 3-seed mean and separately on each seed, because S8 shows adjacent ranks sit inside the retraining error bar and a statistic that held only after averaging would be an artifact of the averaging.",
+ "models": [
+  "ours-no-cot",
+  "ours-data50A",
+  "ours-data50B",
+  "ours-r8",
+  "ours-r16",
+  "ours-r32",
+  "ours-r64",
+  "ecot-bridge"
+ ],
+ "n_models": 8,
+ "n_seeds": 3,
+ "n_seeds_with_negative_rho": 0,
+ "on_3seed_mean": {
+  "kendall_tau_b": 0.5,
+  "label": "3-seed mean",
+  "max_rank_shift": 6.0,
+  "model_of_max_shift": "ecot-bridge",
+  "n_concordant_pairs": 21,
+  "n_discordant_pairs": 7,
+  "n_ties_both": 0,
+  "n_ties_direction_only": 0,
+  "n_ties_magnitude_only": 0,
+  "rank_direction": {
+   "ecot-bridge": 7.0,
+   "ours-data50A": 4.0,
+   "ours-data50B": 6.0,
+   "ours-no-cot": 8.0,
+   "ours-r16": 2.0,
+   "ours-r32": 5.0,
+   "ours-r64": 1.0,
+   "ours-r8": 3.0
+  },
+  "rank_magnitude": {
+   "ecot-bridge": 1.0,
+   "ours-data50A": 4.0,
+   "ours-data50B": 7.0,
+   "ours-no-cot": 8.0,
+   "ours-r16": 3.0,
+   "ours-r32": 6.0,
+   "ours-r64": 2.0,
+   "ours-r8": 5.0
+  },
+  "spearman_rho": 0.47619047619047616
+ },
+ "per_seed": [
+  {
+   "kendall_tau_b": 0.5714285714285714,
+   "label": "seed 0",
+   "max_rank_shift": 6.0,
+   "model_of_max_shift": "ecot-bridge",
+   "n_concordant_pairs": 22,
+   "n_discordant_pairs": 6,
+   "n_ties_both": 0,
+   "n_ties_direction_only": 0,
+   "n_ties_magnitude_only": 0,
+   "rank_direction": {
+    "ecot-bridge": 7.0,
+    "ours-data50A": 4.0,
+    "ours-data50B": 6.0,
+    "ours-no-cot": 8.0,
+    "ours-r16": 2.0,
+    "ours-r32": 5.0,
+    "ours-r64": 1.0,
+    "ours-r8": 3.0
+   },
+   "rank_magnitude": {
+    "ecot-bridge": 1.0,
+    "ours-data50A": 5.0,
+    "ours-data50B": 7.0,
+    "ours-no-cot": 8.0,
+    "ours-r16": 3.0,
+    "ours-r32": 6.0,
+    "ours-r64": 2.0,
+    "ours-r8": 4.0
+   },
+   "spearman_rho": 0.5
+  },
+  {
+   "kendall_tau_b": 0.40006613209931935,
+   "label": "seed 1",
+   "max_rank_shift": 6.0,
+   "model_of_max_shift": "ecot-bridge",
+   "n_concordant_pairs": 19,
+   "n_discordant_pairs": 8,
+   "n_ties_both": 0,
+   "n_ties_direction_only": 0,
+   "n_ties_magnitude_only": 1,
+   "rank_direction": {
+    "ecot-bridge": 7.0,
+    "ours-data50A": 2.0,
+    "ours-data50B": 6.0,
+    "ours-no-cot": 8.0,
+    "ours-r16": 4.0,
+    "ours-r32": 5.0,
+    "ours-r64": 1.0,
+    "ours-r8": 3.0
+   },
+   "rank_magnitude": {
+    "ecot-bridge": 1.0,
+    "ours-data50A": 4.0,
+    "ours-data50B": 6.5,
+    "ours-no-cot": 8.0,
+    "ours-r16": 3.0,
+    "ours-r32": 6.5,
+    "ours-r64": 2.0,
+    "ours-r8": 5.0
+   },
+   "spearman_rho": 0.41916919166964056
+  },
+  {
+   "kendall_tau_b": 0.4913538149119954,
+   "label": "seed 2",
+   "max_rank_shift": 6.5,
+   "model_of_max_shift": "ecot-bridge",
+   "n_concordant_pairs": 19,
+   "n_discordant_pairs": 6,
+   "n_ties_both": 0,
+   "n_ties_direction_only": 3,
+   "n_ties_magnitude_only": 0,
+   "rank_direction": {
+    "ecot-bridge": 7.5,
+    "ours-data50A": 3.5,
+    "ours-data50B": 5.5,
+    "ours-no-cot": 7.5,
+    "ours-r16": 2.0,
+    "ours-r32": 5.5,
+    "ours-r64": 1.0,
+    "ours-r8": 3.5
+   },
+   "rank_magnitude": {
+    "ecot-bridge": 1.0,
+    "ours-data50A": 5.0,
+    "ours-data50B": 7.0,
+    "ours-no-cot": 8.0,
+    "ours-r16": 3.0,
+    "ours-r32": 6.0,
+    "ours-r64": 2.0,
+    "ours-r8": 4.0
+   },
+   "spearman_rho": 0.40006613209931935
+  }
+ ],
+ "rho_per_seed_max": 0.5,
+ "rho_per_seed_min": 0.40006613209931935,
+ "source": "results_v2/derived_metrics.json models[*].families.direction_flip.{F_mag,F_dir}_per_run",
+ "tau_per_seed_max": 0.5714285714285714,
+ "tau_per_seed_min": 0.40006613209931935
+}

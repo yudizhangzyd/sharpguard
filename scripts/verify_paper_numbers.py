@@ -5076,6 +5076,391 @@ def audit_arm_pairing_defect(a: Audit) -> None:
                 True, val in at, source="arr_appendix.tex")
 
 
+    # --- defect 4: identical state, different frame ------------------------
+    # The one this release is least entitled to have missed, because every
+    # check we had was on state and the state was bit-identical. Both halves
+    # are asserted: the defective run (the arms differ in pixels while agreeing
+    # to 0.0 in qpos) and the fixed run (bit-identical over every step), since
+    # a disclosure that names a defect without releasing its repair is not
+    # falsifiable.
+    d4 = load(base / "pairing_defect_sampling_phase.json")
+    a.check(sec, "defect 4's diagnostic is released", True, bool(d4),
+            source=src)
+    if d4:
+        a.check(sec, "defect 4: the arms agree in qpos at EVERY step, which is "
+                     "what made this defect invisible to every state-based "
+                     "check", (True, 0.0),
+                (bool(d4.get("identical_qpos")),
+                 float(d4.get("max_abs_qpos_diff_over_all_steps", -1))),
+                source=src)
+        a.check(sec, "defect 4: and the frames differ anyway, at every one of "
+                     "the 40 steps", (False, 40),
+                (bool(d4.get("identical_frames")),
+                 int(d4.get("n_pixel_steps_differing", -1))), source=src)
+        a.check(sec, "defect 4: the worst step differs by 160 pixel levels",
+                160.0, float(d4.get("max_abs_pixel_diff_over_all_steps", -1)),
+                source=src)
+        rg = d4.get("region_worst_step_1v2") or {}
+        a.check(sec, "defect 4: and is bit-identical outside the differing "
+                     "box, so this is a localized substep mismatch and not "
+                     "noise across the frame", 0.0,
+                float(rg.get("outside_mean_abs", -1)), source=src)
+        # No rigid shift aligns it -- which is what separates defect 4 from
+        # defect 1, where a 3-pixel translation cut the residual by 3x.
+        al = d4.get("frame_alignment_1v2") or {}
+        a.check(sec, "defect 4: no translation aligns the two frames at any "
+                     "step, unlike defect 1's rigid 3-pixel offset", 0,
+                int(al.get("n_steps_with_an_exact_match", -1)), source=src)
+        # And the render itself is deterministic, so the difference is in what
+        # was rendered rather than in the renderer.
+        nf = d4.get("render_noise_floor") or {}
+        a.check(sec, "defect 4: the renderer itself is bit-reproducible over "
+                     "repeated renders, so the difference is in WHEN the frame "
+                     "was taken", True, bool(nf.get("bit_identical")),
+                source=src)
+
+    d4f = load(base / "pairing_probe_all_four_fixed.json")
+    a.check(sec, "the run that closes defect 4 is released too", True,
+            bool(d4f), source=src)
+    if d4f:
+        a.check(sec, "defect 4 fixed: the arms are bit-identical over all 40 "
+                     "steps -- the first run of this harness for which that is "
+                     "true", (True, 0.0),
+                (bool(d4f.get("identical_frames")),
+                 float(d4f.get("max_abs_pixel_diff_over_all_steps", -1))),
+                source=src)
+        a.check(sec, "defect 4 fixed: on the second arm pair as well, since "
+                     "two of three arms agreeing is not a paired harness",
+                (True, 0.0),
+                (bool(d4f.get("identical_frames_2v3")),
+                 float(d4f.get("max_abs_pixel_diff_2v3", -1))), source=src)
+        ch = d4f.get("arm_rewind_channels") or {}
+        a.check(sec, "defect 4 fixed: all five carry-over channels are "
+                     "restored, including the two the disclosure adds",
+                ["clock", "controller", "gripper", "observables", "warmstart"],
+                sorted(ch), source=src)
+        a.check(sec, "defect 4 fixed: 3 clock fields and 29 observable caches "
+                     "were actually restored, not merely gated on", (3, 29),
+                (int(ch.get("clock", -1)), int(ch.get("observables", -1))),
+                source=src)
+        # The mechanism, from the artifact rather than from the prose: the
+        # sampling phase differed BEFORE the rewind and agrees after it.
+        pre = d4f.get("sampling_phase_before_rewind_1v2") or {}
+        post = d4f.get("sampling_phase_after_rewind_1v2") or {}
+        a.check(sec, "defect 4's mechanism: 31 of 206 observable fields "
+                     "differed before the rewind", (31, 206),
+                (int(pre.get("n_fields_differing", -1)),
+                 int(pre.get("n_fields", -1))), source=src)
+        a.check(sec, "and 0 of them differ after it", 0,
+                int(post.get("n_fields_differing", -1)), source=src)
+        # The clock difference the appendix quotes to 15 decimal places. It is
+        # the whole point of the disclosure -- 1.1e-15 crossing a comparison
+        # boundary became a 116-level image difference -- so it is asserted
+        # rather than paraphrased.
+        clocks = sorted({tuple(v) for k, v in
+                         (pre.get("differing") or {}).items()
+                         if k.endswith("._time_since_last_sample")})
+        a.check(sec, "defect 4's mechanism: the two arms' observable clocks "
+                     "differ in the last representable digit", 1,
+                len(clocks), source=f"{src}: distinct clock pairs = {clocks}")
+        if len(clocks) == 1:
+            lo, hi = clocks[0]
+            a.check(sec, "and the appendix quotes both clock values exactly, "
+                         "since a rounded version of this number is the same "
+                         "number", (True, True),
+                    (repr(lo) in at, repr(hi) in at),
+                    source="arr_appendix.tex")
+            a.check(sec, "and their difference is at the 1e-15 scale the "
+                         "appendix states", True,
+                    0 < abs(hi - lo) < 1e-14,
+                    source=f"|delta| = {abs(hi - lo):.3g}")
+        sdf = d4f.get("state_determines_frame") or {}
+        a.check(sec, "the probe records the implication defect 4 falsified: "
+                     "writing the same state and re-rendering does NOT give "
+                     "the same frame", False, bool(sdf.get("bit_identical")),
+                source=src)
+        a.check(sec, "and it differs by the 116 levels the appendix quotes",
+                116.0, float((sdf.get("pixels") or {}).get("max", -1)),
+                source=src)
+        for val in ("160", "116", "206", "vu6yavsp4a", "e268dqs2t8"):
+            a.check(sec, f"the appendix quotes '{val}' from the defect-4 "
+                         f"artifacts", True, val in at,
+                    source="arr_appendix.tex")
+        a.check(sec, "the appendix says four defects rather than three, so the "
+                     "count in the prose tracks the diagnostics released",
+                True, "Four pairing defects" in at, source="arr_appendix.tex")
+        a.check(sec, "and it retracts the state-implies-pixels inference it "
+                     "made for defect 2 rather than quietly deleting it", True,
+                "falsifies" in at and "the assumption that hid" in at,
+                source="arr_appendix.tex")
+
+    # Defect 4's fix, as source properties. The sampling phase must be
+    # snapshotted with the settle and restored on rewind, and it must be
+    # reported as its own channel -- a silently-skipped restore is how this
+    # defect survived two fixes.
+    for needle, what in (
+        ("_update_observables",
+         "defect 4: the harness names the robosuite call that samples "
+         "observables inside the substep loop, which is the mechanism"),
+        ("_restore_sampling",
+         "defect 4: the rewind restores the sampling phase"),
+        ('"clock": 0, "observables": 0',
+         "defect 4: the clock and the observable caches are reported as their "
+         "own channels, so a rename is visible rather than silent"),
+    ):
+        a.check(sec, what, True, needle in hb,
+                source="experiments/cotfaith_rollout_edit.py")
+    a.check(sec, "the probe measures state->pixel determinism directly rather "
+                 "than assuming it, which is the check that would have caught "
+                 "defect 4 two runs earlier", True,
+            "def state_determines_frame" in pt,
+            source="scripts/probe_rewind_pairing.py")
+
+
+def audit_rank_correlation(a: Audit, d: dict) -> None:
+    """One number for how much the two scoring rules disagree, recomputed.
+
+    S6 used to say "the ranking inverts", and a reviewer asked for the summary
+    statistic the two columns of tab:directional imply. It is +0.476 -- weakly
+    POSITIVE -- so the honest claim is narrower than the one the section made,
+    and the manuscript now makes the narrower one. That makes this check about
+    an overclaim we removed rather than one we are defending, and the direction
+    matters: a future edit that widens the wording back out to a global
+    inversion has to get past a check that knows rho is positive.
+
+    Both statistics are recomputed here by a DIFFERENT route than
+    scripts/rank_correlation.py uses. That script computes Spearman as Pearson
+    on midranks and tau as tau-b, both of which are the tie-corrected
+    definitions; this one uses the no-ties closed forms, 1 - 6*sum(d^2)/n(n^2-1)
+    and (con-dis)/(n(n-1)/2). The two agree only when there are no ties, so the
+    artifact's own tie counts are asserted to be zero first. A shared bug in
+    the midrank code would show up as a disagreement rather than cancelling.
+    """
+    sec = "Rank correlation between the two scoring rules (S6)"
+    art = ROOT / "results_v2/canonical_runs/rank_correlation/" \
+                 "rank_correlation.json"
+    rc = load(art)
+    a.check(sec, "the rank-correlation artifact is released", True, bool(rc),
+            source=str(art.relative_to(ROOT)))
+    if not rc:
+        return
+    src = "rank_correlation.json"
+    fam_key = rc.get("family")
+    a.check(sec, "it is computed on the family the section is about",
+            "direction_flip", fam_key, source=src)
+
+    mean = rc.get("on_3seed_mean") or {}
+    for k, what in (("n_ties_magnitude_only", "magnitude"),
+                    ("n_ties_direction_only", "direction"),
+                    ("n_ties_both", "both")):
+        a.check(sec, f"no ties on {what}, which is what licenses the "
+                     f"no-ties closed form used to re-derive rho here", 0,
+                mean.get(k), source=src)
+
+    # --- the ranks, from derived_metrics rather than from the artifact ------
+    models = rc.get("models") or []
+    fams = {m: dig(d, "models", m, "families", "direction_flip") or {}
+            for m in models}
+    a.check(sec, "every cohort model still carries a direction_flip row in "
+                 "derived_metrics.json", [],
+            sorted(m for m in models
+                   if fams[m].get("F_mag") is None
+                   or fams[m].get("F_dir") is None),
+            source="derived_metrics.json")
+    if any(fams[m].get("F_dir") is None for m in models):
+        return
+
+    n = len(models)
+    a.check(sec, "the cohort is the eight leaderboard configurations S6 walks "
+                 "down", 8, n, source=src)
+
+    def ranks(key):
+        order = sorted(models, key=lambda m: -fams[m][key])
+        return {m: i + 1 for i, m in enumerate(order)}
+
+    rmag, rdir = ranks("F_mag"), ranks("F_dir")
+    for key, got in (("rank_magnitude", rmag), ("rank_direction", rdir)):
+        a.check(sec, f"the artifact's {key} is what derived_metrics.json "
+                     f"implies", got,
+                {k: int(v) for k, v in (mean.get(key) or {}).items()},
+                source=f"{src} vs derived_metrics.json")
+
+    # Spearman by the no-ties closed form.
+    dsum = sum((rmag[m] - rdir[m]) ** 2 for m in models)
+    rho = 1.0 - 6.0 * dsum / (n * (n * n - 1))
+    a.check(sec, "Spearman rho, recomputed by the no-ties closed form, "
+                 "matches the artifact to 3dp", f"{rho:.3f}",
+            f"{mean.get('spearman_rho', 0):.3f}",
+            source=f"sum d^2 = {dsum} over n = {n}")
+
+    con = dis = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            mi, mj = models[i], models[j]
+            same = ((rmag[mi] - rmag[mj]) > 0) == ((rdir[mi] - rdir[mj]) > 0)
+            con, dis = (con + 1, dis) if same else (con, dis + 1)
+    a.check(sec, "the concordant/discordant split S6 quotes", (21, 7),
+            (con, dis), source="recomputed from the two rankings")
+    a.check(sec, "and it is the split the artifact recorded",
+            (con, dis), (mean.get("n_concordant_pairs"),
+                         mean.get("n_discordant_pairs")), source=src)
+    tau = (con - dis) / (n * (n - 1) / 2)
+    a.check(sec, "Kendall tau, recomputed as (con-dis) over n(n-1)/2, matches "
+                 "the artifact to 3dp", f"{tau:.3f}",
+            f"{mean.get('kendall_tau_b', 0):.3f}", source=src)
+
+    # --- the shape of the disagreement, which is the actual claim ----------
+    shifts = sorted(((abs(rmag[m] - rdir[m]), m) for m in models),
+                    reverse=True)
+    a.check(sec, "the largest rank shift is 6 positions", 6.0,
+            float(shifts[0][0]), source="recomputed")
+    a.check(sec, "and it belongs to the configuration S6 names",
+            "ecot-bridge", shifts[0][1], source="recomputed")
+    a.check(sec, "S6's claim that no OTHER configuration shifts more than 2 "
+                 "positions: the second-largest shift", True,
+            float(shifts[1][0]) <= 2.0,
+            source=f"second-largest = {shifts[1][0]:.0f} ({shifts[1][1]})")
+    a.check(sec, "the hero configuration goes from rank 1 to rank 7, which is "
+                 "what fig:overview panel (c) draws", (1, 7),
+            (rmag["ecot-bridge"], rdir["ecot-bridge"]), source="recomputed")
+
+    # --- per seed, because a statistic that needs the averaging is an artifact
+    per = rc.get("per_seed") or []
+    a.check(sec, "rho is reported per sampling seed as well as on the 3-seed "
+                 "mean", 3, len(per), source=src)
+    rhos = [p.get("spearman_rho") for p in per]
+    a.check(sec, "and it is positive on every seed, so the weak agreement is "
+                 "not produced by averaging the seeds", 0,
+            sum(1 for r in rhos if r is not None and r < 0), source=src)
+    a.check(sec, "the per-seed rho range S6 quotes", ("0.400", "0.500"),
+            (f"{min(rhos):.3f}", f"{max(rhos):.3f}"), source=src)
+
+    # --- and the prose, in every place it is stated ------------------------
+    arr = ROOT / "cot_faith_arr.tex"
+    t = arr.read_text() if arr.exists() else ""
+    for lit, where in ((r"\rho = 0.48", "the abstract, rounded to 2dp"),
+                       (r"\rho = 0.476", "S6 and the conclusion"),
+                       (r"\tau_b = 0.500", "S6"),
+                       ("21 concordant against 7 discordant", "S6"),
+                       ("$0.400$--$0.500$", "S6's per-seed range")):
+        a.check(sec, f"the ARR body states {lit!r} in {where}", True,
+                lit in t, source="cot_faith_arr.tex")
+    # rho is POSITIVE, so no sentence may claim the cohort ordering reverses
+    # wholesale. This is the overclaim the statistic ruled out; it stays ruled
+    # out only if something checks.
+    #
+    # The check is on the QUALIFIER, not on the phrase: "the top of the ranking
+    # inverts" is the claim rho supports and it necessarily contains "the
+    # ranking inverts" as a substring, and S6 also quotes the bare phrase in
+    # scare quotes in order to disclaim it. So every occurrence must be either
+    # scoped to the top of the ranking or quoted, and a bare one fails. The
+    # qualifier may sit on either side -- the section title scopes it before
+    # ("the top of the ranking inverts") and the paragraph lead-in after ("the
+    # ranking reverses at the top") -- so both sides of the window are read.
+    unqualified = []
+    for m in re.finditer(r"ranking (?:inverts|reverses)", t):
+        near = t[max(0, m.start() - 24):m.end() + 24]
+        if not ("top of the " in near or "at the top" in near or "``" in near):
+            unqualified.append(t[max(0, m.start() - 40):m.end() + 20])
+    a.check(sec, "every claim that the ranking inverts is scoped to the TOP of "
+                 "the ranking (or quoted in order to be disclaimed): a "
+                 "positive rho does not support a wholesale reversal", [],
+            unqualified, source="cot_faith_arr.tex")
+
+
+def audit_overview_figure(a: Audit, d: dict) -> None:
+    """Fig 1 says what the instrument does AND what it found, so it is checked.
+
+    The overview figure prints five quantities on the canvas and its caption
+    repeats them in prose. That is two copies of every number, in a float that
+    a reader looks at before any table, and neither copy is derived from the
+    other -- the panel reads derived_metrics.json, the caption was typed. So
+    both are asserted against the artifacts here.
+
+    The figure script is also checked for the specific values it displays, not
+    by the general hardcoded-literal scan the other figures get. That scan
+    compares every numeric literal in the drawing code against every value in
+    the artifact, which works for a bar chart and does not work here: panel (a)
+    is a hand-laid drawing whose box coordinates are three-decimal literals by
+    the dozen, and against a 437-example export the scan collides by accident
+    often enough to be waived rather than read. Naming the five reported
+    quantities instead is narrower and does not go stale silently, because the
+    same five are asserted against the artifacts two paragraphs down.
+    """
+    sec = "Overview figure (Fig 1)"
+    arr = ROOT / "cot_faith_arr.tex"
+    t = arr.read_text() if arr.exists() else ""
+    gen = ROOT / "figures" / "gen_fig1_overview.py"
+    pdf = ROOT / "figures" / "fig1_overview.pdf"
+
+    a.check(sec, "the ARR body opens with an overview figure -- every "
+                 "benchmark paper we compare against does, and until now this "
+                 "one had a page of text on page 1", True,
+            "\\label{fig:overview}" in t, source="cot_faith_arr.tex")
+    a.check(sec, "it is full width, since three panels in one column is the "
+                 "aspect ratio that made fig4 illegible", True,
+            bool(re.search(r"\\includegraphics\[width=\\textwidth\]"
+                           r"\{fig1_overview\.pdf\}", t)),
+            source="cot_faith_arr.tex")
+    a.check(sec, "the figure is generated by a released script", True,
+            gen.exists(), source=str(gen.relative_to(ROOT)))
+    a.check(sec, "and the PDF it produces is committed", True, pdf.exists(),
+            source=str(pdf.relative_to(ROOT)))
+    body = gen.read_text() if gen.exists() else ""
+    for artifact in ("floor_invariance.json", "edit_examples.json",
+                     "derived_metrics.json"):
+        a.check(sec, f"the script reads {artifact} rather than restating it",
+                True, artifact in body or "_data" in body,
+                source=str(gen))
+
+    # The three panel-(a) quantities, from the artifact the figure reads.
+    hero = dig(d, "models", "ecot-bridge", "families", "direction_flip") or {}
+    for field, want, what in (("cos_xyz", "+0.415", "mean translation cosine"),
+                              ("F_mag", "0.963", "magnitude score"),
+                              ("F_dir", "0.120", "direction-aware score")):
+        v = hero.get(field)
+        got = (f"{v:+.3f}" if field == "cos_xyz" else f"{v:.3f}") \
+            if v is not None else None
+        a.check(sec, f"panel (a)'s {what} is the released value", want, got,
+                source=f"derived_metrics.json ecot-bridge.direction_flip."
+                       f"{field}")
+        a.check(sec, f"and the caption prints it", True, f"${want}$" in t,
+                source="cot_faith_arr.tex")
+        # It must reach the canvas from the artifact, not from a literal.
+        a.check(sec, f"and the script does not hardcode {want}", True,
+                want.lstrip("+") not in re.sub(r'"""[\s\S]*?"""', "", body),
+                source=str(gen))
+
+    # Panel (b)'s count, recomputed from the floor artifact the same way the
+    # panel title computes it: the semantic mean between the two floors.
+    fi = load(ROOT / "results_v2/canonical_runs/floor_invariance/"
+                     "floor_invariance.json") or {}
+    pc = fi.get("per_config") or []
+    between = sum(1 for c in pc
+                  if min(c["floor_paraphrase_null"]["F"],
+                         c["floor_syntactic_scramble"]["F"])
+                  <= c["f_bar_semantic"]
+                  <= max(c["floor_paraphrase_null"]["F"],
+                         c["floor_syntactic_scramble"]["F"]))
+    a.check(sec, "panel (b): the semantic mean falls between the two floors "
+                 "on every calibrated configuration", (12, 12),
+            (between, len(pc)), source="floor_invariance.json per_config")
+    a.check(sec, "and the caption says 12 of 12", True,
+            "on 12 of 12" in t, source="cot_faith_arr.tex")
+
+    # Panel (c) draws only one line as load-bearing. The caption says why, and
+    # the reason is a number in another section -- if the pale-line disclaimer
+    # ever goes away, the figure starts asserting an ordering S8 forbids.
+    a.check(sec, "panel (c)'s caption says the pale reorderings are inside "
+                 "the retraining error bar, so the figure does not assert an "
+                 "ordering S8 refuses to publish", True,
+            "should not be read as ordered" in t,
+            source="cot_faith_arr.tex")
+    a.check(sec, "and the script draws them pale for that stated reason "
+                 "rather than for looks", True,
+            "retraining error bar" in body, source=str(gen))
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -5213,6 +5598,8 @@ def main() -> int:
     audit_rollout_edited_arm(a)
     audit_rollout_filmstrip(a)
     audit_arm_pairing_defect(a)
+    audit_rank_correlation(a, d)
+    audit_overview_figure(a, d)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 
