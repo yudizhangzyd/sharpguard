@@ -4047,6 +4047,27 @@ def audit_arr_submission(a: Audit) -> None:
                      f"tall, inside the {cap:.0f}pt a top float may occupy "
                      f"(caption excluded)", True, scaled < cap,
                 source=f"{w:.0f}x{h:.0f}pt native, textheight {th:.0f}pt")
+        # And the other direction: a wide figure squeezed into a 218pt column
+        # scales its type down with it. fig4_dissociation is 3.2:1, and at
+        # \columnwidth it set 8pt tick labels at about 3pt -- present in the
+        # PDF, unreadable on paper, and invisible to every check that only
+        # asks whether a float fits.
+        #
+        # The threshold is 2.6:1, and it is set from measurement rather than
+        # taste. What matters is the scale factor a figure suffers, not its
+        # shape: at \columnwidth a figure authored W points wide is scaled to
+        # 218/W. fig14 is 2.2:1, authored at 7.1in for exactly this slot, and
+        # renders legibly at 50% -- checked against the built PDF. fig4 at
+        # 3.2:1 renders at 27% and does not. A threshold tight enough to catch
+        # fig14 would fire on a figure that is fine, and a check that fires on
+        # what is fine is one that gets waived.
+        if not star and w / h > 2.6:
+            a.check(sec, f"{m.group(1)} is {w/h:.1f}:1 and set at "
+                         f"\\columnwidth, which scales its type to "
+                         f"{100 * avail / w:.0f}% of the authored size",
+                    True, False,
+                    source="use figure* + \\textwidth, or re-author the "
+                           "figure at the column's aspect ratio")
 
     # --- long \texttt paths must be breakable in two columns ----------------
     # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
@@ -4225,6 +4246,33 @@ def audit_arr_submission(a: Audit) -> None:
             (6, 7), (sum(1 for v in per_max.values() if v > wil),
                      len(per_max)),
             source=f"widest Wilson half-width = {wil:.4f}")
+
+    # fig:dissociation's caption gained two numbers when the figure was
+    # promoted to full width and its third panel became legible enough to be
+    # worth describing. Both are recomputed, and both are asserted to appear
+    # in the caption -- a value that is right in the JSON and absent from the
+    # text is the same defect as one that is wrong.
+    anf = d.get("attention_noise_floor", {})
+    a.check(sec, "fig:dissociation's caption: the run-to-run noise band is "
+                 "1.45 pp", "1.45", f"{anf.get('abs_diff_pp', 0):.2f}",
+            source="attention_noise_floor.abs_diff_pp")
+    nrm = [mv["F_bar_norm_ceiling"] for mv in d.get("models", {}).values()
+           if mv.get("F_bar_norm_ceiling")]
+    a.check(sec, "and the ceiling-normalized spread is 1.9x", "1.9",
+            f"{max(nrm) / min(nrm):.1f}" if nrm else "n/a",
+            source=f"max/min F_bar_norm_ceiling over {len(nrm)} models")
+    for lit in ("$1.45$\\,pp", "$1.9\\times$"):
+        a.check(sec, f"and the caption prints {lit}", True, lit in t,
+                source="cot_faith_arr.tex")
+
+    # The figure that made this caption necessary: 797x248pt at \columnwidth
+    # renders 68pt tall and sets its tick labels at about 3pt. Aspect ratio,
+    # not height, is what decides whether a figure can live in a 218pt column.
+    m = re.search(r"\\includegraphics\[width=\\(\w+)\]"
+                  r"\{fig4_dissociation\.pdf\}", vis)
+    a.check(sec, "fig:dissociation is set at \\textwidth: at 3.2:1 it is "
+                 "illegible in a single column", "textwidth",
+            m.group(1) if m else None, source="cot_faith_arr.tex")
 
     for want, got, what in [
             ("28{,}443", f"{cd.get('n_scored_records', 0):,}".replace(",", "{,}"),
