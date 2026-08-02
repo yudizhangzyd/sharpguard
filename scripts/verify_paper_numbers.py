@@ -4006,6 +4006,8 @@ def audit_arr_submission(a: Audit) -> None:
     cd = load(root / "results_v2/canonical_runs/collision_decomposition/"
                      "collision_decomposition.json") or {}
     fd = load(root / "results_v2/canonical_runs/fdir_null/fdir_null.json") or {}
+    # tab:directional's cells (means and seed stds) come from here.
+    d = load(root / "results_v2" / "derived_metrics.json") or {}
 
     a.check(sec, "the ARR abstract's 12/12 sign-flip claim matches the "
                  "artifact", 12, fi.get("n_sign_flips_between_floors"),
@@ -4043,16 +4045,33 @@ def audit_arr_submission(a: Audit) -> None:
 
     # Table tab:floors is retyped from the artifact, so every cell is checked.
     # This is the single most drift-prone thing in the ARR document.
+    #
+    # Scoped to the tab:floors environment, not matched against the whole file.
+    # Both body tables now use \texttt row labels and they share label names
+    # (`r=64`, `no-CoT`, `ECoT-bridge`), so a file-wide regex would silently
+    # pick up tab:directional's rows and compare direction-aware numbers
+    # against floor_invariance.json.
+    def _table_body(label: str) -> str:
+        i = t.find("\\label{" + label + "}")
+        if i < 0:
+            return ""
+        j = t.rfind("\\begin{table}", 0, i)
+        return t[j:i] if j >= 0 else ""
+
+    floors_tex = _table_body("tab:floors")
+    a.check(sec, "tab:floors is present in the ARR body", True,
+            bool(floors_tex), source="cot_faith_arr.tex")
     rows = {c["config"]: c for c in (fi.get("per_config") or [])}
     tex_rows = dict(re.findall(
-        r"\n(no-CoT|r=8|r=16|r=32|r=64|data-50A|data-50B|ECoT-bridge|"
-        r"DT base|DT SFT|DT RL|Bridge-4k\$\^\\dagger\$)\s*&([^\\]*)\\\\", t))
+        r"\\texttt\{(no-CoT|r=8|r=16|r=32|r=64|data-50A|data-50B|ECoT-bridge|"
+        r"DT base|DT SFT|DT RL|Bridge-4k)\}(?:\$\^\\dagger\$)?"
+        r"\s*&([^\\]*)\\\\", floors_tex))
     key = {"no-CoT": "ours_no-cot", "r=8": "ours_lora-r8",
            "r=16": "ours_lora-r16", "r=32": "ours_lora-r32",
            "r=64": "ours_lora-r64", "data-50A": "ours_data-50A",
            "data-50B": "ours_data-50B", "ECoT-bridge": "ecot_bridge",
            "DT base": "deepthink_base", "DT SFT": "deepthink_sft",
-           "DT RL": "deepthink_rl", "Bridge-4k$^\\dagger$": "bridge_subset_4k"}
+           "DT RL": "deepthink_rl", "Bridge-4k": "bridge_subset_4k"}
     a.check(sec, "tab:floors has a row for every calibrated configuration",
             12, len(tex_rows), source="cot_faith_arr.tex")
     for label, cells in sorted(tex_rows.items()):
@@ -4062,12 +4081,59 @@ def audit_arr_submission(a: Audit) -> None:
                          f"configuration", True, False, source="cot_faith_arr.tex")
             continue
         got = [float(x) for x in re.findall(r"[-+]?\d*\.\d+", cells)]
-        want = [r["floor_paraphrase_null"]["F"],
-                r["floor_syntactic_scramble"]["F"], r["f_bar_semantic"],
-                r["f_diff_vs_paraphrase"], r["f_diff_vs_scramble"]]
+        p = r["floor_paraphrase_null"]["F"]
+        s = r["floor_syntactic_scramble"]["F"]
+        dp, ds = r["f_diff_vs_paraphrase"], r["f_diff_vs_scramble"]
+        # The trailing |para - scram| column is the one the caption calls
+        # decisive, so it is derived here rather than copied from the row.
+        want = [p, s, r["f_bar_semantic"], dp, ds, abs(p - s)]
         a.check(sec, f"tab:floors row '{label}' matches the artifact to 3dp",
                 [round(x, 3) for x in want], [round(x, 3) for x in got],
                 source="floor_invariance.json")
+        a.check(sec, f"tab:floors row '{label}': the printed floor spread "
+                     f"exceeds the larger |F_diff|, as the caption claims",
+                True, abs(p - s) > max(abs(dp), abs(ds)),
+                source=f"|{p:.3f}-{s:.3f}| vs max(|{dp:.3f}|,|{ds:.3f}|)")
+    a.check(sec, "tab:floors' summary row states the 12/12 counts the caption "
+                 "argues from", True,
+            bool(re.search(r"12/12.*12/12.*12/12", floors_tex, re.S)),
+            source="cot_faith_arr.tex")
+
+    # tab:directional prints seed stds alongside every mean. They are quoted
+    # to 3dp with the leading zero dropped ($.006$), which no other table does,
+    # so they get their own parse rather than reusing the one above.
+    dir_tex = _table_body("tab:directional")
+    a.check(sec, "tab:directional is present in the ARR body", True,
+            bool(dir_tex), source="cot_faith_arr.tex")
+    dkey = {"ECoT-bridge": "ecot-bridge", "r=64": "ours-r64",
+            "r=16": "ours-r16", "data-50A": "ours-data50A",
+            "r=8": "ours-r8", "r=32": "ours-r32",
+            "data-50B": "ours-data50B", "no-CoT": "ours-no-cot"}
+    drows = re.findall(
+        r"\\texttt\{([^}]+)\}\s*&(.*?)\\\\", dir_tex, re.S)
+    a.check(sec, "tab:directional has all 8 leaderboard rows", 8, len(drows),
+            source="cot_faith_arr.tex")
+    for label, cells in drows:
+        m = dkey.get(label)
+        fam_ = dig(d, "models", m, "families", "direction_flip") if m else None
+        if fam_ is None:
+            a.check(sec, f"tab:directional row '{label}' names a real model",
+                    True, False, source="cot_faith_arr.tex")
+            continue
+        nums = [float(x) for x in re.findall(r"[-+]?\d*\.\d+", cells)]
+        # F_mag, sd, F_dir, sd, cos -- the integer rank is not matched by the
+        # decimal pattern, so it does not appear here.
+        want = [fam_["F_mag"], fam_["F_mag_std"], fam_["F_dir"],
+                fam_["F_dir_std"], fam_["cos_xyz"]]
+        a.check(sec, f"tab:directional row '{label}' matches the artifact "
+                     f"(mean and seed std) to 3dp",
+                [round(x, 3) for x in want], [round(x, 3) for x in nums],
+                source=f"models['{m}'].families.direction_flip")
+    a.check(sec, "tab:directional's error bars are 3-seed stds, as the caption "
+                 "says", {3},
+            {dig(d, "models", m, "families", "direction_flip", "n_runs")
+             for m in dkey.values()},
+            source="models[*].families.direction_flip.n_runs")
 
 
 def audit_rollout_insuite(a: Audit) -> None:

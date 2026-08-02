@@ -62,7 +62,7 @@ in Manipulation Vision-Language-Action Models}
 \maketitle
 
 \begin{abstract}
-Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 1,012 claims and fails on any mismatch.
+Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 1,037 claims and fails on any mismatch.
 \end{abstract}
 
 \section{Introduction}
@@ -78,7 +78,7 @@ We built one, applied it to 15 VLAs across 4 architecture families, and the most
 \item \textbf{A construct-validity failure, characterized rather than caveated} (\S\ref{sec:floors}). $\mathcal{F}$ sits below its own meaning-preserving floor on 12/12 configurations; the alternative floor flips the sign on 12/12; and the two floors disagree by more than either disagrees with the semantic mean, also on 12/12. We report both floors everywhere and treat $\mathcal{F}$ as uninformative about meaning in either direction.
 \item \textbf{What $\mathcal{F}$ actually counts} (\S\ref{sec:collision}). It tracks $1 - P(\Delta_\infty{=}0)$ at $R^2 = 0.93$ over 324 cells. Its much-advertised insensitivity to the threshold follows from that, and is not evidence of robustness.
 \item \textbf{One instrument that does clear a null} (\S\ref{sec:directional}). $\mathcal{F}_{\text{dir}}$ clears a ceiling built from eight non-directional families on 7 of 11 configurations, at $6.2$--$11.1\times$ on the CoT-trained variants, and fails on the no-CoT control as it should. This is what we recommend any admission rule be built on.
-\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 1,012 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
+\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 1,037 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
 \end{enumerate}
 
 \section{Related work}
@@ -127,30 +127,36 @@ Against that floor, $\bar{\mathcal{F}}_{\text{diff}}$ is \emph{positive} on 12/1
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{lccccc}
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}l rr r rr r@{}}
 \toprule
-& \multicolumn{2}{c}{floors} & & \multicolumn{2}{c}{$\bar{\mathcal{F}}_{\text{diff}}$ vs.} \\
+& \multicolumn{2}{c}{floor $\mathcal{F}$} & &
+  \multicolumn{2}{c}{$\bar{\mathcal{F}}_{\text{diff}}$ vs.\ floor} & \\
 \cmidrule(lr){2-3}\cmidrule(lr){5-6}
-Model & para & scram & $\bar{\mathcal{F}}$ & para & scram \\
+Model & para & scram & $\bar{\mathcal{F}}$ & para & scram &
+  $|\text{p}-\text{s}|$ \\
 \midrule
-no-CoT      & $0.193$ & $0.154$ & $0.187$ & $-0.006$ & $+0.034$ \\
-r=8         & $0.587$ & $0.408$ & $0.448$ & $-0.139$ & $+0.040$ \\
-r=16        & $0.547$ & $0.438$ & $0.494$ & $-0.053$ & $+0.056$ \\
-r=32        & $0.567$ & $0.348$ & $0.438$ & $-0.129$ & $+0.090$ \\
-r=64        & $0.657$ & $0.472$ & $0.554$ & $-0.102$ & $+0.083$ \\
-data-50A    & $0.537$ & $0.391$ & $0.435$ & $-0.102$ & $+0.043$ \\
-data-50B    & $0.447$ & $0.348$ & $0.385$ & $-0.061$ & $+0.037$ \\
-ECoT-bridge & $0.960$ & $0.880$ & $0.894$ & $-0.066$ & $+0.014$ \\
+\texttt{no-CoT}      & $0.193$ & $0.154$ & $0.187$ & $-0.006$ & $+0.034$ & $0.039$ \\
+\texttt{r=8}         & $0.587$ & $0.408$ & $0.448$ & $-0.139$ & $+0.040$ & $0.179$ \\
+\texttt{r=16}        & $0.547$ & $0.438$ & $0.494$ & $-0.053$ & $+0.056$ & $0.109$ \\
+\texttt{r=32}        & $0.567$ & $0.348$ & $0.438$ & $-0.129$ & $+0.090$ & $0.219$ \\
+\texttt{r=64}        & $0.657$ & $0.472$ & $0.554$ & $-0.102$ & $+0.083$ & $0.185$ \\
+\texttt{data-50A}    & $0.537$ & $0.391$ & $0.435$ & $-0.102$ & $+0.043$ & $0.145$ \\
+\texttt{data-50B}    & $0.447$ & $0.348$ & $0.385$ & $-0.061$ & $+0.037$ & $0.099$ \\
+\texttt{ECoT-bridge} & $0.960$ & $0.880$ & $0.894$ & $-0.066$ & $+0.014$ & $0.080$ \\
+\addlinespace[2pt]\midrule\addlinespace[2pt]
+\texttt{DT base}     & $0.960$ & $0.910$ & $0.951$ & $-0.009$ & $+0.041$ & $0.050$ \\
+\texttt{DT SFT}      & $0.810$ & $0.590$ & $0.748$ & $-0.062$ & $+0.158$ & $0.220$ \\
+\texttt{DT RL}       & $0.820$ & $0.550$ & $0.767$ & $-0.053$ & $+0.217$ & $0.270$ \\
+\addlinespace[2pt]\midrule\addlinespace[2pt]
+\texttt{Bridge-4k}$^\dagger$ & $0.370$ & $0.280$ & $0.332$ & $-0.038$ & $+0.052$ & $0.090$ \\
 \midrule
-DT base     & $0.960$ & $0.910$ & $0.951$ & $-0.009$ & $+0.041$ \\
-DT SFT      & $0.810$ & $0.590$ & $0.748$ & $-0.062$ & $+0.158$ \\
-DT RL       & $0.820$ & $0.550$ & $0.767$ & $-0.053$ & $+0.217$ \\
-\midrule
-Bridge-4k$^\dagger$ & $0.370$ & $0.280$ & $0.332$ & $-0.038$ & $+0.052$ \\
+\multicolumn{4}{@{}l}{\emph{all 12 configurations}}
+  & \textbf{$-$ 12/12} & \textbf{$+$ 12/12} & \textbf{12/12} \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Both meaning-preserving floors, on every configuration we can calibrate.} $\bar{\mathcal{F}}$ is the mean over the nine semantic families. The sign of $\bar{\mathcal{F}}_{\text{diff}}$ is determined entirely by which meaning-preserving family is nominated as the floor --- negative against \emph{paraphrase\_null} on 12/12, positive against the length-exact \emph{syntactic\_scramble} on 12/12. Both floors are certified meaning-preserving by the same blind judge ($0.975$, $1.000$). On all 12, $|{\rm para} - {\rm scram}|$ exceeds $\max(|\bar{\mathcal{F}}_{\text{diff}}|)$ over the two floors, which is what makes both unusable as a semantic floor rather than one of them correct. $^\dagger$the 4k Bridge-subset deconfound checkpoint, included here because it calibrates, but excluded from every leaderboard cell: $93\%$ of its faithfulness signal is the single gripper bit and its mean translation magnitude is $65\times$ smaller than ECoT-bridge's, so its $\mathcal{F}$ is not on the same scale as the other rows (Appendix~\ref{sec:appendix}).}
+\caption{\textbf{Both meaning-preserving floors, on every configuration we can calibrate.} $\bar{\mathcal{F}}$ is the mean over the nine semantic families. The sign of $\bar{\mathcal{F}}_{\text{diff}}$ is decided entirely by which meaning-preserving family is nominated as the floor: negative against \emph{paraphrase\_null} on 12/12, positive against the length-exact \emph{syntactic\_scramble} on 12/12. Both floors are certified meaning-preserving by the same blind judge ($0.975$, $1.000$). The last column is the decisive one --- on all 12 configurations the gap \emph{between} the two floors exceeds $\max(|\bar{\mathcal{F}}_{\text{diff}}|)$ over them, i.e.\ two edits the judge calls synonymous disagree with each other more than either disagrees with edits that change meaning. That is what makes both floors unusable, rather than one of them correct. Bottom row: the count over all 12, not a mean. $^\dagger$the 4k Bridge-subset deconfound checkpoint, included here because it calibrates, but excluded from every leaderboard cell: $93\%$ of its faithfulness signal is the single gripper bit and its mean translation magnitude is $65\times$ smaller than ECoT-bridge's, so its $\mathcal{F}$ is not on the same scale as the other rows (Appendix~\ref{sec:appendix}).}
 \label{tab:floors}
 \end{table}
 
@@ -166,21 +172,35 @@ That is measurable, so we measured it. Across the 324 (run, family) cells with $
 
 \begin{table}[t]
 \centering\small
-\begin{tabular}{l r r r r}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}l c@{\ }l c c@{\ }l c@{}}
 \toprule
-Model & $\mathcal{F}_{\text{mag}}$ & rank & $\mathcal{F}_{\text{dir}}$ & $\cos$ \\
+& \multicolumn{2}{c}{magnitude} & &
+  \multicolumn{2}{c}{direction-aware} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){5-6}
+Model & $\mathcal{F}_{\text{mag}}$ & {\footnotesize$\pm$sd} & rank
+      & $\mathcal{F}_{\text{dir}}$ & {\footnotesize$\pm$sd} & $\cos$ \\
 \midrule
-\textbf{ECoT-bridge} & \textbf{0.963} & \textbf{1} & 0.120 & $+0.415$ \\
-Ours r=64      & 0.823 & 2 & \textbf{0.779} & $-0.509$ \\
-Ours r=16      & 0.749 & 3 & 0.666 & $-0.320$ \\
-Ours data-50A  & 0.699 & 4 & 0.642 & $-0.256$ \\
-Ours r=8       & 0.696 & 5 & 0.649 & $-0.313$ \\
-Ours r=32      & 0.652 & 6 & 0.579 & $-0.147$ \\
-Ours data-50B  & 0.639 & 7 & 0.542 & $-0.111$ \\
-Ours no-CoT    & 0.274 & 8 & 0.087 & $+0.759$ \\
+\texttt{ECoT-bridge} & \textbf{0.963} & {\footnotesize$.006$} & \textbf{1}
+  & 0.120 & {\footnotesize$.043$} & $\mathbf{+0.415}$ \\
+\texttt{r=64}     & 0.823 & {\footnotesize$.016$} & 2
+  & \textbf{0.779} & {\footnotesize$.021$} & $-0.509$ \\
+\texttt{r=16}     & 0.749 & {\footnotesize$.028$} & 3
+  & 0.666 & {\footnotesize$.045$} & $-0.320$ \\
+\texttt{data-50A} & 0.699 & {\footnotesize$.022$} & 4
+  & 0.642 & {\footnotesize$.011$} & $-0.256$ \\
+\texttt{r=8}      & 0.696 & {\footnotesize$.041$} & 5
+  & 0.649 & {\footnotesize$.020$} & $-0.313$ \\
+\texttt{r=32}     & 0.652 & {\footnotesize$.024$} & 6
+  & 0.579 & {\footnotesize$.028$} & $-0.147$ \\
+\texttt{data-50B} & 0.639 & {\footnotesize$.022$} & 7
+  & 0.542 & {\footnotesize$.013$} & $-0.111$ \\
+\texttt{no-CoT}   & 0.274 & {\footnotesize$.042$} & 8
+  & 0.087 & {\footnotesize$.021$} & $\mathbf{+0.759}$ \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Magnitude vs.\ direction-aware faithfulness on \emph{direction\_flip}.} $\mathcal{F}_{\text{mag}}$ is Eq.~\ref{eq:faith}; $\mathcal{F}_{\text{dir}}$ is Eq.~\ref{eq:fdir}; $\cos$ is the mean cosine between the original and post-edit xyz translation, so a faithful model is negative. Every row is a 3-sampling-seed mean. The \emph{rank} column orders $\mathcal{F}_{\text{mag}}$ and exists only to make the inversion legible: ranks 4 and 5 are separated by less than either row's seed std and should not be read as ordered, nor should any adjacent pair among ranks 2--7. The gap between the second and fourth columns is the point. Computed from the released action pairs with no new inference. Per-family means and error bars: Appendix~\ref{sec:appendix}.}
+\caption{\textbf{Magnitude vs.\ direction-aware faithfulness on \emph{direction\_flip}.} $\mathcal{F}_{\text{mag}}$ is Eq.~\ref{eq:faith}; $\mathcal{F}_{\text{dir}}$ is Eq.~\ref{eq:fdir}; $\cos$ is the mean cosine between the original and post-edit xyz translation, so a faithful model is \emph{negative} and the two bold positive entries are the two models that move the same way after the direction is reversed. Every row is a 3-sampling-seed mean; $\pm$sd is the seed std, printed here so the reader can apply the caveat rather than take it on trust. The \emph{rank} column orders $\mathcal{F}_{\text{mag}}$ and exists only to make the inversion legible: ranks 4 and 5 are separated by less than either row's seed std and should not be read as ordered, nor should any adjacent pair among ranks 2--7. The gap between the magnitude and direction blocks is the point --- the top row of one is the second-from-bottom of the other, a gap of $0.659$ against seed stds of $0.006$ and $0.021$. Computed from the released action pairs with no new inference. Per-family means: Appendix~\ref{sec:appendix}.}
 \label{tab:directional}
 \end{table}
 
@@ -214,7 +234,7 @@ All leaderboard rows are 3-sampling-seed means with Wilson 95\% CIs (half-widths
 \section{Release and audit}
 \label{sec:release}
 
-We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $51.6$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{1,012 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
+We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $51.6$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{1,037 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
 
 Two disclosures the audit forced, both of which we would rather not make. \textbf{First, it now checks what records \emph{contain}, not only how many there are} --- because the count-only version passed $869/869$ while the release paragraph made a false claim about its own schema. The new check immediately found a second instance: 438 scored records (the three cross-corpus runs) carry deltas without the action pair or edit metadata, so those runs are reproducible at aggregate level only. \textbf{Second, six of the eight leaderboard rows come from a policy whose single-step open-loop prediction does not beat a constant} --- its L$_1$ is $0.0486$ against $0.0457$ for predicting the per-dimension dataset mean, in every frame the checkpoint ships. This does not invalidate $\Delta_\infty$, which is a self-comparison referencing no ground truth. It does mean those rows are edit-sensitivity measurements on weak policies, and it is the direct cause of the missing rollout evidence: at 40 episodes per arm, both the clean-CoT and no-CoT arms score $0/40$, so an edit-induced $\Delta$SR is undefined rather than zero. A second run adds the \emph{direction\_flip} arm at $0/9$ against the same controls; a third arm does not make the comparison defined, and the harness reports no $\Delta$SR. It does show the edit protocol running closed-loop, and it bounds something the first-step protocol cannot see: $381$ edits were skipped mid-rollout for want of a direction word to reverse.
 
