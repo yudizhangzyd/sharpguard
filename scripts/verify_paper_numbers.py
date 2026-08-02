@@ -4031,6 +4031,108 @@ def audit_arr_submission(a: Audit) -> None:
                 source="floor_invariance.json")
 
 
+def audit_rollout_insuite(a: Audit) -> None:
+    """Limitation (v)'s 0/40: assert the bound, and assert it stays a bound.
+
+    This is the one artifact in the release whose *headline* is a zero, and a
+    zero is the easiest number in the world to misreport in the flattering
+    direction. Two distinct misreadings are possible and both are guarded here.
+
+    The first is upward drift: quoting a rollout SR anywhere, or letting the
+    0/40 become a 0/N with a larger N than was run. The second is the more
+    dangerous one, because it reads as a *finding*: reporting the edit-induced
+    DSR as 0 and calling it evidence that editing the CoT does not change task
+    completion. DSR is 0 by construction when the unedited control never
+    succeeds -- it is undefined, not null -- and the harness records that as
+    precondition_met=false. So this function asserts the flag is false and that
+    the manuscript says "undefined" rather than reporting a difference.
+
+    It also pins the two facts that make the zero attributable to the
+    checkpoint rather than to us: the rollout suite is the suite the checkpoint
+    was trained on (round 1's confound, released under
+    rollout_edit_outofsuite_round1/ and explicitly not citable), and every
+    generated CoT parsed, so the prompt-side harness was working throughout.
+    """
+    sec = "In-suite paired rollout (limitation v: a bound, not a measurement)"
+    base = ROOT / "results_v2" / "canonical_runs" / "rollout_edit_insuite_sr"
+    src = "results_v2/canonical_runs/rollout_edit_insuite_sr/"
+    d = load(base / "rollout_edit_report.json")
+    if not d:
+        a.check(sec, "the in-suite rollout report is released (the manuscript "
+                     "quotes 0/40 from it)", True, False, source=src)
+        return
+    arms = d.get("by_arm") or {}
+    cfg = d.get("config") or {}
+
+    for arm in ("nocot", "cot_clean"):
+        v = arms.get(arm) or {}
+        a.check(sec, f"{arm}: 0 successes over 40 episodes, as the manuscript "
+                     f"states", [0, 40], [v.get("successes"), v.get("n")],
+                source=src + "rollout_edit_report.json")
+        ci = v.get("wilson95") or [None, None]
+        a.check(sec, f"{arm}: Wilson 95% upper bound as printed ($0.088$)",
+                [0.0, 0.088], [r3(ci[0]), r3(ci[1])], source=src)
+
+    # The suite is the whole difference between this run and the cancelled
+    # round 1. If it ever reads libero_spatial again the zero means nothing.
+    a.check(sec, "the rollout ran on libero_90 -- the suite the checkpoint was "
+                 "trained on, which is what makes the zero attributable to the "
+                 "policy rather than to a suite mismatch",
+            "libero_90", cfg.get("suite"), source=src)
+    a.check(sec, "at upstream's own 400-step budget, not round 1's hard-coded "
+                 "220, which would truncate every episode by construction",
+            400, cfg.get("max_steps"), source=src)
+
+    # DSR is undefined, and the harness must say so itself.
+    a.check(sec, "the harness records its own precondition as FAILED rather "
+                 "than reporting a DSR of zero", False,
+            d.get("precondition_met"), source=src)
+    a.check(sec, "and no per-family DSR is reported", {},
+            d.get("delta_sr_vs_cot_clean"), source=src)
+
+    # If the CoT machinery had failed, the zero would be about our harness.
+    cc = arms.get("cot_clean") or {}
+    a.check(sec, "every CoT the clean arm generated parsed as structured, so "
+                 "the zero is not a prompt-side harness failure",
+            [640, 0], [cc.get("n_cot_structured"), cc.get("n_cot_unstructured")],
+            source=src)
+    a.check(sec, "the no-CoT arm generated none, so the two arms differ in the "
+                 "way they are supposed to", 0,
+            (arms.get("nocot") or {}).get("n_cot_generated"), source=src)
+
+    # The scale precondition, which is the ecot-bridge failure mode and would
+    # make the zero uninterpretable for a reason unrelated to competence.
+    probe = load(base / "rollout_edit_probe.json") or {}
+    a.check(sec, "the action-scale precondition held (unlike ecot-bridge, "
+                 "where a missing norm_stats entry pins SR at 0 for a reason "
+                 "with nothing to do with the policy)", True,
+            str(probe.get("scale_precondition", "")).startswith("ok"),
+            source=src + "rollout_edit_probe.json")
+
+    # The manuscript must state this as undefined, not as a null result.
+    tex = TEX.read_text()
+    a.check(sec, "the manuscript calls the edit-induced DSR undefined rather "
+                 "than zero", True,
+            bool(re.search(r"\$\\Delta\$SR is undefined", tex)), source="tex")
+    a.check(sec, "and attributes the zero to checkpoint competence rather than "
+                 "to compute or suite availability", True,
+            "checkpoint-competence problem and not a compute" in tex,
+            source="tex")
+    a.check(sec, "no rollout-conditioned number is claimed anywhere", True,
+            "No rollout-conditioned number appears anywhere in this paper"
+            in tex, source="tex")
+
+    # Round 1 is released as evidence for the confound and must never be cited
+    # as the limitation-(v) row; its own README says so.
+    r1 = ROOT / "results_v2" / "canonical_runs" / \
+        "rollout_edit_outofsuite_round1" / "rollout_edit_report.json"
+    d1 = load(r1) or {}
+    a.check(sec, "the superseded out-of-suite round 1 is retained, and is "
+                 "distinguishable from this run by its suite alone",
+            "libero_spatial", (d1.get("config") or {}).get("suite"),
+            source="results_v2/canonical_runs/rollout_edit_outofsuite_round1/")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -4163,6 +4265,7 @@ def main() -> int:
     audit_floor_invariance(a)
     audit_fdir_null(a)
     audit_collision_decomposition(a)
+    audit_rollout_insuite(a)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 

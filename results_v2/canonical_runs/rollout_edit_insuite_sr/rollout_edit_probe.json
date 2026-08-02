@@ -1,0 +1,105 @@
+{
+  "probe": true,
+  "ckpt": "/tmp/cotfaith_ckpt",
+  "suite": "libero_90",
+  "action_decoder": "ours",
+  "norm_stats_keys": [
+    "bridge_orig"
+  ],
+  "unnorm_key_requested": "",
+  "unnorm_key_present": false,
+  "norm_stats_usable": false,
+  "scale_precondition": "ok (identity [-1,1] de-quantization; --action-decoder=ours needs no norm_stats because our fine-tunes quantize raw LIBERO actions clipped to [-1,1]. norm_stats present: ['bridge_orig'])",
+  "instruction": "close the top drawer of the cabinet",
+  "cot_gen_seconds": 11.74,
+  "cot_tokens_generated": 266,
+  "cot_tags_parsed": [
+    "bboxes",
+    "gripper",
+    "movement",
+    "movement_reasoning",
+    "plan",
+    "subtask",
+    "subtask_reasoning",
+    "task"
+  ],
+  "cot_structured": true,
+  "cot_raw_head": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. USER: What action should the robot take to close the top drawer of the cabinet? ASSISTANT: TASK:  PLAN: move to the cabinet. identify the top drawer. grasp the top drawer. move the top drawer downwards. release the top drawer VISIBLE OBJECTS: akita black bowl 1 [[111, 99], [133, 128]], butter 1 [[138, 166], [156, 180]], butter 2 [[124, 162], [140, 175]], wooden cabinet 1 [[76, 0], [174, 58]] SUBTASK REASONING: The robot needs to identify the",
+  "cot_body_head": "TASK:  PLAN: move to the cabinet. identify the top drawer. grasp the top drawer. move the top drawer downwards. release the top drawer VISIBLE OBJECTS: akita black bowl 1 [[111, 99], [133, 128]], butter 1 [[138, 166], [156, 180]], butter 2 [[124, 162], [140, 175]], wooden cabinet 1 [[76, 0], [174, 58]] SUBTASK REASONING: The robot needs to identify the top drawer because it's positioned behind the",
+  "families": {
+    "direction_flip": "changes the rendered CoT"
+  },
+  "one_frame_actions": {
+    "nocot": {
+      "raw": [
+        0.58824,
+        0.03137,
+        0.00784,
+        0.03922,
+        0.0,
+        0.99608,
+        -0.00784
+      ],
+      "sent": [
+        0.58824,
+        0.03137,
+        0.00784,
+        0.03922,
+        0.0,
+        0.99608,
+        1.0
+      ],
+      "seconds": 0.442
+    },
+    "cot_clean": {
+      "raw": [
+        0.00784,
+        0.82353,
+        -0.30588,
+        0.00784,
+        0.00784,
+        0.00784,
+        -0.99608
+      ],
+      "sent": [
+        0.00784,
+        0.82353,
+        -0.30588,
+        0.00784,
+        0.00784,
+        0.00784,
+        1.0
+      ],
+      "seconds": 0.493
+    },
+    "cot_direction_flip": {
+      "raw": [
+        0.00784,
+        -0.93333,
+        0.54118,
+        0.00784,
+        0.00784,
+        0.00784,
+        -0.99608
+      ],
+      "sent": [
+        0.00784,
+        -0.93333,
+        0.54118,
+        0.00784,
+        0.00784,
+        0.00784,
+        1.0
+      ],
+      "seconds": 0.491,
+      "delta_linf_vs_cot_clean": 1.75686
+    }
+  },
+  "feasibility": {
+    "seconds_per_step_per_arm": 0.94,
+    "n_arms": 2,
+    "cot_refresh_steps": 25,
+    "est_hours_full_run": 2.1,
+    "note": "est assumes every episode runs to max_steps; successful episodes terminate early, so this is an upper bound. The no-CoT arm is cheaper than this per-arm average."
+  }
+}
