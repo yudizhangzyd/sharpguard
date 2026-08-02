@@ -773,7 +773,15 @@ def run(args):
                                     capture=_capture_for(args, out_dir, ti, ep),
                                     obs=rw["obs"])
                         r.update({"task_idx": ti, "episode": ep,
-                                  "task": task.language})
+                                  "task": task.language,
+                                  # Which carry-over channels the rewind
+                                  # actually reached, per arm. In the report
+                                  # rather than only in stdout because the
+                                  # pairing claim rests on it and robosuite has
+                                  # renamed both across versions: a reader
+                                  # should not have to trust that the reset
+                                  # found anything.
+                                  "arm_rewind": rw["reset"]})
                         episodes.append(r)
                         print(f"[rollout-edit] t{ti} ep{ep} {arm}: "
                               f"success={r['success']} steps={r['steps']} "
