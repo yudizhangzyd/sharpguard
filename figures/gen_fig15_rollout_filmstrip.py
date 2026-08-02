@@ -29,8 +29,11 @@ is missing or carries no poses, this exits non-zero and says which -- a
 half-drawn version of this figure would be a claim about motion that was not
 measured.
 
-Usage:  python figures/gen_fig15_rollout_filmstrip.py [<capture_dir>]
-where <capture_dir> holds rollout_edit_report.json and frames/.
+Usage:  python figures/gen_fig15_rollout_filmstrip.py [<capture_dir>] [--no-eef]
+where <capture_dir> holds rollout_edit_report.json and frames/. `--no-eef`
+draws panel (a) alone, for a capture whose env did not expose end-effector
+poses; it must be passed explicitly, because silently dropping two panels is
+how a figure comes to show less than its caption claims.
 """
 import json
 import os
@@ -162,7 +165,9 @@ def eef_track(e):
 
 
 def main() -> int:
-    cap_dir = sys.argv[1] if len(sys.argv) > 1 else DEFAULT
+    argv = [a for a in sys.argv[1:] if not a.startswith("--")]
+    no_eef = "--no-eef" in sys.argv
+    cap_dir = argv[0] if argv else DEFAULT
     rep, key, eps, all_keys = load(cap_dir)
     steps = pick_steps(eps)
     print(f"[fig15] {cap_dir}")
@@ -171,11 +176,15 @@ def main() -> int:
 
     tracks = {a: eef_track(eps[a]) for a, _, _ in ARMS}
     have_eef = all(t[0] is not None for t in tracks.values())
-    if not have_eef:
+    if not have_eef and not no_eef:
         missing = [a for a, t in tracks.items() if t[0] is None]
         die(f"arms {missing} logged no end-effector pose, so panels (b) and "
             f"(c) would cover fewer arms than panel (a). The harness records "
-            f"eef_available per episode for exactly this check.")
+            f"eef_available per episode for exactly this check. Pass --no-eef "
+            f"to draw the filmstrip alone, which is a smaller figure and not a "
+            f"weaker one -- but say so, rather than losing the panels quietly.")
+    if not have_eef:
+        print("[fig15] --no-eef: drawing panel (a) only; no pose was logged")
 
     # ---- geometry -------------------------------------------------------
     # 6.14in, not 6.20: save() trims to the tight bbox and adds 2*pad_inches,
@@ -185,7 +194,7 @@ def main() -> int:
     W = 6.14
     cell = (W - 0.62) / len(steps)         # 0.62in of row labels on the left
     strip_h = 3 * (cell + 0.20) + 0.16     # +0.20 per row for the MOVE caption
-    bot_h = 1.30
+    bot_h = 1.30 if have_eef else 0.0
     H = strip_h + bot_h + 0.30
     fig = plt.figure(figsize=(W, H))
 
@@ -218,54 +227,58 @@ def main() -> int:
                  va="center", fontsize=FONT_SIZE - 2, color=colour,
                  linespacing=1.15)
 
-    strip_bot = y_top - 3 * (cell + 0.20) / H
     fig.text(0.02 / W, y_top + 0.10 / H, "(a)", fontsize=FONT_SIZE - 1,
              fontweight="bold", va="bottom")
 
-    # ---- (b) top-down end-effector path ---------------------------------
-    axb = fig.add_axes([0.62 / W, 0.42 / H, 1.85 / W, 0.80 / H])
-    for arm, label, colour in ARMS:
-        _, xyz = tracks[arm]
-        axb.plot(xyz[:, 0], xyz[:, 1], color=colour, lw=1.1, label=label.replace("\n", " "))
-        axb.plot(xyz[0, 0], xyz[0, 1], "o", color=colour, ms=3.0, mew=0)
-    axb.set_xlabel("gripper $x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
-    axb.set_ylabel("$y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
-    axb.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
-    # matplotlib here is mathtext, not LaTeX (text.usetex is False in
-    # paper_plot_style), so a "\," thin space prints its own backslash.
-    axb.set_title("top-down path ($\\bullet$ = shared start)",
-                  fontsize=FONT_SIZE - 2, pad=2.5)
-    fig.text(0.02 / W, (0.42 + 0.80) / H, "(b)", fontsize=FONT_SIZE - 1,
-             fontweight="bold", va="bottom")
-
-    # ---- (c) distance from the clean-CoT arm -----------------------------
-    # Defined at every step whether or not any arm succeeds, which is the point:
-    # DSR is undefined here (SR(cot_clean) = 0), and this is not.
-    axc = fig.add_axes([(0.62 + 2.35) / W, 0.42 / H, 2.60 / W, 0.80 / H])
-    s_cl, xyz_cl = tracks["cot_clean"]
+    # Panels (b) and (c) exist only if poses were logged. `peak` stays empty in
+    # that case rather than being filled with a stand-in, so the facts file says
+    # "no measurement" instead of reporting one that was never taken.
     peak = {}
-    for arm, label, colour in ARMS:
-        if arm == "cot_clean":
-            continue
-        s_a, xyz_a = tracks[arm]
-        # Paired on step, not on index: the arms terminate at different steps,
-        # and comparing the k-th record of each would silently compare two
-        # different instants.
-        common = np.intersect1d(s_a, s_cl)
-        d = np.linalg.norm(xyz_a[np.isin(s_a, common)]
-                           - xyz_cl[np.isin(s_cl, common)], axis=1)
-        axc.plot(common, d * 100.0, color=colour, lw=1.1,
-                 label=label.replace("\n", " "))
-        peak[arm] = float(d.max()) * 100.0
-    axc.axhline(0.0, color="0.7", lw=0.6, zorder=0)
-    axc.set_xlabel("rollout step", fontsize=FONT_SIZE - 2, labelpad=1.5)
-    axc.set_ylabel("gripper distance from\nown-CoT arm (cm)",
-                   fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
-    axc.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
-    axc.legend(loc="upper left", fontsize=FONT_SIZE - 4, frameon=False,
-               handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
-    fig.text((0.62 + 2.30) / W, (0.42 + 0.80) / H, "(c)",
-             fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
+    if have_eef:
+        # ---- (b) top-down end-effector path -----------------------------
+        axb = fig.add_axes([0.62 / W, 0.42 / H, 1.85 / W, 0.80 / H])
+        for arm, label, colour in ARMS:
+            _, xyz = tracks[arm]
+            axb.plot(xyz[:, 0], xyz[:, 1], color=colour, lw=1.1,
+                     label=label.replace("\n", " "))
+            axb.plot(xyz[0, 0], xyz[0, 1], "o", color=colour, ms=3.0, mew=0)
+        axb.set_xlabel("gripper $x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        axb.set_ylabel("$y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        axb.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
+        # matplotlib here is mathtext, not LaTeX (text.usetex is False in
+        # paper_plot_style), so a "\," thin space prints its own backslash.
+        axb.set_title("top-down path ($\\bullet$ = shared start)",
+                      fontsize=FONT_SIZE - 2, pad=2.5)
+        fig.text(0.02 / W, (0.42 + 0.80) / H, "(b)", fontsize=FONT_SIZE - 1,
+                 fontweight="bold", va="bottom")
+
+        # ---- (c) distance from the clean-CoT arm -------------------------
+        # Defined at every step whether or not any arm succeeds, which is the
+        # point: DSR is undefined here (SR(cot_clean) = 0), and this is not.
+        axc = fig.add_axes([(0.62 + 2.35) / W, 0.42 / H, 2.60 / W, 0.80 / H])
+        s_cl, xyz_cl = tracks["cot_clean"]
+        for arm, label, colour in ARMS:
+            if arm == "cot_clean":
+                continue
+            s_a, xyz_a = tracks[arm]
+            # Paired on step, not on index: the arms terminate at different
+            # steps, and comparing the k-th record of each would silently
+            # compare two different instants.
+            common = np.intersect1d(s_a, s_cl)
+            d = np.linalg.norm(xyz_a[np.isin(s_a, common)]
+                               - xyz_cl[np.isin(s_cl, common)], axis=1)
+            axc.plot(common, d * 100.0, color=colour, lw=1.1,
+                     label=label.replace("\n", " "))
+            peak[arm] = float(d.max()) * 100.0
+        axc.axhline(0.0, color="0.7", lw=0.6, zorder=0)
+        axc.set_xlabel("rollout step", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        axc.set_ylabel("gripper distance from\nown-CoT arm (cm)",
+                       fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
+        axc.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
+        axc.legend(loc="upper left", fontsize=FONT_SIZE - 4, frameon=False,
+                   handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
+        fig.text((0.62 + 2.30) / W, (0.42 + 0.80) / H, "(c)",
+                 fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
     save(fig, "fig15_rollout_filmstrip")
 
@@ -283,6 +296,10 @@ def main() -> int:
         "steps_per_arm": {a: int(eps[a]["steps"]) for a, _, _ in ARMS},
         "success_per_arm": {a: bool(eps[a]["success"]) for a, _, _ in ARMS},
         "n_edit_skipped_flip": eps["cot_direction_flip"].get("n_edit_skipped"),
+        # Which version of the figure this is. Without it, an empty
+        # peak_cm_from_clean is ambiguous between "the arms never separated"
+        # and "no pose was ever logged" -- opposite readings of the same file.
+        "eef_logged": bool(have_eef),
         "peak_cm_from_clean": {k: round(v, 2) for k, v in peak.items()},
     }
     p = os.path.join(cap_dir, "fig15_facts.json")
