@@ -3930,6 +3930,15 @@ def audit_arr_submission(a: Audit) -> None:
     a.check(sec, "no \\aclfinalcopy, which current acl.sty does not define",
             True, "\\aclfinalcopy" not in t, source="cot_faith_arr.tex")
 
+    # inconsolata ships in texlive-fonts-extra, which the build image does not
+    # install. It cost bolt gg5sr9ndka an entire job for a \texttt font. Any
+    # package outside the recommended set is the same bet, so the one that
+    # actually bit is pinned here rather than left to be re-added.
+    a.check(sec, "no inconsolata: it is not in the build image's TeX tree, "
+                 "and a cosmetic font that fails the build is not a trade "
+                 "worth making", True,
+            "inconsolata" not in vis, source="cot_faith_arr.tex")
+
     # --- double-blind -------------------------------------------------------
     for needle in ("sharpguard", "ICLR 2026", "yudizhang"):
         # Skip LaTeX comments: they do not render, and the build provenance

@@ -40,6 +40,23 @@ echo "[arr] engine: ${ENGINE:-NONE}"
 export TEXINPUTS=".:./acl-style:${TEXINPUTS}"
 export BSTINPUTS=".:./acl-style:${BSTINPUTS}"
 
+# ---- Stage 2a: preflight every \usepackage against the installed tree ----
+# The engine check above passes on a partial TeX install, and a missing .sty
+# then surfaces 100 lines into the log as a generic "Fatal error occurred".
+# That is how the inconsolata failure cost a whole job. Resolve the preamble
+# first and name what is missing on one line, before anything compiles.
+MISSING=""
+for pkg in $(grep -o '\\usepackage\(\[[^]]*\]\)\?{[^}]*}' cot_faith_arr.tex \
+             | sed 's/.*{//; s/}//' | tr ',' '\n' | tr -d ' '); do
+    kpsewhich "${pkg}.sty" >/dev/null 2>&1 || MISSING="$MISSING $pkg"
+done
+if [ -n "$MISSING" ]; then
+    echo "[arr] MISSING PACKAGES:$MISSING"
+    FAILED="$FAILED preflight"
+else
+    echo "[arr] preflight: every \\usepackage resolves"
+fi
+
 # ---- Stage 2: regenerate the appendix, and fail if it was hand-edited ----
 # arr_appendix.tex is generated from the full-length source. Building a stale
 # copy would submit numbers that no longer match the manuscript, which is the
