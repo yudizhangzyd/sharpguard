@@ -1,0 +1,309 @@
+{
+  "frames_dir": "/tmp/fs_now/cotfaith-rollout-edit/frames",
+  "shift_search_px": 6,
+  "episodes": [
+    {
+      "episode": "t0_ep0",
+      "step_tag": "t0000",
+      "reference_arm": "cot_clean",
+      "arms": [
+        "cot_clean",
+        "nocot"
+      ],
+      "pairs": {
+        "nocot": {
+          "mean_abs": 1.7996,
+          "max_abs": 193.0,
+          "frac_pixels_differing": 0.10361,
+          "identical": false,
+          "diff_bbox": {
+            "row0": 87,
+            "row1": 202,
+            "col0": 141,
+            "col1": 255
+          },
+          "inside_bbox_mean_abs": 8.8411,
+          "outside_bbox_mean_abs": 0.0,
+          "best_shift": {
+            "dy": 1,
+            "dx": -3,
+            "residual_mean_abs": 2.7762
+          }
+        }
+      },
+      "later_steps": [
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0010",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 6.849,
+              "max_abs": 240.0,
+              "frac_pixels_differing": 0.18243,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 61,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 11.339,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 11.339
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0020",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 6.9669,
+              "max_abs": 241.0,
+              "frac_pixels_differing": 0.17928,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 55,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 11.1899,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 11.1899
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0030",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 10.7779,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.20914,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 48,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 16.7284,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 16.7284
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0040",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 11.1291,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.22504,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 28,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 15.7583,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 15.7583
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0050",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 10.5717,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.2059,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 17,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 14.2801,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 14.2801
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0060",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 9.3424,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.18726,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 29,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 13.2866,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 13.2866
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0070",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 9.7211,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.18755,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 35,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 14.2005,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 14.2005
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0080",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 8.6388,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.18056,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 35,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 12.6195,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 12.6195
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0090",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 8.2824,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.17772,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 202,
+                "col0": 34,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 12.0444,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 12.0444
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "mispaired_at_step_0": true
+}

@@ -365,13 +365,18 @@ def _seed_scene(seed: int) -> None:
     cannot restore it, and two arms built from separate envs get separately
     sampled fixtures.
 
-    This is measured, not inferred. In the first filmstrip capture (bolt
-    h8xzmqnhgg) the two arms' step-0 frames differed by exactly 0.000 mean
-    absolute pixel over the robot and over the free objects on the table, and by
-    7.97 over the cabinet -- a 3-pixel translation of the one articulated
-    fixture in the scene, constant from step 0 and never moving thereafter. So
-    the arms were paired on the robot and mispaired on the drawer they were
-    being asked to close.
+    This is measured, not inferred, and the measurement is released:
+    scripts/diagnose_arm_pairing.py over the first filmstrip capture (bolt
+    h8xzmqnhgg) -> results_v2/canonical_runs/rollout_arm_pairing_defect/. At
+    step 0, before either arm has acted, the two arms' frames differ over
+    10.4% of pixels, confined to rows 87-202 and cols 141-255, and are
+    BIT-IDENTICAL everywhere outside that box (0.0000 mean |dpix|). Inside it
+    the mean is 8.8411, and shifting the box by 3 px horizontally cuts the
+    residual to 2.7762 -- the signature of one rigid object placed differently
+    rather than a policy that acted differently. So the arms were paired on the
+    robot and on the free objects, and mispaired on the drawer they were being
+    asked to close. The regions there are not hand-drawn: the box is where the
+    difference is, and the 0.0000 is its complement.
 
     Seeding np.random rather than calling env.seed(): the sampler reads the
     global numpy RNG directly, and this holds whether or not LIBERO's wrapper
@@ -631,11 +636,11 @@ def run(args):
             # and set_init_state cannot undo that: it restores qpos, and a body
             # welded to the world has no joint, so its pose lives in the MODEL.
             #
-            # Measured, in the first filmstrip capture (bolt h8xzmqnhgg): the
-            # arms' step-0 frames agreed to 0.000 mean absolute pixel over the
-            # robot and over the free objects on the table, and differed by 7.97
-            # over the cabinet -- a 3-pixel translation of the one fixture in
-            # the scene, constant from step 0. The arms were paired on the robot
+            # Measured, in the first filmstrip capture (bolt h8xzmqnhgg), and
+            # released under results_v2/canonical_runs/rollout_arm_pairing_
+            # defect/: at step 0 the arms are bit-identical outside a box
+            # covering 10.4% of the frame and differ by 8.8411 inside it, which
+            # a 3 px shift reduces to 2.7762. The arms were paired on the robot
             # and mispaired on the drawer they were being asked to close, and
             # nothing in the report showed it, because the report is scalar.
             #

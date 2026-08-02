@@ -11,9 +11,13 @@ something misleading. Its rows are three prompts on ONE scene, and the reader
 attributes every difference between them to the CoT edit. So a strip whose rows
 are different scenes is not a weaker figure, it is a wrong one -- and the defect
 that produces it is invisible in the report, which is scalar. It was real: in
-bolt h8xzmqnhgg the arms' step-0 frames matched to 0.000 mean absolute pixel
-over the robot and over the free objects, and differed by 7.97 over the cabinet,
-because `set_init_state` restores qpos and a welded fixture's pose is not qpos.
+bolt h8xzmqnhgg the arms' step-0 frames were BIT-IDENTICAL outside a box
+covering 10.4% of the frame and differed by 8.8411 inside it, a difference a
+3-pixel shift reduces to 2.7762 -- one fixture placed differently, not a policy
+acting differently -- because `set_init_state` restores qpos and a welded
+fixture's pose is not qpos. That measurement is released under
+results_v2/canonical_runs/rollout_arm_pairing_defect/, produced by
+scripts/diagnose_arm_pairing.py.
 """
 from __future__ import annotations
 

@@ -161,11 +161,12 @@ def start_mismatch(imgs: dict, step: int) -> "str | None":
     The rows of this figure are three prompts on ONE scene, so the first column
     must be one image repeated. That is worth checking rather than trusting: the
     first capture (bolt h8xzmqnhgg) had a 3-pixel translation of the cabinet
-    between arms -- identical robot, identical free objects on the table,
-    differently placed furniture -- because `set_init_state` restores qpos and a
-    welded fixture's pose is not in qpos, so robosuite's placement sampler drew
-    it separately for each arm's env. Every scalar in the report looked right;
-    only the pixels showed it.
+    between arms -- bit-identical outside the differing box, 8.8411 inside it --
+    because `set_init_state` restores qpos and a welded fixture's pose is not in
+    qpos, so robosuite's placement sampler drew it separately for each arm's env.
+    Every scalar in the report looked right; only the pixels showed it. The
+    measurement is released under
+    results_v2/canonical_runs/rollout_arm_pairing_defect/.
 
     There is deliberately no override. A strip whose rows are different scenes
     is not a smaller figure than intended, it is a wrong one: the reader would

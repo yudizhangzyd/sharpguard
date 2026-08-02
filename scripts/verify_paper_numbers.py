@@ -4800,6 +4800,113 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                 True, f"${val}$" in t, source="fig15_facts.json")
 
 
+def audit_arm_pairing_defect(a: Audit) -> None:
+    """The pairing defect the appendix discloses, checked against its pixels.
+
+    Limitation (v) says the rollout arms were paired on the robot and mispaired
+    on the furniture, and quotes five numbers for it. They are pixel
+    measurements, so unlike every other number in this release they cannot be
+    recomputed from a JSON of deltas -- the diagnostic artifact IS the record,
+    and this asserts the manuscript against it rather than against a memory of
+    running it.
+
+    The two numbers doing the arguing are checked as a pair, because either one
+    alone is weak. `outside_bbox_mean_abs == 0` says the arms were bit-identical
+    everywhere the difference did not reach, which is what makes "paired on the
+    robot" a measurement rather than an impression. The shift residual says the
+    difference is a rigid translation, which is what distinguishes furniture
+    placed differently from a policy that acted differently -- without it, a
+    reader is entitled to read the same 8.84 as the arms simply diverging.
+
+    Note what is NOT asserted: that the shift is small, or that the defect is
+    minor. The check is that the released pixels say what the appendix says
+    they say.
+    """
+    sec = "Rollout arm pairing defect (limitation v disclosure)"
+    base = ROOT / "results_v2" / "canonical_runs" / "rollout_arm_pairing_defect"
+    src = "results_v2/canonical_runs/rollout_arm_pairing_defect/"
+    d = load(base / "pairing_defect.json")
+    if not d:
+        a.check(sec, "the pairing diagnostic is released, since the appendix "
+                     "quotes it", True, False, source=src)
+        return
+
+    # The script that produced it ships too. A measurement no one else can
+    # re-run is the thing this release exists not to publish.
+    gen = ROOT / "scripts" / "diagnose_arm_pairing.py"
+    a.check(sec, "the script that produces the diagnostic ships with it",
+            True, gen.exists(), source="scripts/diagnose_arm_pairing.py")
+
+    eps = d.get("episodes") or []
+    a.check(sec, "the diagnostic covers at least one filmed episode",
+            True, len(eps) >= 1, source=src)
+    if not eps:
+        return
+    pairs = eps[0].get("pairs") or {}
+    a.check(sec, "and at least one arm pair within it", True, len(pairs) >= 1,
+            source=src)
+    if not pairs:
+        return
+    rec = list(pairs.values())[0]
+
+    a.check(sec, "the defect is present at step 0, before either arm acted "
+                 "(so it cannot be behaviour)", False, rec.get("identical"),
+            source=src)
+    a.check(sec, "10.4% of pixels differ", 0.104,
+            round(float(rec.get("frac_pixels_differing", -1)), 3), source=src)
+    a.check(sec, "the arms are BIT-IDENTICAL outside the differing box, which "
+                 "is what 'paired on the robot and the free objects' means",
+            0.0, float(rec.get("outside_bbox_mean_abs", -1)), source=src)
+    a.check(sec, "mean |dpix| inside the differing box is 8.8411",
+            8.8411, float(rec.get("inside_bbox_mean_abs", -1)), source=src)
+
+    sh = rec.get("best_shift") or {}
+    a.check(sec, "a 3-pixel horizontal shift best aligns the two boxes, so the "
+                 "difference is a rigid translation", 3,
+            abs(int(sh.get("dx", 0))), source=src)
+    a.check(sec, "and at that shift the residual falls to 2.7762",
+            2.7762, float(sh.get("residual_mean_abs", -1)), source=src)
+
+    # The disclosure's own claim about itself: the appendix says the harness now
+    # refuses to proceed on a mispairing at three layers. Asserted as source
+    # properties, because a disclosure that describes guards it does not have is
+    # worse than no disclosure.
+    for path, needle, what in (
+        ("bolt/run_cotfaith_rollout_edit_s3.sh", "did not start from the",
+         "the rollout script fails while the GPU is still allocated"),
+        ("figures/gen_fig15_rollout_filmstrip.py", "def start_mismatch",
+         "the figure generator refuses to draw mispaired rows"),
+        ("tests/test_fig15_filmstrip.py", "test_real_defective_capture",
+         "an offline test runs the detector against the real defective frames"),
+    ):
+        p = ROOT / path
+        a.check(sec, what, True, p.exists() and needle in p.read_text(),
+                source=path)
+
+    # And that the fix is structural, not only a seed: the arms of one episode
+    # must share an env with no reset() between them. A seed alone would leave
+    # the pairing dependent on which RNG robosuite happens to draw from.
+    h = ROOT / "experiments" / "cotfaith_rollout_edit.py"
+    hb = h.read_text() if h.exists() else ""
+    a.check(sec, "the harness seeds the placement sampler per episode",
+            True, "_seed_scene" in hb and "--env-seed" in hb,
+            source="experiments/cotfaith_rollout_edit.py")
+    a.check(sec, "and shares one env across the arms of an episode, so the "
+                 "pairing does not rest on an assumption about which RNG places "
+                 "fixtures", True,
+            "No reset() here" in hb,
+            source="experiments/cotfaith_rollout_edit.py")
+
+    # Every number above is quoted in the appendix. Checked in that direction
+    # too: an artifact that stops matching the prose is the failure this whole
+    # script exists to catch, and it is silent unless someone looks.
+    apx = ROOT / "arr_appendix.tex"
+    at = apx.read_text() if apx.exists() else ""
+    for val in ("10.4", "0.0000", "8.8411", "2.7762"):
+        a.check(sec, f"the appendix quotes ${val}$ from this artifact",
+                True, val in at, source="arr_appendix.tex")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -4936,6 +5043,7 @@ def main() -> int:
     audit_rollout_insuite(a)
     audit_rollout_edited_arm(a)
     audit_rollout_filmstrip(a)
+    audit_arm_pairing_defect(a)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 
