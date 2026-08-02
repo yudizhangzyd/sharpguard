@@ -94,6 +94,37 @@ def transform(src: str) -> str:
 
     body = re.sub(r"\\texttt\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", breakable, body)
 
+    # --- shrink the over-wide tabulars to fit -------------------------------
+    # Two separate overflows, one fix.
+    #
+    # (a) \begin{center}\small\begin{tabular} blocks written inline are not
+    #     floats, so the table*/figure* rewrite above misses them and they keep
+    #     their natural width -- 193pt past a 3.1in column in the first build.
+    #     They cannot become table*: they sit mid-argument, and a float would
+    #     drift to a page where the sentence introducing it no longer points at
+    #     anything.
+    # (b) table* spans the full 6.5in page, but a 13-column table from a
+    #     single-column source can exceed even that.
+    #
+    # \fitwidth (defined in cot_faith_arr.tex) measures the box and scales only
+    # if it overflows, so tables that already fit keep their natural size
+    # rather than being blown up to the margin.
+    def fit(target):
+        def sub(m):
+            inner = m.group(0)
+            if r"\fitwidth" in inner:
+                return inner
+            return (inner.replace(r"\begin{tabular}",
+                                  r"\fitwidth{" + target + r"}{\begin{tabular}",
+                                  1)
+                         .replace(r"\end{tabular}", r"\end{tabular}}", 1))
+        return sub
+
+    body = re.sub(r"\\begin\{center\}.*?\\end\{center\}",
+                  fit(r"\columnwidth"), body, flags=re.S)
+    body = re.sub(r"\\begin\{table\*\}.*?\\end\{table\*\}",
+                  fit(r"\textwidth"), body, flags=re.S)
+
     # --- anonymize -----------------------------------------------------------
     # ARR is double-blind. The repo name is the sharpest leak here: it is
     # searchable on GitHub and resolves straight to the authors, and it appears

@@ -499,7 +499,8 @@ We ran the ECoT-bridge model on 3 additional manipulation corpora spanning disti
 
 Eq.~\ref{eq:delta} scores an edit by the \emph{magnitude} $\Delta_\infty$ of the action change, so a model is credited as ``faithful'' for changing its action in \emph{any} direction after the CoT is edited. For families whose semantics predict a \emph{signed} consequence this is too weak a test. After \emph{direction\_flip} reverses left$\leftrightarrow$right / up$\leftrightarrow$down / in$\leftrightarrow$out, a model that understood the edit should move roughly opposite to its original translation; after \emph{gripper\_flip} it should invert the gripper sign; after \emph{negation} it should shrink its action norm. We therefore define a direction-aware score. For \emph{direction\_flip},
 \begin{equation}
-\mathcal{F}_{\text{dir}}(m, f) \;=\; \frac{1}{N}\sum_{s=1}^{N} \mathbf{1}\!\left[\cos\bigl(a_{1:3}(s, \text{cot}_s),\, a_{1:3}(s, f(\text{cot}_s))\bigr) < -0.5\right],
+\mathcal{F}_{\text{dir}}(m, f) \;=\; \frac{1}{N}\sum_{s=1}^{N} \mathbf{1}\!\left[c^f_s < -0.5\right],
+\quad c^f_s = \cos\bigl(a_{1:3}(s, \text{cot}_s),\, a_{1:3}(s, f(\text{cot}_s))\bigr)
 \label{eq:fdir}
 \end{equation}
 with the analogous sign-flip criterion on dimension 7 for \emph{gripper\_flip} and a norm-shrinkage criterion for \emph{negation}. This requires no new inference: it is computed from the per-sample $a_{\text{orig}}, a_{\text{edit}}$ pairs we already release.

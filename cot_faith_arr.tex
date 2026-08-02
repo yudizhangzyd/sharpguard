@@ -33,6 +33,23 @@
 
 \graphicspath{{figures/}}
 
+% Shrink-to-fit, used by the generated appendix on every tabular.
+%
+% A bare \resizebox{\textwidth} would also ENLARGE a narrow table to full
+% width, which is worse than the overflow it fixes. This measures first and
+% scales only when the box is genuinely too wide, so a table that already fits
+% is passed through at its natural size and untouched typographically.
+% Standard LaTeX plus graphicx, which is already loaded -- no new package, and
+% so no repeat of the inconsolata failure.
+\newsavebox{\fitsavebox}
+\newcommand{\fitwidth}[2]{%
+  \sbox{\fitsavebox}{#2}%
+  \ifdim\wd\fitsavebox>#1\relax
+    \resizebox{#1}{!}{\usebox{\fitsavebox}}%
+  \else
+    \usebox{\fitsavebox}%
+  \fi}
+
 % No authblk, no titlesec, no \baselinestretch, no \parindent override: acl.sty
 % fixes all of these and the ARR format check rejects deviations from them.
 

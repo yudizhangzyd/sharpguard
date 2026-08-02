@@ -56,7 +56,7 @@ VLADriveBench \citep{vladrivebench} defined the mentioning/hallucination/contrad
 \centering\small
 \caption{CoT-Faith vs.\ prior manipulation VLA benchmarks. DL$=$decoding-language.}
 \label{tab:compare}
-\begin{tabular}{l c c c c c c}
+\fitwidth{\textwidth}{\begin{tabular}{l c c c c c c}
 \toprule
 Benchmark & Faithfulness-spec. & \# edit families & Null control & \# models & Reason-target abl. & \# corpora \\
 \midrule
@@ -68,7 +68,7 @@ Double-Edged \citep{doubleedged} & partial (robustness) & 0 (perturbations) & no
 \midrule
 \textbf{CoT-Faith (ours)} & \textbf{yes} & \textbf{13 (3-tier + 3 nulls)} & \textbf{yes} & \textbf{15} & \textbf{yes} & \textbf{4} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 % ============================================================
@@ -146,7 +146,7 @@ Table~\ref{tab:models} lists the 15 models across 4 architecture families. Only 
 \centering\small
 \caption{The 15 models in CoT-Faith across 4 architecture families. ``Ours'' variants LoRA-fine-tuned from \texttt{Embodied-CoT/\allowbreak{}ecot-openvla-7b-bridge}.}
 \label{tab:models}
-\begin{tabular}{l l l l l}
+\fitwidth{\textwidth}{\begin{tabular}{l l l l l}
 \toprule
 Model & Base architecture & Training data & LoRA rank & Reasoning target \\
 \midrule
@@ -169,7 +169,7 @@ Ours r=8/16/32/64      & ECoT-bridge & LIBERO-90 & \{8,16,32,64\} & full CoT \\
 Ours no-CoT            & ECoT-bridge & LIBERO-90 & 32             & \textbf{action-only} \\
 Ours data-50A/B        & ECoT-bridge & LIBERO-90 (50\% split A/B) & 32 & full CoT \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 % ============================================================
@@ -185,7 +185,7 @@ Table~\ref{tab:leaderboard} reports the magnitude score $\mathcal{F}(m, f)$ for 
 \centering\scriptsize
 \caption{\textbf{Magnitude scores $\mathcal{F}(m, f)$ --- a diagnostic table, not a ranking.} 8 CoT-VLAs $\times$ 11 edit families (10 non-null + \emph{paraphrase\_null}), with the direction-aware score on \emph{direction\_flip} in the last column. Every row is a \textbf{mean$\pm$std across 3 sampling seeds} of one 13-family run at $N$ as given in the header, so every cell here now carries a floor from its own run; the two out-of-CoT floors are in Table~\ref{tab:calibration} rather than here. \textbf{Nothing is bolded, deliberately}, and the reason is now measured on all 8 rows rather than argued from the 1 we could calibrate: on \emph{every} row the mean over the seven non-control families falls \emph{below} that row's own \emph{para} floor ($\bar{\mathcal{F}}_{\text{diff}}$ from $-0.028$ to $-0.179$; Section~\ref{sec:paraphrase_null}), so a column maximum identifies the model that reacts most to \emph{any} rewording, not the model that is most faithful. Row order is the configuration order of Table~\ref{tab:models}. \emph{ss} $=$ selfsplice\_control (null; observed $0.00$ on 8/8 here, and on 11/11 including the DeepThinkVLA family). This table is the ECoT architecture family only; the second family's full 13-family protocol is Table~\ref{tab:crossfamily} and Table~\ref{tab:calibration}, which is \emph{not} merged in because its floor, ceiling, and decode conventions all differ. \emph{para} $=$ paraphrase\_null, the per-model surface-form floor. $\mathcal{F}_{\text{dir}}$ (Eq.~\ref{eq:fdir}) requires the action to reverse, not merely to move; \textbf{it orders the models oppositely to the magnitude columns} (Section~\ref{sec:directional}). That last column alone is stated on the checkpoint's own de-quantization grid; the magnitude columns are invariant to that choice and the audit proves it (Section~\ref{sec:analysis}). Wilson 95\% CI half-widths on the pooled 3-seed counts are $\leq 0.067$ (widest: \emph{subject\_swap} on $r{=}64$) --- but they bound the \emph{sample} draw only, and they are the \emph{smaller} term: retraining $r{=}32$ at the same configuration moves a single family by up to $0.180$, ${\sim}2.7\times$ the widest interval here (Section~\ref{sec:limitations}\,(viii)).}
 \label{tab:leaderboard}
-\begin{tabular}{l r r r r r r r r r r r | r}
+\fitwidth{\textwidth}{\begin{tabular}{l r r r r r r r r r r r | r}
 \toprule
 & \multicolumn{3}{c}{Tier 0 (control)} & \multicolumn{4}{c}{Tier 1 (word-level)} & \multicolumn{3}{c}{Tier 2 (object/causal)} & & \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-8}\cmidrule(lr){9-11}
@@ -201,7 +201,7 @@ Ours data-50A  & 0.00 & .39\tiny{$\pm .04$} & .73\tiny{$\pm .03$} & .70\tiny{$\p
 Ours data-50B  & 0.00 & .35\tiny{$\pm .03$} & .73\tiny{$\pm .07$} & .64\tiny{$\pm .02$} & .15\tiny{$\pm .01$} & .54\tiny{$\pm .02$} & .51\tiny{$\pm .02$} & .28\tiny{$\pm .05$} & .10\tiny{$\pm .03$} & .26\tiny{$\pm .04$} & .45\tiny{$\pm .03$} & 0.54\tiny{$\pm .01$} \\
 ECoT-bridge & 0.00 & .86\tiny{$\pm .04$} & .96\tiny{$\pm .01$} & .96\tiny{$\pm .01$} & .70\tiny{$\pm .02$} & .95\tiny{$\pm .04$} & .95\tiny{$\pm .01$} & .93\tiny{$\pm .03$} & .59\tiny{$\pm .05$} & .93\tiny{$\pm .03$} & .95\tiny{$\pm .02$} & 0.12\tiny{$\pm .04$} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \begin{figure*}[t]
@@ -240,7 +240,7 @@ Figure~\ref{fig:attention} shows the four-bucket action-token attention across 1
 \paragraph{The bucket ordering is an artifact of the layer choice.} Eq.~\ref{eq:attn} averages over $L = \{0,1,2,3\}$. That choice was justified in the submission only by an appeal to early cross-modal mixing, so we re-ran the identical measurement at four further layer sets --- $\{8..11\}$, $\{16..19\}$, $\{28..31\}$, and all $32$ --- at the same three seeds, for $5 \times 3 = 15$ runs of $N{=}100$ in total. The four buckets do not merely shift, \textbf{they reorder}, and the sweep localizes the effect much more sharply than the two endpoints alone could:
 
 \begin{center}\small
-\begin{tabular}{lccccl}
+\fitwidth{\columnwidth}{\begin{tabular}{lccccl}
 \toprule
 layers & $\alpha(\text{cot})$ & $\alpha(\text{visual})$ & $\alpha(\text{instr})$ & $\alpha(\text{prev})$ & ordering \\
 \midrule
@@ -250,7 +250,7 @@ $16$--$19$            & 0.212 & \textbf{0.412} & 0.309 & 0.067 & visual $>$ inst
 $28$--$31$            & 0.262 & \textbf{0.455} & 0.227 & 0.056 & visual $>$ cot $>$ instr \\
 all $32$              & 0.213 & \textbf{0.414} & 0.311 & 0.062 & visual $>$ instr $>$ cot \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{center}
 
 \noindent$\alpha(\text{cot})$ leads in \textbf{exactly one of the four four-layer blocks we probed --- and it is the block the submission reported}. It swings $18.7$\,pp across depth (min $0.157$ at layers $8$--$11$, max $0.344$ at layers $0$--$3$) against a worst-case three-seed sampling $\sigma$ of $0.26$\,pp: a ratio of $72\times$, so this is a depth effect and not a sample-draw effect. The variation is also \emph{not monotone} --- $\alpha(\text{cot})$ falls to its minimum in the early-middle of the network and then recovers toward the output layers --- so ``deeper layers attend less to the CoT'' would also be the wrong summary. \textbf{The statement ``the CoT segment receives the largest share of action-token attention'' is true in the first four layers and false in every other block we measured.} Combined with the per-token normalization of Section~\ref{sec:analysis} --- where the CoT bucket is largest only because it is longest --- the apparent prominence of the CoT segment fails two independent robustness checks. We keep the layer-$0$--$3$ numbers as the primary ones for continuity with the submitted tables and because early-layer mixing is where a routing effect would be expected, but F1 and F3 should be read as claims about early-layer attention specifically, and we advise against reporting any bucket ordering without stating the layer set. Since the ordering our reported layer set produces is the one that does \emph{not} generalize, we treat the layer set as part of the claim rather than as a presentation choice, and release all $15$ runs. This is a defect in how P1 was specified, not in the measurement; it does not touch P2, which is causal rather than attributional.
@@ -267,7 +267,7 @@ The F2 statement above compares raw $\mathcal{F}$ across models. That comparison
 We therefore normalize each model's mean magnitude score by its own control ceiling, $\bar{\mathcal{F}}_{\text{norm}}(m) = \bar{\mathcal{F}}(m) / \mathcal{F}(m, \text{cross\_task\_swap})$, which asks what fraction of the effect this model is \emph{capable} of showing is actually elicited by semantic edits. The result reverses the interpretation for the model F2 rests on. Every row below is now a 3-sampling-seed mean from that model's own 13-family run, so the floor row --- absent from the submitted version of this table --- is measured rather than assumed (all values from \texttt{results\_\allowbreak{}v2/\allowbreak{}derived\_\allowbreak{}metrics.json}):
 
 \begin{center}\small
-\begin{tabular}{lccccccc}
+\fitwidth{\columnwidth}{\begin{tabular}{lccccccc}
 \toprule
 & no-CoT & r=8 & r=16 & r=32 & r=64 & data-50A & data-50B \\
 \midrule
@@ -278,7 +278,7 @@ $\mathcal{F}(\text{paraphrase\_null})$ (floor) & 0.193 & 0.587 & 0.547 & 0.567 &
 $\bar{\mathcal{F}}_{\text{norm}}$ (one-sided) & \textbf{0.637} & 0.475 & 0.505 & 0.487 & 0.580 & 0.538 & 0.481 \\
 two-sided & $-0.416$ & $-0.665$ & $-0.299$ & $-0.706$ & $-0.621$ & $-0.743$ & $-0.327$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{center}
 
 \textbf{The action-only model has the \emph{highest} ceiling-normalized score of the seven same-base variants (0.637 vs 0.475--0.580).} Relative to the response it is able to produce, the no-CoT model is not less sensitive to CoT semantics than the CoT-trained models; it is \emph{uniformly less responsive to the CoT segment as a whole}, semantic and maximal edits alike, by a factor of roughly $3.1\times$ (its ceiling is $0.260$ against a mean of $0.817$ for the other six). So the defensible version of F2 is a statement about absolute effect size, useful to a practitioner asking ``will editing the CoT move this policy at all,'' and it is \emph{not} evidence that reasoning-target training induces specifically semantic CoT$\to$action routing. We restate it that way and drop the stronger claim. (ECoT-bridge reaches $\bar{\mathcal{F}}_{\text{norm}} = 0.892$ on the same leaderboard run, but Section~\ref{sec:paraphrase_null} shows that number is itself uninterpretable as semantic sensitivity, because its paraphrase floor sits at the same height as its ceiling.)
@@ -315,7 +315,7 @@ That is a weaker claim than the one the original run appeared to license and a s
 \centering\small
 \caption{\textbf{P3 re-run in-domain} (\texttt{ecot-openvla-7b-bridge} on Bridge~V2, its training corpus; $N{=}153$, CoT self-generated, prediction un-normalized with the checkpoint's own \texttt{bridge\_orig} statistics). Raw Mann--Whitney AUROC of each attention channel as a predictor of above-median action L$_1$, with a $10{,}000$-draw bootstrap CI over samples. The last column is the same quantity recomputed on the \emph{same forward passes} under the withdrawn mixed-space protocol. Only $\alpha(m,\text{instruction})$ excludes chance, and the withdrawn protocol is what hid it. Artifact: \texttt{results\_\allowbreak{}v2/\allowbreak{}canonical\_\allowbreak{}runs/\allowbreak{}auroc\_\allowbreak{}ecot\_\allowbreak{}bridge\_\allowbreak{}indomain\_\allowbreak{}n153.json}.}
 \label{tab:p3}
-\begin{tabular}{l r l l r}
+\fitwidth{\textwidth}{\begin{tabular}{l r l l r}
 \toprule
 Attention channel & AUROC & 95\% CI & vs.\ chance & withdrawn \\
 \midrule
@@ -327,7 +327,7 @@ $\alpha(m, \text{action-prev})$& $0.541$ & $[0.446, 0.633]$ & includes $0.5$ & $
 \multicolumn{2}{l}{Median action L$_1$ (robot units)} & $0.0199$ & \multicolumn{2}{l}{withdrawn: $0.2550$ ($12.8\times$)} \\
 \multicolumn{2}{l}{Labels differing between protocols} & $40/153$ & \multicolumn{2}{l}{} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 
@@ -347,7 +347,7 @@ Both differences are now implemented behind named configuration arms and measure
 \centering\small
 \caption{\textbf{The rollout gate passes on the winning composition.} Same public \texttt{openvla-7b-finetuned-libero-*} checkpoints and same $50$ episodes per suite as Table~\ref{tab:gate}, re-run with \texttt{action\_\allowbreak{}decoder=upstream} (the checkpoint's own \texttt{predict\_action}) and \texttt{gripper\_\allowbreak{}transform=openvla} ($g \mapsto -\operatorname{sign}(2g{-}1)$); \texttt{image\_preproc} is off. Every suite ran at upstream's own step budget, requested via the \texttt{MAX\_STEPS=0} sentinel, so run and upstream budgets are equal by construction ($220$, $280$, $300$, $520$) --- which is what Table~\ref{tab:gate}'s $400/520$ row was not, and it is why no row here carries a truncation caveat, \emph{libero\_10} included. All $50/50$ episodes per arm on canonical initial states. $^\ddagger$Anchor SR is the second arm of the \emph{same} job under one model load: corrected decoder, gripper convention \emph{not} applied. Its distance from the winning cell is the measurement that makes the two corrections jointly necessary. $100$ episodes per suite across both arms. Derived by \texttt{scripts/\allowbreak{}derive\_\allowbreak{}metrics.py}; audited cell-by-cell by \texttt{scripts/\allowbreak{}verify\_\allowbreak{}paper\_\allowbreak{}numbers.py}.}
 \label{tab:gate_pass}
-\begin{tabular}{lcccccc}
+\fitwidth{\textwidth}{\begin{tabular}{lcccccc}
 \toprule
 Suite & Task SR & Successes & Wilson 95\% CI & Published SR & Frac.\ of pub. & Anchor SR$^\ddagger$ \\
 \midrule
@@ -356,7 +356,7 @@ Suite & Task SR & Successes & Wilson 95\% CI & Published SR & Frac.\ of pub. & A
 \emph{libero\_goal}    & $\mathbf{0.74}$ & $37/50$ & $[0.60, 0.84]$ & $0.794$ & $0.932$ & $0.12$ \\
 \emph{libero\_10}      & $\mathbf{0.46}$ & $23/50$ & $[0.33, 0.60]$ & $0.539$ & $0.853$ & $0.00$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \paragraph{The decode defect is on the rollout path --- so we measured whether it reaches the published numbers, rather than asserting that it does not.} ``No number is conditioned on a rollout'' is true of the \emph{rollout} decoder, but it is not by itself a defence, because P2 decodes through a \emph{second}, independent reimplementation (\texttt{experiments/\allowbreak{}cotfaith\_\allowbreak{}edit.py:infer\_\allowbreak{}action}) which had never been compared to upstream at all. It delegates generation to HuggingFace \texttt{generate} rather than running its own masked-argmax loop, so it is closer to upstream than the rollout path is, but it still puts no logit mask over the $256$-token action window --- a non-action token is silently dropped rather than forbidden --- and it does not perform upstream's input-id surgery. Two questions follow and they separate cleanly, so we answer them separately: the de-quantization convention needs no inference at all, and token selection needs a GPU.
@@ -377,7 +377,7 @@ We report one thing the same run got wrong, because taken at face value it contr
 \centering\small
 \caption{\textbf{Four-suite rollout gate, pre-fix baseline: it does not pass.} Public \texttt{openvla-7b-finetuned-libero-*} checkpoints, $50$ episodes per suite ($200$ total), each suite scored with its own \texttt{unnorm\_key}, all $50/50$ episodes on the suite's canonical initial states. $^\dagger$\emph{libero\_10} is parenthesized and excluded because we ran $400$ steps against upstream's $520$ for that suite: its $0/50$ may be truncation and is not evidence about the policy. These are the pre-fix numbers --- our own action decode, the gripper convention unapplied, and image preprocessing skipped were all live in these runs --- and they are the baseline every corrected run below is measured against, including the one that passes (Table~\ref{tab:gate_pass}). Derived by \texttt{scripts/\allowbreak{}derive\_\allowbreak{}metrics.py} from the per-suite reports in \texttt{results\_\allowbreak{}v2/\allowbreak{}canonical\_\allowbreak{}runs/\allowbreak{}gate\_\allowbreak{}foursuite/\allowbreak{}}.}
 \label{tab:gate}
-\begin{tabular}{lccccc}
+\fitwidth{\textwidth}{\begin{tabular}{lccccc}
 \toprule
 Suite & Task SR & Successes & Wilson 95\% CI & Published SR & Steps run / upstream \\
 \midrule
@@ -386,14 +386,14 @@ Suite & Task SR & Successes & Wilson 95\% CI & Published SR & Steps run / upstre
 \emph{libero\_goal}    & $0.10$ & $5/50$ & $[0.04, 0.21]$ & $0.794$ & $400 / 300$ \\
 \emph{libero\_10}$^\dagger$ & ($0.00$) & ($0/50$) & --- & $0.539$ & $\mathbf{400 / 520}$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \begin{table*}[t]
 \centering\small
 \caption{\textbf{Decoder-validation diagnostics for the withdrawn P3 run} (\texttt{ecot-openvla-7b-bridge} decoded on LIBERO-90 with \texttt{bridge\_orig} statistics, $N{=}200$). Predicted actions are anti-correlated with the demonstrations and lose to both trivial baselines, so the per-sample error signal is a cross-domain offset rather than model error. We publish this table as the gate every future ground-truth-referenced probe must pass. Generated by \texttt{scripts/\allowbreak{}decoder\_\allowbreak{}audit.py}.}
 \label{tab:auroc}
-\begin{tabular}{l r}
+\fitwidth{\textwidth}{\begin{tabular}{l r}
 \toprule
 Diagnostic & Value \\
 \midrule
@@ -407,7 +407,7 @@ Baseline L$_1$: predict-per-dim-mean & $0.046$ \\
 \midrule
 \textbf{Gate verdict} & \textbf{FAIL (L$_1$ worse than trivial)} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \begin{figure*}[t]
@@ -462,7 +462,8 @@ We ran the ECoT-bridge model on 3 additional manipulation corpora spanning disti
 
 Eq.~\ref{eq:delta} scores an edit by the \emph{magnitude} $\Delta_\infty$ of the action change, so a model is credited as ``faithful'' for changing its action in \emph{any} direction after the CoT is edited. For families whose semantics predict a \emph{signed} consequence this is too weak a test. After \emph{direction\_flip} reverses left$\leftrightarrow$right / up$\leftrightarrow$down / in$\leftrightarrow$out, a model that understood the edit should move roughly opposite to its original translation; after \emph{gripper\_flip} it should invert the gripper sign; after \emph{negation} it should shrink its action norm. We therefore define a direction-aware score. For \emph{direction\_flip},
 \begin{equation}
-\mathcal{F}_{\text{dir}}(m, f) \;=\; \frac{1}{N}\sum_{s=1}^{N} \mathbf{1}\!\left[\cos\bigl(a_{1:3}(s, \text{cot}_s),\, a_{1:3}(s, f(\text{cot}_s))\bigr) < -0.5\right],
+\mathcal{F}_{\text{dir}}(m, f) \;=\; \frac{1}{N}\sum_{s=1}^{N} \mathbf{1}\!\left[c^f_s < -0.5\right],
+\quad c^f_s = \cos\bigl(a_{1:3}(s, \text{cot}_s),\, a_{1:3}(s, f(\text{cot}_s))\bigr)
 \label{eq:fdir}
 \end{equation}
 with the analogous sign-flip criterion on dimension 7 for \emph{gripper\_flip} and a norm-shrinkage criterion for \emph{negation}. This requires no new inference: it is computed from the per-sample $a_{\text{orig}}, a_{\text{edit}}$ pairs we already release.
@@ -475,7 +476,7 @@ with the analogous sign-flip criterion on dimension 7 for \emph{gripper\_flip} a
 \centering\small
 \caption{\textbf{F6: magnitude vs direction-aware faithfulness on \emph{direction\_flip}.} $\mathcal{F}_{\text{mag}}$ is Eq.~\ref{eq:faith}; $\mathcal{F}_{\text{dir}}$ is Eq.~\ref{eq:fdir}; $\cos$ is the mean cosine between the original and post-edit xyz translation (faithful $\Rightarrow$ negative). \textbf{Every row is a 3-sampling-seed mean} (up from one seed on seven of the eight rows at submission). The \emph{rank} column orders $\mathcal{F}_{\text{mag}}$ and is printed only to make the inversion legible; ranks 4 and 5 (data-50A $0.699 \pm 0.022$, r=8 $0.696 \pm 0.041$) are separated by less than either row's seed std and should not be read as ordered, and neither should any adjacent pair among ranks 2--7. What the table is for is the gap between its second and fourth columns. Computed from released per-sample logs with no new inference, on the checkpoint's own de-quantization grid rather than P2's (Section~\ref{sec:analysis}); the $\mathcal{F}_{\text{mag}}$ column is invariant to that choice and the other two are not.}
 \label{tab:directional}
-\begin{tabular}{l r r r r}
+\fitwidth{\textwidth}{\begin{tabular}{l r r r r}
 \toprule
 Model & $\mathcal{F}_{\text{mag}}$ & rank & $\mathcal{F}_{\text{dir}}$ & $\cos$ \\
 \midrule
@@ -488,7 +489,7 @@ Ours r=32      & 0.652 & 6 & 0.579 & $-0.147$ \\
 Ours data-50B  & 0.639 & 7 & 0.542 & $-0.111$ \\
 Ours no-CoT    & 0.274 & 8 & 0.087 & $+0.759$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \begin{figure*}[t]
@@ -545,7 +546,7 @@ That does not mean the length-exact floor is the right one and the headline shou
 \centering\small
 \caption{\textbf{Two-sided calibration on all eleven models we can calibrate, spanning both architecture families.} Every quantity in a row is computed only against families from that same run, so no cross-run offset enters. The seven \emph{Ours} leaderboard rows are 3-sampling-seed means (per-family $F$ averaged over seeds, Wilson intervals on pooled counts); the remaining rows --- ECoT-bridge, the no-CoT replicate, and the three DeepThinkVLA checkpoints --- are single-seed calibration runs and are marked $^\dagger$. \emph{Ours no-CoT} appears twice and the two rows are not interchangeable: \emph{(leaderboard)} is the checkpoint every other table uses, \emph{(replicate)} is an independent training of the same configuration, and the gap between their two-sided scores ($-0.416$ vs.\ $+0.127$) is itself the training-run variance of item~(viii). \textbf{The \emph{bbox} cell is empty on the DeepThinkVLA rows because that family is inapplicable to them, not unmeasured}: their CoT renderer emits no bounding boxes, so the edit produces a byte-identical trace and the harness records $n{=}0$ with all $100$ samples skipped rather than scoring an identity edit as $\mathcal{F}=0.000$. Dynamic range $=$ ceiling $-$ floor; a range below $0.05$ makes the two-sided statistic undefined and is marked \emph{degen.} Specificity ratio $= \bar{\mathcal{F}} / \mathcal{F}(\text{instr\_rand})$, where $\bar{\mathcal{F}}$ is the mean over the seven non-control families; $>\!1$ means the CoT families move the action more reliably than corrupting five \emph{instruction} tokens does.}
 \label{tab:calibration}
-\begin{tabular}{lcccccrrr}
+\fitwidth{\textwidth}{\begin{tabular}{lcccccrrr}
 \toprule
 model & $\bar{\mathcal{F}}$ & $\mathcal{F}(\text{para})$ & $\mathcal{F}(\text{bbox})$ & $\mathcal{F}(\text{instr\_rand})$ & ceiling & range & two-sided & ratio \\
 \midrule
@@ -564,7 +565,7 @@ DeepThinkVLA-base$^\dagger$ & $0.947$ & $0.960$ & --- & $0.950$ & $0.980$ & $\ma
 DeepThinkVLA-SFT$^\dagger$  & $0.701$ & $0.810$ & --- & $0.870$ & $0.960$ & $0.150$ & $-0.728$ & $0.806$ \\
 DeepThinkVLA-RL$^\dagger$   & $0.724$ & $0.820$ & --- & $0.890$ & $0.940$ & $0.120$ & $-0.796$ & $0.814$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 \emph{First, the degeneracy is saturation and nothing else --- and it now says so once per architecture family.} Exactly $\mathbf{2}$ of the $12$ calibrations are degenerate, and they are the two \emph{saturated} checkpoints: ECoT-bridge at a range of $0.010$ and DeepThinkVLA-base at $0.020$. Every other row spans $0.067$ to $0.337$, up to $34\times$ wider. Both degenerate rows are public checkpoints that were never fine-tuned toward the evaluation suite, one in each architecture family, and \emph{no} full-CoT trained variant is degenerate in either family. So \textbf{the collapse of a calibration is a property of \emph{saturation}, not of the edit families or of one CoT format}, and that now rests on ten contrasting models across two architectures rather than on eight within one. This sharpens finding (a) considerably: $\mathcal{F}$ is not uninterpretable everywhere, it is uninterpretable \emph{where it is high} --- exactly the regime in which anyone would want to cite it as evidence of faithfulness. A floor near zero and a ceiling at $0.22$ leave room to measure something; a floor at $0.960$ against a ceiling of $0.970$ does not.
@@ -604,7 +605,7 @@ The critical property of these runs is that they carry \emph{paraphrase\_null} (
 \small
 \caption{\textbf{P2 on the DeepThinkVLA family (F7).} $\bar{\mathcal{F}}$ is the mean over the 7 non-control families. The floor is \emph{paraphrase\_null} (meaning-preserving), the ceiling \emph{cross\_task\_swap} (CoT replaced by an unrelated task's). ECoT-bridge is repeated from Section~\ref{sec:f2_calib} for comparison. $\mathcal{F}_{\text{diff}} < 0$ on \emph{every} model with a measured floor: a paraphrase that changes no meaning moves the action \emph{more} than the mean semantic edit does.}
 \label{tab:crossfamily}
-\begin{tabular}{lccccc}
+\fitwidth{\textwidth}{\begin{tabular}{lccccc}
 \toprule
 model & $\bar{\mathcal{F}}$ & floor & ceiling & range & $\bar{\mathcal{F}}_{\text{diff}}$ \\
 \midrule
@@ -614,7 +615,7 @@ DeepThinkVLA-RL   & $0.724$ & $0.820$ & $0.940$ & $0.120$ & $-0.095$ \\
 \midrule
 ECoT-bridge (\S\ref{sec:f2_calib}) & $0.869$ & $0.960$ & $0.970$ & $0.010$ & $-0.091$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table*}
 
 Three results, in increasing order of how badly they hurt. All three are stated on a scoring convention that we must declare before they can be read, because it is a choice and not a neutral default.
@@ -666,7 +667,7 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 \centering
 \small
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{lrccc}
+\fitwidth{\textwidth}{\begin{tabular}{lrccc}
 \toprule
 Model & $n$ & $\mathcal{F}_{\text{mag}}$ ($\tau{=}0.05$) & $1 - P(\Delta_\infty{=}0)$ & $P(\Delta_\infty{=}0)$ \\
 \midrule
@@ -683,7 +684,7 @@ DeepThinkVLA base     & $778$  & $0.951$ & $0.978$ & $0.022$ \\
 DeepThinkVLA SFT      & $778$  & $0.748$ & $0.897$ & $0.103$ \\
 DeepThinkVLA RL       & $778$  & $0.767$ & $0.901$ & $0.099$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{\textbf{The magnitude score is close to a decode-collision counter, reported as a first-class column.} $\mathcal{F}_{\text{mag}}$ beside $1 - P(\Delta_\infty = 0)$, the fraction of samples whose action changed \emph{at all}, pooled over the nine semantic families. The two columns agree at $R^2 = 0.972$ across these $11$ configurations and at $R^2 = 0.926$ across the $324$ finer-grained (run, family) cells, where $80$ cells are identical to the last digit. \textbf{Every column of Table~\ref{tab:leaderboard} can therefore be read as a collision rate to within $0.02$--$0.06$}, and a model scoring higher on $\mathcal{F}_{\text{mag}}$ is mostly a model whose argmax over action bins is less likely to land on the identical bin under a perturbed prompt. The gap is smallest on the ECoT-family rows ($0.021$--$0.055$) and largest on the two CoT-tuned DeepThinkVLA checkpoints ($0.149$, $0.134$) --- the only rows where an appreciable number of samples move by a nonzero amount that is still under $\tau$, which is what a threshold is supposed to do and what it almost never does here. We report this column because a reader cannot recover it from $\mathcal{F}_{\text{mag}}$ alone and because it bears directly on how much of Section~\ref{sec:paraphrase_null}'s null result is attributable to the metric's construction.}
 \label{tab:collision}
 \end{table*}
