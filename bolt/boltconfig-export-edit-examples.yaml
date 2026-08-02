@@ -13,7 +13,7 @@ priority: 1
 resources:
   docker_image: docker.apple.com/iris/iris:2.15.0
   task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
-  disk_gb: 32
+  disk_gb: 32       # the 432MB corpus and nothing else -- no setup_command, so no torch wheels
   timeout: 40m
   cluster: aws_2
 

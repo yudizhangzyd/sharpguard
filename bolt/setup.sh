@@ -29,6 +29,10 @@ pip install peft accelerate datasets || true
 python - <<'PY'
 import sys
 import torch, transformers, sharpguard  # noqa: F401  (import check)
+# sharpguard re-exports lazily now, so bare `import sharpguard` no longer
+# touches the torch estimators. Resolve one attribute so this stays the same
+# check it was before -- setup should fail here, not in a job's first epoch.
+sharpguard.measure_all  # noqa: B018
 print(f"torch {torch.__version__} | transformers {transformers.__version__} "
       f"| cuda {torch.cuda.is_available()} | ngpus {torch.cuda.device_count()}")
 if not torch.cuda.is_available():
