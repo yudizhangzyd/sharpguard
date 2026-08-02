@@ -74,6 +74,26 @@ def transform(src: str) -> str:
     body = re.sub(r"\\begin\{figure\}(\[[^\]]*\])?", r"\\begin{figure*}[t]", body)
     body = re.sub(r"\\end\{figure\}", r"\\end{figure*}", body)
 
+    # --- let long \texttt paths break across lines --------------------------
+    # \texttt is unbreakable, and a 60-character artifact path in a 3.1-inch
+    # column runs clear off the page: the first ARR build produced a 347pt
+    # overfull box on
+    #   ours_{lora-r8,...,data-50B}_edit_13family_RETRAIN.json
+    # which is text a reader physically cannot see. Single-column at 6.5in
+    # absorbed these, so they appear only in the two-column conversion.
+    #
+    # \allowbreak after each separator gives TeX a legal breakpoint without
+    # inserting a hyphen, so no break can be misread as part of a filename.
+    # Applied only inside \texttt{...} -- the separators mean nothing in prose.
+    def breakable(m):
+        inner = m.group(1)
+        if len(inner) < 24:          # short spans fit; leave them alone
+            return m.group(0)
+        inner = re.sub(r"(/|\\_|\{|,)", r"\1\\allowbreak{}", inner)
+        return r"\texttt{" + inner + "}"
+
+    body = re.sub(r"\\texttt\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", breakable, body)
+
     # --- anonymize -----------------------------------------------------------
     # ARR is double-blind. The repo name is the sharpest leak here: it is
     # searchable on GitHub and resolves straight to the authors, and it appears

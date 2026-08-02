@@ -150,6 +150,18 @@ if log.exists():
     err = re.findall(r'^! .*$', t, re.M)
     print(f"[arr] {len(err)} errors, {len(over)} overfull boxes, "
           f"{len(miss)} unresolved refs/cites")
+    # A count alone hid a 347pt box behind "37 overfull boxes" -- 4.8in of text
+    # running off a 3.1in column, i.e. content the reader cannot see. Report
+    # the worst offenders by size, since severity is what decides if it
+    # matters: a 2pt box is invisible and a 100pt box is a defect.
+    sized = sorted(((float(m.group(1)), m.group(0)) for m in
+                    re.finditer(r'^Overfull \\hbox \((\d+\.?\d*)pt too wide.*$',
+                                t, re.M)), reverse=True)
+    if sized:
+        print(f"[arr] worst overfull: {sized[0][0]:.0f}pt "
+              f"({sum(1 for s, _ in sized if s > 20)} over 20pt)")
+    for _, line in sized[:5]:
+        print(f"[arr]   {line}")
     for e in err[:20]:
         print(f"[arr]   {e}")
     for m in miss[:20]:

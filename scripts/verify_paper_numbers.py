@@ -3955,6 +3955,22 @@ def audit_arr_submission(a: Audit) -> None:
             if (root / "arr_appendix.tex").exists() else None,
             source="arr_appendix.tex")
 
+    # --- long \texttt paths must be breakable in two columns ----------------
+    # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
+    # 347pt overfull box on a 54-character artifact filename -- text running
+    # off the page, which single-column at 6.5in never showed. The generator
+    # inserts \allowbreak at path separators; this asserts it stayed on, since
+    # the failure is invisible in the .tex and only appears in the PDF.
+    if (root / "arr_appendix.tex").exists():
+        ap = (root / "arr_appendix.tex").read_text()
+        long_unbroken = [m for m in re.findall(r"\\texttt\{([^{}]{24,})\}", ap)
+                         if "allowbreak" not in m
+                         and re.search(r"(/|\\_|,)", m)]
+        a.check(sec, "every long \\texttt path in the appendix carries "
+                     "\\allowbreak, so it can wrap instead of running off the "
+                     "column", 0, len(long_unbroken),
+                source=f"arr_appendix.tex: {long_unbroken[:2]}")
+
     # --- the appendix must be current --------------------------------------
     # A stale appendix ships numbers the manuscript no longer makes. It is
     # generated, so staleness is detectable rather than a matter of care.
