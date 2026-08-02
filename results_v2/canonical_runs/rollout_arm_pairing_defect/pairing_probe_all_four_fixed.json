@@ -1,0 +1,642 @@
+{
+  "suite": "libero_90",
+  "task": "close the top drawer of the cabinet",
+  "n_steps": 40,
+  "arm_rewind_channels": {
+    "controller": 1,
+    "warmstart": true,
+    "gripper": 1,
+    "clock": 3,
+    "observables": 29
+  },
+  "max_abs_qpos_diff_over_all_steps": 0.0,
+  "max_abs_pixel_diff_over_all_steps": 0.0,
+  "identical_qpos": true,
+  "identical_frames": true,
+  "first_step_qpos_diff": 0.0,
+  "qpos_diff_per_step": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "pixel_diff_per_step": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "pixel_max_worst_step": 0.0,
+  "pixel_mean_worst_step": 0.0,
+  "pixel_frac_worst_step": 0.0,
+  "pixel_stats_per_step": [
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    },
+    {
+      "max": 0.0,
+      "mean": 0.0,
+      "frac": 0.0
+    }
+  ],
+  "render_noise_floor": {
+    "available": true,
+    "n_renders": 4,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "frac_pixels_differing": 0.0,
+    "bit_identical": true
+  },
+  "render_input_diff_1v2": {
+    "fields_that_differ": {},
+    "n_fields_identical": 38,
+    "fields_identical": [
+      "data.act",
+      "data.cam_xmat",
+      "data.cam_xpos",
+      "data.ctrl",
+      "data.geom_xmat",
+      "data.geom_xpos",
+      "data.light_xdir",
+      "data.light_xpos",
+      "data.mocap_pos",
+      "data.mocap_quat",
+      "data.qacc",
+      "data.qacc_warmstart",
+      "data.qpos",
+      "data.qvel",
+      "data.site_xmat",
+      "data.site_xpos",
+      "data.time",
+      "data.xpos",
+      "data.xquat",
+      "model.body_pos",
+      "model.body_quat",
+      "model.cam_fovy",
+      "model.cam_pos",
+      "model.cam_quat",
+      "model.geom_group",
+      "model.geom_matid",
+      "model.geom_pos",
+      "model.geom_quat",
+      "model.geom_rgba",
+      "model.geom_size",
+      "model.light_active",
+      "model.light_dir",
+      "model.light_pos",
+      "model.mat_emission",
+      "model.mat_rgba",
+      "model.site_pos",
+      "model.site_rgba",
+      "model.site_size"
+    ]
+  },
+  "render_input_diff_2v3": {
+    "fields_that_differ": {},
+    "n_fields_identical": 38,
+    "fields_identical": [
+      "data.act",
+      "data.cam_xmat",
+      "data.cam_xpos",
+      "data.ctrl",
+      "data.geom_xmat",
+      "data.geom_xpos",
+      "data.light_xdir",
+      "data.light_xpos",
+      "data.mocap_pos",
+      "data.mocap_quat",
+      "data.qacc",
+      "data.qacc_warmstart",
+      "data.qpos",
+      "data.qvel",
+      "data.site_xmat",
+      "data.site_xpos",
+      "data.time",
+      "data.xpos",
+      "data.xquat",
+      "model.body_pos",
+      "model.body_quat",
+      "model.cam_fovy",
+      "model.cam_pos",
+      "model.cam_quat",
+      "model.geom_group",
+      "model.geom_matid",
+      "model.geom_pos",
+      "model.geom_quat",
+      "model.geom_rgba",
+      "model.geom_size",
+      "model.light_active",
+      "model.light_dir",
+      "model.light_pos",
+      "model.mat_emission",
+      "model.mat_rgba",
+      "model.site_pos",
+      "model.site_rgba",
+      "model.site_size"
+    ]
+  },
+  "sampling_phase_before_rewind_1v2": {
+    "n_fields": 206,
+    "n_fields_differing": 31,
+    "differing": {
+      "agentview_image._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "akita_black_bowl_1_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "akita_black_bowl_1_quat._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "akita_black_bowl_1_to_robot0_eef_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "akita_black_bowl_1_to_robot0_eef_quat._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_1_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_1_quat._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_1_to_robot0_eef_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_1_to_robot0_eef_quat._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_2_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_2_quat._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ],
+      "butter_2_to_robot0_eef_pos._time_since_last_sample": [
+        0.004000000000000278,
+        0.004000000000001388
+      ]
+    }
+  },
+  "sampling_phase_after_rewind_1v2": {
+    "n_fields": 206,
+    "n_fields_differing": 0,
+    "differing": {}
+  },
+  "sampling_phase_after_rewind_2v3": {
+    "n_fields": 206,
+    "n_fields_differing": 0,
+    "differing": {}
+  },
+  "state_determines_frame": {
+    "available": true,
+    "bit_identical": false,
+    "pixels": {
+      "max": 116.0,
+      "mean": 0.250682,
+      "frac": 0.021927
+    },
+    "region": {
+      "identical": false,
+      "bbox": {
+        "row0": 191,
+        "row1": 255,
+        "col0": 89,
+        "col1": 159
+      },
+      "inside_mean_abs": 3.559841,
+      "outside_mean_abs": 0.0,
+      "frac_of_frame_in_bbox": 0.070419
+    }
+  },
+  "frame_alignment_1v2": {
+    "per_step_offset": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "n_steps_with_an_exact_match": 40,
+    "offsets_seen": [
+      0
+    ],
+    "constant_offset": 0
+  },
+  "frame_alignment_2v3": {
+    "per_step_offset": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "n_steps_with_an_exact_match": 40,
+    "offsets_seen": [
+      0
+    ],
+    "constant_offset": 0
+  },
+  "region_worst_step_1v2": {
+    "identical": true
+  },
+  "worst_step_index": 0,
+  "first_differing_pixel_step": null,
+  "n_pixel_steps_differing": 0,
+  "first_step_worst_qpos_index": 0,
+  "n_qpos_entries_differing_at_step0": 0,
+  "max_abs_qpos_diff_2v3": 0.0,
+  "max_abs_pixel_diff_2v3": 0.0,
+  "pixel_mean_worst_step_2v3": 0.0,
+  "identical_qpos_2v3": true,
+  "identical_frames_2v3": true,
+  "pixel_diff_per_step_2v3": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "first_differing_pixel_step_2v3": null,
+  "settled_obs_is_shared": true
+}

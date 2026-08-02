@@ -1,0 +1,82 @@
+name: 'CoT-Faith #10e: rollout trajectory deviation -- does token-level F predict what the arm does?'
+description: 'Turns limitation (v) from a caveat into a validation axis. F is a one-step decode difference; the claim it carries is about behaviour. WorldGym validates its proxy against real-robot success (r = 0.78) and RobotArena against human preference; this is the same move for ours. Replay every edit family from a common scene, measure end-effector path deviation from the cot_clean arm, then ask whether the family ranking by F matches the ranking by deviation. Success rate cannot carry this -- in-suite SR is 0/20 for every arm -- so the readout is path deviation, defined whether or not the task is solved. All 13 families, the three nulls on purpose: the headline is that a meaning-preserving paraphrase moves the action MORE than semantic edits at the token level, and whether that survives in the rollout is the question. 80 of 400 steps, the approach phase, set by what 15 arms x 2 tasks fit in one night. Per-step CoT. Arms paired by the four-channel rewind verified by probe vu6yavsp4a.'
+tags: ['cotfaith', 'rollout-edit', 'validation', 'deltapath', 'limitation-v']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 24h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # Task-scoped, expiring read token for the checkpoint task's artifact prefix,
+  # substituted at submit time by bolt/submit_rollout_edit_ckpt.sh. The pod has
+  # no IAM role for this bucket.
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  CKPT_TASK_ID: 'bcihypv3gu'
+
+  # In-suite, for the same reason round 2 is: this checkpoint LoRA-trained on
+  # libero_lm_90, so libero_spatial frames would show a policy acting in a
+  # distribution it has never seen -- a picture of the wrong failure.
+  SUITE: 'libero_90'
+  ACTION_DECODER: 'ours'
+  UNNORM_KEY: ''
+  # Every family, nulls included: the nulls are the control the token-level
+  # headline rests on, so leaving them out would validate the score on exactly
+  # the subset that already agrees with it.
+  FAMILIES: 'adversarial_plausible,bbox_jitter_null,cross_task_swap,direction_flip,gripper_flip,instr_random_sub,location_swap,negation,paraphrase_null,selfsplice_control,subject_swap,syntactic_scramble,verb_swap'
+  GRIPPER_TRANSFORM: 'openvla'
+  IMAGE_PREPROC: 'none'
+  MAX_NEW_TOKENS: '320'
+  # 80 of upstream 400: the approach phase, where a direction or location edit
+  # has to act if it acts at all. Set by what 15 arms x 2 tasks fit in one night,
+  # not by what would be ideal -- the paper says so rather than implying 400.
+  MAX_STEPS: '80'
+
+  # Two tasks, one episode each. This run is not estimating anything, so the
+  # episode count is set by what a figure needs -- a second task so the figure
+  # is not one cherry-picked scene -- not by statistical power.
+  N_TASKS: '2'
+  N_EPS_PER_TASK: '1'
+
+  # The capture itself. Named episodes, not a count: the filmstrip compares
+  # arms on ONE init state, and a count would film whichever episodes ran first.
+  CAPTURE_EPISODES: ''
+  # 400 steps / 10 = 40 frames per arm per episode, at 256x256. Enough to pick
+  # a well-spaced 6-frame strip after the fact without re-running the job, and
+  # ~250 PNGs total, which is nothing against a 512 GB disk.
+  CAPTURE_EVERY: '10'
+
+  # Per-step reasoning (k=1), matching the protocol the reported SR was
+  # measured under. A refreshed-every-k figure would show motion produced by a
+  # prefix up to k-1 steps stale, which is a different protocol -- and the
+  # figure's whole claim is that the reader is seeing the run the paper reports.
+  COT_REFRESH_STEPS: '1'
+
+  # ~2.3 h/episode/arm at 400 steps with per-step CoT, x 3 arms x 2 episodes is
+  # over the wall clock, so the budget stops it cleanly. The report flushes
+  # every episode and frames are written as they are rendered, so a stop still
+  # yields complete filmstrips for whatever finished.
+  TIME_BUDGET_H: '20'
+  ENV_SEED: '0'
+  DTYPE: 'bfloat16'
+  PROBE_ONLY: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_edit_s3.sh
