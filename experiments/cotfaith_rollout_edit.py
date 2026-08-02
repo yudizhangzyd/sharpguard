@@ -389,9 +389,33 @@ def _probe_frame(args):
 # the rollout
 # ----------------------------------------------------------------------
 
+def _eef(obs) -> Optional[list]:
+    """End-effector position from a LIBERO/robosuite observation, or None.
+
+    Read by name rather than by index: the key is robosuite's, and an env
+    configured without the low-dim observables simply does not have it. A
+    missing pose must yield None so the trajectory record is short rather than
+    silently zero-filled -- a flat line at the origin looks like a policy that
+    never moved, which is a claim, and the wrong one.
+    """
+    v = obs.get("robot0_eef_pos") if isinstance(obs, dict) else None
+    return None if v is None else [round(float(x), 5) for x in np.asarray(v)]
+
+
 def run_arm(model, processor, env, task_lang, *, arm, family, device,
-            pixel_dtype, args, edit_fn=None) -> dict:
-    """One episode under one arm. Env must already be at its init state."""
+            pixel_dtype, args, edit_fn=None, capture: Optional[dict] = None) -> dict:
+    """One episode under one arm. Env must already be at its init state.
+
+    `capture`, when given, is {"dir": Path, "every": k}: every k-th step's
+    rendered frame is written as a PNG and the step's end-effector pose, action
+    and current MOVE phrase are appended to a trajectory record. This exists
+    because the report is otherwise entirely scalar -- success, steps, counts --
+    and a scalar cannot show what the arms DID. Two arms that both fail at 0/40
+    are indistinguishable in the numbers and may be doing visibly different
+    things, which is the whole question an edit-sensitivity paper is asking.
+    Capture is off unless asked for: it is I/O inside the step loop, and the
+    runs that measure SR should not pay for the runs that illustrate it.
+    """
     from sharpguard.libero_sim import (_preprocess_image,
                                        _apply_gripper_transform)
     decode, dec_kw = _decoder(args)
@@ -413,6 +437,15 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
     # reproduces the per-step run exactly.
     refresh = max(1, int(getattr(args, "cot_refresh_steps", 1) or 1))
     cached_prompt = None
+    # The filmstrip record. `move` is the MOVE phrase the policy was acting
+    # under at that step -- for an edit arm that is the EDITED phrase, which is
+    # the point: it lets a reader see the instruction the policy read next to
+    # the motion it produced, rather than taking on faith that the edit landed.
+    cap_dir = None if capture is None else Path(capture["dir"])
+    cap_every = 1 if capture is None else max(1, int(capture.get("every", 1)))
+    traj, cur_move = [], None
+    if cap_dir is not None:
+        cap_dir.mkdir(parents=True, exist_ok=True)
     while steps < args.max_steps:
         img = obs.get("agentview_image", obs.get("image"))
         if img is None:
@@ -435,6 +468,7 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
                 else:
                     n_cot_ok += 1
                 body = build_cot_body(reasoning)
+                cur_move = reasoning.get("movement") or reasoning.get("move")
                 if edit_fn is not None:
                     try:
                         ed = edit_fn(reasoning)
@@ -449,22 +483,43 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
                             n_edit_skipped += 1
                         else:
                             body = eb
+                            cur_move = ed.get("movement") or ed.get("move")
                 cached_prompt = cot_prompt(task_lang, body)
             prompt = cached_prompt
         a = decode(model, processor, img, task_lang, device=device,
                    pixel_dtype=pixel_dtype, prompt=prompt, **dec_kw)
         a = _apply_gripper_transform(a, args.gripper_transform)
+        if cap_dir is not None and steps % cap_every == 0:
+            # The frame as the POLICY saw it, after the same flip and
+            # preprocessing, so the figure shows the policy's input rather than
+            # a differently-oriented render of the same instant.
+            name = f"{arm}_t{steps:04d}.png"
+            try:
+                from PIL import Image
+                Image.fromarray(np.asarray(img, dtype=np.uint8)).save(cap_dir / name)
+            except Exception as e:
+                print(f"[capture] frame {name} not written: {type(e).__name__}: {e}")
+                name = None
+            traj.append({"step": steps, "frame": name, "eef": _eef(obs),
+                         "action": [round(float(v), 5) for v in a],
+                         "move": cur_move})
         obs, reward, done, info = env.step(a)
         if ((isinstance(info, dict) and info.get("success", False))
                 or (reward is not None and float(reward) > 0) or done):
             success = True
             break
         steps += 1
-    return {"arm": arm, "family": family, "success": bool(success),
-            "steps": steps, "n_cot_structured": n_cot_ok,
-            "n_cot_unstructured": n_cot_bad, "n_edit_skipped": n_edit_skipped,
-            "n_cot_generated": n_cot_gen, "cot_refresh_steps": refresh,
-            "n_delta_recorded": len(deltas)}
+    r = {"arm": arm, "family": family, "success": bool(success),
+         "steps": steps, "n_cot_structured": n_cot_ok,
+         "n_cot_unstructured": n_cot_bad, "n_edit_skipped": n_edit_skipped,
+         "n_cot_generated": n_cot_gen, "cot_refresh_steps": refresh,
+         "n_delta_recorded": len(deltas)}
+    if cap_dir is not None:
+        r["trajectory"] = traj
+        # Whether the poses are real is a property of the env, not of this run,
+        # so it is recorded rather than assumed by whatever reads the file.
+        r["eef_available"] = bool(traj) and traj[0]["eef"] is not None
+    return r
 
 
 def run(args):
@@ -554,7 +609,8 @@ def run(args):
                     r = run_arm(model, processor, env, task.language, arm=arm,
                                 family=fam, device=device,
                                 pixel_dtype=pixel_dtype, args=args,
-                                edit_fn=EDIT_FAMILIES[fam] if fam else None)
+                                edit_fn=EDIT_FAMILIES[fam] if fam else None,
+                                capture=_capture_for(args, out_dir, ti, ep))
                     env.close()
                     r.update({"task_idx": ti, "episode": ep,
                               "task": task.language})
@@ -570,6 +626,29 @@ def run(args):
                 flush("running")
     flush("complete")
     print(f"[rollout-edit] done -> {rep_path}")
+
+
+def _capture_for(args, out_dir: Path, ti: int, ep: int) -> Optional[dict]:
+    """Capture spec for this (task, episode), or None if it is not on the list.
+
+    `--capture-episodes` names episodes as `task:ep`, not a count, because the
+    figure this feeds compares arms ON ONE INIT STATE -- the same pairing the
+    DSR is computed over. A "first N episodes" flag would capture whichever
+    episodes happened to run first, which across a time-budgeted run is not a
+    stable set and would not necessarily be paired at all.
+    """
+    spec = (getattr(args, "capture_episodes", "") or "").strip()
+    if not spec:
+        return None
+    want = {tuple(int(x) for x in s.split(":")) for s in spec.split(",") if s.strip()}
+    if (ti, ep) not in want:
+        return None
+    every = getattr(args, "capture_every", 10)
+    return {"dir": out_dir / "frames" / f"t{ti}_ep{ep}",
+            # max() rather than `or 10`: 0 is falsy, so `or` would turn an
+            # explicit --capture-every 0 into 10 -- a tenth of the frames the
+            # caller asked for, with no error.
+            "every": max(1, int(10 if every is None else every))}
 
 
 def should_refresh_cot(step: int, refresh: int, have_cached: bool) -> bool:
@@ -723,6 +802,14 @@ def main():
     ap.add_argument("--time-budget-h", type=float, default=0.0,
                     help=">0 stops cleanly before the wall clock kills the job")
     ap.add_argument("--probe-only", action="store_true")
+    ap.add_argument("--capture-episodes", default="",
+                    help="comma-separated task:ep pairs whose frames and "
+                         "end-effector trajectory are recorded, e.g. '0:0,3:0'. "
+                         "Named rather than counted so the captured set is the "
+                         "same paired init states across arms. Empty = capture "
+                         "nothing, which is what every SR run should use.")
+    ap.add_argument("--capture-every", type=int, default=10,
+                    help="record every k-th step of a captured episode")
     ap.add_argument("--n-tasks-est", type=int, default=10,
                     help="only used by the probe's runtime estimate")
     args = ap.parse_args()

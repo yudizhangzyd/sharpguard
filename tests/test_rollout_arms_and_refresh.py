@@ -305,11 +305,73 @@ def test_norm_roundtrip(a) -> None:
           np.all(np.isfinite(out)))
 
 
+# --------------------------------------------------------------------------
+# _capture_for: which episodes get filmed
+# --------------------------------------------------------------------------
+
+def test_capture_selection(m) -> None:
+    """The capture flag decides where GPU-hours go, so its off-state matters.
+
+    Frames are written inside the step loop. A spec that accidentally matched
+    every episode would put a PNG write into a run whose budget was costed
+    without one; a spec that silently matched nothing would produce a job that
+    completes, reports SR, and yields no figure -- discovered only after the
+    hours are spent. Both are checked here rather than in the simulator.
+    """
+    from pathlib import Path as P
+    out = P("/tmp/does_not_need_to_exist")
+
+    off = types.SimpleNamespace(capture_episodes="", capture_every=10)
+    check("capture: the default captures nothing",
+          all(m._capture_for(off, out, t, e) is None
+              for t in range(3) for e in range(3)),
+          "an SR run must not pay for I/O the figure runs need")
+    check("capture: whitespace-only spec is also off",
+          m._capture_for(types.SimpleNamespace(capture_episodes="  ",
+                                               capture_every=10), out, 0, 0) is None)
+
+    on = types.SimpleNamespace(capture_episodes="0:0,3:1", capture_every=8)
+    check("capture: a named episode is selected",
+          m._capture_for(on, out, 0, 0) is not None and
+          m._capture_for(on, out, 3, 1) is not None)
+    check("capture: an unnamed episode is not",
+          m._capture_for(on, out, 0, 1) is None and
+          m._capture_for(on, out, 3, 0) is None and
+          m._capture_for(on, out, 1, 0) is None,
+          "task and episode must both match; matching either alone would film "
+          "a whole task at ~1 PNG per 8 steps per arm")
+
+    c = m._capture_for(on, out, 3, 1)
+    check("capture: the directory is per (task, episode), not per arm",
+          c["dir"] == out / "frames" / "t3_ep1",
+          "arms share it on purpose -- the filmstrip compares arms on one "
+          "init state, and the filenames are already arm-prefixed")
+    check("capture: --capture-every reaches the spec", c["every"] == 8)
+    check("capture: every<=0 degrades to 1 rather than dividing by zero",
+          m._capture_for(types.SimpleNamespace(capture_episodes="0:0",
+                                               capture_every=0),
+                         out, 0, 0)["every"] == 1)
+
+
+def test_eef_reader(m) -> None:
+    """A missing pose must read as None, never as zeros."""
+    check("eef: a real pose round-trips as floats",
+          m._eef({"robot0_eef_pos": np.array([0.1, -0.2, 1.0])}) ==
+          [0.1, -0.2, 1.0])
+    check("eef: an env without the low-dim observable yields None",
+          m._eef({"agentview_image": np.zeros((2, 2, 3))}) is None,
+          "zero-filling would draw a flat line at the origin, which reads as "
+          "a policy that never moved -- a claim, and the wrong one")
+    check("eef: a non-dict observation yields None", m._eef(None) is None)
+
+
 def main() -> int:
     r = load("cotfaith_rollout_edit")
     test_select_arms(r)
     test_refresh_gate(r)
     test_precondition_three_states(r)
+    test_capture_selection(r)
+    test_eef_reader(r)
     test_norm_roundtrip(load("cotfaith_auroc"))
 
     bad = [c for c in CHECKS if not c[1]]

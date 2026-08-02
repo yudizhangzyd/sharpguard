@@ -103,6 +103,10 @@ COMMON=(
     --arms              "${ARMS:-}"
     --cot-refresh-steps "${COT_REFRESH_STEPS:-1}"
     --dtype             "${DTYPE:-bfloat16}"
+    # Empty by default, which is capture off. An SR run must not pay the
+    # per-step PNG write that only the filmstrip figure needs.
+    --capture-episodes  "${CAPTURE_EPISODES:-}"
+    --capture-every     "${CAPTURE_EVERY:-10}"
 )
 
 # ---- Stage 1: probe ----
@@ -156,4 +160,38 @@ python experiments/cotfaith_rollout_edit.py "${COMMON[@]}" \
 echo ""
 echo "===== rollout-edit done. Report:"
 [ -f "$OUT/rollout_edit_report.json" ] && head -c 5000 "$OUT/rollout_edit_report.json"
+
+# If frames were asked for, they must exist. A capture run whose PNG writes all
+# failed still produces a well-formed report with an SR in it, and the failure
+# would only surface days later when the figure could not be drawn -- after the
+# GPU-hours are gone. So it is checked here, while the job can still say so.
+if [ -n "${CAPTURE_EPISODES:-}" ]; then
+    n_png=$(find "$OUT/frames" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')
+    echo "[rollout-s3] captured $n_png frames for CAPTURE_EPISODES=$CAPTURE_EPISODES"
+    if [ "$n_png" -eq 0 ]; then
+        echo "[FATAL] capture was requested and no frame was written. The"
+        echo "        report's SR is still valid, but the figure this run"
+        echo "        exists for cannot be drawn from it."
+        exit 8
+    fi
+    python3 - "$OUT/rollout_edit_report.json" <<'PY' || exit 8
+import json, sys
+d = json.load(open(sys.argv[1]))
+cap = [e for e in d.get("episodes", []) if e.get("trajectory")]
+if not cap:
+    print("[FATAL] frames exist but no episode carries a trajectory record;"
+          " the frames cannot be tied to steps, poses or MOVE phrases.")
+    sys.exit(1)
+arms = sorted({e["arm"] for e in cap})
+eef = sum(1 for e in cap if e.get("eef_available"))
+print(f"[capture] {len(cap)} episode(s) over arms {arms}; "
+      f"{eef}/{len(cap)} carry end-effector poses")
+# Not fatal: the filmstrip needs frames, and the trajectory panel needs poses.
+# Losing the second is a smaller figure, not a wasted run -- but it must be
+# said out loud rather than discovered while plotting.
+if eef < len(cap):
+    print("[capture] WARNING: some episodes have no robot0_eef_pos; the "
+          "trajectory panel will cover fewer arms than the filmstrip.")
+PY
+fi
 exit 0
