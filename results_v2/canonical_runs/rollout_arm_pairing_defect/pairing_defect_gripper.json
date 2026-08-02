@@ -1,0 +1,15 @@
+{
+  "suite": "libero_90",
+  "task": "close the top drawer of the cabinet",
+  "n_steps": 40,
+  "arm_rewind_channels": {
+    "controller": 1,
+    "warmstart": true
+  },
+  "max_abs_qpos_diff_over_all_steps": 0.18757341478721776,
+  "max_abs_pixel_diff_over_all_steps": 198.0,
+  "identical_qpos": false,
+  "identical_frames": false,
+  "first_step_qpos_diff": 0.18757341478721776,
+  "settled_obs_is_shared": true
+}

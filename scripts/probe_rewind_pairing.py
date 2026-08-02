@@ -127,6 +127,13 @@ def main(argv: list) -> int:
     dpix = ([float(np.abs(x.astype(np.int32) - y.astype(np.int32)).max())
              for x, y in zip(a1["frames"], a2["frames"])] if have_frames else [])
 
+    # WHICH state entry diverges, and whether the divergence is an offset
+    # present immediately or drift that accumulates. Reported because the first
+    # run of this probe (bolt gzv4nuhtfe) failed with max == first_step ==
+    # 0.1876, and reading "an immediate, non-growing offset" out of two equal
+    # numbers is what identified the gripper accumulator. A later failure should
+    # not need that inference done by hand: it should name its own index.
+    step0 = (np.abs(a1["qpos"][0] - a2["qpos"][0]) if dq else np.zeros(1))
     rep = {
         "suite": suite, "task": task.language, "n_steps": n_steps,
         "arm_rewind_channels": a1["reset"],
@@ -136,6 +143,9 @@ def main(argv: list) -> int:
         "identical_qpos": bool(dq) and max(dq) == 0.0,
         "identical_frames": bool(dpix) and max(dpix) == 0.0,
         "first_step_qpos_diff": dq[0] if dq else None,
+        "qpos_diff_per_step": [round(v, 12) for v in dq],
+        "first_step_worst_qpos_index": int(step0.argmax()) if dq else None,
+        "n_qpos_entries_differing_at_step0": int((step0 > 0).sum()) if dq else None,
         "settled_obs_is_shared": settled_obs is not None,
     }
     print(json.dumps(rep, indent=2))
@@ -149,17 +159,23 @@ def main(argv: list) -> int:
     # measurement. The figure's rows mean nothing if it fails.
     if not rep["identical_qpos"]:
         print(f"[probe] FAIL: replaying one action sequence twice diverges "
-              f"(max |dqpos| {rep['max_abs_qpos_diff_over_all_steps']}). The "
-              f"arms are not paired beyond step 0.", file=sys.stderr)
+              f"(max |dqpos| {rep['max_abs_qpos_diff_over_all_steps']}, first "
+              f"step {rep['first_step_qpos_diff']}, worst state index "
+              f"{rep['first_step_worst_qpos_index']}, "
+              f"{rep['n_qpos_entries_differing_at_step0']} entries differing at "
+              f"step 0). The arms are not paired beyond step 0.",
+              file=sys.stderr)
         return 1
     ch = rep["arm_rewind_channels"]
-    if not ch.get("controller") or not ch.get("warmstart"):
-        print(f"[probe] FAIL: a carry-over channel was never reached: {ch}. "
-              f"The pairing held here, but not for the stated reason.",
+    missing = [k for k, v in ch.items() if not v]
+    if missing:
+        print(f"[probe] FAIL: carry-over channel(s) never reached: {missing} "
+              f"(channels: {ch}). The pairing held here, but not for the stated "
+              f"reason -- most likely robosuite renamed something.",
               file=sys.stderr)
         return 1
     print("[probe] PASS: identical prompts give identical trajectories, and "
-          "both carry-over channels were reset.")
+          f"every carry-over channel was reset ({ch}).")
     return 0
 
 

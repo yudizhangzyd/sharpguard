@@ -388,7 +388,8 @@ def test_scene_seed(m) -> None:
           "scene filmed three times")
 
 
-def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True):
+def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True,
+              gripper=True):
     """A stand-in env exposing only what the rewind touches.
 
     A stub rather than a simulator because this suite is the pod's pre-budget
@@ -401,6 +402,16 @@ def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True):
             self.goals_reset = 0
         def reset_goal(self):
             self.goals_reset += 1
+
+    class Gripper:
+        """robosuite's rate-limited gripper: current_action ACCUMULATES.
+
+        Modelled as an accumulator on purpose. A stub whose current_action
+        never moved would pass the restore check without the restore, since
+        the value would already equal the snapshot.
+        """
+        def __init__(self):
+            self.current_action = np.zeros(1)
 
     class Data:
         pass
@@ -431,14 +442,24 @@ def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True):
             setattr(robot, controller_attr,
                     {"right": ctrl} if controller_attr ==
                     "composite_controller" else ctrl)
+            if gripper:
+                # dict-valued alongside composite_controller: that pairing is
+                # the newer robosuite spelling, and _grippers must see both.
+                robot.gripper = ({"right": Gripper()}
+                                 if controller_attr == "composite_controller"
+                                 else Gripper())
             self.robots = [robot]
             self.ctrl = ctrl
+            g = getattr(robot, "gripper", None)
+            self.grip = g["right"] if isinstance(g, dict) else g
         def set_init_state(self, state):
             self.restored.append(np.asarray(state).copy())
             return {"obs_for": tuple(np.asarray(state).tolist())}
         def step(self, action):
             self.steps += 1
             self.sim.state = self.sim.state + 1.0
+            if self.grip is not None:          # the rate limiter, as robosuite
+                self.grip.current_action = self.grip.current_action + 0.02
             return {"obs_for": tuple(self.sim.state.tolist())}, 0.0, False, {}
 
     return Env()
@@ -448,50 +469,83 @@ def test_settle_once(m) -> None:
     """The settle must be a scene fixture: run once, snapshotted, reused."""
     env = _fake_env()
     init = np.array([0.0, 0.0, 0.0])
-    state, obs = m._settle_once(env, init)
+    snap, obs = m._settle_once(env, init)
     check("settle: runs Kim's NUM_STEPS_WAIT steps once",
           env.steps == m.SETTLE_STEPS, f"stepped {env.steps}")
     check("settle: snapshots where the scene LANDED, not where it started",
-          not np.allclose(state, init),
+          not np.allclose(snap["state"], init),
           "returning the pre-settle state would rewind each arm to a scene that "
           "has not come to rest, and the settle would run per arm again")
     check("settle: the snapshot is the state the returned obs describes",
-          obs["obs_for"] == tuple(state.tolist()))
+          obs["obs_for"] == tuple(snap["state"].tolist()))
+    check("settle: the snapshot carries the gripper accumulator too",
+          len(snap["grippers"]) == 1 and
+          np.allclose(snap["grippers"][0], env.grip.current_action),
+          "the accumulator is in neither the model nor qpos, so a snapshot "
+          "without it cannot put the scene back where the settle left it")
+    env.grip.current_action = env.grip.current_action + 9.0
+    check("settle: the snapshot is a COPY, not a live view of the gripper",
+          not np.allclose(snap["grippers"][0], env.grip.current_action),
+          "an aliased snapshot would silently track the arm it is meant to undo")
 
 
 def test_rewind_clears_carryover(m) -> None:
     """Rewinding must undo the previous arm, and say so when it cannot.
 
-    The first pairing defect was a fixture in the MODEL; this is the second one,
-    found only after fixing that: state that is in neither the model nor qpos.
-    An arm running second inherited the previous arm's controller goal and the
-    solver's warm-start accelerations, and its own ten settling steps amplified
-    them into a different robot pose in the first captured frame -- bolt
-    xyiztdu4n6, 31.7356 mean |dpix| inside rows 0-134 / cols 96-188 with best
-    rigid shift (0, 0), i.e. a pose difference and not a moved object.
+    The first pairing defect was a fixture in the MODEL; the second was state in
+    neither the model nor qpos -- the controller goal and the solver warm start,
+    which the arm's own ten settling steps amplified into a different pose in the
+    first captured frame (bolt xyiztdu4n6: 31.7356 mean |dpix| inside rows 0-134
+    / cols 96-188, best rigid shift (0, 0), i.e. a pose difference and not a
+    moved object).
+
+    Clearing those two was still not enough, which is why this checks a third.
+    The probe (scripts/probe_rewind_pairing.py, bolt gzv4nuhtfe) replayed ONE
+    action sequence twice from the same rewind and the trajectories diverged by
+    0.1876 in qpos -- with the divergence already at its maximum at the FIRST
+    step and not growing, the signature of a stale offset rather than drift. The
+    offset is robosuite's gripper, whose current_action is a rate-limited
+    accumulator that neither set_init_state nor reset_goal touches.
     """
     env = _fake_env()
-    snap = np.array([5.0, 5.0, 5.0])
+    snap = {"state": np.array([5.0, 5.0, 5.0]), "grippers": [np.array([0.4])]}
+    env.grip.current_action = np.array([0.9])       # the previous arm's residue
     rw = m._rewind_to(env, snap)
-    check("rewind: restores the snapshot", np.allclose(env.restored[-1], snap))
+    check("rewind: restores the snapshot",
+          np.allclose(env.restored[-1], snap["state"]))
     check("rewind: clears the controller goal the previous arm left",
           rw["reset"]["controller"] == 1 and env.ctrl.goals_reset == 1)
     check("rewind: zeroes the solver warm start",
           rw["reset"]["warmstart"] and
           np.allclose(env.sim.data.qacc_warmstart, 0.0))
+    check("rewind: restores the gripper accumulator to the snapshot's value",
+          rw["reset"]["gripper"] == 1 and
+          np.allclose(env.grip.current_action, 0.4),
+          "0.9 is the previous arm's part-closed gripper; leaving it is what "
+          "made two replays of one action sequence diverge at step 1")
+    env.grip.current_action[:] = 0.0
+    check("rewind: the restored value is a COPY of the snapshot",
+          np.allclose(snap["grippers"][0], 0.4),
+          "assigning the snapshot array itself lets the next arm mutate the "
+          "snapshot in place, so arm 3 rewinds to arm 2's gripper")
     check("rewind: does not step the sim", env.steps == 0,
           "stepping here would put back the per-arm settle this replaces")
     check("rewind: returns the obs for the restored state, so the arm does not "
           "start from a stale one", rw["obs"]["obs_for"] == (5.0, 5.0, 5.0))
 
     nested = _fake_env(controller_attr="composite_controller")
+    nrw = m._rewind_to(nested, snap)
     check("rewind: finds the newer robosuite composite_controller spelling",
-          m._rewind_to(nested, snap)["reset"]["controller"] == 1)
+          nrw["reset"]["controller"] == 1)
+    check("rewind: finds the dict-valued gripper spelling too",
+          nrw["reset"]["gripper"] == 1 and
+          np.allclose(nested.grip.current_action, 0.4))
 
-    blind = _fake_env(reset_goal=False, warmstart=False)
+    blind = _fake_env(reset_goal=False, warmstart=False, gripper=False)
     rw2 = m._rewind_to(blind, snap)
     check("rewind: reports a channel it could NOT reach rather than claiming it",
-          rw2["reset"]["controller"] == 0 and not rw2["reset"]["warmstart"],
+          rw2["reset"]["controller"] == 0 and not rw2["reset"]["warmstart"] and
+          rw2["reset"]["gripper"] == 0,
           "a silent no-op would restore the confound while the code still read "
           "as if it had been handled")
 

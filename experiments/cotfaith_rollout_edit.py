@@ -389,6 +389,28 @@ NO_OP = np.array([0., 0., 0., 0., 0., 0., -1.], dtype=np.float32)
 SETTLE_STEPS = 10                            # Kim's NUM_STEPS_WAIT
 
 
+def _grippers(env) -> list:
+    """Every gripper model on the env, across robosuite's two spellings.
+
+    robosuite rate-limits the gripper: `current_action` is an accumulator
+    advanced by `gripper_speed * sign(action)` each control step, so it is state
+    that survives `set_init_state` -- which restores qpos/qvel -- and survives
+    `reset_goal`, which is about the arm. An arm that ran second therefore began
+    with the previous arm's gripper part-way through a close. Measured on the
+    pod (bolt gzv4nuhtfe): replaying one action sequence twice from the same
+    rewind diverged by 0.1876 in qpos at the FIRST step, and the divergence did
+    not grow after it -- an offset present immediately, which is what a stale
+    accumulator looks like and not what a drifting integrator looks like.
+    """
+    out = []
+    for robot in getattr(getattr(env, "env", env), "robots", []) or []:
+        grip = getattr(robot, "gripper", None)
+        for g in (grip.values() if isinstance(grip, dict) else [grip]):
+            if g is not None and hasattr(g, "current_action"):
+                out.append(g)
+    return out
+
+
 def _settle_once(env, state, steps: int = SETTLE_STEPS):
     """Teleport to `state`, let the scene settle, and snapshot where it landed.
 
@@ -411,34 +433,48 @@ def _settle_once(env, state, steps: int = SETTLE_STEPS):
     than by trusting ten steps of dynamics to be reproducible: the render is a
     function of the model and qpos, and every arm is handed the same qpos and
     the same observation object.
+
+    The snapshot carries the gripper accumulators as well as the flattened
+    state, so the rewind restores where the settle actually left the scene
+    rather than a fresh-reset approximation of it. See _grippers().
     """
     obs = env.set_init_state(state)
     for _ in range(steps):
         obs, _, _, _ = env.step(NO_OP)
-    return env.sim.get_state().flatten(), obs
+    snap = {"state": env.sim.get_state().flatten(),
+            "grippers": [np.array(g.current_action, copy=True)
+                         for g in _grippers(env)]}
+    return snap, obs
 
 
-def _rewind_to(env, state) -> dict:
-    """Put the env back at `state` and undo the previous arm's residue.
+def _rewind_to(env, snap) -> dict:
+    """Put the env back at `snap` and undo the previous arm's residue.
 
     Restoring qpos/qvel makes the arms' first frame identical, but the frames
     after it are still confounded if the arm that runs second inherits hidden
-    integrator state from the arm before it. Two such channels exist and neither
+    integrator state from the arm before it. Three such channels exist and none
     lives in the flattened state:
 
       * the OSC controller's goal pose, left wherever the previous arm's last
         action pointed;
       * MuJoCo's warm-start accelerations, seeded from the previous arm's final
-        solver iterate.
+        solver iterate;
+      * the gripper's rate-limited action accumulator (see _grippers()).
 
-    Both are reset here so that an arm's trajectory does not depend on its
-    position in the arm loop. Returns which channels were actually found, which
-    the caller records: this reaches into robosuite internals whose spelling has
-    changed across versions, and a silent no-op would put the confound back
-    while the code still looked like it had been handled.
+    All three are reset so that an arm's trajectory does not depend on its
+    position in the arm loop. That this is now sufficient -- and not merely
+    plausible -- is checked by scripts/probe_rewind_pairing.py, which replays
+    one action sequence twice and requires the trajectories to be identical at
+    every step. The step-0 frame check cannot see any of it: these channels act
+    from step 1 onward, exactly where the arms are supposed to differ.
+
+    Returns which channels were actually found, which the caller records: this
+    reaches into robosuite internals whose spelling has changed across versions,
+    and a silent no-op would put the confound back while the code still looked
+    like it had been handled.
     """
-    obs = env.set_init_state(state)
-    done = {"controller": 0, "warmstart": False}
+    obs = env.set_init_state(snap["state"])
+    done = {"controller": 0, "warmstart": False, "gripper": 0}
     base = getattr(env, "env", env)
     for robot in getattr(base, "robots", []) or []:
         for attr in ("controller", "composite_controller"):
@@ -448,6 +484,9 @@ def _rewind_to(env, state) -> dict:
                 if hasattr(part, "reset_goal"):
                     part.reset_goal()
                     done["controller"] += 1
+    for g, saved in zip(_grippers(env), snap.get("grippers") or []):
+        g.current_action = np.array(saved, copy=True)
+        done["gripper"] += 1
     data = getattr(env.sim, "data", None)
     if hasattr(data, "qacc_warmstart"):
         data.qacc_warmstart[:] = 0.0
@@ -744,7 +783,7 @@ def run(args):
                                          camera_heights=256,
                                          camera_widths=256)
                 env.reset()
-                settled, settled_obs = _settle_once(env, init[ep])
+                snap, settled_obs = _settle_once(env, init[ep])
                 for arm, fam in arms:
                     if args.time_budget_h and \
                             (time.time() - t_start) / 3600.0 > args.time_budget_h:
@@ -758,14 +797,14 @@ def run(args):
                         # which is the one thing that must not differ between
                         # arms; rewinding to the settled snapshot restores the
                         # robot and every free object, which is the rest of it.
-                        rw = _rewind_to(env, settled)
+                        rw = _rewind_to(env, snap)
                         if ti == 0 and ep == 0:
                             print(f"[rollout-edit] arm rewind: {rw['reset']}")
-                            if not rw["reset"]["controller"] or \
-                                    not rw["reset"]["warmstart"]:
-                                print("[rollout-edit] WARNING: a carry-over "
-                                      "channel was not found, so arms may "
-                                      "differ by run order after step 0")
+                            missing = [k for k, v in rw["reset"].items() if not v]
+                            if missing:
+                                print(f"[rollout-edit] WARNING: carry-over "
+                                      f"channel(s) not found: {missing}; arms "
+                                      f"may differ by run order after step 0")
                         r = run_arm(model, processor, env, task.language,
                                     arm=arm, family=fam, device=device,
                                     pixel_dtype=pixel_dtype, args=args,
@@ -778,7 +817,7 @@ def run(args):
                                   # actually reached, per arm. In the report
                                   # rather than only in stdout because the
                                   # pairing claim rests on it and robosuite has
-                                  # renamed both across versions: a reader
+                                  # renamed these across versions: a reader
                                   # should not have to trust that the reset
                                   # found anything.
                                   "arm_rewind": rw["reset"]})
