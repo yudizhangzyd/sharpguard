@@ -83,6 +83,65 @@ def replay(env, m, snap, acts) -> dict:
     return {"reset": rw["reset"], "qpos": qpos, "frames": frames}
 
 
+def render_noise_floor(env, m, snap, k: int = 4) -> dict:
+    """Render ONE state k times without stepping: the renderer's own floor.
+
+    Runs 2 and 3 of this probe (bolt h6pttcu4g5, qyh54st578) found qpos
+    bit-identical at all 40 steps and the frames differing at all 40, by 60-160
+    levels, in both 1-vs-2 and 2-vs-3. That rules out a warm-up (which would hit
+    the first replay only) and a one-frame render lag (step 0 only), and leaves
+    two possibilities that the max-over-the-image statistic cannot tell apart: a
+    real difference in what is drawn, or a rasterizer that is not bit-exact
+    between calls, where a handful of anti-aliased edge pixels saturate a `max`
+    while the mean stays near zero.
+
+    This measures which. If the same state rendered twice in a row is not
+    bit-equal, then exact pixel equality is the wrong gate for pairing and the
+    honest test is the replay difference against THIS floor. If it IS bit-equal,
+    the replay difference is real and something outside qpos is being drawn.
+    """
+    m._rewind_to(env, snap)
+    base = getattr(env, "env", env)
+    getter = getattr(base, "_get_observations", None) or \
+        getattr(base, "_get_observation", None)
+    if getter is None:
+        return {"available": False,
+                "why": "no _get_observations on the env; cannot re-render one "
+                       "state without stepping it"}
+    imgs = []
+    for _ in range(k):
+        try:                              # robosuite caches obs unless forced
+            o = getter(force_update=True)
+        except TypeError:
+            o = getter()
+        img = o.get("agentview_image", o.get("image")) if o else None
+        if img is None:
+            return {"available": False, "why": "the re-render carried no image"}
+        imgs.append(np.asarray(img, dtype=np.int32).copy())
+    ref = imgs[0]
+    d = [np.abs(im - ref) for im in imgs[1:]]
+    return {"available": True, "n_renders": k,
+            "max_abs": max(float(x.max()) for x in d),
+            "mean_abs": max(round(float(x.mean()), 6) for x in d),
+            "frac_pixels_differing": max(round(float((x > 0).mean()), 6)
+                                         for x in d),
+            "bit_identical": all(float(x.max()) == 0.0 for x in d)}
+
+
+def pix_stats(x, y) -> dict:
+    """max, mean and the differing fraction -- the three together, deliberately.
+
+    The pairing diagnostics for defects 1 and 2 argue from mean-inside versus
+    mean-outside a bounding box, not from a max, because a max cannot separate
+    "one object is somewhere else" from "one pixel is a shade off". The same
+    applies here.
+    """
+    a, b = x.astype(np.int32), y.astype(np.int32)
+    d = np.abs(a - b)
+    return {"max": float(d.max()), "mean": round(float(d.mean()), 6),
+            "frac": round(float((d > 0).mean()), 6)}
+
+
 def main(argv: list) -> int:
     out_p = None
     if "--out" in argv:
@@ -139,16 +198,21 @@ def main(argv: list) -> int:
     def dpix_of(x, y):
         if not all(f is not None for f in x["frames"] + y["frames"]):
             return []
-        return [float(np.abs(p.astype(np.int32) - q.astype(np.int32)).max())
-                for p, q in zip(x["frames"], y["frames"])]
+        return [pix_stats(p, q) for p, q in zip(x["frames"], y["frames"])]
 
     dq = dq_of(a1, a2)
     dq23 = dq_of(a2, a3)
-    dpix = dpix_of(a1, a2)
-    dpix23 = dpix_of(a2, a3)
+    st12 = dpix_of(a1, a2)
+    st23 = dpix_of(a2, a3)
+    dpix = [s["max"] for s in st12]
+    dpix23 = [s["max"] for s in st23]
+    floor = render_noise_floor(env, m, snap)
 
     def first_nonzero(xs):
         return next((i for i, v in enumerate(xs) if v != 0.0), None)
+
+    def worst(stats, key):
+        return max((s[key] for s in stats), default=None)
 
     # WHICH state entry diverges, and whether the divergence is an offset
     # present immediately or drift that accumulates. Reported because the first
@@ -168,6 +232,15 @@ def main(argv: list) -> int:
         "first_step_qpos_diff": dq[0] if dq else None,
         "qpos_diff_per_step": [round(v, 12) for v in dq],
         "pixel_diff_per_step": dpix,
+        # max alone cannot separate "something else is drawn" from "an edge
+        # pixel is a shade off", so the mean and the differing fraction travel
+        # with it -- the same reason defects 1 and 2 are argued from
+        # inside-versus-outside a box rather than from a maximum.
+        "pixel_max_worst_step": worst(st12, "max"),
+        "pixel_mean_worst_step": worst(st12, "mean"),
+        "pixel_frac_worst_step": worst(st12, "frac"),
+        "pixel_stats_per_step": st12,
+        "render_noise_floor": floor,
         "first_differing_pixel_step": first_nonzero(dpix),
         "n_pixel_steps_differing": sum(1 for v in dpix if v != 0.0),
         "first_step_worst_qpos_index": int(step0.argmax()) if dq else None,
@@ -177,6 +250,7 @@ def main(argv: list) -> int:
         # the renderer is reproducible and the FIRST replay is what differs.
         "max_abs_qpos_diff_2v3": max(dq23) if dq23 else None,
         "max_abs_pixel_diff_2v3": max(dpix23) if dpix23 else None,
+        "pixel_mean_worst_step_2v3": worst(st23, "mean"),
         "identical_qpos_2v3": bool(dq23) and max(dq23) == 0.0,
         "identical_frames_2v3": bool(dpix23) and max(dpix23) == 0.0,
         "pixel_diff_per_step_2v3": dpix23,
@@ -202,23 +276,52 @@ def main(argv: list) -> int:
               file=sys.stderr)
         return 1
     # Pixels too, and gated rather than merely reported: the filmstrip IS
-    # pixels. Identical state with different frames means the render is not a
-    # function of the state, and then a row-to-row difference in the figure is
-    # not attributable to the prompt either.
+    # pixels. But gated against the renderer's own floor, not against exact
+    # equality -- if one state rendered twice in a row is not bit-equal, then
+    # bit-equality between two replays is a test of the rasterizer and not of
+    # the pairing, and it would fail forever while telling us nothing.
+    fl = rep["render_noise_floor"]
     if not rep["identical_frames"]:
-        print(f"[probe] FAIL: qpos is identical at every step and the RENDERED "
-              f"frames are not (max |dpix| "
-              f"{rep['max_abs_pixel_diff_over_all_steps']}, first differing "
-              f"step {rep['first_differing_pixel_step']}, "
-              f"{rep['n_pixel_steps_differing']}/{n_steps} steps differing). "
-              f"Replay 2 vs 3: identical_frames="
-              f"{rep['identical_frames_2v3']} (max "
-              f"{rep['max_abs_pixel_diff_2v3']}, first differing step "
-              f"{rep['first_differing_pixel_step_2v3']}). If 2 and 3 agree, the "
-              f"FIRST replay after the settle renders differently and the arm "
-              f"that runs first in a capture cannot be compared with the rest.",
-              file=sys.stderr)
-        return 1
+        if not fl.get("available"):
+            print(f"[probe] FAIL: qpos is identical at every step and the "
+                  f"frames are not (max |dpix| "
+                  f"{rep['max_abs_pixel_diff_over_all_steps']}, mean at the "
+                  f"worst step {rep['pixel_mean_worst_step']}), and the "
+                  f"renderer floor could not be measured "
+                  f"({fl.get('why')}), so the two cannot be told apart.",
+                  file=sys.stderr)
+            return 1
+        if fl.get("bit_identical"):
+            print(f"[probe] FAIL: one state rendered twice IS bit-identical, so "
+                  f"the renderer is deterministic -- and two replays with "
+                  f"identical qpos still differ (max "
+                  f"{rep['max_abs_pixel_diff_over_all_steps']}, mean "
+                  f"{rep['pixel_mean_worst_step']}, "
+                  f"{rep['pixel_frac_worst_step']} of pixels, first differing "
+                  f"step {rep['first_differing_pixel_step']}). Something "
+                  f"outside qpos is being drawn.", file=sys.stderr)
+            return 1
+        # The renderer itself is not bit-exact. Then the only meaningful
+        # question is whether two replays differ by MORE than one state
+        # rendered twice does.
+        over = (rep["pixel_mean_worst_step"] or 0.0) > fl["mean_abs"] or \
+               (rep["pixel_frac_worst_step"] or 0.0) > fl["frac_pixels_differing"]
+        if over:
+            print(f"[probe] FAIL: two replays differ by more than the "
+                  f"renderer's own floor. Replay: mean "
+                  f"{rep['pixel_mean_worst_step']}, frac "
+                  f"{rep['pixel_frac_worst_step']}. Floor (one state rendered "
+                  f"{fl['n_renders']}x): mean {fl['mean_abs']}, frac "
+                  f"{fl['frac_pixels_differing']}.", file=sys.stderr)
+            return 1
+        print(f"[probe] NOTE: the renderer is not bit-exact between calls "
+              f"(floor: mean {fl['mean_abs']}, frac "
+              f"{fl['frac_pixels_differing']}, max {fl['max_abs']} for ONE "
+              f"state rendered {fl['n_renders']}x). Two replays stay within "
+              f"that floor (mean {rep['pixel_mean_worst_step']}, frac "
+              f"{rep['pixel_frac_worst_step']}), so the pairing holds to the "
+              f"precision the renderer offers -- which is what the figure's "
+              f"caption must say rather than claiming bit-identical rows.")
     ch = rep["arm_rewind_channels"]
     missing = [k for k, v in ch.items() if not v]
     if missing:
@@ -227,9 +330,11 @@ def main(argv: list) -> int:
               f"reason -- most likely robosuite renamed something.",
               file=sys.stderr)
         return 1
-    print("[probe] PASS: identical prompts give identical trajectories in both "
-          f"qpos and pixels, over {n_steps} steps and three replays, and every "
-          f"carry-over channel was reset ({ch}).")
+    px = ("bit-identical pixels" if rep["identical_frames"]
+          else "pixels within the renderer's own noise floor")
+    print(f"[probe] PASS: identical prompts give identical trajectories -- "
+          f"qpos bit-identical and {px} -- over {n_steps} steps and three "
+          f"replays, and every carry-over channel was reset ({ch}).")
     return 0
 
 
