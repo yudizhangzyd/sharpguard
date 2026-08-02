@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Prove the rollout arms are paired, without a policy in the loop.
 
-The filmstrip's argument is that its three rows differ only in the prompt. Two
-defects broke that before anyone noticed, both invisible in the run report
-(limitation (v)): a welded fixture re-sampled per arm, and -- after that was
-fixed -- each arm running its own settling loop and inheriting the previous
-arm's controller goal and solver warm start, which `set_init_state` does not
-restore.
+The filmstrip's argument is that its three rows differ only in the prompt. Four
+defects broke that before anyone noticed, none of them visible in the run report
+(limitation (v)): a welded fixture re-sampled per arm; each arm running its own
+settling loop and inheriting the previous arm's controller goal and solver warm
+start; the gripper's rate-limited action accumulator; and the observation
+sampling phase, which decides at which physics substep of a control step the
+camera is read. `set_init_state` restores qpos and qvel, and none of the four is
+qpos or qvel.
 
 The capture run checks the weaker property: that the arms' FIRST frames match.
 That is necessary and not sufficient, because the carry-over channels affect
@@ -69,18 +71,132 @@ def scripted_actions(n: int) -> list:
     return out
 
 
+# What the renderer actually reads. `sim.get_state().flatten()` is only
+# time+qpos+qvel in robosuite's newer binding wrapper, and run 5 (bolt
+# e268dqs2t8) showed that is not enough: qpos bit-identical at all 40 steps, the
+# renderer bit-exact on one state rendered four times, no frame/state offset in
+# +-3, and yet the frames differ inside a box whose complement is bit-identical.
+# So something visible is outside the compared state. These are the arrays a
+# MuJoCo frame is a function of -- derived pose (which must match if qpos does),
+# then the model fields that are mutable at run time and change appearance
+# rather than pose. Naming which one differs is the difference between a
+# diagnosis and another round of guessing.
+DATA_FIELDS = ("time", "qpos", "qvel", "act", "ctrl", "qacc",
+               "qacc_warmstart", "xpos", "xquat", "geom_xpos", "geom_xmat",
+               "site_xpos", "site_xmat", "cam_xpos", "cam_xmat", "light_xpos",
+               "light_xdir", "mocap_pos", "mocap_quat")
+MODEL_FIELDS = ("geom_rgba", "geom_size", "geom_pos", "geom_quat",
+                "geom_matid", "geom_group", "site_rgba", "site_size",
+                "site_pos", "mat_rgba", "mat_emission", "light_pos",
+                "light_dir", "light_active", "cam_pos", "cam_quat",
+                "cam_fovy", "body_pos", "body_quat")
+
+
+def render_inputs(env) -> dict:
+    """Every render-relevant array, copied. Missing fields are simply absent."""
+    out = {}
+    for tag, obj, names in (("data", getattr(env.sim, "data", None), DATA_FIELDS),
+                            ("model", getattr(env.sim, "model", None),
+                             MODEL_FIELDS)):
+        for n in names:
+            v = getattr(obj, n, None)
+            if v is None:
+                continue
+            try:
+                out[f"{tag}.{n}"] = np.array(v, dtype=np.float64, copy=True)
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def sampling_phase(m, env) -> dict:
+    """Flat, comparable view of the observation-sampling phase.
+
+    Read before and after each rewind, so the artifact shows the channel BOTH
+    carrying over and being restored, rather than asserting the second from the
+    absence of a symptom. Scalars only: the observable timers are floats, and a
+    cached image array being equal is what the pixel comparison already tests.
+    """
+    snap = m._snap_sampling(env)
+    flat = {}
+    for k, v in (snap.get("env") or {}).items():
+        if isinstance(v, (bool, int, float)):
+            flat[f"env.{k}"] = float(v)
+    for name, d in (snap.get("observables") or {}).items():
+        for k, v in d.items():
+            if isinstance(v, (bool, int, float)):
+                flat[f"{name}.{k}"] = float(v)
+    return flat
+
+
+def phase_diff(x: dict, y: dict) -> dict:
+    keys = sorted(set(x) | set(y))
+    diff = {k: [x.get(k), y.get(k)] for k in keys if x.get(k) != y.get(k)}
+    return {"n_fields": len(keys), "n_fields_differing": len(diff),
+            "differing": dict(list(diff.items())[:12])}
+
+
 def replay(env, m, snap, acts) -> dict:
     """Rewind, replay `acts`, and return the trajectory plus what was reset."""
+    phase_pre = sampling_phase(m, env)
     rw = m._rewind_to(env, snap)
+    phase_post = sampling_phase(m, env)
     obs = rw["obs"]
-    qpos, frames = [], []
+    qpos, frames, inputs = [], [], []
     for a in acts:
         obs, _, _, _ = env.step(a)
         qpos.append(np.asarray(env.sim.get_state().flatten(), dtype=np.float64))
+        inputs.append(render_inputs(env))
         img = obs.get("agentview_image", obs.get("image"))
         frames.append(None if img is None
                       else np.asarray(img, dtype=np.uint8).copy())
-    return {"reset": rw["reset"], "qpos": qpos, "frames": frames}
+    return {"reset": rw["reset"], "qpos": qpos, "frames": frames,
+            "inputs": inputs, "phase_pre": phase_pre, "phase_post": phase_post}
+
+
+def field_diffs(xs: list, ys: list) -> dict:
+    """Which render inputs differ between two replays, and where first.
+
+    Reported per field rather than as one number: "the frames differ" was
+    already known, and a single scalar over all of them would again be a
+    statistic that cannot say WHICH channel carried the difference -- the same
+    reason the pixel comparisons here carry a bbox and an inside/outside mean
+    instead of a maximum.
+    """
+    names = sorted(set(xs[0]) | set(ys[0])) if xs and ys else []
+    differ, same = {}, []
+    for n in names:
+        worst, first = 0.0, None
+        for i, (a, b) in enumerate(zip(xs, ys)):
+            if n not in a or n not in b or a[n].shape != b[n].shape:
+                worst, first = float("inf"), i
+                break
+            d = float(np.abs(a[n] - b[n]).max()) if a[n].size else 0.0
+            if d > 0.0 and first is None:
+                first = i
+            worst = max(worst, d)
+        if worst > 0.0:
+            differ[n] = {"max_abs": worst, "first_step": first}
+        else:
+            same.append(n)
+    return {"fields_that_differ": differ, "n_fields_identical": len(same),
+            "fields_identical": same}
+
+
+def _renderer(env):
+    """The env's re-render entry point, or None. robosuite renamed it."""
+    base = getattr(env, "env", env)
+    return getattr(base, "_get_observations", None) or \
+        getattr(base, "_get_observation", None)
+
+
+def _render_once(getter):
+    """One frame from the CURRENT sim data, without stepping it."""
+    try:                                  # robosuite caches obs unless forced
+        o = getter(force_update=True)
+    except TypeError:
+        o = getter()
+    return o.get("agentview_image", o.get("image")) if o else None
 
 
 def render_noise_floor(env, m, snap, k: int = 4) -> dict:
@@ -101,20 +217,14 @@ def render_noise_floor(env, m, snap, k: int = 4) -> dict:
     the replay difference is real and something outside qpos is being drawn.
     """
     m._rewind_to(env, snap)
-    base = getattr(env, "env", env)
-    getter = getattr(base, "_get_observations", None) or \
-        getattr(base, "_get_observation", None)
+    getter = _renderer(env)
     if getter is None:
         return {"available": False,
                 "why": "no _get_observations on the env; cannot re-render one "
                        "state without stepping it"}
     imgs = []
     for _ in range(k):
-        try:                              # robosuite caches obs unless forced
-            o = getter(force_update=True)
-        except TypeError:
-            o = getter()
-        img = o.get("agentview_image", o.get("image")) if o else None
+        img = _render_once(getter)
         if img is None:
             return {"available": False, "why": "the re-render carried no image"}
         imgs.append(np.asarray(img, dtype=np.int32).copy())
@@ -126,6 +236,35 @@ def render_noise_floor(env, m, snap, k: int = 4) -> dict:
             "frac_pixels_differing": max(round(float((x > 0).mean()), 6)
                                          for x in d),
             "bit_identical": all(float(x.max()) == 0.0 for x in d)}
+
+
+def state_determines_frame(env, m, state, frame) -> dict:
+    """Restore ONE recorded state and re-render it: is the frame a function of it?
+
+    This is the fork the array diff cannot close on its own. Set the state that
+    replay 1 held at its worst step, re-render, and compare with the frame
+    replay 1 actually produced there.
+
+    Bit-equal means the flattened state DOES determine the frame, so the frames
+    were taken at the state that was read and the difference is elsewhere.
+
+    Not bit-equal means the frame is not a render of the end-of-step state at
+    all -- robosuite samples camera observables inside the physics substep loop,
+    on each observable's own timer -- so pairing the rows needs that timer
+    rewound too, not just qpos. Either answer is a decision; the difference
+    alone was not.
+    """
+    getter = _renderer(env)
+    if getter is None or frame is None:
+        return {"available": False, "why": "no re-render entry point or frame"}
+    m._rewind_to(env, {"state": state, "grippers": []})
+    img = _render_once(getter)
+    if img is None:
+        return {"available": False, "why": "the re-render carried no image"}
+    got = np.asarray(img, dtype=np.uint8)
+    st = pix_stats(got, frame)
+    return {"available": True, "bit_identical": st["max"] == 0.0,
+            "pixels": st, "region": region_stats(got, frame)}
 
 
 def pix_stats(x, y) -> dict:
@@ -263,7 +402,16 @@ def main(argv: list) -> int:
     st23 = dpix_of(a2, a3)
     dpix = [s["max"] for s in st12]
     dpix23 = [s["max"] for s in st23]
+    fd12 = field_diffs(a1["inputs"], a2["inputs"])
+    fd23 = field_diffs(a2["inputs"], a3["inputs"])
     floor = render_noise_floor(env, m, snap)
+    # Both of these are read AFTER the replays and the floor, because each one
+    # sets the state and would perturb anything measured afterwards.
+    worst_i = int(np.argmax(dpix)) if dpix else None
+    sdf = ({"available": False, "why": "no differing step to check"}
+           if worst_i is None else
+           state_determines_frame(env, m, a1["qpos"][worst_i],
+                                  a1["frames"][worst_i]))
 
     def first_nonzero(xs):
         return next((i for i, v in enumerate(xs) if v != 0.0), None)
@@ -298,16 +446,38 @@ def main(argv: list) -> int:
         "pixel_frac_worst_step": worst(st12, "frac"),
         "pixel_stats_per_step": st12,
         "render_noise_floor": floor,
+        # Which render input differs, if any. If `data.geom_xpos` differs while
+        # `data.qpos` does not, the rendered POSE differs and the frame is not
+        # taken at the state that was read; if only a `model.*` appearance field
+        # differs, nothing moved and something was recoloured; if every field is
+        # identical, the difference is below the model and lives in the
+        # rasterizer, which is what the noise floor is compared against.
+        "render_input_diff_1v2": fd12,
+        "render_input_diff_2v3": fd23,
+        # The fourth carry-over channel, shown carrying over AND being
+        # restored: replay 2 enters the rewind with replay 1's sampling phase
+        # (these must differ), and leaves it with the snapshot's (these must
+        # not). Without the second half, "restored" would be an inference from
+        # the absence of a symptom.
+        "sampling_phase_before_rewind_1v2": phase_diff(a1["phase_pre"],
+                                                       a2["phase_pre"]),
+        "sampling_phase_after_rewind_1v2": phase_diff(a1["phase_post"],
+                                                      a2["phase_post"]),
+        "sampling_phase_after_rewind_2v3": phase_diff(a2["phase_post"],
+                                                      a3["phase_post"]),
+        # And the fork that closes it: restore replay 1's state at its worst
+        # step and re-render. Bit-equal means the state DOES determine the
+        # frame, so the pairing is a capture-order bug and fixable here.
+        "state_determines_frame": sdf,
         # Alignment and region, because "the frames differ" is not yet a
         # diagnosis: these say whether the difference is one silhouette a step
         # out of place or the whole scene.
         "frame_alignment_1v2": alignment_offset(a1["frames"], a2["frames"]),
         "frame_alignment_2v3": alignment_offset(a2["frames"], a3["frames"]),
         "region_worst_step_1v2": (
-            region_stats(a1["frames"][int(np.argmax(dpix))],
-                         a2["frames"][int(np.argmax(dpix))])
+            region_stats(a1["frames"][worst_i], a2["frames"][worst_i])
             if dpix else None),
-        "worst_step_index": int(np.argmax(dpix)) if dpix else None,
+        "worst_step_index": worst_i,
         "first_differing_pixel_step": first_nonzero(dpix),
         "n_pixel_steps_differing": sum(1 for v in dpix if v != 0.0),
         "first_step_worst_qpos_index": int(step0.argmax()) if dq else None,
@@ -384,6 +554,8 @@ def main(argv: list) -> int:
                   file=sys.stderr)
             return 1
         if fl.get("bit_identical"):
+            fields = sorted(rep["render_input_diff_1v2"]["fields_that_differ"])
+            sd = rep["state_determines_frame"]
             print(f"[probe] FAIL: one state rendered twice IS bit-identical, so "
                   f"the renderer is deterministic -- and two replays with "
                   f"identical qpos still differ (max "
@@ -391,7 +563,14 @@ def main(argv: list) -> int:
                   f"{rep['pixel_mean_worst_step']}, "
                   f"{rep['pixel_frac_worst_step']} of pixels, first differing "
                   f"step {rep['first_differing_pixel_step']}). Something "
-                  f"outside qpos is being drawn.", file=sys.stderr)
+                  f"outside qpos is being drawn. Render inputs that differ: "
+                  f"{fields or 'NONE -- the difference is below the model'} "
+                  f"({rep['render_input_diff_1v2']['n_fields_identical']} "
+                  f"identical). Restoring the state and re-rendering "
+                  f"{'REPRODUCES' if sd.get('bit_identical') else 'does NOT reproduce'}"
+                  f" the frame, so the frame "
+                  f"{'is' if sd.get('bit_identical') else 'is not'} a function "
+                  f"of the state that was read.", file=sys.stderr)
             return 1
         # The renderer itself is not bit-exact. Then the only meaningful
         # question is whether two replays differ by MORE than one state
@@ -422,11 +601,30 @@ def main(argv: list) -> int:
               f"reason -- most likely robosuite renamed something.",
               file=sys.stderr)
         return 1
+    # And the sampling phase specifically, because it is the one channel a qpos
+    # comparison cannot see: it changes WHEN the frame is taken, not where the
+    # physics ends up. A count of restored observables says the code ran; this
+    # says it worked.
+    ph = rep["sampling_phase_after_rewind_1v2"]
+    if ph["n_fields"] == 0:
+        print("[probe] FAIL: no observation-sampling phase was found to compare, "
+              "so the fourth channel is unverified on this robosuite.",
+              file=sys.stderr)
+        return 1
+    if ph["n_fields_differing"]:
+        print(f"[probe] FAIL: two replays leave the rewind with different "
+              f"observation-sampling phases ({ph['n_fields_differing']} of "
+              f"{ph['n_fields']} fields: {ph['differing']}), so their frames are "
+              f"rendered at different substeps of a control step.",
+              file=sys.stderr)
+        return 1
     px = ("bit-identical pixels" if rep["identical_frames"]
           else "pixels within the renderer's own noise floor")
     print(f"[probe] PASS: identical prompts give identical trajectories -- "
           f"qpos bit-identical and {px} -- over {n_steps} steps and three "
-          f"replays, and every carry-over channel was reset ({ch}).")
+          f"replays, every carry-over channel was reset ({ch}), and the "
+          f"observation-sampling phase after the rewind is identical across "
+          f"replays ({ph['n_fields']} fields).")
     return 0
 
 

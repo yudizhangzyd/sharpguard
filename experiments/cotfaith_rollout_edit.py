@@ -411,6 +411,68 @@ def _grippers(env) -> list:
     return out
 
 
+def _sampling_owners(env) -> list:
+    """The observables whose own clock decides WHEN a frame is rendered.
+
+    robosuite does not render the camera at the end of a control step. `step()`
+    runs `control_timestep / model_timestep` physics substeps and calls
+    `_update_observables()` inside that loop; each observable holds its own
+    timer and samples when the timer crosses `1 / sampling_rate`, so the image
+    returned by a control step is a render from whichever substep its timer
+    happened to fire on. `_get_observations` then hands back that cached value.
+
+    The timer is neither qpos nor qvel, so `set_init_state` does not rewind it.
+    Two arms replaying from the same snapshot therefore sample their frames at
+    different substeps -- a fraction of a control step apart -- and the moving
+    arm is drawn from a slightly different pose while the physics at the end of
+    each step is bit-identical. That is exactly the residue probe run
+    e268dqs2t8 measured and could not explain: qpos bit-identical at all 40
+    steps, the renderer bit-exact on one state rendered four times, no frame
+    offset in +-3 that made any pair equal, and the difference confined to an
+    arm-shaped silhouette whose complement was bit-identical
+    (outside_mean_abs 0.0).
+    """
+    base = getattr(env, "env", env)
+    obs = getattr(base, "_observables", None)
+    return sorted(obs.items()) if isinstance(obs, dict) else []
+
+
+def _snap_sampling(env) -> dict:
+    """Snapshot the sampling phase: env step clocks plus every observable."""
+    base = getattr(env, "env", env)
+    return {
+        "env": {k: getattr(base, k) for k in ("cur_time", "timestep", "done")
+                if hasattr(base, k)},
+        # The whole attribute dict, not a named timer: robosuite has respelled
+        # these across versions, and restoring the observable to the state the
+        # settle left it in is the property wanted -- not a guess at which
+        # field is the clock.
+        "observables": {name: {k: (np.array(v, copy=True)
+                                  if isinstance(v, np.ndarray) else v)
+                               for k, v in vars(o).items()}
+                        for name, o in _sampling_owners(env)},
+    }
+
+
+def _restore_sampling(env, saved) -> dict:
+    base = getattr(env, "env", env)
+    n_env = 0
+    for k, v in (saved.get("env") or {}).items():
+        if hasattr(base, k):
+            setattr(base, k, v)
+            n_env += 1
+    n_obs = 0
+    for name, o in _sampling_owners(env):
+        s = (saved.get("observables") or {}).get(name)
+        if s is None:
+            continue
+        for k, v in s.items():
+            o.__dict__[k] = (np.array(v, copy=True)
+                             if isinstance(v, np.ndarray) else v)
+        n_obs += 1
+    return n_env, n_obs
+
+
 def _settle_once(env, state, steps: int = SETTLE_STEPS):
     """Teleport to `state`, let the scene settle, and snapshot where it landed.
 
@@ -436,14 +498,17 @@ def _settle_once(env, state, steps: int = SETTLE_STEPS):
 
     The snapshot carries the gripper accumulators as well as the flattened
     state, so the rewind restores where the settle actually left the scene
-    rather than a fresh-reset approximation of it. See _grippers().
+    rather than a fresh-reset approximation of it. See _grippers(). It also
+    carries the observation-sampling phase, without which two arms render their
+    frames at different substeps of a control step; see _sampling_owners().
     """
     obs = env.set_init_state(state)
     for _ in range(steps):
         obs, _, _, _ = env.step(NO_OP)
     snap = {"state": env.sim.get_state().flatten(),
             "grippers": [np.array(g.current_action, copy=True)
-                         for g in _grippers(env)]}
+                         for g in _grippers(env)],
+            "sampling": _snap_sampling(env)}
     return snap, obs
 
 
@@ -452,21 +517,25 @@ def _rewind_to(env, snap) -> dict:
 
     Restoring qpos/qvel makes the arms' first frame identical, but the frames
     after it are still confounded if the arm that runs second inherits hidden
-    integrator state from the arm before it. Three such channels exist and none
+    integrator state from the arm before it. Four such channels exist and none
     lives in the flattened state:
 
       * the OSC controller's goal pose, left wherever the previous arm's last
         action pointed;
       * MuJoCo's warm-start accelerations, seeded from the previous arm's final
         solver iterate;
-      * the gripper's rate-limited action accumulator (see _grippers()).
+      * the gripper's rate-limited action accumulator (see _grippers());
+      * the observation-sampling phase, which decides at which physics substep
+        of a control step the camera is read (see _sampling_owners()).
 
-    All three are reset so that an arm's trajectory does not depend on its
+    All four are reset so that an arm's trajectory does not depend on its
     position in the arm loop. That this is now sufficient -- and not merely
     plausible -- is checked by scripts/probe_rewind_pairing.py, which replays
     one action sequence twice and requires the trajectories to be identical at
     every step. The step-0 frame check cannot see any of it: these channels act
-    from step 1 onward, exactly where the arms are supposed to differ.
+    from step 1 onward, exactly where the arms are supposed to differ. The
+    fourth is invisible even to a qpos comparison, because it changes when the
+    frame is taken and not where the physics ends up.
 
     Returns which channels were actually found, which the caller records: this
     reaches into robosuite internals whose spelling has changed across versions,
@@ -474,7 +543,8 @@ def _rewind_to(env, snap) -> dict:
     like it had been handled.
     """
     obs = env.set_init_state(snap["state"])
-    done = {"controller": 0, "warmstart": False, "gripper": 0}
+    done = {"controller": 0, "warmstart": False, "gripper": 0,
+            "clock": 0, "observables": 0}
     base = getattr(env, "env", env)
     for robot in getattr(base, "robots", []) or []:
         for attr in ("controller", "composite_controller"):
@@ -487,6 +557,8 @@ def _rewind_to(env, snap) -> dict:
     for g, saved in zip(_grippers(env), snap.get("grippers") or []):
         g.current_action = np.array(saved, copy=True)
         done["gripper"] += 1
+    done["clock"], done["observables"] = _restore_sampling(
+        env, snap.get("sampling") or {})
     data = getattr(env.sim, "data", None)
     if hasattr(data, "qacc_warmstart"):
         data.qacc_warmstart[:] = 0.0

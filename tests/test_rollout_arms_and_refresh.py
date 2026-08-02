@@ -389,7 +389,7 @@ def test_scene_seed(m) -> None:
 
 
 def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True,
-              gripper=True):
+              gripper=True, sampling=True):
     """A stand-in env exposing only what the rewind touches.
 
     A stub rather than a simulator because this suite is the pod's pre-budget
@@ -415,6 +415,18 @@ def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True,
 
     class Data:
         pass
+
+    class Observable:
+        """robosuite's observable: its own timer decides WHEN it samples.
+
+        An accumulating timer for the same reason the gripper stub accumulates.
+        A stub whose timer never advanced would pass the restore check without
+        the restore, and this channel is precisely the one that leaves the
+        physics identical and the frame taken a substep apart.
+        """
+        def __init__(self):
+            self._time_since_last_sample = 0.0
+            self._current_observed_value = np.zeros(2)
 
     class Sim:
         def __init__(self):
@@ -452,6 +464,14 @@ def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True,
             self.ctrl = ctrl
             g = getattr(robot, "gripper", None)
             self.grip = g["right"] if isinstance(g, dict) else g
+            if sampling:
+                self.cur_time = 0.0
+                self.timestep = 0
+                self.done = False
+                self._observables = {"agentview_image": Observable()}
+                self.obs_clock = self._observables["agentview_image"]
+            else:
+                self.obs_clock = None
         def set_init_state(self, state):
             self.restored.append(np.asarray(state).copy())
             return {"obs_for": tuple(np.asarray(state).tolist())}
@@ -460,6 +480,10 @@ def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True,
             self.sim.state = self.sim.state + 1.0
             if self.grip is not None:          # the rate limiter, as robosuite
                 self.grip.current_action = self.grip.current_action + 0.02
+            if self.obs_clock is not None:     # the sampling phase, as robosuite
+                self.cur_time += 0.05
+                self.timestep += 1
+                self.obs_clock._time_since_last_sample += 0.013
             return {"obs_for": tuple(self.sim.state.tolist())}, 0.0, False, {}
 
     return Env()
@@ -487,6 +511,20 @@ def test_settle_once(m) -> None:
     check("settle: the snapshot is a COPY, not a live view of the gripper",
           not np.allclose(snap["grippers"][0], env.grip.current_action),
           "an aliased snapshot would silently track the arm it is meant to undo")
+    samp = snap.get("sampling") or {}
+    check("settle: the snapshot carries the observation-sampling phase",
+          samp.get("env", {}).get("cur_time") == env.cur_time and
+          "agentview_image" in (samp.get("observables") or {}),
+          "the phase decides at which physics substep the camera is read; "
+          "without it two arms render the same physics a substep apart")
+    check("settle: the sampled phase is where the settle LANDED, not zero",
+          samp["observables"]["agentview_image"]["_time_since_last_sample"] > 0.0,
+          "snapshotting zero would rewind to a fresh-reset phase rather than "
+          "the one the settle left")
+    env.obs_clock._time_since_last_sample += 5.0
+    check("settle: the sampling snapshot is a COPY too",
+          samp["observables"]["agentview_image"]["_time_since_last_sample"] !=
+          env.obs_clock._time_since_last_sample)
 
 
 def test_rewind_clears_carryover(m) -> None:
@@ -506,10 +544,26 @@ def test_rewind_clears_carryover(m) -> None:
     step and not growing, the signature of a stale offset rather than drift. The
     offset is robosuite's gripper, whose current_action is a rate-limited
     accumulator that neither set_init_state nor reset_goal touches.
+
+    Three was still not enough. With the gripper restored the probe (bolt
+    e268dqs2t8) found qpos bit-identical at all 40 steps, the renderer bit-exact
+    on one state rendered four times, and no frame offset in +-3 -- and the
+    frames still differed, inside a box whose complement was bit-identical
+    (outside_mean_abs 0.0), in the shape of the arm. robosuite samples camera
+    observables INSIDE the physics substep loop on each observable's own timer,
+    and that timer is neither qpos nor qvel, so two arms drew the same physics a
+    substep apart. Hence the fourth channel here.
     """
     env = _fake_env()
-    snap = {"state": np.array([5.0, 5.0, 5.0]), "grippers": [np.array([0.4])]}
+    snap = {"state": np.array([5.0, 5.0, 5.0]), "grippers": [np.array([0.4])],
+            "sampling": {"env": {"cur_time": 0.5, "timestep": 10,
+                                 "done": False},
+                         "observables": {"agentview_image": {
+                             "_time_since_last_sample": 0.031,
+                             "_current_observed_value": np.ones(2)}}}}
     env.grip.current_action = np.array([0.9])       # the previous arm's residue
+    env.cur_time, env.timestep = 99.0, 700         # and its sampling phase
+    env.obs_clock._time_since_last_sample = 0.044
     rw = m._rewind_to(env, snap)
     check("rewind: restores the snapshot",
           np.allclose(env.restored[-1], snap["state"]))
@@ -528,6 +582,23 @@ def test_rewind_clears_carryover(m) -> None:
           np.allclose(snap["grippers"][0], 0.4),
           "assigning the snapshot array itself lets the next arm mutate the "
           "snapshot in place, so arm 3 rewinds to arm 2's gripper")
+    check("rewind: restores the env's step clocks",
+          rw["reset"]["clock"] == 3 and env.cur_time == 0.5 and
+          env.timestep == 10,
+          "99.0 is the previous arm's clock; robosuite gates observable "
+          "sampling on it")
+    check("rewind: restores the observation-sampling phase",
+          rw["reset"]["observables"] == 1 and
+          env.obs_clock._time_since_last_sample == 0.031,
+          "leaving 0.044 makes the next arm sample its camera at a different "
+          "physics substep, so the same physics is drawn a substep apart -- a "
+          "difference no qpos comparison can see")
+    env.obs_clock._current_observed_value[:] = 7.0
+    check("rewind: the restored phase is a COPY of the snapshot",
+          np.allclose(snap["sampling"]["observables"]["agentview_image"]
+                      ["_current_observed_value"], 1.0),
+          "an aliased restore lets the arm being rewound edit the snapshot the "
+          "next arm will be rewound to")
     check("rewind: does not step the sim", env.steps == 0,
           "stepping here would put back the per-arm settle this replaces")
     check("rewind: returns the obs for the restored state, so the arm does not "
@@ -541,11 +612,13 @@ def test_rewind_clears_carryover(m) -> None:
           nrw["reset"]["gripper"] == 1 and
           np.allclose(nested.grip.current_action, 0.4))
 
-    blind = _fake_env(reset_goal=False, warmstart=False, gripper=False)
+    blind = _fake_env(reset_goal=False, warmstart=False, gripper=False,
+                      sampling=False)
     rw2 = m._rewind_to(blind, snap)
     check("rewind: reports a channel it could NOT reach rather than claiming it",
           rw2["reset"]["controller"] == 0 and not rw2["reset"]["warmstart"] and
-          rw2["reset"]["gripper"] == 0,
+          rw2["reset"]["gripper"] == 0 and rw2["reset"]["clock"] == 0 and
+          rw2["reset"]["observables"] == 0,
           "a silent no-op would restore the confound while the code still read "
           "as if it had been handled")
 
