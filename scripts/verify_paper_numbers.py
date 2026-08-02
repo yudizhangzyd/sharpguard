@@ -4020,6 +4020,114 @@ def audit_arr_submission(a: Audit) -> None:
     a.check(sec, "the ARR abstract's F_dir clearance rate", 7,
             fd.get("n_clearing_null"), source="fdir_null.json")
 
+    # --- the two figures that carry text and rates, not just bars -----------
+    # fig1 prints real generator strings and per-family judge rates, and fig13
+    # prints its R^2 and counts in the panel titles. Both read their own JSON,
+    # so a drifting artifact would silently redraw them while every number in
+    # the prose stayed put. Assert the figure scripts still read the artifact
+    # the caption describes, and that the captions' own numbers match it.
+    figs = root / "figures"
+    # Every artifact each script reads, not just its primary one: fig1 draws
+    # its strings from edit_examples but its rates from the judge report, and
+    # a check scoped to edit_examples alone passed a deliberately injected
+    # hardcoded 0.975 because that value lives in the other file.
+    for script, arts in [
+            ("gen_fig1_task_examples.py",
+             ["edit_examples/edit_examples.json",
+              "judge_edit_families/judge_report.json"]),
+            ("gen_fig13_collision.py",
+             ["collision_decomposition/collision_decomposition.json"])]:
+        srcf = figs / script
+        body = srcf.read_text() if srcf.exists() else ""
+        for artifact in arts:
+            a.check(sec, f"{script} reads {artifact.split('/')[0]}",
+                    True, artifact.split("/")[0] in body, source=str(srcf))
+        # R1 item 5b: no figure may hardcode a reported quantity. A precision
+        # rule cannot express that -- these scripts are laid out in inches, so
+        # 0.078 is a panel margin and 0.125 is a judge rate, and both have
+        # three decimals. Check the property directly instead: collect every
+        # number the artifact actually carries, and assert that no literal in
+        # the drawing code is one of them. That flags a copied value and
+        # ignores geometry, which is exactly the distinction R1 asked for.
+        drawing = re.sub(r'"""[\s\S]*?"""', "", body)      # drop docstrings
+        drawing = "\n".join(l for l in drawing.splitlines()
+                             if not l.lstrip().startswith("#"))
+        arts_json = []
+        for artifact in arts:
+            art = load(root / "results_v2" / "canonical_runs" / artifact)
+            a.check(sec, f"{script}'s artifact {artifact} is present", True,
+                    art is not None, source=artifact)
+            arts_json.append(art)
+
+        # Only values distinctive enough that a match implies copying. A bar
+        # width of 0.72 and a percent conversion by 100 both appear in the
+        # artifact by coincidence, and flagging them made the check noise. A
+        # rate printed to 3dp, or a record count, does not collide by accident:
+        # this paper reports every rate to 3dp and every count exactly.
+        def _distinctive(x):
+            if isinstance(x, bool) or not isinstance(x, (int, float)):
+                return False
+            if isinstance(x, int) or float(x).is_integer():
+                n = abs(int(x))
+                # 100/1000 are unit conversions, not findings.
+                return n >= 100 and str(n).strip("0") != "1"
+            return len(f"{x!r}".partition(".")[2]) >= 3
+
+        reported = set()
+
+        def _walk(node):
+            if isinstance(node, dict):
+                for v in node.values():
+                    _walk(v)
+            elif isinstance(node, list):
+                for v in node:
+                    _walk(v)
+            elif _distinctive(node):
+                reported.add(f"{float(node):.6g}")
+
+        for art in arts_json:
+            _walk(art)
+        lits = {f"{float(x):.6g}"
+                for x in re.findall(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])",
+                                    drawing)
+                if _distinctive(float(x))}
+        collisions = sorted(lits & reported)
+        a.check(sec, f"{script} hardcodes no value its own artifact reports",
+                [], collisions,
+                source=f"{len(reported)} values across {len(arts)} artifact(s)")
+
+    # fig1's caption quotes judge rates and fig13's quotes counts from the
+    # collision artifact. Read the expectation out of the caption and the
+    # observation out of the JSON -- never the other way round.
+    jr = load(root / "results_v2/canonical_runs/judge_edit_families/"
+                     "judge_report.json") or {}
+    pf = jr.get("per_family", {})
+
+    # The caption quotes a DIFFERENT judge field for each of the two families
+    # it calls out -- syntactic_scramble is remarkable for being judged
+    # meaning-PRESERVING, adversarial_plausible for being judged not
+    # PLAUSIBLE. Reading both from meaning_preserved_rate would have compared
+    # the caption's 0.125 against a 0.000 that is a true statement about a
+    # different quantity.
+    for fam, field, want in [
+            ("syntactic_scramble", "meaning_preserved_rate", "1.000"),
+            ("adversarial_plausible", "plausible_rate", "0.125")]:
+        a.check(sec, f"fig:taxonomy's caption quotes the judge's {fam} "
+                     f"{field}", want,
+                f"{pf.get(fam, {}).get(field, -1):.3f}",
+                source="judge_report.json")
+        a.check(sec, f"and the ARR caption prints that {fam} rate",
+                True, f"${want}$" in t, source="cot_faith_arr.tex")
+    for want, got, what in [
+            ("28{,}443", f"{cd.get('n_scored_records', 0):,}".replace(",", "{,}"),
+             "scored records"),
+            ("324", str(cd.get("n_cells")), "cells"),
+            ("0.926", f"{cd.get('r_squared', 0):.3f}", "R^2")]:
+        a.check(sec, f"fig:collision's caption quotes the artifact's {what}",
+                want, got, source="collision_decomposition.json")
+        a.check(sec, f"and the ARR caption prints that {what}", True,
+                want in t, source="cot_faith_arr.tex")
+
     # The ARR body states the audit's own claim count in three places
     # (abstract, contributions, release section). They must agree with each
     # other and with the full-length version, or the submission advertises a
