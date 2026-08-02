@@ -385,6 +385,77 @@ def _seed_scene(seed: int) -> None:
     np.random.seed(int(seed))
 
 
+NO_OP = np.array([0., 0., 0., 0., 0., 0., -1.], dtype=np.float32)
+SETTLE_STEPS = 10                            # Kim's NUM_STEPS_WAIT
+
+
+def _settle_once(env, state, steps: int = SETTLE_STEPS):
+    """Teleport to `state`, let the scene settle, and snapshot where it landed.
+
+    The settling steps exist because `set_init_state` puts objects down by
+    writing qpos, which leaves them a fraction above the table; stepping a no-op
+    action a few times lets them come to rest. That is a property of the SCENE,
+    not of any arm, so it is done once per episode here and every arm is then
+    rewound to the snapshot -- rather than each arm running its own settle.
+
+    Running the settle per arm is what produced the second pairing defect (bolt
+    xyiztdu4n6, after the fixture defect below was fixed): `set_init_state`
+    restores qpos and qvel and nothing else, so an arm that ran second entered
+    its settle carrying the previous arm's controller goal and the solver's
+    warm-start accelerations, and ten steps of contact dynamics amplified that
+    into a visibly different robot pose in the first captured frame -- 31.7356
+    mean |dpix| inside rows 0-134, cols 96-188, with best rigid shift (0, 0),
+    i.e. a different pose and not a differently placed object.
+
+    Snapshotting instead makes the first frame identical by construction rather
+    than by trusting ten steps of dynamics to be reproducible: the render is a
+    function of the model and qpos, and every arm is handed the same qpos and
+    the same observation object.
+    """
+    obs = env.set_init_state(state)
+    for _ in range(steps):
+        obs, _, _, _ = env.step(NO_OP)
+    return env.sim.get_state().flatten(), obs
+
+
+def _rewind_to(env, state) -> dict:
+    """Put the env back at `state` and undo the previous arm's residue.
+
+    Restoring qpos/qvel makes the arms' first frame identical, but the frames
+    after it are still confounded if the arm that runs second inherits hidden
+    integrator state from the arm before it. Two such channels exist and neither
+    lives in the flattened state:
+
+      * the OSC controller's goal pose, left wherever the previous arm's last
+        action pointed;
+      * MuJoCo's warm-start accelerations, seeded from the previous arm's final
+        solver iterate.
+
+    Both are reset here so that an arm's trajectory does not depend on its
+    position in the arm loop. Returns which channels were actually found, which
+    the caller records: this reaches into robosuite internals whose spelling has
+    changed across versions, and a silent no-op would put the confound back
+    while the code still looked like it had been handled.
+    """
+    obs = env.set_init_state(state)
+    done = {"controller": 0, "warmstart": False}
+    base = getattr(env, "env", env)
+    for robot in getattr(base, "robots", []) or []:
+        for attr in ("controller", "composite_controller"):
+            ctrl = getattr(robot, attr, None)
+            parts = ctrl.values() if isinstance(ctrl, dict) else [ctrl]
+            for part in parts:
+                if hasattr(part, "reset_goal"):
+                    part.reset_goal()
+                    done["controller"] += 1
+    data = getattr(env.sim, "data", None)
+    if hasattr(data, "qacc_warmstart"):
+        data.qacc_warmstart[:] = 0.0
+        done["warmstart"] = True
+    env.sim.forward()
+    return {"obs": obs, "reset": done}
+
+
 def _probe_frame(args):
     """One real (frame, instruction) from the suite, or (None, task text)."""
     try:
@@ -434,8 +505,16 @@ def _eef(obs) -> Optional[list]:
 
 
 def run_arm(model, processor, env, task_lang, *, arm, family, device,
-            pixel_dtype, args, edit_fn=None, capture: Optional[dict] = None) -> dict:
+            pixel_dtype, args, edit_fn=None, capture: Optional[dict] = None,
+            obs=None) -> dict:
     """One episode under one arm. Env must already be at its init state.
+
+    `obs` is the observation the arm starts from. Passing it in is what makes the
+    arms of one episode comparable: the caller settles the scene once and rewinds
+    every arm to that snapshot, so all arms start from the same qpos AND the same
+    observation object, instead of each running its own settling loop and
+    inheriting the previous arm's integrator state through it (see _settle_once).
+    When omitted, the settle runs here, which is the single-arm path.
 
     `capture`, when given, is {"dir": Path, "every": k}: every k-th step's
     rendered frame is written as a PNG and the step's end-effector pose, action
@@ -450,10 +529,12 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
     from sharpguard.libero_sim import (_preprocess_image,
                                        _apply_gripper_transform)
     decode, dec_kw = _decoder(args)
-    no_op = np.array([0., 0., 0., 0., 0., 0., -1.], dtype=np.float32)
-    obs = None
-    for _ in range(10):                       # Kim's NUM_STEPS_WAIT settling
-        obs, _, _, _ = env.step(no_op)
+    if obs is None:
+        # No pre-settled observation from the caller, so settle here. The paired
+        # path settles once per episode and hands every arm the same snapshot
+        # (see _settle_once); this branch keeps single-arm callers working.
+        for _ in range(SETTLE_STEPS):
+            obs, _, _, _ = env.step(NO_OP)
     success, steps = False, 0
     n_cot_ok = n_cot_bad = n_edit_skipped = n_cot_gen = 0
     deltas = []
@@ -647,6 +728,15 @@ def run(args):
             # Sharing the env is what makes the pairing structural rather than a
             # property of an RNG we do not control: between arms only qpos is
             # restored, and no reset() intervenes to re-sample anything.
+            #
+            # Sharing the env is necessary and was not sufficient. With the
+            # fixture pinned, the arms' first frames still differed over the
+            # ROBOT (bolt xyiztdu4n6: 31.7356 mean |dpix| inside rows 0-134,
+            # cols 96-188, best rigid shift (0, 0) -- a different pose, not a
+            # moved object), because each arm ran its own ten settling steps and
+            # the second arm entered them carrying state set_init_state does not
+            # restore. So the settle happens once, below, and each arm is
+            # rewound to its snapshot with that residue cleared.
             env = None
             try:
                 _seed_scene(args.env_seed + 1000 * ti + ep)
@@ -654,6 +744,7 @@ def run(args):
                                          camera_heights=256,
                                          camera_widths=256)
                 env.reset()
+                settled, settled_obs = _settle_once(env, init[ep])
                 for arm, fam in arms:
                     if args.time_budget_h and \
                             (time.time() - t_start) / 3600.0 > args.time_budget_h:
@@ -665,14 +756,22 @@ def run(args):
                     try:
                         # No reset() here. reset() re-samples the placement,
                         # which is the one thing that must not differ between
-                        # arms; set_init_state restores the robot and every free
-                        # object, which is the rest of the init state.
-                        env.set_init_state(init[ep])
+                        # arms; rewinding to the settled snapshot restores the
+                        # robot and every free object, which is the rest of it.
+                        rw = _rewind_to(env, settled)
+                        if ti == 0 and ep == 0:
+                            print(f"[rollout-edit] arm rewind: {rw['reset']}")
+                            if not rw["reset"]["controller"] or \
+                                    not rw["reset"]["warmstart"]:
+                                print("[rollout-edit] WARNING: a carry-over "
+                                      "channel was not found, so arms may "
+                                      "differ by run order after step 0")
                         r = run_arm(model, processor, env, task.language,
                                     arm=arm, family=fam, device=device,
                                     pixel_dtype=pixel_dtype, args=args,
                                     edit_fn=EDIT_FAMILIES[fam] if fam else None,
-                                    capture=_capture_for(args, out_dir, ti, ep))
+                                    capture=_capture_for(args, out_dir, ti, ep),
+                                    obs=rw["obs"])
                         r.update({"task_idx": ti, "episode": ep,
                                   "task": task.language})
                         episodes.append(r)

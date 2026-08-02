@@ -388,6 +388,131 @@ def test_scene_seed(m) -> None:
           "scene filmed three times")
 
 
+def _fake_env(controller_attr="controller", reset_goal=True, warmstart=True):
+    """A stand-in env exposing only what the rewind touches.
+
+    A stub rather than a simulator because this suite is the pod's pre-budget
+    gate; what it can honestly check is that the rewind reaches the channels it
+    claims to and REPORTS when it cannot, which is the part that silently rots
+    when robosuite renames something.
+    """
+    class Ctrl:
+        def __init__(self):
+            self.goals_reset = 0
+        def reset_goal(self):
+            self.goals_reset += 1
+
+    class Data:
+        pass
+
+    class Sim:
+        def __init__(self):
+            self.data = Data()
+            self.forwarded = 0
+            self.state = np.array([1.0, 2.0, 3.0])
+            if warmstart:
+                self.data.qacc_warmstart = np.ones(4)
+        def forward(self):
+            self.forwarded += 1
+        def get_state(self):
+            sim = self
+            return types.SimpleNamespace(flatten=lambda: sim.state.copy())
+
+    class Robot:
+        pass
+
+    class Env:
+        def __init__(self):
+            self.sim = Sim()
+            self.steps = 0
+            self.restored = []
+            robot = Robot()
+            ctrl = Ctrl() if reset_goal else object()
+            setattr(robot, controller_attr,
+                    {"right": ctrl} if controller_attr ==
+                    "composite_controller" else ctrl)
+            self.robots = [robot]
+            self.ctrl = ctrl
+        def set_init_state(self, state):
+            self.restored.append(np.asarray(state).copy())
+            return {"obs_for": tuple(np.asarray(state).tolist())}
+        def step(self, action):
+            self.steps += 1
+            self.sim.state = self.sim.state + 1.0
+            return {"obs_for": tuple(self.sim.state.tolist())}, 0.0, False, {}
+
+    return Env()
+
+
+def test_settle_once(m) -> None:
+    """The settle must be a scene fixture: run once, snapshotted, reused."""
+    env = _fake_env()
+    init = np.array([0.0, 0.0, 0.0])
+    state, obs = m._settle_once(env, init)
+    check("settle: runs Kim's NUM_STEPS_WAIT steps once",
+          env.steps == m.SETTLE_STEPS, f"stepped {env.steps}")
+    check("settle: snapshots where the scene LANDED, not where it started",
+          not np.allclose(state, init),
+          "returning the pre-settle state would rewind each arm to a scene that "
+          "has not come to rest, and the settle would run per arm again")
+    check("settle: the snapshot is the state the returned obs describes",
+          obs["obs_for"] == tuple(state.tolist()))
+
+
+def test_rewind_clears_carryover(m) -> None:
+    """Rewinding must undo the previous arm, and say so when it cannot.
+
+    The first pairing defect was a fixture in the MODEL; this is the second one,
+    found only after fixing that: state that is in neither the model nor qpos.
+    An arm running second inherited the previous arm's controller goal and the
+    solver's warm-start accelerations, and its own ten settling steps amplified
+    them into a different robot pose in the first captured frame -- bolt
+    xyiztdu4n6, 31.7356 mean |dpix| inside rows 0-134 / cols 96-188 with best
+    rigid shift (0, 0), i.e. a pose difference and not a moved object.
+    """
+    env = _fake_env()
+    snap = np.array([5.0, 5.0, 5.0])
+    rw = m._rewind_to(env, snap)
+    check("rewind: restores the snapshot", np.allclose(env.restored[-1], snap))
+    check("rewind: clears the controller goal the previous arm left",
+          rw["reset"]["controller"] == 1 and env.ctrl.goals_reset == 1)
+    check("rewind: zeroes the solver warm start",
+          rw["reset"]["warmstart"] and
+          np.allclose(env.sim.data.qacc_warmstart, 0.0))
+    check("rewind: does not step the sim", env.steps == 0,
+          "stepping here would put back the per-arm settle this replaces")
+    check("rewind: returns the obs for the restored state, so the arm does not "
+          "start from a stale one", rw["obs"]["obs_for"] == (5.0, 5.0, 5.0))
+
+    nested = _fake_env(controller_attr="composite_controller")
+    check("rewind: finds the newer robosuite composite_controller spelling",
+          m._rewind_to(nested, snap)["reset"]["controller"] == 1)
+
+    blind = _fake_env(reset_goal=False, warmstart=False)
+    rw2 = m._rewind_to(blind, snap)
+    check("rewind: reports a channel it could NOT reach rather than claiming it",
+          rw2["reset"]["controller"] == 0 and not rw2["reset"]["warmstart"],
+          "a silent no-op would restore the confound while the code still read "
+          "as if it had been handled")
+
+
+def test_run_arm_trusts_a_given_obs(m) -> None:
+    """run_arm must not re-settle when the caller pre-settled.
+
+    Source-level because run_arm's body imports torch, which this suite may not:
+    it is the pod's pre-budget gate. What matters is that the settling loop stays
+    behind the `obs is None` guard -- an unconditional settle silently reinstates
+    the per-arm divergence even though every arm is handed the same snapshot.
+    """
+    import inspect
+    src = inspect.getsource(m.run_arm)
+    body = src.split("if obs is None:")
+    check("run_arm: the settling loop is guarded by `obs is None`",
+          len(body) == 2 and "env.step(NO_OP)" in body[1] and
+          "env.step(NO_OP)" not in body[0],
+          "no guard means every arm settles again from its own history")
+
+
 def test_start_mismatch_lives_elsewhere() -> None:
     """The pixel check is in tests/test_fig15_filmstrip.py, deliberately.
 
@@ -409,6 +534,9 @@ def main() -> int:
     test_capture_selection(r)
     test_eef_reader(r)
     test_scene_seed(r)
+    test_settle_once(r)
+    test_rewind_clears_carryover(r)
+    test_run_arm_trusts_a_given_obs(r)
     test_start_mismatch_lives_elsewhere()
     test_norm_roundtrip(load("cotfaith_auroc"))
 

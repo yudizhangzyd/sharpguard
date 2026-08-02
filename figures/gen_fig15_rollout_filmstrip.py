@@ -200,6 +200,45 @@ def eef_track(e):
             np.array([r[1] for r in rows], float))
 
 
+def column_motion(cap_dir, key, arm, steps, eps) -> dict:
+    """How much the scene changes between the columns actually displayed.
+
+    A reader who sees two near-identical cells has two readings available --
+    "the policy stalled here" and "this figure is broken" -- and nothing in the
+    strip distinguishes them. This measures which it is, so the caption can say
+    it rather than leave the reader to guess.
+
+    It is worth measuring because the answer is not uniform. On the capture that
+    motivated this figure the policy moved hard for ~70 steps, then went nearly
+    static: consecutive captured frames changed by a mean of 5-9 absolute pixel
+    levels early and by 0.06-0.08 later, a two-order-of-magnitude drop. Evenly
+    spaced columns therefore land several cells inside a stall. That is a
+    property of a policy which scores 0/40, not an artifact of the sampling, and
+    the figure should report it instead of hiding it behind a livelier choice of
+    columns.
+    """
+    imgs = []
+    for st in steps:
+        im, _ = frame(cap_dir, key, arm, st, eps)
+        imgs.append(None if im is None else im.astype(float))
+    d = []
+    for i in range(1, len(imgs)):
+        if imgs[i] is None or imgs[i - 1] is None:
+            continue
+        if imgs[i].shape != imgs[i - 1].shape:
+            continue
+        d.append(float(np.abs(imgs[i] - imgs[i - 1]).mean()))
+    if not d:
+        return {}
+    # Scaled to 0-255 levels whether matplotlib handed back floats or ints, so
+    # the number means the same thing regardless of how the PNG was read.
+    k = 255.0 if max(np.nanmax(np.abs(i)) for i in imgs if i is not None) <= 1.0 \
+        else 1.0
+    d = [x * k for x in d]
+    return {"min": round(min(d), 3), "max": round(max(d), 3),
+            "mean": round(float(np.mean(d)), 3)}
+
+
 def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("--")]
     no_eef = "--no-eef" in sys.argv
@@ -321,7 +360,14 @@ def main() -> int:
                      label=label.replace("\n", " "))
             peak[arm] = float(d.max()) * 100.0
         axc.axhline(0.0, color="0.7", lw=0.6, zorder=0)
-        axc.set_xlabel("rollout step", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        # Where the strip's columns fall on this curve. Without these the two
+        # halves of the figure are two unrelated pictures, and a reader cannot
+        # tell whether a pair of near-identical cells sits in a stall or in a
+        # stretch the sampling skipped over.
+        for st in steps:
+            axc.axvline(st, color="0.85", lw=0.5, zorder=0)
+        axc.set_xlabel("rollout step (│ = filmstrip columns)",
+                       fontsize=FONT_SIZE - 2, labelpad=1.5)
         axc.set_ylabel("gripper distance from\nown-CoT arm (cm)",
                        fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
         axc.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
@@ -350,6 +396,11 @@ def main() -> int:
         # peak_cm_from_clean is ambiguous between "the arms never separated"
         # and "no pose was ever logged" -- opposite readings of the same file.
         "eef_logged": bool(have_eef),
+        # Between-column change WITHIN each arm, so the caption can state the
+        # stall rather than let a reader read two near-identical cells as a
+        # broken figure. See column_motion().
+        "column_change_mean_abs_pixel": {
+            a: column_motion(cap_dir, key, a, steps, eps) for a, _, _ in ARMS},
         "peak_cm_from_clean": {k: round(v, 2) for k, v in peak.items()},
     }
     p = os.path.join(cap_dir, "fig15_facts.json")
