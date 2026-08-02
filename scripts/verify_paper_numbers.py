@@ -4758,6 +4758,16 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                  "the strip from the same pixels", True, n_png > 0,
             source=f"{n_png} PNG(s) under {cap / 'frames'}")
 
+    # The figure's least visible and most load-bearing claim: its three rows are
+    # one scene, so every row-to-row difference is the CoT edit. Two defects
+    # reached a rendered strip before this was checked (limitation (v)), and both
+    # were invisible in the report. The generator records its own step-0
+    # measurement so this is assertable here without loading the PNGs.
+    a.check(sec, "the released strip's three rows are BIT-IDENTICAL at the "
+                 "first column, before any arm has acted", 0.0,
+            facts.get("step0_pairing_max_mean_abs_pixel"),
+            source="fig15_facts.json: step0_pairing_max_mean_abs_pixel")
+
     # Three arms, one init state. The argument of the figure is that the rows
     # differ only in the prompt, so a strip drawn across two episodes would be
     # comparing scenes rather than CoT conditions.

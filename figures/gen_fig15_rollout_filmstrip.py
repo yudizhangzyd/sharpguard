@@ -269,6 +269,15 @@ def main() -> int:
     bad = start_mismatch(first, steps[0])
     if bad:
         die("the three arms do not start from the same scene. " + bad)
+    # Recorded, not just checked. The refusal above protects this run of the
+    # generator; the number protects the released figure, which a reader meets
+    # long after the check ran and otherwise has to take on trust. Two pairing
+    # defects reached a rendered strip already (limitation (v)), so "the rows
+    # are one scene" is the figure's most load-bearing and least visible claim.
+    ref = next(iter(first.values())).astype(float)
+    step0_pairing = max(
+        round(float(np.abs(im.astype(float) - ref).mean()), 6)
+        for im in first.values())
     print(f"[fig15] shared start verified: all arms identical at t={steps[0]}")
 
     if not have_eef and not no_eef:
@@ -372,12 +381,15 @@ def main() -> int:
         # stretch the sampling skipped over.
         for st in steps:
             axc.axvline(st, color="0.85", lw=0.5, zorder=0)
-        axc.set_xlabel("rollout step (│ = filmstrip columns)",
+        axc.set_xlabel("rollout step (grey rules = filmstrip columns)",
                        fontsize=FONT_SIZE - 2, labelpad=1.5)
-        axc.set_ylabel("gripper distance from\nown-CoT arm (cm)",
+        axc.set_ylabel("distance from\nown-CoT arm (cm)",
                        fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
         axc.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
-        axc.legend(loc="upper left", fontsize=FONT_SIZE - 4, frameon=False,
+        # `best` rather than a fixed corner: the curve's shape is whatever the
+        # rollout did, and a legend pinned to a corner it happens to fill would
+        # hide the divergence this panel exists to show.
+        axc.legend(loc="best", fontsize=FONT_SIZE - 4, frameon=False,
                    handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
         fig.text((0.62 + 2.30) / W, (0.42 + 0.80) / H, "(c)",
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
@@ -402,6 +414,9 @@ def main() -> int:
         # peak_cm_from_clean is ambiguous between "the arms never separated"
         # and "no pose was ever logged" -- opposite readings of the same file.
         "eef_logged": bool(have_eef),
+        # The pairing measurement, so the audit can assert the released strip's
+        # rows were one scene without loading the PNGs itself. Must be 0.0.
+        "step0_pairing_max_mean_abs_pixel": step0_pairing,
         # Between-column change WITHIN each arm, so the caption can state the
         # stall rather than let a reader read two near-identical cells as a
         # broken figure. See column_motion().
