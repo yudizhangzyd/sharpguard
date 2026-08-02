@@ -142,6 +142,63 @@ def pix_stats(x, y) -> dict:
             "frac": round(float((d > 0).mean()), 6)}
 
 
+def alignment_offset(x, y, window: int = 3) -> dict:
+    """Is frame i of one replay bit-equal to frame i+k of the other?
+
+    Run 4 (bolt x8xbskv8tt) left exactly one explanation standing. The renderer
+    is bit-exact -- one state rendered four times gave 0.0 max, 0.0 mean, 0.0
+    differing pixels -- and the two replays' qpos matched bit-for-bit at all 40
+    steps, and yet their frames differed at all 40, by a mean of 0.11-0.20 over
+    1.4-2.8 pct of pixels with a max of 60-160. A tiny mean with a large max over
+    a small fraction is a silhouette in a slightly different place, not a
+    different scene: the shape of one moving arm sampled a step apart.
+
+    So this tests alignment directly rather than by eye. If frame i of replay 1
+    is bit-equal to frame i+k of replay 2 for a fixed non-zero k, the frames are
+    offset by k renders relative to the states, the pixel difference is
+    bookkeeping rather than physics, and it is fixable by capturing the frame at
+    the same point in the step. If no k works, the difference is real and
+    something visible is not in the flattened state.
+    """
+    out, offs = [], list(range(-window, window + 1))
+    for i in range(len(x)):
+        eq = [k for k in offs
+              if 0 <= i + k < len(y) and
+              np.array_equal(x[i], y[i + k])]
+        out.append(eq[0] if eq else None)
+    found = [k for k in out if k is not None]
+    return {"per_step_offset": out,
+            "n_steps_with_an_exact_match": len(found),
+            "offsets_seen": sorted(set(found)),
+            "constant_offset": (found[0] if found and
+                                len(set(found)) == 1 and
+                                len(found) == len(x) else None)}
+
+
+def region_stats(x, y) -> dict:
+    """Where the two frames differ: the bbox, and the mean inside vs outside.
+
+    The same statistic the two earlier pairing defects are argued from, for the
+    same reason -- a max says how loud the loudest pixel is and nothing about
+    whether the difference is one object or the whole scene.
+    """
+    d = np.abs(x.astype(np.int32) - y.astype(np.int32))
+    m = d.max(axis=2) if d.ndim == 3 else d
+    ys, xs = np.where(m > 0)
+    if not len(ys):
+        return {"identical": True}
+    r0, r1, c0, c1 = int(ys.min()), int(ys.max()), int(xs.min()), int(xs.max())
+    inside = d[r0:r1 + 1, c0:c1 + 1]
+    out = d.copy()
+    out[r0:r1 + 1, c0:c1 + 1] = 0
+    n_out = d.size - inside.size
+    return {"identical": False,
+            "bbox": {"row0": r0, "row1": r1, "col0": c0, "col1": c1},
+            "inside_mean_abs": round(float(inside.mean()), 6),
+            "outside_mean_abs": round(float(out.sum() / max(1, n_out)), 6),
+            "frac_of_frame_in_bbox": round(inside.size / d.size, 6)}
+
+
 def main(argv: list) -> int:
     out_p = None
     if "--out" in argv:
@@ -241,6 +298,16 @@ def main(argv: list) -> int:
         "pixel_frac_worst_step": worst(st12, "frac"),
         "pixel_stats_per_step": st12,
         "render_noise_floor": floor,
+        # Alignment and region, because "the frames differ" is not yet a
+        # diagnosis: these say whether the difference is one silhouette a step
+        # out of place or the whole scene.
+        "frame_alignment_1v2": alignment_offset(a1["frames"], a2["frames"]),
+        "frame_alignment_2v3": alignment_offset(a2["frames"], a3["frames"]),
+        "region_worst_step_1v2": (
+            region_stats(a1["frames"][int(np.argmax(dpix))],
+                         a2["frames"][int(np.argmax(dpix))])
+            if dpix else None),
+        "worst_step_index": int(np.argmax(dpix)) if dpix else None,
         "first_differing_pixel_step": first_nonzero(dpix),
         "n_pixel_steps_differing": sum(1 for v in dpix if v != 0.0),
         "first_step_worst_qpos_index": int(step0.argmax()) if dq else None,
@@ -263,6 +330,31 @@ def main(argv: list) -> int:
         with open(out_p, "w") as fh:
             json.dump(rep, fh, indent=2)
         print(f"[probe] -> {out_p}", file=sys.stderr)
+        # The frames themselves, at the worst step. Every earlier defect here
+        # was diagnosed by LOOKING at pixels after the scalars had said nothing
+        # was wrong, and a summary of a difference is not the difference.
+        if dpix and rep["worst_step_index"] is not None:
+            try:
+                from PIL import Image
+                i = rep["worst_step_index"]
+                where = os.path.join(os.path.dirname(out_p) or ".", "worst_step")
+                os.makedirs(where, exist_ok=True)
+                d = np.abs(a1["frames"][i].astype(np.int32) -
+                           a2["frames"][i].astype(np.int32)).astype(np.uint8)
+                for nm, im in (("replay1", a1["frames"][i]),
+                               ("replay2", a2["frames"][i]),
+                               ("replay3", a3["frames"][i]),
+                               ("absdiff", d),
+                               # Amplified, since a mean of 0.2 is invisible on
+                               # a 0-255 scale and the point is to be looked at.
+                               ("absdiff_x8", np.clip(d.astype(np.int32) * 8,
+                                                      0, 255).astype(np.uint8))):
+                    Image.fromarray(im).save(
+                        os.path.join(where, f"t{i:04d}_{nm}.png"))
+                print(f"[probe] worst-step frames -> {where}", file=sys.stderr)
+            except Exception as e:                      # noqa: BLE001
+                print(f"[probe] could not write worst-step frames: {e}",
+                      file=sys.stderr)
 
     # Non-zero when the pairing does NOT hold: this is a gate, not a
     # measurement. The figure's rows mean nothing if it fails.
