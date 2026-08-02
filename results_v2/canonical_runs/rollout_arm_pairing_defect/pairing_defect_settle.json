@@ -1,0 +1,249 @@
+{
+  "frames_dir": "/tmp/fs_art2/cotfaith-rollout-edit/frames",
+  "shift_search_px": 6,
+  "episodes": [
+    {
+      "episode": "t0_ep0",
+      "step_tag": "t0000",
+      "reference_arm": "cot_clean",
+      "arms": [
+        "cot_clean",
+        "nocot"
+      ],
+      "pairs": {
+        "nocot": {
+          "mean_abs": 6.0797,
+          "max_abs": 255.0,
+          "frac_pixels_differing": 0.06207,
+          "identical": false,
+          "diff_bbox": {
+            "row0": 0,
+            "row1": 134,
+            "col0": 96,
+            "col1": 188
+          },
+          "inside_bbox_mean_abs": 31.7356,
+          "outside_bbox_mean_abs": 0.0,
+          "best_shift": {
+            "dy": 0,
+            "dx": 0,
+            "residual_mean_abs": 31.7356
+          }
+        }
+      },
+      "later_steps": [
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0010",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 10.5385,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.1046,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 85,
+                "col0": 68,
+                "col1": 194
+              },
+              "inside_bbox_mean_abs": 63.2351,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": -6,
+                "residual_mean_abs": 61.5883
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0020",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 11.745,
+              "max_abs": 254.0,
+              "frac_pixels_differing": 0.10478,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 91,
+                "col0": 56,
+                "col1": 227
+              },
+              "inside_bbox_mean_abs": 48.6425,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 48.6425
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0030",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 9.9719,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.09918,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 91,
+                "col0": 47,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 33.9879,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 33.9879
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0040",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 8.4166,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.08385,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 86,
+                "col0": 40,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 29.3524,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 29.3524
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0050",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 5.7802,
+              "max_abs": 249.0,
+              "frac_pixels_differing": 0.06729,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 86,
+                "col0": 42,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 20.3465,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 20.3465
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0060",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 7.139,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.07274,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 46,
+                "col0": 58,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 50.2755,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 50.2755
+              }
+            }
+          }
+        },
+        {
+          "episode": "t0_ep0",
+          "step_tag": "t0070",
+          "reference_arm": "cot_clean",
+          "arms": [
+            "cot_clean",
+            "nocot"
+          ],
+          "pairs": {
+            "nocot": {
+              "mean_abs": 8.8736,
+              "max_abs": 255.0,
+              "frac_pixels_differing": 0.0798,
+              "identical": false,
+              "diff_bbox": {
+                "row0": 0,
+                "row1": 60,
+                "col0": 64,
+                "col1": 255
+              },
+              "inside_bbox_mean_abs": 49.6534,
+              "outside_bbox_mean_abs": 0.0,
+              "best_shift": {
+                "dy": 0,
+                "dx": 0,
+                "residual_mean_abs": 49.6534
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "mispaired_at_step_0": true
+}

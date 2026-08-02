@@ -10,12 +10,21 @@ What it guards is one property: the figure refuses to draw rather than drawing
 something misleading. Its rows are three prompts on ONE scene, and the reader
 attributes every difference between them to the CoT edit. So a strip whose rows
 are different scenes is not a weaker figure, it is a wrong one -- and the defect
-that produces it is invisible in the report, which is scalar. It was real: in
-bolt h8xzmqnhgg the arms' step-0 frames were BIT-IDENTICAL outside a box
-covering 10.4% of the frame and differed by 8.8411 inside it, a difference a
-3-pixel shift reduces to 2.7762 -- one fixture placed differently, not a policy
-acting differently -- because `set_init_state` restores qpos and a welded
-fixture's pose is not qpos. That measurement is released under
+that produces it is invisible in the report, which is scalar. Two such defects
+were real, and they are different in kind:
+
+  * bolt h8xzmqnhgg: the arms' step-0 frames were BIT-IDENTICAL outside a box
+    covering 10.4% of the frame and differed by 8.8411 inside it, a difference a
+    3-pixel shift reduces to 2.7762 -- one fixture placed differently, not a
+    policy acting differently -- because `set_init_state` restores qpos and a
+    welded fixture's pose is not qpos.
+  * bolt xyiztdu4n6, after that was fixed: bit-identical outside the box again,
+    but the box had moved onto the ROBOT (rows 0-134) with mean 31.7356 inside
+    and best rigid shift (0, 0) -- a pose no translation aligns. Each arm ran
+    its own 10-step settle, and the second entered it carrying the previous
+    arm's controller goal and the solver's warm start.
+
+Both measurements are released under
 results_v2/canonical_runs/rollout_arm_pairing_defect/, produced by
 scripts/diagnose_arm_pairing.py.
 """
@@ -86,25 +95,37 @@ def test_shape_difference_is_caught(g) -> None:
 
 
 def test_real_defective_capture(g) -> None:
-    """The detector, run against the frames that motivated it.
+    """The detector, run against both captures that motivated it.
 
-    Skipped rather than failed when the capture is not on this machine: it is a
-    GPU artifact, and a test that requires one cannot run where this file is
-    meant to run. When it IS present, this is the check that matters -- the
-    synthetic cases prove the comparison works, this proves it fires on the
-    thing it was written for.
+    Skipped rather than failed when a capture is not on this machine: they are
+    GPU artifacts, and a test that requires one cannot run where this file is
+    meant to run. When one IS present, this is the check that matters -- the
+    synthetic cases prove the comparison works, these prove it fires on the
+    things it was written for, and the two are different things. The first is a
+    fixture translated 3 px; the second is a robot in a different pose that no
+    translation aligns, which a shift-based check would have missed.
     """
-    d = Path("/tmp/fs_now/cotfaith-rollout-edit/frames/t0_ep0")
-    pair = [d / "nocot_t0000.png", d / "cot_clean_t0000.png"]
-    if not all(p.exists() for p in pair):
-        print(f"[skip] real defective capture not present under {d}")
-        return
-    import matplotlib.pyplot as plt
-    imgs = {p.name.split("_t")[0]: plt.imread(p) for p in pair}
-    msg = g.start_mismatch(imgs, 0)
-    check("the unseeded capture bolt h8xzmqnhgg is rejected", msg is not None,
-          "if this passes, the check is too loose to have caught the defect "
-          "it was written for")
+    captures = (
+        ("h8xzmqnhgg", "a fixture placed differently",
+         "/tmp/fs_now/cotfaith-rollout-edit/frames/t0_ep0"),
+        ("xyiztdu4n6", "a robot posed differently, no shift aligns it",
+         "/tmp/fs_art2/cotfaith-rollout-edit/frames/t0_ep0"),
+    )
+    ran = 0
+    for job, what, d in captures:
+        pair = [Path(d) / "nocot_t0000.png", Path(d) / "cot_clean_t0000.png"]
+        if not all(p.exists() for p in pair):
+            print(f"[skip] capture {job} not present under {d}")
+            continue
+        import matplotlib.pyplot as plt
+        imgs = {p.name.split("_t")[0]: plt.imread(p) for p in pair}
+        check(f"the defective capture bolt {job} is rejected ({what})",
+              g.start_mismatch(imgs, 0) is not None,
+              "if this passes, the check is too loose to have caught the defect "
+              "it was written for")
+        ran += 1
+    if not ran:
+        print("[skip] neither defective capture is on this machine")
 
 
 def main() -> int:

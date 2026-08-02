@@ -164,8 +164,14 @@ def start_mismatch(imgs: dict, step: int) -> "str | None":
     between arms -- bit-identical outside the differing box, 8.8411 inside it --
     because `set_init_state` restores qpos and a welded fixture's pose is not in
     qpos, so robosuite's placement sampler drew it separately for each arm's env.
-    Every scalar in the report looked right; only the pixels showed it. The
-    measurement is released under
+    Every scalar in the report looked right; only the pixels showed it. Fixing
+    that surfaced a second one (bolt xyiztdu4n6): bit-identical outside the box
+    again, but the box had moved onto the ROBOT, 31.7356 inside, and best rigid
+    shift (0, 0) -- a pose no translation aligns, because each arm ran its own
+    settling loop and the second inherited the first arm's controller goal and
+    warm-start accelerations. Hence the exact-equality test below rather than a
+    shift-tolerant one: the second defect has no shift to find. Both
+    measurements are released under
     results_v2/canonical_runs/rollout_arm_pairing_defect/.
 
     There is deliberately no override. A strip whose rows are different scenes

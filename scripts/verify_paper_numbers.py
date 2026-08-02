@@ -4821,6 +4821,13 @@ def audit_arm_pairing_defect(a: Audit) -> None:
     Note what is NOT asserted: that the shift is small, or that the defect is
     minor. The check is that the released pixels say what the appendix says
     they say.
+
+    Two defects, not one, and they are audited separately because their
+    signatures are what tell them apart. Both have a bit-identical complement.
+    The first is a rigid 3 px translation of a welded fixture; the second, found
+    only because the first fix was checked by re-rendering, is a robot pose that
+    no shift aligns (best shift (0, 0)) -- carried in through each arm's own
+    settling loop from state set_init_state does not restore.
     """
     sec = "Rollout arm pairing defect (limitation v disclosure)"
     base = ROOT / "results_v2" / "canonical_runs" / "rollout_arm_pairing_defect"
@@ -4897,12 +4904,77 @@ def audit_arm_pairing_defect(a: Audit) -> None:
             "No reset() here" in hb,
             source="experiments/cotfaith_rollout_edit.py")
 
+    # ---------------------------------------------------------------------
+    # The SECOND pairing defect, found only because the first fix was checked
+    # by re-rendering rather than by declaring victory. Audited separately
+    # because its signature is the opposite of the first one's and that is the
+    # whole content of the claim: same complement-is-zero, but no shift helps.
+    # ---------------------------------------------------------------------
+    d2 = load(base / "pairing_defect_settle.json")
+    a.check(sec, "the second pairing diagnostic is released too, since the "
+                 "appendix discloses two defects and not one", True, bool(d2),
+            source=src)
+    if d2:
+        e2 = (d2.get("episodes") or [{}])[0]
+        p2 = list((e2.get("pairs") or {}).values())
+        a.check(sec, "the second diagnostic covers an arm pair", True,
+                len(p2) >= 1, source=src)
+    if d2 and p2:
+        r2 = p2[0]
+        a.check(sec, "defect 2 is also present at step 0, before either arm "
+                     "acted", False, r2.get("identical"), source=src)
+        a.check(sec, "defect 2: the fixture fix HELD -- the arms are still "
+                     "bit-identical outside the differing box", 0.0,
+                float(r2.get("outside_bbox_mean_abs", -1)), source=src)
+        a.check(sec, "defect 2: 6.2% of pixels differ", 0.062,
+                round(float(r2.get("frac_pixels_differing", -1)), 3),
+                source=src)
+        a.check(sec, "defect 2: mean |dpix| inside the box is 31.7356",
+                31.7356, float(r2.get("inside_bbox_mean_abs", -1)), source=src)
+        box = r2.get("diff_bbox") or {}
+        a.check(sec, "defect 2: the box has moved OFF the furniture and onto "
+                     "the robot (rows 0-134)", [0, 134],
+                [int(box.get("row0", -1)), int(box.get("row1", -1))],
+                source=src)
+        sh2 = r2.get("best_shift") or {}
+        a.check(sec, "defect 2: NO rigid shift aligns the two frames, which is "
+                     "what makes it a different defect rather than an "
+                     "incomplete fix of the first", [0, 0],
+                [int(sh2.get("dy", 9)), int(sh2.get("dx", 9))], source=src)
+        a.check(sec, "defect 2: and so the shift leaves the residual untouched",
+                31.7356, float(sh2.get("residual_mean_abs", -1)), source=src)
+
+    # Defect 2's fix, as source properties. The settle must happen once per
+    # episode and each arm be rewound to that snapshot: a per-arm settle is what
+    # let the second arm inherit the first arm's integrator state.
+    for needle, what in (
+        ("def _settle_once",
+         "the settle runs once per episode and is snapshotted"),
+        ("def _rewind_to",
+         "each arm is rewound to that snapshot rather than re-settling"),
+        ("qacc_warmstart",
+         "the rewind zeroes MuJoCo's warm-start accelerations, which "
+         "set_init_state does not restore"),
+        ("reset_goal",
+         "and resets the controller goal the previous arm left behind"),
+        ("obs=rw[\"obs\"]",
+         "the arm is handed the pre-settled observation, so it does not run a "
+         "settling loop of its own"),
+    ):
+        a.check(sec, what, True, needle in hb,
+                source="experiments/cotfaith_rollout_edit.py")
+    gate = ROOT / "tests" / "test_rollout_arms_and_refresh.py"
+    a.check(sec, "the pod's pre-budget gate covers the rewind, including the "
+                 "case where a channel cannot be reached", True,
+            gate.exists() and "test_rewind_clears_carryover" in gate.read_text(),
+            source="tests/test_rollout_arms_and_refresh.py")
+
     # Every number above is quoted in the appendix. Checked in that direction
     # too: an artifact that stops matching the prose is the failure this whole
     # script exists to catch, and it is silent unless someone looks.
     apx = ROOT / "arr_appendix.tex"
     at = apx.read_text() if apx.exists() else ""
-    for val in ("10.4", "0.0000", "8.8411", "2.7762"):
+    for val in ("10.4", "0.0000", "8.8411", "2.7762", "31.7356"):
         a.check(sec, f"the appendix quotes ${val}$ from this artifact",
                 True, val in at, source="arr_appendix.tex")
 
