@@ -4036,12 +4036,19 @@ def audit_arr_submission(a: Audit) -> None:
              ["edit_examples/edit_examples.json",
               "judge_edit_families/judge_report.json"]),
             ("gen_fig13_collision.py",
-             ["collision_decomposition/collision_decomposition.json"])]:
+             ["collision_decomposition/collision_decomposition.json"]),
+            # fig14 reads derived_metrics.json, which is not under
+            # canonical_runs/; the loop's path join handles the ../ escape.
+            ("gen_fig14_noise_hierarchy.py", ["../derived_metrics.json"])]:
         srcf = figs / script
         body = srcf.read_text() if srcf.exists() else ""
         for artifact in arts:
-            a.check(sec, f"{script} reads {artifact.split('/')[0]}",
-                    True, artifact.split("/")[0] in body, source=str(srcf))
+            # Match on the filename, not the directory: fig14 reads
+            # derived_metrics.json from one level up, where the directory
+            # component is ".." and matching it asserted nothing.
+            stem = artifact.rsplit("/", 1)[-1]
+            a.check(sec, f"{script} reads {stem}", True, stem in body,
+                    source=str(srcf))
         # R1 item 5b: no figure may hardcode a reported quantity. A precision
         # rule cannot express that -- these scripts are laid out in inches, so
         # 0.078 is a panel margin and 0.125 is a judge rate, and both have
@@ -4118,6 +4125,28 @@ def audit_arr_submission(a: Audit) -> None:
                 source="judge_report.json")
         a.check(sec, f"and the ARR caption prints that {fam} rate",
                 True, f"${want}$" in t, source="cot_faith_arr.tex")
+    # fig:noise's caption states three derived ratios/counts in prose. Each is
+    # recomputed here from derived_metrics.json rather than trusted, because a
+    # caption is exactly where an arithmetic slip goes unnoticed.
+    nh = d.get("noise_hierarchy", {})
+    tr = d.get("training_replicate", {})
+    a.check(sec, "fig:noise's caption: retraining is 7.5x the sampling seed",
+            "7.5", f"{nh.get('training_run_diff_pp', 0) / nh.get('sampling_std_pp', 1):.1f}",
+            source="noise_hierarchy.training_run_diff_pp / sampling_std_pp")
+    a.check(sec, "and the between-variant spread is only 1.2x the retraining",
+            "1.2", f"{nh.get('spread_over_training_run', 0):.1f}",
+            source="noise_hierarchy.spread_over_training_run")
+    wil = max([(w[1] - w[0]) / 2
+               for mv in d.get("models", {}).values()
+               for fv in mv.get("families", {}).values()
+               for w in [fv.get("F_mag_wilson")] if w] or [0])
+    per_max = tr.get("F_max_abs_diff_per_pair", {})
+    a.check(sec, "and 6 of 7 replicate pairs move their worst family further "
+                 "than the widest Wilson half-width in the release",
+            (6, 7), (sum(1 for v in per_max.values() if v > wil),
+                     len(per_max)),
+            source=f"widest Wilson half-width = {wil:.4f}")
+
     for want, got, what in [
             ("28{,}443", f"{cd.get('n_scored_records', 0):,}".replace(",", "{,}"),
              "scored records"),
