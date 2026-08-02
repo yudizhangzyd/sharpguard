@@ -29,3 +29,9 @@ sharpguard.env
 
 # Local task / log scratch
 /tmp/sharpguard*
+
+# Local LaTeX output. Regenerate with scripts/build_local.sh -- committing a
+# 1.3MB binary that is rebuilt from source on every edit would put a new blob
+# in history each time the paper changes, and the source is the thing under
+# review.
+build/
