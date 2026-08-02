@@ -1,0 +1,24 @@
+name: 'CoT-Faith: build the ARR two-column submission and measure the 8-page limit'
+description: 'Builds cot_faith_arr.tex -- the ACL two-column conversion of the manuscript -- and reports the number the conversion is steered by: CONTENT pages, meaning pages up to the last numbered section, excluding Limitations, Ethics, References and Appendix, which ARR does not count against the 8-page limit. A total page count would read ~40 and say nothing about whether the submission is legal, so the body is compiled a second time on its own with the appendix and bibliography stubbed out, and that build is the one measured. Also regenerates arr_appendix.tex from the full-length source and fails if the committed copy is stale, since building a stale appendix would submit numbers that no longer match the manuscript. No network needed for LaTeX -- acl.sty and acl_natbib.bst are committed under acl-style/ and found via TEXINPUTS. No GPU work; 1gpu is just the shape that schedules promptly.'
+tags: ['cotfaith', 'paper', 'arr', 'submission', 'no-gpu']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest prompt-scheduling shape
+  disk_gb: 32       # texlive-latex-extra is several GB if the image ships no engine
+  timeout: 40m
+  cluster: aws_2
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  DEBIAN_FRONTEND: 'noninteractive'
+
+command: bash bolt/run_arr_build.sh
