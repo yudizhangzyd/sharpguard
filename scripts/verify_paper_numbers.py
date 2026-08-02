@@ -4708,6 +4708,98 @@ def audit_dt_decode_equivalence(a: Audit) -> None:
                 source="cot_faith_iclr.tex")
 
 
+def audit_rollout_filmstrip(a: Audit) -> None:
+    """The motion figure must be drawn from captured frames, not described.
+
+    Fig 15 is the only figure in this paper whose content is pixels from a
+    simulator rather than a plot of a JSON field, which makes it the easiest one
+    to fake and the hardest one to check by reading the .tex. So the checks are
+    on the chain: the generator reads the run report, the report carries
+    trajectories, PNGs exist on disk, and every number in the caption is a field
+    of fig15_facts.json.
+
+    This is silent until the figure is actually in the manuscript. That branch is
+    worth stating plainly: a figure not yet included is not a failed claim, but
+    the moment `\\includegraphics{fig15...}` appears, every check below is live
+    and a missing capture is a hard fail rather than a figure of unknown
+    provenance.
+    """
+    sec = "Rollout filmstrip (fig15, WorldGym-style motion figure)"
+    root = ROOT
+    arr = root / "cot_faith_arr.tex"
+    t = arr.read_text() if arr.exists() else ""
+    if "fig15_rollout_filmstrip" not in t:
+        return
+
+    gen = root / "figures" / "gen_fig15_rollout_filmstrip.py"
+    body = gen.read_text() if gen.exists() else ""
+    a.check(sec, "the generator exists and reads the rollout run's own report "
+                 "rather than a hand-made summary", True,
+            "rollout_edit_report.json" in body, source=str(gen))
+    # No offline fallback, asserted as a property of the source: a generator
+    # that can draw something without frames is one that will, on the day the
+    # capture is missing, and the figure would then illustrate nothing.
+    a.check(sec, "and it refuses to draw a partial figure (die() on missing "
+                 "data) instead of degrading quietly", True,
+            "raise SystemExit(2)" in body, source=str(gen))
+
+    cap = root / "results_v2" / "canonical_runs" / "rollout_filmstrip"
+    facts = load(cap / "fig15_facts.json")
+    a.check(sec, "the figure's fact sheet is released, so the caption's "
+                 "numbers are checkable and not recalled", True,
+            facts is not None, source=str(cap / "fig15_facts.json"))
+    if not facts:
+        return
+
+    # The frames themselves. A facts file naming six columns beside a frames/
+    # directory holding none would pass every check above.
+    n_png = len(list((cap / "frames").rglob("*.png"))) if cap.exists() else 0
+    a.check(sec, "captured frames are in the release, so a reader can redraw "
+                 "the strip from the same pixels", True, n_png > 0,
+            source=f"{n_png} PNG(s) under {cap / 'frames'}")
+
+    # Three arms, one init state. The argument of the figure is that the rows
+    # differ only in the prompt, so a strip drawn across two episodes would be
+    # comparing scenes rather than CoT conditions.
+    arms = sorted((facts.get("steps_per_arm") or {}))
+    a.check(sec, "the strip covers all three arms of one episode",
+            ["cot_clean", "cot_direction_flip", "nocot"], arms,
+            source="fig15_facts.json: steps_per_arm")
+    a.check(sec, "and that episode is in-suite libero_90, matching the run "
+                 "whose SR section 6 reports", "libero_90",
+            facts.get("suite"), source="fig15_facts.json: suite")
+    a.check(sec, "and the CoT is refreshed every step, as in the reported "
+                 "protocol", 1, facts.get("cot_refresh_steps"),
+            source="fig15_facts.json: cot_refresh_steps")
+
+    # The figure exists because SR does not separate the arms. If some arm did
+    # succeed, the caption's framing -- both arms fail, here is how differently
+    # -- would be wrong, so the premise is checked rather than assumed.
+    succ = facts.get("success_per_arm") or {}
+    a.check(sec, "no arm succeeds in the filmed episode, which is why the "
+                 "figure shows motion instead of a success rate",
+            0, sum(1 for v in succ.values() if v),
+            source=f"fig15_facts.json: success_per_arm={succ}")
+
+    # Panels (b) and (c) are claims about measured pose. If the env logged none,
+    # the generator drops them -- and the caption must then not describe them.
+    # Checked in both directions, since either mismatch ships a caption
+    # describing a figure the reader is not looking at.
+    eef = bool(facts.get("eef_logged"))
+    for lit, what in (("gripper distance", "panel (c)'s distance curve"),
+                      ("top-down", "panel (b)'s path")):
+        a.check(sec, f"the caption describes {what} exactly when a pose was "
+                     f"logged (eef_logged={eef})", eef, lit in t,
+                source=f"cot_faith_arr.tex mentions {lit!r}: {lit in t}")
+
+    # Every number the caption quotes, read back out of the fact sheet, so a
+    # caption edit that changes a digit fails here rather than in review.
+    for val, what in ((len(facts.get("columns_at_steps") or []), "column count"),
+                      (facts.get("n_edit_skipped_flip"), "edits skipped")):
+        a.check(sec, f"the ARR caption prints the artifact's {what} ({val})",
+                True, f"${val}$" in t, source="fig15_facts.json")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -4843,6 +4935,7 @@ def main() -> int:
     audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
     audit_rollout_edited_arm(a)
+    audit_rollout_filmstrip(a)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 
