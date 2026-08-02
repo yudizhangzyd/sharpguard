@@ -142,6 +142,57 @@ if body is not None:
     (out / "page_count.txt").write_text(
         f"content={body}\nfull={full}\nlimit=8\nverdict={verdict}\n")
 
+# ---- Where each body float actually PRINTED --------------------------------
+# The page count above is computed on the body-only build, and that build ends
+# with \end{document} right after Ethics, which flushes every pending float.
+# The real submission has 40 pages of appendix after that point, so a float
+# still queued at the end of the body drifts into the appendix instead: all
+# four body figures printed on pages 41-44 of the 49-page PDF -- present,
+# numbered, cross-referenced, and thirty-five pages from the text arguing from
+# them -- while page_count.txt said WITHIN LIMIT. A page count cannot see that.
+#
+# The check reads .aux, not the PDF: \newlabel already records the page each
+# label resolved to, so this needs no pdftotext (which the image may not have)
+# and no text scraping. Which labels belong to the body is read from the body
+# source, so adding a float to the paper extends the check automatically.
+body_labels = set(re.findall(r'\\label\{((?:fig|tab):[^}]+)\}',
+                            pathlib.Path("cot_faith_arr.tex").read_text()))
+aux = out / "cot_faith_arr.aux"
+placed, stray = {}, []
+if aux.exists() and body_labels:
+    limit = (body if body else 8) + 1     # a float pushed to the next page is fine
+    for lab, num, pg in re.findall(
+            r'\\newlabel\{([^}]+)\}\{\{([^}]*)\}\{(\d+)\}', aux.read_text()):
+        if lab in body_labels:
+            placed[lab] = int(pg)
+            if int(pg) > limit:
+                stray.append(f"{lab} (no. {num}) on page {pg}, body ends at {body}")
+    missing = sorted(body_labels - set(placed))
+    if missing:
+        # A body label absent from .aux never resolved -- the \ref would print
+        # "??", which is the same defect class and equally invisible upstream.
+        stray += [f"{m} never resolved" for m in missing]
+    print(f"[arr] float placement: {len(placed)}/{len(body_labels)} body floats "
+          f"resolved, limit page {limit}")
+    for lab in sorted(placed, key=placed.get):
+        print(f"[arr]   {lab}: page {placed[lab]}")
+    (out / "float_placement.txt").write_text(
+        "\n".join(f"{k}\t{v}" for k, v in sorted(placed.items(),
+                                                  key=lambda kv: kv[1]))
+        + ("\nSTRAY:\n" + "\n".join(stray) if stray else "\n"))
+    if stray:
+        print("[arr] FAIL: body float(s) printed outside the body:")
+        for sline in stray:
+            print(f"[arr]   {sline}")
+        # A Python assignment cannot reach the enclosing shell. Leave a
+        # sentinel file and let the shell fail on it, or this check prints a
+        # failure and the job exits 0 -- which is precisely the kind of
+        # silently-passing metric it was written to replace.
+        (out / "FLOATS_STRAY").write_text("\n".join(stray) + "\n")
+else:
+    print(f"[arr] float placement: NOT CHECKED "
+          f"(aux={aux.exists()}, body labels={len(body_labels)})")
+
 log = out / "cot_faith_arr.log"
 if log.exists():
     t = log.read_text(errors="replace")
@@ -167,7 +218,20 @@ if log.exists():
     for m in miss[:20]:
         print(f"[arr]   {m}")
     (out / "warnings.txt").write_text("\n".join(err + over + miss))
+    # Fail on the ones a reader would see. 20pt is a tenth of the 218pt column
+    # -- text hanging into the gutter or off the page edge, not a hyphenation
+    # near-miss. Everything below that is reported above and left alone,
+    # because a threshold low enough to catch 1pt boxes would fire on every
+    # build and stop being read.
+    bad = [(s, line) for s, line in sized if s > 20]
+    if bad:
+        print(f"[arr] FAIL: {len(bad)} overfull box(es) over 20pt")
+        (out / "OVERFULL_BAD").write_text(
+            "\n".join(f"{s:.2f}pt\t{line}" for s, line in bad) + "\n")
 PY
+
+[ -f "$OUT/FLOATS_STRAY" ] && FAILED="$FAILED float-placement"
+[ -f "$OUT/OVERFULL_BAD" ] && FAILED="$FAILED overfull"
 
 cp -v cot_faith_arr.tex arr_appendix.tex arr_bib.tex "$OUT/" 2>/dev/null
 

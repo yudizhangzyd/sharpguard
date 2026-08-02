@@ -33,6 +33,37 @@
 
 \graphicspath{{figures/}}
 
+% ---- Float placement -------------------------------------------------------
+% Six body floats in eight two-column pages does not fit LaTeX's defaults, and
+% the way it fails is silent. \dbltopfraction is 0.7, so a full-width float may
+% occupy at most 0.7 x 704.6pt = 493pt of the page. fig:taxonomy is 387pt of
+% artwork plus a ten-line full-width caption, which lands just over that line;
+% it is refused, and because floats are placed strictly in order, every later
+% figure* queues behind it. In the real submission the whole queue drained past
+% the bibliography and printed on pages 41-44 of a 49-page PDF -- numbered,
+% cross-referenced, and thirty-five pages from the text arguing from them.
+%
+% This was invisible upstream twice over: the 8-page metric is computed on the
+% body-only build, whose \end{document} flushes the queue at page 8, and the
+% engine emits no warning for a deferred float. bolt/run_arr_build.sh now reads
+% float pages out of .aux and fails the job on this, so a regression is caught
+% rather than submitted.
+%
+% These are the classic relaxed values, not arbitrary ones: allow a page to be
+% mostly float (\textfraction 0.2 -> 0.05), allow a taller top float
+% (\dbltopfraction 0.7 -> 0.9, which clears fig:taxonomy), and let a float page
+% be accepted when it is 70% rather than 50% full so a lone figure does not
+% strand half a page of white.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\bottomfraction}{0.5}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\dblfloatpagefraction}{0.7}
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{3}
+\setcounter{totalnumber}{5}
+
 % Shrink-to-fit, used by the generated appendix on every tabular.
 %
 % A bare \resizebox{\textwidth} would also ENLARGE a narrow table to full
@@ -62,7 +93,7 @@ in Manipulation Vision-Language-Action Models}
 \maketitle
 
 \begin{abstract}
-Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 1,061 claims and fails on any mismatch.
+Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 1,069 claims and fails on any mismatch.
 \end{abstract}
 
 \section{Introduction}
@@ -78,7 +109,7 @@ We built one, applied it to 15 VLAs across 4 architecture families, and the most
 \item \textbf{A construct-validity failure, characterized rather than caveated} (\S\ref{sec:floors}). $\mathcal{F}$ sits below its own meaning-preserving floor on 12/12 configurations; the alternative floor flips the sign on 12/12; and the two floors disagree by more than either disagrees with the semantic mean, also on 12/12. We report both floors everywhere and treat $\mathcal{F}$ as uninformative about meaning in either direction.
 \item \textbf{What $\mathcal{F}$ actually counts} (\S\ref{sec:collision}). It tracks $1 - P(\Delta_\infty{=}0)$ at $R^2 = 0.93$ over 324 cells. Its much-advertised insensitivity to the threshold follows from that, and is not evidence of robustness.
 \item \textbf{One instrument that does clear a null} (\S\ref{sec:directional}). $\mathcal{F}_{\text{dir}}$ clears a ceiling built from eight non-directional families on 7 of 11 configurations, at $6.2$--$11.1\times$ on the CoT-trained variants, and fails on the no-CoT control as it should. This is what we recommend any admission rule be built on.
-\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 1,061 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
+\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 1,069 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
 \end{enumerate}
 
 \section{Related work}
@@ -134,8 +165,15 @@ Against that floor, $\bar{\mathcal{F}}_{\text{diff}}$ is \emph{positive} on 12/1
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{3.2pt}
+% 26.68pt over the 218pt column at \tabcolsep 3.2pt. Padding first, scaling
+% second: seven columns means fourteen gaps, so 3.2 -> 2.0pt reclaims 16.8pt
+% of pure whitespace, and \fitwidth then absorbs the ~10pt remainder at a ~4%
+% shrink instead of the ~12% it would need on its own. \fitwidth measures
+% before it scales, so if a later edit narrows this table it is passed through
+% untouched rather than blown up to fill the column.
+\setlength{\tabcolsep}{2.0pt}
 \renewcommand{\arraystretch}{1.08}
+\fitwidth{\columnwidth}{%
 \begin{tabular}{@{}l rr r rr r@{}}
 \toprule
 & \multicolumn{2}{c}{floor $\mathcal{F}$} & &
@@ -162,7 +200,7 @@ Model & para & scram & $\bar{\mathcal{F}}$ & para & scram &
 \multicolumn{4}{@{}l}{\emph{all 12 configurations}}
   & \textbf{$-$ 12/12} & \textbf{$+$ 12/12} & \textbf{12/12} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{\textbf{Both meaning-preserving floors, on every configuration we can calibrate.} $\bar{\mathcal{F}}$ is the mean over the nine semantic families. The sign of $\bar{\mathcal{F}}_{\text{diff}}$ is decided entirely by which meaning-preserving family is nominated as the floor: negative against \emph{paraphrase\_null} on 12/12, positive against the length-exact \emph{syntactic\_scramble} on 12/12. Both floors are certified meaning-preserving by the same blind judge ($0.975$, $1.000$). The last column is the decisive one --- on all 12 configurations the gap \emph{between} the two floors exceeds $\max(|\bar{\mathcal{F}}_{\text{diff}}|)$ over them, i.e.\ two edits the judge calls synonymous disagree with each other more than either disagrees with edits that change meaning. That is what makes both floors unusable, rather than one of them correct. Bottom row: the count over all 12, not a mean. $^\dagger$the 4k Bridge-subset deconfound checkpoint, included here because it calibrates, but excluded from every leaderboard cell: $93\%$ of its faithfulness signal is the single gripper bit and its mean translation magnitude is $65\times$ smaller than ECoT-bridge's, so its $\mathcal{F}$ is not on the same scale as the other rows (Appendix~\ref{sec:appendix}).}
 \label{tab:floors}
 \end{table}
@@ -186,8 +224,13 @@ That is measurable, so we measured it. Across the 324 (run, family) cells with $
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{4pt}
+% 14.56pt over the column. Same treatment as tab:floors: 4 -> 2.6pt of padding
+% over fourteen gaps reclaims ~19pt, which covers it outright, and \fitwidth
+% is the guard rather than the fix -- it measures first and only scales if a
+% future edit pushes this back over.
+\setlength{\tabcolsep}{2.6pt}
 \renewcommand{\arraystretch}{1.08}
+\fitwidth{\columnwidth}{%
 \begin{tabular}{@{}l c@{\ }l c c@{\ }l c@{}}
 \toprule
 & \multicolumn{2}{c}{magnitude} & &
@@ -213,7 +256,7 @@ Model & $\mathcal{F}_{\text{mag}}$ & {\footnotesize$\pm$sd} & rank
 \texttt{no-CoT}   & 0.274 & {\footnotesize$.042$} & 8
   & 0.087 & {\footnotesize$.021$} & $\mathbf{+0.759}$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{\textbf{Magnitude vs.\ direction-aware faithfulness on \emph{direction\_flip}.} $\mathcal{F}_{\text{mag}}$ is Eq.~\ref{eq:faith}; $\mathcal{F}_{\text{dir}}$ is Eq.~\ref{eq:fdir}; $\cos$ is the mean cosine between the original and post-edit xyz translation, so a faithful model is \emph{negative} and the two bold positive entries are the two models that move the same way after the direction is reversed. Every row is a 3-sampling-seed mean; $\pm$sd is the seed std, printed here so the reader can apply the caveat rather than take it on trust. The \emph{rank} column orders $\mathcal{F}_{\text{mag}}$ and exists only to make the inversion legible: ranks 4 and 5 are separated by less than either row's seed std and should not be read as ordered, nor should any adjacent pair among ranks 2--7. The gap between the magnitude and direction blocks is the point --- the top row of one is the second-from-bottom of the other, a gap of $0.659$ against seed stds of $0.006$ and $0.021$. Computed from the released action pairs with no new inference. Per-family means: Appendix~\ref{sec:appendix}.}
 \label{tab:directional}
 \end{table}
@@ -255,7 +298,7 @@ All leaderboard rows are 3-sampling-seed means with Wilson 95\% CIs (half-widths
 \section{Release and audit}
 \label{sec:release}
 
-We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $52.7$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{1,061 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
+We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $52.7$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{1,069 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
 
 Two disclosures the audit forced, both of which we would rather not make. \textbf{First, it now checks what records \emph{contain}, not only how many there are} --- because the count-only version passed $869/869$ while the release paragraph made a false claim about its own schema. The new check immediately found a second instance: 438 scored records (the three cross-corpus runs) carry deltas without the action pair or edit metadata, so those runs are reproducible at aggregate level only. \textbf{Second, six of the eight leaderboard rows come from a policy whose single-step open-loop prediction does not beat a constant} --- its L$_1$ is $0.0486$ against $0.0457$ for predicting the per-dimension dataset mean, in every frame the checkpoint ships. This does not invalidate $\Delta_\infty$, which is a self-comparison referencing no ground truth. It does mean those rows are edit-sensitivity measurements on weak policies, and it is the direct cause of the missing rollout evidence: at 40 episodes per arm, both the clean-CoT and no-CoT arms score $0/40$, so an edit-induced $\Delta$SR is undefined rather than zero. A second run adds the \emph{direction\_flip} arm at $0/9$ against the same controls; a third arm does not make the comparison defined, and the harness reports no $\Delta$SR. It does show the edit protocol running closed-loop, and it bounds something the first-step protocol cannot see: $381$ edits were skipped mid-rollout for want of a direction word to reverse.
 
@@ -275,6 +318,13 @@ This work evaluates whether the reasoning text emitted by manipulation policies 
 
 All experiments are in simulation (LIBERO) or on public offline corpora; no physical robot was operated and no human subjects or personal data are involved. We release measurement records, not new capability. Upstream licenses are resolved from the Hugging Face Hub API rather than written from memory and released machine-readably; 3 of the 15 assets we depend on declare no license upstream, and we disclose that and grant no rights to them rather than assign a license we cannot verify. The release states the uses it does not support, including that no number in it is rollout-conditioned and that the leaderboard is a diagnostic rather than a ranking.
 
+% Flush every pending body float before the bibliography. Without this the
+% four body figures survived the float queue all the way into the appendix and
+% printed on page 41 of the 49-page submission -- present, numbered, cross-
+% referenced, and forty pages from the text that argues from them. The
+% body-only build placed them at pages 6-8, so this was invisible in the
+% page-count metric the build job reports and only showed up on the real PDF.
+\clearpage
 \bibliographystyle{acl_natbib}
 \input{arr_bib}
 

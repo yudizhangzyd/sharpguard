@@ -3969,6 +3969,85 @@ def audit_arr_submission(a: Audit) -> None:
                      "which would make \\ref resolve unpredictably", 0,
                 len(dup), source=f"duplicates: {dup}")
 
+    # --- the body's floats must be able to land in the body -----------------
+    # Six floats in eight two-column pages does not fit LaTeX's defaults, and
+    # the way it fails is silent. \dbltopfraction caps a full-width float at
+    # 0.7 x \textheight; fig:taxonomy is just over that, so it was refused, and
+    # because floats are placed in order every later figure* queued behind it.
+    # The queue drained past the bibliography and all four body figures printed
+    # on pages 41-44 of the 49-page PDF -- numbered, cross-referenced, and
+    # thirty-five pages from the text arguing from them.
+    #
+    # Nothing upstream caught it: the engine emits no warning for a deferred
+    # float, and the 8-page metric is measured on the body-only build, whose
+    # \end{document} flushes the queue at page 8. bolt/run_arr_build.sh now
+    # reads float pages out of .aux and fails on this; these checks assert the
+    # source-side conditions that let a build succeed in the first place, so
+    # the two together cover both "did it regress" and "will it recur".
+    floatp = {"topfraction": 0.9, "dbltopfraction": 0.9, "textfraction": 0.05}
+    floatp_got = {}
+    for cmd, want in floatp.items():
+        m = re.search(r"\\renewcommand\{\\" + cmd + r"\}\{([\d.]+)\}", vis)
+        got = float(m.group(1)) if m else None
+        floatp_got[cmd] = got if got is not None else 0.7   # LaTeX's default
+        # A float that must fit under \dbltopfraction gets no second chance,
+        # so the direction of the inequality matters: top fractions must be at
+        # least this generous, \textfraction at most this demanding.
+        ok = got is not None and (got >= want if cmd != "textfraction"
+                                  else got <= want)
+        a.check(sec, f"\\{cmd} is relaxed to {'>=' if cmd != 'textfraction' else '<='}"
+                     f" {want}, or the body's floats defer into the appendix",
+                True, ok, source=f"cot_faith_arr.tex: {cmd}={got}")
+
+    # \clearpage before the bibliography is the backstop: if a float is still
+    # queued when the body ends, this is what keeps it out of the appendix.
+    bib = vis.find(r"\bibliographystyle")
+    a.check(sec, "\\clearpage precedes \\bibliographystyle, so any float still "
+                 "queued at the end of the body flushes before the appendix "
+                 "rather than into it", True,
+            bib > 0 and r"\clearpage" in vis[max(0, bib - 400):bib],
+            source="cot_faith_arr.tex")
+
+    # Each body float must be small enough to be placeable at all. A figure*
+    # taller than \dbltopfraction x \textheight can never be set as a top
+    # float, and LaTeX will defer it forever without saying so. \textheight is
+    # read from the build log rather than assumed, because acl.sty sets it via
+    # geometry and a style update would move it.
+    logp = Path("/tmp/arrbuild/arr/cot_faith_arr.log")
+    th = None
+    if logp.exists():
+        m = re.search(r"\\textheight=([\d.]+)pt",
+                      logp.read_text(errors="replace"))
+        th = float(m.group(1)) if m else None
+    figs = root / "figures"
+    for block in re.findall(r"\\begin\{figure(\*?)\}(.*?)\\end\{figure\*?\}",
+                            vis, re.S):
+        star, body_ = block
+        m = re.search(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}", body_)
+        if not (m and th):
+            continue
+        pdf = figs / m.group(1)
+        if not pdf.exists():
+            a.check(sec, f"body figure {m.group(1)} exists", True, False,
+                    source=str(pdf))
+            continue
+        box = re.search(rb"/MediaBox\s*\[([^\]]*)\]", pdf.read_bytes())
+        x0, y0, x1, y1 = (float(v) for v in box.group(1).split())
+        w, h = x1 - x0, y1 - y0
+        # \textwidth in the ACL style; a \columnwidth figure gets half of it
+        # less the 0.6cm gutter. Scaled height is what competes for the page.
+        avail = 453.6 if star else (453.6 - 17.0) / 2
+        scaled = h * avail / w
+        # The governing fraction is the one this float's own environment obeys:
+        # figure* competes for the double-column top area, figure for the
+        # single-column one. Read from the source, not restated, so relaxing
+        # one of them cannot leave this check asserting the other's value.
+        cap = floatp_got["dbltopfraction" if star else "topfraction"] * th
+        a.check(sec, f"{m.group(1)} at its include width is {scaled:.0f}pt "
+                     f"tall, inside the {cap:.0f}pt a top float may occupy "
+                     f"(caption excluded)", True, scaled < cap,
+                source=f"{w:.0f}x{h:.0f}pt native, textheight {th:.0f}pt")
+
     # --- long \texttt paths must be breakable in two columns ----------------
     # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
     # 347pt overfull box on a 54-character artifact filename -- text running
