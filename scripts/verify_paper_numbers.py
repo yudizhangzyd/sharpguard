@@ -4838,6 +4838,14 @@ def audit_arm_pairing_defect(a: Audit) -> None:
     only because the first fix was checked by re-rendering, is a robot pose that
     no shift aligns (best shift (0, 0)) -- carried in through each arm's own
     settling loop from state set_init_state does not restore.
+
+    Three, in fact. The third is audited from a different KIND of artifact,
+    because it is a different kind of defect: it acts from step 1 onward, so no
+    rendered first frame and no scalar in the report could show it. Its evidence
+    is a probe that replays one scripted action sequence twice from one rewind
+    (bolt gzv4nuhtfe) -- and the check that matters most there is the one
+    asserting the two EARLIER channels were genuinely reset, since that is what
+    stops the defect-2 paragraph from quietly covering for defect 3.
     """
     sec = "Rollout arm pairing defect (limitation v disclosure)"
     base = ROOT / "results_v2" / "canonical_runs" / "rollout_arm_pairing_defect"
@@ -4974,9 +4982,87 @@ def audit_arm_pairing_defect(a: Audit) -> None:
         a.check(sec, what, True, needle in hb,
                 source="experiments/cotfaith_rollout_edit.py")
     gate = ROOT / "tests" / "test_rollout_arms_and_refresh.py"
+    gt = gate.read_text() if gate.exists() else ""
     a.check(sec, "the pod's pre-budget gate covers the rewind, including the "
                  "case where a channel cannot be reached", True,
-            gate.exists() and "test_rewind_clears_carryover" in gate.read_text(),
+            "test_rewind_clears_carryover" in gt,
+            source="tests/test_rollout_arms_and_refresh.py")
+
+    # ---------------------------------------------------------------------
+    # The THIRD defect, and the only one no rendered frame could have shown.
+    # Defects 1 and 2 were visible at step 0. This one acts from step 1 onward,
+    # where the arms are SUPPOSED to differ -- so the pixels, the report and the
+    # step-0 guard above are all blind to it, and it took a probe that removes
+    # the policy: replay one scripted action sequence twice from one rewind and
+    # require the trajectories to match.
+    # ---------------------------------------------------------------------
+    d3 = load(base / "pairing_defect_gripper.json")
+    a.check(sec, "the third pairing diagnostic -- the probe run that found the "
+                 "gripper accumulator -- is released too", True, bool(d3),
+            source=src + "pairing_defect_gripper.json")
+    if d3:
+        ch = d3.get("arm_rewind_channels") or {}
+        # Audited in the direction that could embarrass us: the appendix says
+        # defect 2's two channels WERE reset, and this artifact is the reason
+        # that sentence is not an overstatement covering for defect 3.
+        a.check(sec, "defect 3: the two channels defect 2's fix targets were "
+                     "genuinely reset, so the paragraph above is not "
+                     "overstating that fix", [1, True],
+                [ch.get("controller"), ch.get("warmstart")], source=src)
+        a.check(sec, "defect 3: and yet replaying ONE action sequence twice "
+                     "from the same rewind did NOT give identical trajectories",
+                False, d3.get("identical_qpos"), source=src)
+        mx = d3.get("max_abs_qpos_diff_over_all_steps")
+        a.check(sec, "defect 3: the two replays differ by 0.1876 in qpos",
+                0.1876, round(float(mx if mx is not None else -1), 4),
+                source=src)
+        # The signature. An offset already at its maximum on the first step and
+        # not growing is a stale value carried in; drift would grow. This one
+        # equality is what identified the accumulator, so it is asserted rather
+        # than described.
+        a.check(sec, "defect 3: the maximum over all steps EQUALS the first-step "
+                     "difference, i.e. a stale offset carried in rather than "
+                     "drift that accumulates", True,
+                mx is not None and mx == d3.get("first_step_qpos_diff"),
+                source=src)
+        a.check(sec, "defect 3: and 198 pixel levels at the worst step", 198.0,
+                float(d3.get("max_abs_pixel_diff_over_all_steps") or -1),
+                source=src)
+
+    a.check(sec, "the probe that found defect 3 ships, since it is the only "
+                 "check that can see a step-1-onward confound", True,
+            (ROOT / "scripts" / "probe_rewind_pairing.py").exists(),
+            source="scripts/probe_rewind_pairing.py")
+    probe_t = (ROOT / "scripts" / "probe_rewind_pairing.py")
+    pt = probe_t.read_text() if probe_t.exists() else ""
+    a.check(sec, "and it gates on EVERY carry-over channel, not the two that "
+                 "were known when it was written", True,
+            "missing = [k for k, v in ch.items() if not v]" in pt,
+            source="scripts/probe_rewind_pairing.py")
+
+    # Defect 3's fix, as source properties: the accumulator must be snapshotted
+    # WITH the state and restored on rewind. Zeroing it would pass a naive
+    # equality check while putting the scene at a fresh-reset value instead of
+    # where the settle left it.
+    for needle, what in (
+        ("def _grippers",
+         "defect 3: the harness reaches the gripper across both robosuite "
+         "spellings"),
+        ("current_action",
+         "defect 3: it is the rate-limited current_action accumulator that is "
+         "handled, which is the state neither qpos nor reset_goal covers"),
+        ('snap.get("grippers")',
+         "defect 3: the rewind restores the SNAPSHOT's accumulator rather than "
+         "zeroing it to a fresh-reset value"),
+        ('"gripper": 0',
+         "defect 3: the gripper is reported as its own channel, so one that a "
+         "future robosuite renames is visible and not silent"),
+    ):
+        a.check(sec, what, True, needle in hb,
+                source="experiments/cotfaith_rollout_edit.py")
+    a.check(sec, "the pod's gate covers the accumulator restore too, against a "
+                 "stub that actually accumulates", True,
+            "restores the gripper accumulator to the snapshot" in gt,
             source="tests/test_rollout_arms_and_refresh.py")
 
     # Every number above is quoted in the appendix. Checked in that direction
@@ -4984,7 +5070,8 @@ def audit_arm_pairing_defect(a: Audit) -> None:
     # script exists to catch, and it is silent unless someone looks.
     apx = ROOT / "arr_appendix.tex"
     at = apx.read_text() if apx.exists() else ""
-    for val in ("10.4", "0.0000", "8.8411", "2.7762", "31.7356"):
+    for val in ("10.4", "0.0000", "8.8411", "2.7762", "31.7356", "0.1876",
+                "198"):
         a.check(sec, f"the appendix quotes ${val}$ from this artifact",
                 True, val in at, source="arr_appendix.tex")
 
