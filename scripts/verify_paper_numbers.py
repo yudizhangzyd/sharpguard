@@ -4133,6 +4133,130 @@ def audit_rollout_insuite(a: Audit) -> None:
             source="results_v2/canonical_runs/rollout_edit_outofsuite_round1/")
 
 
+def audit_dt_decode_equivalence(a: Audit) -> None:
+    """The cross-family decode-equivalence bound, and the row it does not cover.
+
+    This is the audit that keeps the DeepThinkVLA numbers from resting on our
+    own transcription of someone else's decode. Two of the three checkpoints
+    return EQUIVALENT and one returns UNDEFINED, and the interesting failure
+    mode is that the second gets rounded to the first -- "the audit passed on
+    DeepThinkVLA" is true of two thirds of the family and the paper must not
+    say it of all of it. So the undefined row is asserted to STAY undefined:
+    n_comparable must be 0 and the verdict must start with UNDEFINED.
+
+    The base row's 768-token re-run is asserted separately, because it converts
+    a hedge into a fact. At 320 tokens "generation did not terminate" is
+    consistent with a budget we chose too small, which is our problem and
+    raiseable. At 768 the diagnostic moved to the head of the sequence:
+    think_start_first is 0/12, so the checkpoint never opens a think block and
+    upstream's [</think>, <action>] criterion cannot fire at any budget. That
+    distinction is the whole content of the disclosure, so both halves of it
+    get a check -- the exhausted budget AND the absent think token.
+    """
+    sec = "DeepThinkVLA decode equivalence (2 of 3 defined, and the third named)"
+    can = ROOT / "results_v2" / "canonical_runs"
+
+    # --- the 320-token run over all three checkpoints ----------------------
+    base = can / "dt_decode_equivalence"
+    want = {
+        "libero_cot_sft": ("EQUIVALENT", 12),
+        "libero_cot_rl": ("EQUIVALENT", 12),
+        "base": ("UNDEFINED", 0),
+    }
+    for tag, (verdict, n_cmp) in want.items():
+        p = base / f"dt_decode_equivalence_yinchenghust_deepthinkvla_{tag}.json"
+        d = load(p)
+        if not d:
+            a.check(sec, f"the {tag} report is released", True, False,
+                    source=str(p))
+            continue
+        agg = d.get("aggregate") or {}
+        src = f"results_v2/canonical_runs/dt_decode_equivalence/{p.name}"
+        a.check(sec, f"{tag}: verdict is {verdict}, as the manuscript states",
+                True, str(d.get("verdict", "")).startswith(verdict), source=src)
+        a.check(sec, f"{tag}: {n_cmp} comparable frames", n_cmp,
+                agg.get("n_comparable"), source=src)
+        if n_cmp:
+            # Every count that makes EQUIVALENT mean anything. Asserted
+            # individually: a verdict string is one boolean and these are five.
+            for k in ("n_ids_equal", "n_start_equal", "n_chunk_equal",
+                      "n_segments_ok", "n_determinism_ok"):
+                a.check(sec, f"{tag}: {k} on all {n_cmp} comparable frames",
+                        n_cmp, agg.get(k), source=src)
+            a.check(sec, f"{tag}: the (10,7) chunk matches exactly, not "
+                         f"approximately", 0.0, agg.get("max_chunk_absdiff"),
+                    source=src)
+            a.check(sec, f"{tag}: bin centers identical to upstream's", True,
+                    agg.get("bin_centers_identical"), source=src)
+        a.check(sec, f"{tag}: the audit ran at the 320 tokens the edit runs "
+                     f"used, so it audits the configuration that produced the "
+                     f"published numbers", 320,
+                (d.get("config") or {}).get("max_new_tokens"), source=src)
+
+    # The mean CoT length the manuscript quotes, which is what made 320 look
+    # generous and 768 look decisive. Read out of the tex rather than pinned
+    # here: a hardcoded expectation on both sides checks nothing.
+    sft = load(base / "dt_decode_equivalence_yinchenghust_"
+                      "deepthinkvla_libero_cot_sft.json") or {}
+    rl = load(base / "dt_decode_equivalence_yinchenghust_"
+                     "deepthinkvla_libero_cot_rl.json") or {}
+    means = [dig(x, "aggregate", "mean_cot_tokens") for x in (sft, rl)]
+    m = re.search(r"a mean of \$([\d.]+)\$ CoT tokens on the two that do "
+                  r"terminate", TEX.read_text())
+    a.check(sec, "the mean CoT length the manuscript quotes is the mean over "
+                 "the two checkpoints that do terminate",
+            float(m.group(1)) if m else None,
+            round(sum(m2 for m2 in means if m2) / 2, 1) if all(means) else None,
+            source="dt_decode_equivalence/*_sft.json, *_rl.json")
+
+    # --- the 768-token re-run: budget or checkpoint? -----------------------
+    b7 = can / "dt_decode_equivalence_base768"
+    d7 = load(b7 / "dt_decode_equivalence_yinchenghust_deepthinkvla_base.json")
+    src7 = "results_v2/canonical_runs/dt_decode_equivalence_base768/"
+    if not d7:
+        a.check(sec, "the 768-token base re-run is released (the manuscript "
+                     "cites it to rule out our own token budget)", True, False,
+                source=src7)
+        return
+    agg7, cfg7 = d7.get("aggregate") or {}, d7.get("config") or {}
+    a.check(sec, "the re-run doubled the budget past 320", 768,
+            cfg7.get("max_new_tokens"), source=src7)
+    a.check(sec, "and is still UNDEFINED, so the 320 result was not our budget",
+            0, agg7.get("n_comparable"), source=src7)
+
+    # The head-of-sequence diagnostic. This is the claim that makes the
+    # disclosure a fact about the checkpoint rather than a to-do.
+    a.check(sec, "the base checkpoint never opens a <think> block on any frame "
+                 "-- which is why upstream's [</think>, <action>] criterion "
+                 "cannot fire at ANY budget, not merely at this one",
+            0, agg7.get("n_think_start_first"), source=src7)
+    per = d7.get("per_sample") or []
+    a.check(sec, "every frame exhausted the 768-token budget rather than "
+                 "stopping early for some other reason",
+            [768], sorted({p.get("n_generated") for p in per}), source=src7)
+    a.check(sec, "the prompt survived generation on all 12, so the missing "
+                 "<think> is not a prompt-assembly artifact of ours",
+            12, agg7.get("n_prompt_preserved"), source=src7)
+    a.check(sec, "and the run raised no errors, so UNDEFINED is a measurement "
+                 "rather than a crash", 0, agg7.get("n_errors"), source=src7)
+
+    # The manuscript must carry both halves: that it is the checkpoint, and
+    # that the edit protocol does not depend on the capability it lacks.
+    tex = TEX.read_text()
+    for needle, what in (
+            ("t57wgzya9a", "the 768-token re-run's task id"),
+            ("never opens a \\texttt{<think>} block",
+             "the head-of-sequence diagnostic"),
+            ("undefinable by this method",
+             "that no budget can define the comparison"),
+            ("injects} a CoT and never asks a checkpoint to generate one",
+             "why the base row's gap is not fatal"),
+            ("four of five checkpoints tested, with the fifth named",
+             "the scope of the equivalence claim")):
+        a.check(sec, f"the manuscript states {what}", True, needle in tex,
+                source="cot_faith_iclr.tex")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -4265,6 +4389,7 @@ def main() -> int:
     audit_floor_invariance(a)
     audit_fdir_null(a)
     audit_collision_decomposition(a)
+    audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
