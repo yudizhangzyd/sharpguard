@@ -27,6 +27,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -3876,6 +3877,160 @@ def audit_collision_decomposition(a: Audit) -> None:
             in tex, source="cot_faith_iclr.tex")
 
 
+def audit_arr_submission(a: Audit) -> None:
+    """The ARR body is a second manuscript, so it needs the same treatment.
+
+    Every number in cot_faith_arr.tex was retyped from the artifacts into a
+    shorter document. That is precisely the operation this whole script exists
+    to police, and doing it once by hand without a check would reintroduce the
+    drift the full-length version took four revisions to eliminate. So the
+    load-bearing figures are re-asserted against the same JSON, and the
+    ARR-specific format constraints -- the ones that cause a desk reject rather
+    than a bad review -- are asserted too.
+    """
+    sec = "ARR submission (cot_faith_arr.tex)"
+    root = Path(__file__).resolve().parent.parent
+    arr = root / "cot_faith_arr.tex"
+    if not arr.exists():
+        a.check(sec, "the ARR body exists", True, False, source=str(arr))
+        return
+    t = arr.read_text()
+    # Every format check below asks what the ENGINE sees, so comments are
+    # stripped first. The preamble documents each of these constraints in a
+    # comment right where it is honoured ("no \baselinestretch override:
+    # acl.sty owns it"), and a naive substring search reads its own
+    # documentation as a violation.
+    vis = re.sub(r"(?<!\\)%.*", "", t)
+
+    # --- format constraints that are desk-reject conditions -----------------
+    a.check(sec, "acl.sty is loaded with [review], which supplies the line "
+                 "numbers and anonymization ARR requires", True,
+            "\\usepackage[review]{acl}" in vis, source="cot_faith_arr.tex")
+    a.check(sec, "geometry is NOT loaded before acl.sty, which loads it "
+                 "itself -- a prior load is a fatal Option Clash", True,
+            not re.search(r"\\usepackage(\[[^\]]*\])?\{[^}]*geometry", vis),
+            source="cot_faith_arr.tex")
+    for pkg in ("authblk", "titlesec"):
+        a.check(sec, f"{pkg} is not loaded (acl.sty owns the title and "
+                     f"section formatting; overriding it fails the check)",
+                True, f"{{{pkg}}}" not in vis, source="cot_faith_arr.tex")
+    a.check(sec, "no \\baselinestretch override, which changes the page count "
+                 "the limit is enforced on", True,
+            "baselinestretch" not in vis, source="cot_faith_arr.tex")
+    a.check(sec, "Limitations is an UNNUMBERED section, as ARR requires",
+            True, "\\section*{Limitations}" in t, source="cot_faith_arr.tex")
+    a.check(sec, "Ethics Statement is an unnumbered section", True,
+            "\\section*{Ethics Statement}" in t, source="cot_faith_arr.tex")
+    a.check(sec, "the ACL bibliography style is used", True,
+            "\\bibliographystyle{acl_natbib}" in t, source="cot_faith_arr.tex")
+
+    # \aclfinalcopy does not exist in current acl.sty -- the option system
+    # replaced it. Leaving it in is a hard build failure, and it is the kind of
+    # thing copied in from an older template.
+    a.check(sec, "no \\aclfinalcopy, which current acl.sty does not define",
+            True, "\\aclfinalcopy" not in t, source="cot_faith_arr.tex")
+
+    # --- double-blind -------------------------------------------------------
+    for needle in ("sharpguard", "ICLR 2026", "yudizhang"):
+        # Skip LaTeX comments: they do not render, and the build provenance
+        # header legitimately names the source file.
+        visible = "\n".join(ln for ln in t.splitlines()
+                            if not ln.lstrip().startswith("%"))
+        a.check(sec, f"no '{needle}' in rendered text (double-blind)", True,
+                needle.lower() not in visible.lower(),
+                source="cot_faith_arr.tex, comments excluded")
+    a.check(sec, "the appendix is anonymized too, since it ships in the same "
+                 "PDF", True,
+            not any(s in (root / "arr_appendix.tex").read_text().lower()
+                    for s in ("sharpguard", "iclr 2026"))
+            if (root / "arr_appendix.tex").exists() else None,
+            source="arr_appendix.tex")
+
+    # --- the appendix must be current --------------------------------------
+    # A stale appendix ships numbers the manuscript no longer makes. It is
+    # generated, so staleness is detectable rather than a matter of care.
+    gen = root / "scripts" / "build_arr_appendix.py"
+    a.check(sec, "the appendix is generated from the full-length source "
+                 "rather than maintained as a second copy", True, gen.exists(),
+            source=str(gen))
+    if gen.exists():
+        rc = subprocess.run([sys.executable, str(gen), "--check"],
+                            cwd=root, capture_output=True, text=True)
+        a.check(sec, "and the committed appendix is current (regenerating it "
+                     "produces no diff)", 0, rc.returncode,
+                source=f"{gen.name} --check: {rc.stdout.strip()}"
+                       f"{rc.stderr.strip()}")
+
+    # --- the numbers, re-asserted against the artifacts ---------------------
+    fi = load(root / "results_v2/canonical_runs/floor_invariance/"
+                     "floor_invariance.json") or {}
+    cd = load(root / "results_v2/canonical_runs/collision_decomposition/"
+                     "collision_decomposition.json") or {}
+    fd = load(root / "results_v2/canonical_runs/fdir_null/fdir_null.json") or {}
+
+    a.check(sec, "the ARR abstract's 12/12 sign-flip claim matches the "
+                 "artifact", 12, fi.get("n_sign_flips_between_floors"),
+            source="floor_invariance.json")
+    a.check(sec, "the ARR abstract's R^2 for the collision decomposition "
+                 "rounds to the quoted 0.93", "0.93",
+            f"{cd.get('r_squared', 0):.2f}", source="collision_decomposition.json")
+    a.check(sec, "the ARR abstract's cell count", 324, cd.get("n_cells"),
+            source="collision_decomposition.json")
+    a.check(sec, "the ARR abstract's F_dir clearance rate", 7,
+            fd.get("n_clearing_null"), source="fdir_null.json")
+
+    # The ARR body states the audit's own claim count in three places
+    # (abstract, contributions, release section). They must agree with each
+    # other and with the full-length version, or the submission advertises a
+    # number this script does not produce.
+    # The ARR body states the audit's own claim count in three places
+    # (abstract, contributions, release section), each wrapped differently --
+    # bare, \textbf{...}, $...$. Strip the wrappers before matching, or the
+    # check silently passes on the two it can parse and ignores the third.
+    plain = re.sub(r"\\(?:textbf|emph|texttt)\{([^{}]*)\}", r"\1", vis)
+    plain = plain.replace("$", "")
+    counts = {int(re.sub(r"[^\d]", "", x)) for x in
+              re.findall(r"(?:checks|asserting|asserts) ([\d{},]+) claims",
+                         plain)}
+    a.check(sec, "the claim count appears in all three places it is promised "
+                 "(abstract, contributions, release)", 3,
+            len(re.findall(r"(?:checks|asserting|asserts) [\d{},]+ claims",
+                           plain)), source="cot_faith_arr.tex")
+    m = re.search(r"checks \$([\d{},]+)\$ claims", TEX.read_text())
+    iclr_n = int(re.sub(r"[^\d]", "", m.group(1))) if m else None
+    a.check(sec, "the claim count is stated consistently across the ARR body "
+                 "and matches the full-length version",
+            {iclr_n}, counts, source="cot_faith_arr.tex vs cot_faith_iclr.tex")
+
+    # Table tab:floors is retyped from the artifact, so every cell is checked.
+    # This is the single most drift-prone thing in the ARR document.
+    rows = {c["config"]: c for c in (fi.get("per_config") or [])}
+    tex_rows = dict(re.findall(
+        r"\n(no-CoT|r=8|r=16|r=32|r=64|data-50A|data-50B|ECoT-bridge|"
+        r"DT base|DT SFT|DT RL|Bridge-4k\$\^\\dagger\$)\s*&([^\\]*)\\\\", t))
+    key = {"no-CoT": "ours_no-cot", "r=8": "ours_lora-r8",
+           "r=16": "ours_lora-r16", "r=32": "ours_lora-r32",
+           "r=64": "ours_lora-r64", "data-50A": "ours_data-50A",
+           "data-50B": "ours_data-50B", "ECoT-bridge": "ecot_bridge",
+           "DT base": "deepthink_base", "DT SFT": "deepthink_sft",
+           "DT RL": "deepthink_rl", "Bridge-4k$^\\dagger$": "bridge_subset_4k"}
+    a.check(sec, "tab:floors has a row for every calibrated configuration",
+            12, len(tex_rows), source="cot_faith_arr.tex")
+    for label, cells in sorted(tex_rows.items()):
+        r = rows.get(key.get(label, ""))
+        if r is None:
+            a.check(sec, f"tab:floors row '{label}' names a real "
+                         f"configuration", True, False, source="cot_faith_arr.tex")
+            continue
+        got = [float(x) for x in re.findall(r"[-+]?\d*\.\d+", cells)]
+        want = [r["floor_paraphrase_null"]["F"],
+                r["floor_syntactic_scramble"]["F"], r["f_bar_semantic"],
+                r["f_diff_vs_paraphrase"], r["f_diff_vs_scramble"]]
+        a.check(sec, f"tab:floors row '{label}' matches the artifact to 3dp",
+                [round(x, 3) for x in want], [round(x, 3) for x in got],
+                source="floor_invariance.json")
+
+
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
 
@@ -4008,6 +4163,7 @@ def main() -> int:
     audit_floor_invariance(a)
     audit_fdir_null(a)
     audit_collision_decomposition(a)
+    audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script
