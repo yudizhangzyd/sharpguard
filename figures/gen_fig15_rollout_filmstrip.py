@@ -155,6 +155,41 @@ def short_move(s, width=22):
     return (cut or s[:width]) + "…"
 
 
+def start_mismatch(imgs: dict, step: int) -> "str | None":
+    """None if every arm's first frame is the same pixels, else what differs.
+
+    The rows of this figure are three prompts on ONE scene, so the first column
+    must be one image repeated. That is worth checking rather than trusting: the
+    first capture (bolt h8xzmqnhgg) had a 3-pixel translation of the cabinet
+    between arms -- identical robot, identical free objects on the table,
+    differently placed furniture -- because `set_init_state` restores qpos and a
+    welded fixture's pose is not in qpos, so robosuite's placement sampler drew
+    it separately for each arm's env. Every scalar in the report looked right;
+    only the pixels showed it.
+
+    There is deliberately no override. A strip whose rows are different scenes
+    is not a smaller figure than intended, it is a wrong one: the reader would
+    attribute to the CoT edit a difference that came from the furniture.
+    """
+    ref_name, ref = next(iter(imgs.items()))
+    for name, im in imgs.items():
+        if im.shape != ref.shape:
+            return f"{name} is {im.shape} and {ref_name} is {ref.shape}"
+        d = np.abs(im.astype(float) - ref.astype(float))
+        if d.max() == 0:
+            continue
+        m = d.max(axis=2) if d.ndim == 3 else d
+        ys, xs = np.where(m > m.max() * 0.05)
+        return (f"{name} and {ref_name} differ at step {step} before "
+                f"either arm has acted: mean |dpix| {d.mean():.3f}, max "
+                f"{d.max():.3f}, over rows {ys.min()}-{ys.max()} cols "
+                f"{xs.min()}-{xs.max()}. Re-run with --env-seed set (the "
+                f"harness seeds np.random per episode so every arm draws the "
+                f"same fixture placement); a shared init state is not enough, "
+                f"because set_init_state does not restore a welded fixture.")
+    return None
+
+
 def eef_track(e):
     """(steps, xyz) for one episode, or (None, None) if poses were not logged."""
     rows = [(t["step"], t["eef"]) for t in e["trajectory"] if t.get("eef")]
@@ -176,6 +211,20 @@ def main() -> int:
 
     tracks = {a: eef_track(eps[a]) for a, _, _ in ARMS}
     have_eef = all(t[0] is not None for t in tracks.values())
+
+    # The rows must be one scene before they can be three conditions. Checked on
+    # the earliest shared step, which is captured before that step's action is
+    # applied, so the arms cannot legitimately differ there yet.
+    first = {a: frame(cap_dir, key, a, steps[0], eps)[0] for a, _, _ in ARMS}
+    if any(v is None for v in first.values()):
+        die(f"an arm has no frame at the first shared step {steps[0]}, which "
+            f"pick_steps() selected as common to all arms -- the report and the "
+            f"frames on disk disagree.")
+    bad = start_mismatch(first, steps[0])
+    if bad:
+        die("the three arms do not start from the same scene. " + bad)
+    print(f"[fig15] shared start verified: all arms identical at t={steps[0]}")
+
     if not have_eef and not no_eef:
         missing = [a for a, t in tracks.items() if t[0] is None]
         die(f"arms {missing} logged no end-effector pose, so panels (b) and "

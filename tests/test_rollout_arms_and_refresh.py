@@ -365,6 +365,42 @@ def test_eef_reader(m) -> None:
     check("eef: a non-dict observation yields None", m._eef(None) is None)
 
 
+def test_scene_seed(m) -> None:
+    """Every arm of one episode must draw the same fixture placement."""
+    def placements(seed_expr):
+        """What robosuite's sampler would draw, standing in np.random for it."""
+        out = []
+        for _ in range(3):                       # three arms, three fresh envs
+            m._seed_scene(seed_expr)
+            out.append(float(np.random.uniform()))
+        return out
+
+    p = placements(7)
+    check("scene: three arms seeded with one episode's seed draw the same "
+          "fixture placement", p[0] == p[1] == p[2],
+          "set_init_state restores qpos and a welded fixture's pose is not in "
+          "qpos, so without this the arms are paired on the robot and "
+          "mispaired on the furniture -- measured as a 3-pixel cabinet shift "
+          "in bolt h8xzmqnhgg")
+    check("scene: a different episode is still a different scene",
+          placements(8)[0] != p[0],
+          "seeding must pair the arms, not collapse the episodes into one "
+          "scene filmed three times")
+
+
+def test_start_mismatch_lives_elsewhere() -> None:
+    """The pixel check is in tests/test_fig15_filmstrip.py, deliberately.
+
+    This suite is the gate that runs on the pod before a rollout budget is
+    spent, so it must import numpy and nothing else: the figure generator pulls
+    in matplotlib, which setup-openvla.sh installs only on the branch that
+    builds LIBERO from source. An ImportError here would exit 7 and cancel a
+    20 h job to protect a figure that is drawn afterwards, on a laptop.
+    """
+    check("start-mismatch check exists, in the figure's own test file",
+          (ROOT / "tests" / "test_fig15_filmstrip.py").exists())
+
+
 def main() -> int:
     r = load("cotfaith_rollout_edit")
     test_select_arms(r)
@@ -372,6 +408,8 @@ def main() -> int:
     test_precondition_three_states(r)
     test_capture_selection(r)
     test_eef_reader(r)
+    test_scene_seed(r)
+    test_start_mismatch_lives_elsewhere()
     test_norm_roundtrip(load("cotfaith_auroc"))
 
     bad = [c for c in CHECKS if not c[1]]

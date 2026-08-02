@@ -1,5 +1,5 @@
 name: 'CoT-Faith #10d: filmstrip capture -- what the three rollout arms actually DO'
-description: 'Every rollout number this paper has is a scalar: SR, step counts, edits-skipped. Two arms that both score 0/40 are indistinguishable in that record even if one is reaching for the drawer and the other is driving into the table -- and which of those is happening is what an edit-sensitivity paper claims to measure. Rounds 1-3 recorded no frames at all, so no figure of the motion can be drawn from any released artifact. This adds that: three arms (nocot, cot_clean, cot_direction_flip) on ONE canonical init state -- the pairing DSR is computed over -- with every 10th step rendered to PNG and the end-effector pose, sent action and live MOVE phrase logged beside it. It measures nothing new; it shows what the 0/40 looks like, and puts the edited MOVE phrase next to the motion it produced rather than asserting the edit landed. Same checkpoint (bcihypv3gu) and same in-suite libero_90 as round 2, so the frames illustrate the run whose SR the paper reports.'
+description: 'Filmstrip capture, take 2: pairing fix. Take 1 (h8xzmqnhgg) built a fresh env per arm, re-running the robosuite placement sampler. set_init_state restores qpos, and the pose of a fixture welded to the world body is not in qpos, so the cabinet moved between arms. Measured on its own frames: step-0 agreement of 0.000 mean abs pixel over the robot and over the free objects, 7.97 over the cabinet -- a 3 px shift of the very drawer the arms were asked to close. Every scalar in that report looked right; only the pixels showed it. Now ONE env per episode, arms separated by set_init_state alone with no reset() between them, so the shared scene is structural rather than a property of an RNG we do not control. Three arms (nocot, cot_clean, cot_direction_flip) on one canonical init state; every 10th step rendered, with eef pose, sent action and live MOVE phrase logged beside it. Hard-fails if step-0 pixels differ across arms. Same ckpt bcihypv3gu, same in-suite libero_90.'
 tags: ['cotfaith', 'rollout-edit', 'figure', 'filmstrip', 'limitation-v']
 
 project_id: ads_algo_signal_qucacheoffline
@@ -68,6 +68,7 @@ environment_variables:
   # every episode and frames are written as they are rendered, so a stop still
   # yields complete filmstrips for whatever finished.
   TIME_BUDGET_H: '20'
+  ENV_SEED: '0'
   DTYPE: 'bfloat16'
   PROBE_ONLY: '0'
 

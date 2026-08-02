@@ -103,6 +103,10 @@ COMMON=(
     --arms              "${ARMS:-}"
     --cot-refresh-steps "${COT_REFRESH_STEPS:-1}"
     --dtype             "${DTYPE:-bfloat16}"
+    # Recorded in the report's config so the scene is reproducible. The arms of
+    # one episode share an env and never reset() between arms, so their fixture
+    # placement is identical by construction; this only fixes WHICH placement.
+    --env-seed          "${ENV_SEED:-0}"
     # Empty by default, which is capture off. An SR run must not pay the
     # per-step PNG write that only the filmstrip figure needs.
     --capture-episodes  "${CAPTURE_EPISODES:-}"
@@ -192,6 +196,44 @@ print(f"[capture] {len(cap)} episode(s) over arms {arms}; "
 if eef < len(cap):
     print("[capture] WARNING: some episodes have no robot0_eef_pos; the "
           "trajectory panel will cover fewer arms than the filmstrip.")
+PY
+    # The arms of one episode must start from the SAME pixels. They share an env
+    # and never reset() between arms, so they should -- but this is the property
+    # the whole figure rests on, and the first capture (h8xzmqnhgg) violated it
+    # while every scalar in the report looked right: a fresh env per arm re-ran
+    # robosuite's placement sampler and moved the cabinet 3 px. Checked here,
+    # while the GPU is still allocated, rather than hours later on a laptop.
+    python3 - "$OUT/frames" <<'PY' || exit 8
+import sys, glob, os
+import numpy as np
+try:
+    from PIL import Image
+except Exception as e:
+    print(f"[FATAL] PIL unavailable, cannot verify the shared start: {e}")
+    sys.exit(1)
+bad = 0
+for d in sorted(glob.glob(os.path.join(sys.argv[1], "t*_ep*"))):
+    firsts = {}
+    for p in sorted(glob.glob(os.path.join(d, "*_t0000.png"))):
+        firsts[os.path.basename(p).split("_t")[0]] = \
+            np.asarray(Image.open(p), dtype=np.float32)
+    if len(firsts) < 2:
+        print(f"[capture] {os.path.basename(d)}: only {len(firsts)} arm(s) "
+              f"filmed so far; nothing to compare yet")
+        continue
+    ref_n, ref = next(iter(firsts.items()))
+    for n, im in firsts.items():
+        dif = float(np.abs(im - ref).mean()) if im.shape == ref.shape else -1.0
+        if dif != 0.0:
+            print(f"[FATAL] {os.path.basename(d)}: {n} and {ref_n} differ at "
+                  f"step 0 (mean |dpix| {dif}). The arms did not start from the "
+                  f"same scene, so any difference between them is not "
+                  f"attributable to the CoT edit.")
+            bad += 1
+    if not bad:
+        print(f"[capture] {os.path.basename(d)}: {len(firsts)} arms share "
+              f"identical step-0 pixels")
+sys.exit(1 if bad else 0)
 PY
 fi
 exit 0

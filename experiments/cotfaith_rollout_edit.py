@@ -355,6 +355,31 @@ def probe(args, model, processor, device, pixel_dtype) -> dict:
     return out
 
 
+def _seed_scene(seed: int) -> None:
+    """Make the next env construction place its fixtures identically.
+
+    `set_init_state` restores the flattened MuJoCo state, which is qpos/qvel --
+    the robot and every free object. A fixture welded to the world body has no
+    joint, so its pose lives in the MODEL, and robosuite's placement sampler
+    draws it from `np.random` at construction time. `set_init_state` therefore
+    cannot restore it, and two arms built from separate envs get separately
+    sampled fixtures.
+
+    This is measured, not inferred. In the first filmstrip capture (bolt
+    h8xzmqnhgg) the two arms' step-0 frames differed by exactly 0.000 mean
+    absolute pixel over the robot and over the free objects on the table, and by
+    7.97 over the cabinet -- a 3-pixel translation of the one articulated
+    fixture in the scene, constant from step 0 and never moving thereafter. So
+    the arms were paired on the robot and mispaired on the drawer they were
+    being asked to close.
+
+    Seeding np.random rather than calling env.seed(): the sampler reads the
+    global numpy RNG directly, and this holds whether or not LIBERO's wrapper
+    exposes a seed method.
+    """
+    np.random.seed(int(seed))
+
+
 def _probe_frame(args):
     """One real (frame, instruction) from the suite, or (None, task text)."""
     try:
@@ -367,6 +392,7 @@ def _probe_frame(args):
         task = suite.get_task(0)
         bddl = os.path.join(get_libero_path("bddl_files"),
                             task.problem_folder, task.bddl_file)
+        _seed_scene(args.env_seed)
         env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256,
                                  camera_widths=256)
         env.reset()
@@ -584,46 +610,91 @@ def run(args):
             get_libero_path("init_states"), task.problem_folder,
             task.init_states_file))
         for ep in range(args.n_eps_per_task):
-            for arm, fam in arms:
-                if args.time_budget_h and \
-                        (time.time() - t_start) / 3600.0 > args.time_budget_h:
-                    print("[rollout-edit] time budget reached; stopping with "
-                          "what is complete rather than dying mid-episode")
-                    flush("stopped_time_budget")
-                    return
-                try:
-                    env = OffScreenRenderEnv(bddl_file_name=bddl,
-                                             camera_heights=256,
-                                             camera_widths=256)
-                    env.reset()
-                    # Identical init state across arms is the whole basis of the
-                    # pairing; a random reset here would make DSR a comparison
-                    # of two different initial-state distributions.
-                    if init is not None and ep < len(init):
-                        env.set_init_state(init[ep])
-                    else:
-                        raise RuntimeError(
-                            f"episode {ep} has no canonical init state in "
-                            f"{task.init_states_file}; lower --n-eps-per-task "
-                            f"rather than mixing in a random reset")
-                    r = run_arm(model, processor, env, task.language, arm=arm,
-                                family=fam, device=device,
-                                pixel_dtype=pixel_dtype, args=args,
-                                edit_fn=EDIT_FAMILIES[fam] if fam else None,
-                                capture=_capture_for(args, out_dir, ti, ep))
-                    env.close()
-                    r.update({"task_idx": ti, "episode": ep,
-                              "task": task.language})
-                    episodes.append(r)
-                    print(f"[rollout-edit] t{ti} ep{ep} {arm}: "
-                          f"success={r['success']} steps={r['steps']} "
-                          f"({(time.time()-t_start)/60:.1f} min elapsed)")
-                except Exception as e:
-                    print(f"[rollout-edit] t{ti} ep{ep} {arm} FAILED: "
-                          f"{type(e).__name__}: {e}\n{traceback.format_exc()[-500:]}")
+            if init is None or ep >= len(init):
+                # A configuration error, not something to paper over with a
+                # random reset -- that would mix two initial-state
+                # distributions inside one reported SR. Recorded per arm rather
+                # than raised, so the report says which episodes were skipped
+                # instead of the run dying with its status still "running".
+                msg = (f"episode {ep} has no canonical init state in "
+                       f"{task.init_states_file}; lower --n-eps-per-task "
+                       f"rather than mixing in a random reset")
+                print(f"[rollout-edit] t{ti} ep{ep} SKIPPED: {msg}")
+                for arm, fam in arms:
                     episodes.append({"arm": arm, "family": fam, "task_idx": ti,
-                                     "episode": ep, "error": str(e)})
+                                     "episode": ep, "error": msg})
                 flush("running")
+                continue
+
+            # ONE env for every arm of this episode. A fresh env per arm re-runs
+            # robosuite's placement sampler, which places the welded fixtures,
+            # and set_init_state cannot undo that: it restores qpos, and a body
+            # welded to the world has no joint, so its pose lives in the MODEL.
+            #
+            # Measured, in the first filmstrip capture (bolt h8xzmqnhgg): the
+            # arms' step-0 frames agreed to 0.000 mean absolute pixel over the
+            # robot and over the free objects on the table, and differed by 7.97
+            # over the cabinet -- a 3-pixel translation of the one fixture in
+            # the scene, constant from step 0. The arms were paired on the robot
+            # and mispaired on the drawer they were being asked to close, and
+            # nothing in the report showed it, because the report is scalar.
+            #
+            # Sharing the env is what makes the pairing structural rather than a
+            # property of an RNG we do not control: between arms only qpos is
+            # restored, and no reset() intervenes to re-sample anything.
+            env = None
+            try:
+                _seed_scene(args.env_seed + 1000 * ti + ep)
+                env = OffScreenRenderEnv(bddl_file_name=bddl,
+                                         camera_heights=256,
+                                         camera_widths=256)
+                env.reset()
+                for arm, fam in arms:
+                    if args.time_budget_h and \
+                            (time.time() - t_start) / 3600.0 > args.time_budget_h:
+                        print("[rollout-edit] time budget reached; stopping "
+                              "with what is complete rather than dying "
+                              "mid-episode")
+                        flush("stopped_time_budget")
+                        return
+                    try:
+                        # No reset() here. reset() re-samples the placement,
+                        # which is the one thing that must not differ between
+                        # arms; set_init_state restores the robot and every free
+                        # object, which is the rest of the init state.
+                        env.set_init_state(init[ep])
+                        r = run_arm(model, processor, env, task.language,
+                                    arm=arm, family=fam, device=device,
+                                    pixel_dtype=pixel_dtype, args=args,
+                                    edit_fn=EDIT_FAMILIES[fam] if fam else None,
+                                    capture=_capture_for(args, out_dir, ti, ep))
+                        r.update({"task_idx": ti, "episode": ep,
+                                  "task": task.language})
+                        episodes.append(r)
+                        print(f"[rollout-edit] t{ti} ep{ep} {arm}: "
+                              f"success={r['success']} steps={r['steps']} "
+                              f"({(time.time()-t_start)/60:.1f} min elapsed)")
+                    except Exception as e:
+                        print(f"[rollout-edit] t{ti} ep{ep} {arm} FAILED: "
+                              f"{type(e).__name__}: {e}\n"
+                              f"{traceback.format_exc()[-500:]}")
+                        episodes.append({"arm": arm, "family": fam,
+                                         "task_idx": ti, "episode": ep,
+                                         "error": str(e)})
+                    flush("running")
+            except Exception as e:
+                # The env itself could not be built, so no arm of this episode
+                # ran. Recorded for every arm, because a silently absent episode
+                # would read as one that was never requested.
+                print(f"[rollout-edit] t{ti} ep{ep} env FAILED: "
+                      f"{type(e).__name__}: {e}")
+                for arm, fam in arms:
+                    episodes.append({"arm": arm, "family": fam, "task_idx": ti,
+                                     "episode": ep, "error": f"env: {e}"})
+                flush("running")
+            finally:
+                if env is not None:
+                    env.close()
     flush("complete")
     print(f"[rollout-edit] done -> {rep_path}")
 
@@ -812,6 +883,12 @@ def main():
                     help="record every k-th step of a captured episode")
     ap.add_argument("--n-tasks-est", type=int, default=10,
                     help="only used by the probe's runtime estimate")
+    ap.add_argument("--env-seed", type=int, default=0,
+                    help="seeds np.random before each env is built, so every "
+                         "arm of one episode gets the same fixture placement. "
+                         "set_init_state restores qpos and a welded fixture's "
+                         "pose is not in qpos, so without this the arms are "
+                         "paired on the robot and mispaired on the furniture.")
     args = ap.parse_args()
     run(args)
 
