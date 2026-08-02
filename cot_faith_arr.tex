@@ -62,7 +62,7 @@ in Manipulation Vision-Language-Action Models}
 \maketitle
 
 \begin{abstract}
-Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 999 claims and fails on any mismatch.
+Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. We present \textbf{CoT-Faith}, a benchmark that tests that premise uniformly across 15 manipulation VLAs in four architecture families, combining an attention decomposition with a paired-intervention edit protocol over ten edit families and three calibration nulls. Our headline results are negative and are about the protocol rather than the models. First, \textbf{magnitude-based edit scoring has no null it clears}: on 12 of 12 configurations a meaning-preserving paraphrase moves the action \emph{more} than semantic edits do. The obvious repair --- swapping to a length-exact meaning-preserving floor --- flips the sign on all 12, and the two floors disagree by more than either disagrees with the semantic families, so neither licenses a claim about meaning. Second, the metric is close to a decode-collision counter: it tracks $1 - P(\Delta{=}0)$ at $R^2{=}0.93$ over 324 cells. Third, requiring the action change to point the \emph{implied} direction inverts the ranking. Constructively, that direction-aware score is the one instrument here with a measured null: it clears its own floor on 7 of 11 configurations at $6.2$--$11.1\times$ and correctly fails on a no-CoT control. We release all records and an audit script that checks 1,000 claims and fails on any mismatch.
 \end{abstract}
 
 \section{Introduction}
@@ -78,7 +78,7 @@ We built one, applied it to 15 VLAs across 4 architecture families, and the most
 \item \textbf{A construct-validity failure, characterized rather than caveated} (\S\ref{sec:floors}). $\mathcal{F}$ sits below its own meaning-preserving floor on 12/12 configurations; the alternative floor flips the sign on 12/12; and the two floors disagree by more than either disagrees with the semantic mean, also on 12/12. We report both floors everywhere and treat $\mathcal{F}$ as uninformative about meaning in either direction.
 \item \textbf{What $\mathcal{F}$ actually counts} (\S\ref{sec:collision}). It tracks $1 - P(\Delta_\infty{=}0)$ at $R^2 = 0.93$ over 324 cells. Its much-advertised insensitivity to the threshold follows from that, and is not evidence of robustness.
 \item \textbf{One instrument that does clear a null} (\S\ref{sec:directional}). $\mathcal{F}_{\text{dir}}$ clears a ceiling built from eight non-directional families on 7 of 11 configurations, at $6.2$--$11.1\times$ on the CoT-trained variants, and fails on the no-CoT control as it should. This is what we recommend any admission rule be built on.
-\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 999 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
+\item \textbf{A release built to be checked} (\S\ref{sec:release}). All per-sample records, an audit script asserting 1,000 claims against them --- field presence, not merely record counts --- and a leaderboard admission rule that rejects seven of our own eight submissions.
 \end{enumerate}
 
 \section{Related work}
@@ -164,6 +164,26 @@ That is measurable, so we measured it. Across the 324 (run, family) cells with $
 \section{Direction-aware scoring: the ranking inverts, and this instrument has a null}
 \label{sec:directional}
 
+\begin{table}[t]
+\centering\small
+\begin{tabular}{l r r r r}
+\toprule
+Model & $\mathcal{F}_{\text{mag}}$ & rank & $\mathcal{F}_{\text{dir}}$ & $\cos$ \\
+\midrule
+\textbf{ECoT-bridge} & \textbf{0.963} & \textbf{1} & 0.120 & $+0.415$ \\
+Ours r=64      & 0.823 & 2 & \textbf{0.779} & $-0.509$ \\
+Ours r=16      & 0.749 & 3 & 0.666 & $-0.320$ \\
+Ours data-50A  & 0.699 & 4 & 0.642 & $-0.256$ \\
+Ours r=8       & 0.696 & 5 & 0.649 & $-0.313$ \\
+Ours r=32      & 0.652 & 6 & 0.579 & $-0.147$ \\
+Ours data-50B  & 0.639 & 7 & 0.542 & $-0.111$ \\
+Ours no-CoT    & 0.274 & 8 & 0.087 & $+0.759$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Magnitude vs.\ direction-aware faithfulness on \emph{direction\_flip}.} $\mathcal{F}_{\text{mag}}$ is Eq.~\ref{eq:faith}; $\mathcal{F}_{\text{dir}}$ is Eq.~\ref{eq:fdir}; $\cos$ is the mean cosine between the original and post-edit xyz translation, so a faithful model is negative. Every row is a 3-sampling-seed mean. The \emph{rank} column orders $\mathcal{F}_{\text{mag}}$ and exists only to make the inversion legible: ranks 4 and 5 are separated by less than either row's seed std and should not be read as ordered, nor should any adjacent pair among ranks 2--7. The gap between the second and fourth columns is the point. Computed from the released action pairs with no new inference. Per-family means and error bars: Appendix~\ref{sec:appendix}.}
+\label{tab:directional}
+\end{table}
+
 \textbf{The ranking reverses.} ECoT-bridge --- numerically highest in every magnitude column --- has $\mathcal{F}_{\text{mag}} = 0.963 \pm 0.006$ on \emph{direction\_flip} but $\mathcal{F}_{\text{dir}} = 0.120 \pm 0.043$, with mean translation cosine $+0.415$: \textbf{it moves in substantially the \emph{same} direction after the direction is reversed}. The LoRA variants it outscores by $1.2$--$1.5\times$ on magnitude genuinely reverse ($\cos$ from $-0.111$ to $-0.509$) and outscore it by $4.5$--$6.5\times$ on $\mathcal{F}_{\text{dir}}$. The inversion is far larger than the seed noise producing it: ECoT-bridge's deficit against $r{=}64$ is $0.659$ against per-row seed stds of $0.043$ and $0.021$. This is why we publish no ranking --- two defensible scoring rules disagree about who is best, so publishing either would be a choice of conclusion rather than a measurement.
 
 \textbf{$\mathcal{F}_{\text{dir}}$ is also the one instrument here that clears a null}, and this is the constructive half of the paper. Our own critique of the field is that edit sensitivity gets reported without a null; $\mathcal{F}_{\text{dir}}$ was introduced to show the ranking inverts and was never itself calibrated. So we calibrated it against the \emph{ceiling} over eight non-directional families --- both meaning-preserving floors, both structural nulls, and the semantic families whose edits are not directional. None of them has any reason to \emph{reverse} a translation vector, so their maximum is the floor.
@@ -172,6 +192,13 @@ On the six CoT-trained LoRA and data variants, \emph{direction\_flip} clears tha
 
 \section{Attention and causal effect are dissociated}
 \label{sec:dissociation}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{fig4_dissociation.pdf}
+    \caption{\textbf{Attention mass and causal effect are dissociated.} \emph{(a)} Attention on the CoT segment is $\in [0.335, 0.358]$ for all 8 trained CoT-VLA variants --- a max--min gap of 2.3\,pp. \emph{(b)} The same models' mean faithful rate over the 7 non-control edit families spans $5.2\times$. A monitor reading (a) is not reading (b). Early-layer quantity ($L=\{0,1,2,3\}$); see the depth sweep below.}
+    \label{fig:dissociation}
+\end{figure}
 
 All 8 ECoT-family CoT-VLAs cluster tightly at $(\text{visual}, \text{instr}, \text{CoT}, \text{prev}) \approx (0.29, 0.30, 0.34, 0.07)$ regardless of training regime, while OpenVLA non-CoT baselines sit at $(0.52, 0.42, 0.00, 0.05)$: \textbf{attention on the CoT segment is a floor set by architecture, and reasoning-target training moves it by little}. Causal effect is not so distributed --- $\bar{\mathcal{F}}_{\text{mag}}$ spans $5.2\times$ across the same models. Attention mass therefore does not predict causal effect, and a monitor reading the first is not reading the second.
 
@@ -187,7 +214,7 @@ All leaderboard rows are 3-sampling-seed means with Wilson 95\% CIs (half-widths
 \section{Release and audit}
 \label{sec:release}
 
-We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $51.6$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{999 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
+We release $52{,}338$ per-sample edit records ($45{,}989$ scored), $3{,}620$ attention records, the decoder audits, and every script, at $51.6$\,MB of JSON requiring no network access to re-derive any number here. \texttt{scripts/verify\_paper\_numbers.py} asserts \textbf{1,000 claims} against the artifacts, treats a missing artifact as a failure rather than a skip, and exits non-zero on any mismatch.
 
 Two disclosures the audit forced, both of which we would rather not make. \textbf{First, it now checks what records \emph{contain}, not only how many there are} --- because the count-only version passed $869/869$ while the release paragraph made a false claim about its own schema. The new check immediately found a second instance: 438 scored records (the three cross-corpus runs) carry deltas without the action pair or edit metadata, so those runs are reproducible at aggregate level only. \textbf{Second, six of the eight leaderboard rows come from a policy whose single-step open-loop prediction does not beat a constant} --- its L$_1$ is $0.0486$ against $0.0457$ for predicting the per-dimension dataset mean, in every frame the checkpoint ships. This does not invalidate $\Delta_\infty$, which is a self-comparison referencing no ground truth. It does mean those rows are edit-sensitivity measurements on weak policies, and it is the direct cause of the missing rollout evidence: at 40 episodes per arm, both the clean-CoT and no-CoT arms score $0/40$, so an edit-induced $\Delta$SR is undefined rather than zero.
 

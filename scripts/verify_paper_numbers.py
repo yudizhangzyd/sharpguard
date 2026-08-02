@@ -3955,6 +3955,20 @@ def audit_arr_submission(a: Audit) -> None:
             if (root / "arr_appendix.tex").exists() else None,
             source="arr_appendix.tex")
 
+    # --- no label may be defined in both documents --------------------------
+    # The body promotes two floats out of the appendix. If the generator ever
+    # stops removing them, LaTeX defines the label twice and the number it
+    # prints for \ref becomes whichever came last -- a WARNING, not an error,
+    # so a paper that points readers at the wrong table builds cleanly.
+    if (root / "arr_appendix.tex").exists():
+        body_labels = set(re.findall(r"\\label\{([^}]*)\}", vis))
+        ap_labels = set(re.findall(
+            r"\\label\{([^}]*)\}", (root / "arr_appendix.tex").read_text()))
+        dup = sorted(body_labels & ap_labels)
+        a.check(sec, "no \\label is defined in both the body and the appendix, "
+                     "which would make \\ref resolve unpredictably", 0,
+                len(dup), source=f"duplicates: {dup}")
+
     # --- long \texttt paths must be breakable in two columns ----------------
     # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
     # 347pt overfull box on a 54-character artifact filename -- text running
@@ -4422,10 +4436,17 @@ def main() -> int:
     # The manuscript states how many claims this script checks. Let the script
     # verify its own advertised size, so adding a check cannot silently make
     # the paper's description of the audit stale.
-    quoted = re.search(r"checks \$(\d+)\$ claims", TEX.read_text()) if TEX.exists() else None
+    #
+    # Accept the LaTeX thousands separator: past 1,000 the count is typeset
+    # $1{,}000$, and a \d+ pattern stopped matching it -- which surfaced as
+    # "artifact missing", i.e. the check reporting itself unverifiable rather
+    # than reporting a mismatch. Strip the separator before comparing.
+    quoted = (re.search(r"checks \$([\d{},]+)\$ claims", TEX.read_text())
+              if TEX.exists() else None)
     a.check("Release integrity (DATASHEET / LICENSE / artifact counts)",
             "the claim count the manuscript advertises matches this script",
-            len(a.rows) + 1, int(quoted.group(1)) if quoted else None,
+            len(a.rows) + 1,
+            int(re.sub(r"[^\d]", "", quoted.group(1))) if quoted else None,
             source="cot_faith_iclr.tex: 'checks $N$ claims'")
 
     rc = a.report()

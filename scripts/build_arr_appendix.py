@@ -148,11 +148,56 @@ def transform(src: str) -> str:
     ):
         body = re.sub(pat, sub, body)
 
+    # --- drop the floats the body promoted ----------------------------------
+    # See PROMOTED below. Removing the float leaves its surrounding prose
+    # intact: the source discusses each one in running text that still reads
+    # correctly with the exhibit a few pages earlier in the body, and every
+    # \ref to it resolves to the body's copy.
+    for lab in PROMOTED:
+        env = "table" if lab.startswith("tab:") else "figure"
+        pat = (r"\\begin\{" + env + r"\*?\}(?:\[[^\]]*\])?"
+               r"(?:(?!\\begin\{" + env + r").)*?"
+               r"\\label\{" + re.escape(lab) + r"\}"
+               r".*?\\end\{" + env + r"\*?\}\s*")
+        body, n = re.subn(pat, "", body, flags=re.S)
+        if n != 1:
+            raise SystemExit(f"[arr] promoted float {lab}: removed {n}, "
+                             f"expected 1 -- the body and the appendix would "
+                             f"both define it")
+
+    # --- namespace every surviving label ------------------------------------
+    # The body was written by hand and reuses the source's names for the
+    # sections and equations it restates: sec:intro, eq:delta, eq:faith,
+    # eq:fdir and three more were defined in BOTH files. LaTeX resolves a
+    # duplicate to whichever it read last -- the appendix -- so body text
+    # saying "Eq. 1" was pointing thirty pages away, and it emits a Warning,
+    # not an Error, so four clean builds shipped with it.
+    #
+    # Prefixing the appendix's copies fixes it in one place. Refs INSIDE the
+    # appendix are rewritten to match, so its internal cross-references still
+    # land on its own copy; refs in the body keep pointing at the body's.
+    body_src = DEST.parent / "cot_faith_arr.tex"
+    if body_src.exists():
+        body_labels = set(re.findall(r"\\label\{([^}]*)\}",
+                                     body_src.read_text()))
+        for lab in sorted(labels(body) & body_labels):
+            body = body.replace(r"\label{" + lab + "}",
+                                r"\label{app:" + lab + "}")
+            body = re.sub(r"(\\(?:ref|autoref|eqref|Cref|cref)\{)"
+                          + re.escape(lab) + r"\}",
+                          r"\1app:" + lab + "}", body)
+
     return (HEADER + "\n\\section{Full-length manuscript}\n"
             "\\label{sec:appendix}\n" + body.strip() + "\n")
 
 
 ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
+
+# Floats the ARR body now carries itself. They must be REMOVED here: a \label
+# defined in both files makes the number LaTeX prints unpredictable, and the
+# duplicate is a warning rather than an error, so it ships silently.
+# The body is the definition; the appendix cites it by \ref like any other.
+PROMOTED = ("tab:directional", "fig:dissociation")
 
 
 def labels(text: str) -> set:
@@ -173,9 +218,13 @@ def main() -> int:
     # defect that ships because nobody reads the appendix of their own paper.
     src_labels = labels(src)
     out_labels = labels(out)
+    # A label the body also defines survives here under an app: prefix rather
+    # than being lost -- see the namespacing pass in transform(). Count it as
+    # present, or the guard reports a rename as a deletion.
+    out_labels |= {l[4:] for l in out_labels if l.startswith("app:")}
     # The title/abstract region and the Conclusion are intentionally dropped.
     dropped = {l for l in src_labels - out_labels}
-    expected_drops = {"sec:conclusion"}
+    expected_drops = {"sec:conclusion"} | set(PROMOTED)
     unexpected = dropped - expected_drops
     if unexpected:
         print(f"[arr] FAIL: {len(unexpected)} label(s) lost: "
