@@ -116,16 +116,39 @@ def main(argv: list) -> int:
     snap, settled_obs = m._settle_once(env, init[0])
 
     acts = scripted_actions(n_steps)
+    # THREE replays, not two. Run 1 of this probe (bolt h6pttcu4g5) got
+    # identical qpos at every step -- 0.0 -- and yet the rendered frames
+    # differed by up to 160 levels, which cannot happen if the render is a
+    # function of the state. Either the renderer carries state of its own or the
+    # frames are offset by a step. A third replay separates those: if 2 and 3
+    # agree while 1 differs, the first replay after the settle is the odd one
+    # (a warm-up or stale buffer) rather than the render being irreproducible.
+    # That distinction decides whether the arm that runs FIRST in a capture can
+    # be compared with the arms after it -- which is the filmstrip's whole
+    # premise, so it is measured here rather than assumed.
     a1 = replay(env, m, snap, acts)
     a2 = replay(env, m, snap, acts)
+    a3 = replay(env, m, snap, acts)
 
     # The trajectories, compared at every step rather than only at the end: a
     # divergence that later re-converges is still a divergence, and the strip
     # samples intermediate steps.
-    dq = [float(np.abs(x - y).max()) for x, y in zip(a1["qpos"], a2["qpos"])]
-    have_frames = all(f is not None for f in a1["frames"] + a2["frames"])
-    dpix = ([float(np.abs(x.astype(np.int32) - y.astype(np.int32)).max())
-             for x, y in zip(a1["frames"], a2["frames"])] if have_frames else [])
+    def dq_of(x, y):
+        return [float(np.abs(p - q).max()) for p, q in zip(x["qpos"], y["qpos"])]
+
+    def dpix_of(x, y):
+        if not all(f is not None for f in x["frames"] + y["frames"]):
+            return []
+        return [float(np.abs(p.astype(np.int32) - q.astype(np.int32)).max())
+                for p, q in zip(x["frames"], y["frames"])]
+
+    dq = dq_of(a1, a2)
+    dq23 = dq_of(a2, a3)
+    dpix = dpix_of(a1, a2)
+    dpix23 = dpix_of(a2, a3)
+
+    def first_nonzero(xs):
+        return next((i for i, v in enumerate(xs) if v != 0.0), None)
 
     # WHICH state entry diverges, and whether the divergence is an offset
     # present immediately or drift that accumulates. Reported because the first
@@ -144,8 +167,20 @@ def main(argv: list) -> int:
         "identical_frames": bool(dpix) and max(dpix) == 0.0,
         "first_step_qpos_diff": dq[0] if dq else None,
         "qpos_diff_per_step": [round(v, 12) for v in dq],
+        "pixel_diff_per_step": dpix,
+        "first_differing_pixel_step": first_nonzero(dpix),
+        "n_pixel_steps_differing": sum(1 for v in dpix if v != 0.0),
         "first_step_worst_qpos_index": int(step0.argmax()) if dq else None,
         "n_qpos_entries_differing_at_step0": int((step0 > 0).sum()) if dq else None,
+        # Replay 2 vs replay 3: same code path as 1 vs 2, but with no
+        # first-after-settle asymmetry. If these agree where 1 vs 2 does not,
+        # the renderer is reproducible and the FIRST replay is what differs.
+        "max_abs_qpos_diff_2v3": max(dq23) if dq23 else None,
+        "max_abs_pixel_diff_2v3": max(dpix23) if dpix23 else None,
+        "identical_qpos_2v3": bool(dq23) and max(dq23) == 0.0,
+        "identical_frames_2v3": bool(dpix23) and max(dpix23) == 0.0,
+        "pixel_diff_per_step_2v3": dpix23,
+        "first_differing_pixel_step_2v3": first_nonzero(dpix23),
         "settled_obs_is_shared": settled_obs is not None,
     }
     print(json.dumps(rep, indent=2))
@@ -166,6 +201,24 @@ def main(argv: list) -> int:
               f"step 0). The arms are not paired beyond step 0.",
               file=sys.stderr)
         return 1
+    # Pixels too, and gated rather than merely reported: the filmstrip IS
+    # pixels. Identical state with different frames means the render is not a
+    # function of the state, and then a row-to-row difference in the figure is
+    # not attributable to the prompt either.
+    if not rep["identical_frames"]:
+        print(f"[probe] FAIL: qpos is identical at every step and the RENDERED "
+              f"frames are not (max |dpix| "
+              f"{rep['max_abs_pixel_diff_over_all_steps']}, first differing "
+              f"step {rep['first_differing_pixel_step']}, "
+              f"{rep['n_pixel_steps_differing']}/{n_steps} steps differing). "
+              f"Replay 2 vs 3: identical_frames="
+              f"{rep['identical_frames_2v3']} (max "
+              f"{rep['max_abs_pixel_diff_2v3']}, first differing step "
+              f"{rep['first_differing_pixel_step_2v3']}). If 2 and 3 agree, the "
+              f"FIRST replay after the settle renders differently and the arm "
+              f"that runs first in a capture cannot be compared with the rest.",
+              file=sys.stderr)
+        return 1
     ch = rep["arm_rewind_channels"]
     missing = [k for k, v in ch.items() if not v]
     if missing:
@@ -174,8 +227,9 @@ def main(argv: list) -> int:
               f"reason -- most likely robosuite renamed something.",
               file=sys.stderr)
         return 1
-    print("[probe] PASS: identical prompts give identical trajectories, and "
-          f"every carry-over channel was reset ({ch}).")
+    print("[probe] PASS: identical prompts give identical trajectories in both "
+          f"qpos and pixels, over {n_steps} steps and three replays, and every "
+          f"carry-over channel was reset ({ch}).")
     return 0
 
 
