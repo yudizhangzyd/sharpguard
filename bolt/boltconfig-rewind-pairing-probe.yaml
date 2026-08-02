@@ -1,0 +1,28 @@
+name: 'CoT-Faith #10d: rewind-pairing probe -- identical prompts, identical trajectories'
+description: 'Sufficiency check for the filmstrip pairing fix. The capture run verifies the arms match at step 0, which is necessary and not sufficient: the channels set_init_state does not restore -- the OSC controller goal and MuJoCo warm-start accelerations -- act from step 1 onward, exactly where the arms are supposed to differ, so a confound there is invisible in both the pixels and the report. This removes the policy: settle once, rewind twice, replay ONE fixed action sequence both times, and require the trajectories to be identical at every step in qpos and in pixels. If two identical prompts can diverge, a difference between two different prompts is not attributable to the prompt. It also records which carry-over channels the rewind actually reached, since robosuite has renamed both across versions and a silent miss leaves the confound in place while the code still reads as handled. Exits non-zero if either check fails.'
+tags: ['cotfaith', 'rollout-edit', 'pairing', 'limitation-v', 'probe']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  # 1gpu rather than cpu: the setup script builds the same LIBERO/EGL stack the
+  # capture uses, and the probe must exercise THAT stack -- a pairing property
+  # verified against a different renderer is a property of a different run.
+  task_type: 1gpu
+  disk_gb: 256
+  timeout: 2h
+  cluster: aws_6
+
+environment_variables:
+  SUITE: 'libero_90'
+  PROBE_STEPS: '40'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_probe_rewind_pairing.sh
