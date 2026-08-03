@@ -53,8 +53,11 @@ direction = [r[1] for r in rows]
 gripper = [r[3] for r in rows]
 x = np.arange(len(labels)); w = 0.35
 
-# Sizes on the page.
-TICK, LAB, VAL, LEG, TITLE, NOTE = 6.2, 6.6, 6.0, 6.2, 7.0, 5.4
+# Sizes on the page. 6.5pt is the floor for run text; LAB is 8.6 rather than
+# 6.6 because the y label contains $\Delta_\infty$ and mathtext sets a subscript
+# at 0.7x the base, so 6.6pt printed the "inf" of the threshold this whole axis
+# is measured at at 4.6pt.
+TICK, LAB, VAL, LEG, TITLE, NOTE = 6.5, 8.6, 6.5, 6.5, 7.0, 6.5
 
 fig, ax = plt.subplots(1, 1, figsize=(5.18, 2.62))
 # Explicit margins: savefig crops to the artists, so default margins emit a page
@@ -76,11 +79,14 @@ ax.set_ylim(0, 1.34)
 # The two facts a reader cannot get from the bars. The first is a protocol
 # difference INSIDE the figure; the second is a family that was run and never
 # landed, which is an absent measurement rather than a zero.
-ax.text(-0.42, 1.255,
+# 1.245 and 1.09, not 1.255/1.145: at 6.5pt each of these lines is 0.09 of the
+# data range tall, and at the old spacing the second one set straight across the
+# y=1.2 gridline. Each note now sits in the clear band between two gridlines.
+ax.text(-0.42, 1.245,
         "LIBERO bar: 3-seed main sweep on dataset CoT. Other three: one run "
         "each, self-decoded CoT, visibility-filtered.",
         fontsize=NOTE, style="italic", color="0.3", ha="left", va="bottom")
-ax.text(-0.42, 1.145,
+ax.text(-0.42, 1.09,
         # Plain underscore: this is a matplotlib string, so "\\_" prints the
         # backslash.
         "subject_swap was run on all three non-LIBERO corpora and landed on "

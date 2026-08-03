@@ -51,9 +51,13 @@ NH = D["noise_hierarchy"]
 TR = D["training_replicate"]
 
 # The sizes a reader actually gets, since the figure is drawn at its include
-# width. Stacked at 3.03in, panel (b) has ~10pt of vertical room per row, so
-# 5.5pt row labels are what the slot holds rather than a preference.
-TITLE, TICK, VAL, LAB, LEG = 7.0, 5.5, 5.5, 6.0, 5.0
+# width. Stacked at 3.03in, panel (b) has ~10pt of vertical room per row -- which
+# is what the old 5.0-5.5pt sizes were reasoning from, and it was the wrong
+# constraint: a 10pt row pitch holds 6.5pt type with 3.5pt of leading, and 6.5pt
+# is the floor for run text in this submission. This is a \columnwidth figure,
+# so it is also the smallest type in the body and the first thing a reviewer
+# reading on paper cannot read.
+TITLE, TICK, VAL, LAB, LEG = 7.0, 6.5, 6.5, 6.5, 6.5
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(3.035, 2.10),
                                gridspec_kw={"height_ratios": [1.0, 1.5]})
@@ -145,7 +149,11 @@ labels = sorted(per_max, key=per_max.get, reverse=True)
 ys = np.arange(len(labels))
 ax2.barh(ys, [per_max[m] for m in labels], color=C_COT_TRAINED,
          edgecolor="black", lw=0.4, height=0.6,
-         label=rf"worst of {n_bar_fams} families ($\max_f |\Delta\mathcal{{F}}|$)")
+         # "$\max|\Delta\mathcal{F}|$", not "$\max_f$": mathtext sets a
+         # subscript at 0.7x the base, so the "f" printed at 4.6pt -- and the
+         # words in front of it ("worst of N families") already say what the
+         # subscript said.
+         label=rf"worst of {n_bar_fams} families ($\max|\Delta\mathcal{{F}}|$)")
 ax2.plot([per_bar[m] for m in labels], ys, "o", ms=4,
          color=C_NO_COT, mec="black", mew=0.4, ls="none", zorder=3,
          label=r"$|\Delta\bar{\mathcal{F}}|$ (7 non-control mean)")

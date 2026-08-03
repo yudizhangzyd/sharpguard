@@ -50,9 +50,11 @@ PT = [(_LBL[m], ATTN[m]["per_token"]) for m in
       ["ours-r8", "ours-r16", "ours-r32", "ours-r64", "ours-no-cot",
        "ours-data50A", "ours-data50B", "ecot-bridge"] if m in ATTN]
 
-# Sizes on the page, not on a canvas that will be shrunk. Panel (a) fits 12
-# model slots into 3.0in, which is what sets TICK.
-TITLE, TICK, YLAB, LEG, GRP = 6.5, 5.3, 6.2, 5.0, 5.4
+# Sizes on the page, not on a canvas that will be shrunk. 6.5pt is the floor
+# every surviving figure in the submission is held to; panel (a) fits 12 model
+# slots into 3.0in, and at 45 degrees of rotation the perpendicular gap between
+# adjacent labels is 0.71 of the 16pt slot, so 6.5pt clears it (measured).
+TITLE, TICK, YLAB, LEG, GRP = 6.5, 6.5, 6.6, 6.5, 6.5
 
 fig, (ax1, ax2, ax3) = plt.subplots(
     1, 3, figsize=(6.28, 2.80),

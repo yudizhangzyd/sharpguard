@@ -1,154 +1,62 @@
-"""Fig 12 (NEW, R1 item 3) -- the leaderboard INVERTS under a direction-aware
-version of its own flagship edit.
+"""Fig 12 (R1 item 3) -- the differential leaderboard: every family this model
+answers, measured against its own paraphrase floor and its own ceiling.
 
-(a) magnitude-F vs directional-F on direction_flip, per model.
-(b) signed cosine of the xyz translation before vs after direction_flip.
-    A CoT-faithful model must move the OPPOSITE way (cos -> -1).
-(c) F_diff = F(f) - F(paraphrase_null): the differential leaderboard for
-    ours-no-cot. Every model now carries a measured paraphrase floor, but this
-    is the only one whose floor (0.19) is far enough below its ceiling for the
-    per-family differential to be legible; on the full-CoT variants the floors
-    sit at 0.45-0.66 and the bars collapse toward zero.
+F_diff = F(f) - F(paraphrase_null) for ours-no-CoT, ALL 12 non-reference
+families, ranked, with instr_random_sub -- a deliberately random instruction
+substitution -- drawn and labelled as the CEILING. The panel's content is that
+the whole floor-to-ceiling band is 0.07 wide and direction_flip sits above the
+ceiling: a meaning-changing edit moves this model no further than a random
+instruction does.
+
+WHY THIS FIGURE IS ONE PANEL, AND USED TO BE THREE.
+Panel (a) redrew tab:directional's F_mag and F_dir columns on direction_flip and
+panel (b) redrew that same table's signed-cosine column -- the same eight models,
+the same digits, in the same submission as the table, which the ARR build
+PROMOTES into the body. This paper had already cut one figure for exactly that
+duplication, so the figure is cut to the panel whose data appears nowhere else.
+Nothing measured was lost: every number the two deleted panels drew is printed,
+to more decimals, in tab:directional, and the prose around it is what argues
+from them. What was lost was a full-width float spent restating a table.
+
+Cutting them is also what fixes the type. Three panels across 6.28in put eight
+model slots and sixteen bars in each of two of them -- about 8pt of canvas per
+bar, narrower than a horizontal "0.96" -- and that is what forced 4.8pt value
+labels and 5.3pt ticks, the smallest type in the submission. One panel at
+\\columnwidth carries 12 horizontal rows with nothing below 6.5pt, and no
+mathtext subscript at all: the axis label spells the difference out rather than
+setting "diff" at 0.7x of an already small base.
+
+Every size below is the size on the PAGE, not on a canvas that will be shrunk.
+The canvas is authored at the include width for the reason
+gen_fig4_dissociation.py spells out: matplotlib font sizes are absolute points,
+so a figure drawn wider than the slot it is included in prints every label at
+slot/canvas of the size written here. The fact sheet at the bottom prints the
+width savefig actually emitted and the \\textwidth fraction that includes it at
+1:1, which is the quantity the audit reads back.
 
 All values from results_v2/derived_metrics.json.
-
-AUTHORED AT THE INCLUDE WIDTH, for the reason spelled out in
-gen_fig4_dissociation.py: matplotlib font sizes are absolute points, so a canvas
-drawn 11.09in wide and included at 0.8\\textwidth (5.06in) prints every label at
-46% of its authored size -- this figure's tick and value labels were 7pt on the
-canvas and 3.2pt on the page, the smallest type in the document by a wide
-margin. Nothing about the content changed in the rewrite; the sizes below are
-the sizes a reader gets.
-
-Two panels carry 16 bars between 8 model slots, which leaves ~8pt per bar --
-narrower than a horizontal "0.96". Panel (a)'s value labels are therefore
-rotated to run along the bar rather than across it, and panel (b) keeps the
-original's no-labels treatment: its claim is the SIGN, which the zero line and
-the faithful-target rule already carry.
 """
-import sys, os
+import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
 from _data import MODELS, ORDER, LABELS, OURS, NON_CONTROL, fam
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 
+# The ceiling rule crosses the value labels of the two families nearest it --
+# instr_random_sub's bar ENDS on the rule, so its label cannot avoid it -- and a
+# dashed line through a 6.5pt "+0.07" is the one thing on this panel that was
+# hard to read. A white halo under the glyphs keeps both artists whole.
+HALO = [pe.withStroke(linewidth=1.3, foreground="white")]
+
+# ORDER only fixes the iteration order of the model scan below, so the selection
+# is deterministic; the selection RULE is the lowest floor, asserted below.
 MS = [m for m in ORDER if m in MODELS]
-# Only panels (a) and (b) carry a model axis; (c) is a family axis. See
-# paper_plot_style.ours_bracket for why the "Ours" prefix left the labels.
-N_OURS = sum(1 for m in MS if m in OURS)
-assert all(m in OURS for m in MS[:N_OURS]), \
-    "ORDER no longer puts our fine-tunes first; the bracket would mislabel"
-COL = {m: (C_NO_COT if m == "ours-no-cot" else
-           C_ECOT_BRIDGE if m == "ecot-bridge" else C_COT_TRAINED) for m in MS}
 
-# Every size below is the size on the page, not on a canvas that will be
-# shrunk. Eight model slots in a 1.9in panel is the binding constraint.
-TITLE, TICK, VAL, YLAB, LEG = 6.6, 5.3, 4.8, 6.0, 5.2
-
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6.28, 3.05))
-# Explicit margins rather than the defaults: savefig(bbox_inches="tight") crops
-# to the artists, so default 10% side margins would emit a page narrower than
-# 6.28in and LaTeX would scale it back up -- reintroducing the mismatch this
-# rewrite removes. Filling the canvas makes the crop a no-op.
-fig.subplots_adjust(left=0.070, right=0.998, top=0.867, bottom=0.258,
-                    wspace=0.30)
-for ax in (ax1, ax2, ax3):
-    ax.tick_params(axis="y", labelsize=TICK + 0.4, length=2.2, pad=1.5)
-    ax.tick_params(axis="x", length=0, pad=1.5)
-# One line per model: the two-line forms in LABELS are wider than an 8pt slot
-# at any font size, and a rotated label needs a single baseline in any case.
-FLAT = [LABELS[m].replace("\n", "") for m in MS]
-x = np.arange(len(MS))
-w = 0.38
-
-# ---- (a) magnitude-F vs directional-F on direction_flip --------------------
-mag = [fam(m, "direction_flip", "F_mag") for m in MS]
-dr = [fam(m, "direction_flip", "F_dir") for m in MS]
-ax1.bar(x - w / 2, mag, w, color=[COL[m] for m in MS], edgecolor="black", lw=0.4,
-        label=r"magnitude-$\mathcal{F}$ (Eq. 1)")
-ax1.bar(x + w / 2, dr, w, color=[COL[m] for m in MS], edgecolor="black", lw=0.4,
-        hatch="////", label=r"directional-$\mathcal{F}$ ($\cos<-0.5$)")
-for i, (a, b) in enumerate(zip(mag, dr)):
-    # Rotated: a horizontal "0.96" at 4.8pt is 11pt wide and the bar slot is 8pt,
-    # so the labels of adjacent bars overlapped outright at this width.
-    ax1.text(i - w / 2, a + 0.03, f"{a:.2f}", ha="center", va="bottom",
-             fontsize=VAL, rotation=90)
-    ax1.text(i + w / 2, b + 0.03, f"{b:.2f}", ha="center", va="bottom",
-             fontsize=VAL, rotation=90)
-ax1.set_xticks(x)
-ax1.set_xticklabels(FLAT, fontsize=TICK, rotation=45, ha="right",
-                    rotation_mode="anchor")
-ax1.set_ylabel(r"$\mathcal{F}(m,\mathrm{direction\_flip})$", fontsize=YLAB,
-               labelpad=1.5)
-# Headroom for the rotated labels: a 4-character label at 4.8pt runs ~11pt,
-# which is 0.13 of this axis, so a bar at 1.00 needs the ceiling at 1.16.
-ax1.set_ylim(0, 1.30)
-from matplotlib.patches import Patch
-_h = [Patch(facecolor="0.6", edgecolor="black", lw=0.4,
-            label=r"magnitude-$\mathcal{F}$ (Eq. 1)"),
-      Patch(facecolor="0.6", edgecolor="black", lw=0.4, hatch="////",
-            label=r"directional-$\mathcal{F}$ ($\cos<-0.5$)")]
-# A tight legend box: at 5.2pt the default padding is a third of the legend's
-# height, and this panel has 0.14 of axis height to spare above the tallest
-# rotated value label.
-ax1.legend(handles=_h, frameon=False, fontsize=LEG, loc="upper left",
-           handlelength=1.1, handletextpad=0.5, labelspacing=0.25,
-           borderpad=0.1, borderaxespad=0.2)
-ax1.set_title("(a) The flagship edit:\nmagnitude vs direction",
-              loc="left", fontsize=TITLE, style="italic", pad=2.5,
-              linespacing=1.25)
-ax1.set_axisbelow(True); ax1.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
-# y is an axes fraction: this panel grew from 1.43in to 1.86in of axes when
-# panel (c) went horizontal, so the old -0.31 put the bracket 0.45in below
-# the labels instead of 0.34in.
-ours_bracket(ax1, N_OURS, fontsize=TICK, y=-0.205)
-
-# ---- (b) signed cosine ----------------------------------------------------
-cs = [fam(m, "direction_flip", "cos_xyz") for m in MS]
-csf = [fam(m, "direction_flip", "cos_xyz_faithful_subset") for m in MS]
-ax2.bar(x - w / 2, cs, w, color=[COL[m] for m in MS], edgecolor="black", lw=0.4,
-        label="all samples")
-ax2.bar(x + w / 2, csf, w, color=[COL[m] for m in MS], edgecolor="black", lw=0.4,
-        hatch="////", label=r"samples Eq. 1 calls faithful")
-ax2.axhline(0.0, color="black", lw=0.7)
-ax2.axhline(-1.0, color=C_ECOT_BRIDGE, ls="--", lw=0.8)
-ax2.text(len(MS) - 0.4, -0.90, "faithful\ntarget", fontsize=VAL,
-         ha="right", va="bottom", color=C_ECOT_BRIDGE, linespacing=1.2)
-ax2.set_xticks(x)
-ax2.set_xticklabels(FLAT, fontsize=TICK, rotation=45, ha="right",
-                    rotation_mode="anchor")
-ax2.set_ylabel(r"$\cos(a_{orig}[0{:}3],\ a_{edit}[0{:}3])$", fontsize=YLAB,
-               labelpad=1.5)
-ax2.set_ylim(-1.1, 1.20)
-_h2 = [Patch(facecolor="0.6", edgecolor="black", lw=0.4, label="all samples"),
-       Patch(facecolor="0.6", edgecolor="black", lw=0.4, hatch="////",
-             label=r"samples Eq. 1 calls faithful")]
-ax2.legend(handles=_h2, frameon=False, fontsize=LEG, loc="upper left",
-           handlelength=1.1, handletextpad=0.5, labelspacing=0.25,
-           borderpad=0.1, borderaxespad=0.2)
-ax2.set_title("(b) Sign of the response after\nleft$\\leftrightarrow$right is reversed",
-              loc="left", fontsize=TITLE, style="italic", pad=2.5,
-              linespacing=1.25)
-ax2.set_axisbelow(True); ax2.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
-# The bracket hangs off the bottom of the axes, and this axes' bottom is at
-# cos = -1.1 rather than at zero, so it needs the same offset as the others
-# measured in axes fraction -- which is what ours_bracket's y already is.
-ours_bracket(ax2, N_OURS, fontsize=TICK, y=-0.205)
-
-# ---- (c) F_diff for the model with a measured paraphrase floor -------------
-# ALL 12 non-reference families, not the 9 semantic-plus-two ones this panel used
-# to draw. The three it dropped are the three that fix the scale: selfsplice
-# (-0.193, the identity null, which is minus the floor by construction),
-# bbox_jitter_null (-0.147), and instr_random_sub (+0.070) -- the random
-# instruction substitution, i.e. the CEILING. Once the ceiling is on the plot,
-# direction_flip's +0.081 is ABOVE it, and the panel's real content is that the
-# whole floor-to-ceiling band is 0.07 wide.
-#
-# Horizontal and sorted: 12 rotated tick labels do not fit in a 1.9in panel, and
-# "differential leaderboard" is a ranking, so a ranked axis is the honest layout.
+# ---- the model: the one whose paraphrase floor is low enough to see past ----
 # All eight models carry a measured floor, so the selection rule has to be the
-# one the caption states -- lowest floor -- and not HAVE[0], which picked this
+# one the caption states -- lowest floor -- and not MS[0], which would pick this
 # model only because ORDER happens to list it first.
 HAVE = [m for m in MS if MODELS[m].get("paraphrase_null_floor") is not None]
 FLOORS = sorted(HAVE, key=lambda m: MODELS[m]["paraphrase_null_floor"])
@@ -158,6 +66,10 @@ assert MODELS[FLOORS[1]]["paraphrase_null_floor"] \
     "another model's floor is now comparable to this one's; 'the model whose " \
     "floor is low enough for the differential to be readable' no longer " \
     "picks out one model"
+assert m0 in OURS, \
+    "the lowest-floor model is no longer one of our own fine-tunes; the " \
+    "caption calls this panel's model ours-no-CoT"
+
 REFERENCE = "paraphrase_null"        # F_diff is defined as 0 here
 SHORT = {"syntactic_scramble": "scram", "cross_task_swap": "cross-task",
          "direction_flip": "dir flip", "gripper_flip": "grip flip",
@@ -171,50 +83,107 @@ FAMS = [f for f in SHORT if f in _fams]
 assert set(FAMS) | {REFERENCE} == set(_fams), \
     f"this panel is missing a family the release measures: " \
     f"{set(_fams) - set(FAMS) - {REFERENCE}}"
+# The message still says "panel (c)", which is the name the audit greps for and
+# the name the three-panel version gave this panel. Left alone deliberately: the
+# check it backs is that no semantic family silently leaves the plot.
 assert set(NON_CONTROL) <= set(FAMS), "a semantic family dropped out of panel (c)"
 pairs = sorted(((f, fam(m0, f, "F_diff")) for f in FAMS),
                key=lambda t: t[1] or 0.0)
 ys = np.arange(len(pairs))
 vals = [v for _, v in pairs]
+ceil_v = fam(m0, CEILING, "F_diff")
+floor = MODELS[m0]["paraphrase_null_floor"]
+
+# Sizes on the page. 12 rows in 1.7in of axes is ~10pt per row, which is what
+# sets the ceiling on TICK; VAL is the floor the task allows, and it is the
+# smallest type on the figure.
+TITLE, TICK, VAL, XLAB = 7.2, 6.6, 6.5, 7.0
+
+# 2.995in of canvas, cropped to the artists and padded 0.05in a side, emits a
+# 218.4pt page -- one ARR \columnwidth (219.1pt) to within 0.3% -- so LaTeX
+# includes it at 0.48\textwidth for 1:1 and the sizes above are the printed
+# ones. Explicit margins rather than the defaults for the same
+# reason: bbox_inches="tight" crops to the artists, so leaving 10% side margins
+# would emit a narrower page and the include would scale it back up.
+#
+# The axes keeps the name `ax3` from the three-panel version: this is the panel
+# that was (c), and the audit identifies the ceiling rule by grepping this file
+# for the axvline call that draws it, so renaming the axes would silently drop
+# that check. Do not restate that call in a comment either -- the check counts
+# occurrences, and two of them read as no better than none.
+fig, ax3 = plt.subplots(figsize=(2.995, 2.30))
+fig.subplots_adjust(left=0.178, right=0.995, top=0.868, bottom=0.132)
+
 # Semantic families in the trained colour, controls and calibrators in grey: the
 # point of drawing all 12 is that they interleave.
 cols = [C_COT_TRAINED if f in NON_CONTROL else C_CTRL for f, _ in pairs]
 ax3.barh(ys, vals, 0.66, color=cols, edgecolor="black", lw=0.4)
 ax3.axvline(0.0, color="black", lw=0.8)
-ceil_v = fam(m0, CEILING, "F_diff")
 ax3.axvline(ceil_v, color="0.15", lw=0.7, ls=(0, (3, 2)))
 for i, v in enumerate(vals):
     ax3.text(v + (0.006 if v >= 0 else -0.006), i, f"{v:+.2f}",
-             ha="left" if v >= 0 else "right", va="center", fontsize=VAL)
+             ha="left" if v >= 0 else "right", va="center", fontsize=VAL,
+             path_effects=HALO)
 ax3.set_yticks(ys)
 ax3.set_yticklabels([SHORT[f] for f, _ in pairs], fontsize=TICK)
 ax3.tick_params(axis="y", length=0, pad=1.5)
+ax3.tick_params(axis="x", labelsize=VAL, length=2.2, pad=1.5)
 ax3.set_ylim(-0.7, len(pairs) - 0.3)
 ax3.set_xlim(min(vals) - 0.055, max(max(vals), ceil_v) + 0.062)
-ax3.set_xlabel(r"$\mathcal{F}_{diff}=\mathcal{F}(f)-\mathcal{F}(para)$",
-               fontsize=YLAB, labelpad=1.5)
-floor = MODELS[m0]["paraphrase_null_floor"]
-# Short enough to stay inside the canvas: at 6.6pt the earlier three-clause form
-# ran past the right edge, and savefig's crop then emitted a page WIDER than the
-# canvas, which LaTeX scales back down -- shrinking every label on the figure.
-ax3.set_title(f"(c) {m0}, all {len(pairs)} families\n"
-              f"(floor {floor:.2f}, ceiling {ceil_v:+.2f})",
+# Spelled out rather than set as $\mathcal{F}_{diff}$: a mathtext subscript
+# renders at 0.7x of its base, so a 7pt label would print "diff" at 4.9pt.
+ax3.set_xlabel(r"differential $\mathcal{F}(f)-\mathcal{F}(\mathrm{para})$",
+               fontsize=XLAB, labelpad=1.5)
+ax3.set_title(f"{m0}: all {len(pairs)} non-reference families, ranked\n"
+              f"(paraphrase floor {floor:.2f}, ceiling {ceil_v:+.2f})",
               loc="left", fontsize=TITLE, style="italic", pad=2.5,
               linespacing=1.25)
 ax3.text(ceil_v + 0.004, -0.62, "ceiling", fontsize=VAL, style="italic",
-         color="0.15", ha="left", va="bottom")
+         color="0.15", ha="left", va="bottom", path_effects=HALO)
 ax3.set_axisbelow(True); ax3.xaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 
 save(fig, "fig12_directional_inversion")
 
-print(f"[audit] magnitude on direction_flip : {min(mag):.3f}-{max(mag):.3f}")
-print(f"[audit] directional on the same     : {min(dr):.3f}-{max(dr):.3f}")
+# ---- fact sheet: everything the audit reads back out of this panel ---------
+_next_lowest = LABELS[FLOORS[1]].replace("\n", "")
+print(f"[audit] model drawn (lowest floor)  : {m0} "
+      f"(floor {MODELS[m0]['paraphrase_null_floor']:.3f}; next lowest "
+      f"{_next_lowest} at {MODELS[FLOORS[1]]['paraphrase_null_floor']:.3f})")
 print(f"[audit] F_diff for {m0:<16}: {min(vals):+.3f} to {max(vals):+.3f}"
-      f"  ({len(pairs)} families)")
+      f"  ({len(pairs)} families, reference {REFERENCE} = "
+      f"{fam(m0, REFERENCE, 'F_diff'):+.3f})")
 _pos = [(f, v) for f, v in pairs if (v or 0) > 0]
 print(f"[audit] below their own floor      : "
       f"{sum(1 for _, v in pairs if (v or 0) < 0)} of {len(pairs)}")
 print(f"[audit] above it                   : "
       f"{[(f, round(v, 3)) for f, v in _pos]}")
-print(f"[audit] ceiling (instr_random_sub) : {ceil_v:+.3f}; families above the "
+print(f"[audit] identity null = -floor     : "
+      f"{fam(m0, 'selfsplice_control', 'F_diff'):+.3f} "
+      f"(F_mag {fam(m0, 'selfsplice_control', 'F_mag'):.3f})")
+print(f"[audit] ceiling ({CEILING}) : {ceil_v:+.3f}; band width "
+      f"{ceil_v - fam(m0, REFERENCE, 'F_diff'):.3f}; families above the "
       f"ceiling: {[f for f, v in pairs if (v or 0) > ceil_v]}")
+print(f"[audit] semantic in colour, controls/calibrators in grey: "
+      f"{sum(1 for f, _ in pairs if f in NON_CONTROL)} + "
+      f"{sum(1 for f, _ in pairs if f not in NON_CONTROL)}")
+print(f"[audit] smallest type on the page  : {min([TITLE, TICK, VAL, XLAB])}pt "
+      f"(no mathtext subscript is set at all)")
+
+# The emitted page, stated rather than assumed: bbox_inches="tight" crops to the
+# artists, so the width LaTeX gets is not the figsize above. Print it with the
+# \textwidth fraction that includes it at 1:1 against the measured ARR geometry,
+# which is the pair the audit's include-width check compares.
+_pdf = os.path.join(FIG_DIR, "fig12_directional_inversion.pdf")
+_box = re.search(rb"/MediaBox\s*\[([^\]]*)\]", open(_pdf, "rb").read())
+x0, y0, x1, y1 = (float(v) for v in _box.group(1).split())
+_geo = os.path.join(os.path.dirname(FIG_DIR), "results_v2", "canonical_runs",
+                    "arr_build", "geometry.json")
+try:
+    with open(_geo) as _fh:
+        g = json.load(_fh)
+    tw, cs = g["textwidth_pt"], g["columnsep_pt"]
+    print(f"[audit] emitted page               : {x1 - x0:.1f} x {y1 - y0:.1f}pt "
+          f"({(x1 - x0) / ((tw - cs) / 2):.3f} of the {(tw - cs) / 2:.1f}pt ARR "
+          f"column); include at width={(x1 - x0) / tw:.3f}\\textwidth for 1:1")
+except OSError:
+    print(f"[audit] emitted page               : {x1 - x0:.1f} x {y1 - y0:.1f}pt")

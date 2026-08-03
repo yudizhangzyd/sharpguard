@@ -63,9 +63,12 @@ xs = np.arange(len(BINS))
 # worth colouring as the exception.
 colors = [C_NO_COT, C_CTRL, C_CTRL, C_COT_TRAINED, C_COT_TRAINED]
 ax1.bar(xs, vals, color=colors, edgecolor="black", lw=0.4, width=0.72)
+# FONT_SIZE - 3.5 (6.5pt), not - 4 (6.0pt): 6.5pt is the floor this paper's
+# figures are held to, and a 5-character percentage at 6.5pt is 15pt in a 92pt
+# bin slot, so the floor costs this panel nothing.
 for x, v in zip(xs, vals):
     ax1.text(x, v + total * 0.018, f"{100*v/total:.1f}%",
-             ha="center", fontsize=FONT_SIZE - 4)
+             ha="center", fontsize=FONT_SIZE - 3.5)
 
 # The threshold sits between the third and fourth bin. Drawing it makes the
 # point visually: it is placed in a valley, not on a slope.
@@ -106,7 +109,7 @@ ax2.grid(True, ls=":", lw=0.4, alpha=0.5)
 ax2.text(0.97, 0.06, f"{D['n_cells_exactly_equal']} cells identical\n"
                      f"to the last digit",
          transform=ax2.transAxes, ha="right", va="bottom",
-         fontsize=FONT_SIZE - 4, color="0.25")
+         fontsize=FONT_SIZE - 3.5, color="0.25")
 
 save(fig, "fig13_collision")
 

@@ -381,7 +381,7 @@ def main() -> int:
                 if arm != "nocot":
                     ax.text(0.5, -0.055, short_move(rec and rec.get("move")),
                             transform=ax.transAxes, ha="center", va="top",
-                            fontsize=FONT_SIZE - 4.2, color=colour,
+                            fontsize=FONT_SIZE - 3.5, color=colour,
                             clip_on=False)
             fig.text(0.60 / W, row_top - 0.5 * cell / H, label, ha="right",
                      va="center", fontsize=FONT_SIZE - 2, color=colour,
@@ -484,7 +484,7 @@ def main() -> int:
         axb.annotate(f"own CoT: whole path\nin a {clean_span_cm:.0f} cm box",
                      xy=(xyz_c[:, 1].max(), xyz_c[:, 0].mean()),
                      xytext=(0.82, 0.99), textcoords="axes fraction",
-                     fontsize=FONT_SIZE - 4.2, color=C_COT_TRAINED,
+                     fontsize=FONT_SIZE - 3.5, color=C_COT_TRAINED,
                      ha="center", va="top", linespacing=1.15,
                      arrowprops=dict(arrowstyle="-", lw=0.6,
                                      color=C_COT_TRAINED, shrinkA=1.0,
@@ -503,12 +503,12 @@ def main() -> int:
         axb.legend(handles=[Line2D([], [], color=c, lw=1.1,
                                    label=l.replace("\n", " "))
                             for _, l, c in ARMS],
-                   loc="best", fontsize=FONT_SIZE - 4.2, frameon=False,
+                   loc="best", fontsize=FONT_SIZE - 3.5, frameon=False,
                    handlelength=1.2, borderaxespad=0.1, labelspacing=0.3,
                    handletextpad=0.5)
         axb.set_xlabel("gripper $y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
         axb.set_ylabel("$x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
-        axb.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
+        axb.tick_params(labelsize=FONT_SIZE - 3.5, pad=1.5)
         # Limits before the aspect, so the pad is a pad and not a rescale:
         # adjustable="datalim" then grows whichever axis the 1.93 x PLOT_H box
         # needs, keeping every centimetre the same length in both directions.
@@ -566,11 +566,11 @@ def main() -> int:
                        fontsize=FONT_SIZE - 2, labelpad=1.5)
         axc.set_ylabel("distance from\nown-CoT arm (cm)",
                        fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
-        axc.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
+        axc.tick_params(labelsize=FONT_SIZE - 3.5, pad=1.5)
         # `best` rather than a fixed corner: the curve's shape is whatever the
         # rollout did, and a legend pinned to a corner it happens to fill would
         # hide the divergence this panel exists to show.
-        axc.legend(loc="best", fontsize=FONT_SIZE - 4, frameon=False,
+        axc.legend(loc="best", fontsize=FONT_SIZE - 3.5, frameon=False,
                    handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
         fig.text((X0 + WB + GAP - 0.05) / W, (0.44 + PLOT_H) / H, L_DIST,
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")

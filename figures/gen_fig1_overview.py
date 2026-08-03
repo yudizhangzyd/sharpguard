@@ -153,12 +153,30 @@ ax = fig.add_axes([0.0, 1.0 - A_H / H, 1.0, A_H / H])
 ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
 
 FS = FONT_SIZE - 2.6
+# The two scoring formulas are set LARGER than the rest of the panel, which
+# looks inconsistent and is not: mathtext renders a subscript at 0.7x its base,
+# so at FS the "infty" of $\Delta_\infty$ -- the symbol Section 5 and Figure 3
+# are entirely about -- printed at 5.2pt, below the 6.5pt floor the submission's
+# figures are held to and below what any venue calls legible. 8.6 is the
+# smallest base that keeps a subscript at 6pt. The scoring boxes are re-flowed
+# below to absorb the extra 1.4pt of ink per box.
+FS_EQ = 8.6
 MONO = {"family": "monospace", "fontsize": FONT_SIZE - 3.0}
 
 # The four stages sit in ONE horizontal band. The first draft let the two
 # scoring boxes hang below the band and left a hole between the CoT box and
 # them, so the panel read as scattered parts rather than a pipeline.
-Y0, Y1 = 0.30, 0.85
+Y0, Y1 = 0.272, 0.878
+# The band is 0.606 of the axes rather than the 0.550 it used to be, taken
+# symmetrically about the same centre (0.575) so nothing inside any box moves
+# relative to anything else: 2.7pt of the clear space between the band and the
+# label rules above and below it is spent on the two scoring boxes, which is
+# what FS_EQ costs. The band still clears both rules (2.9pt above, 4.8pt below,
+# measured on the rendered ink) and the panel height A_H is untouched, so the
+# figure occupies exactly the float height it did before.
+# The two scoring boxes stack inside the band with a 0.020 gap between them,
+# so their height is derived from the band instead of being typed twice.
+SCORE_H = (Y1 - Y0 - 0.020) / 2.0
 # This axes is the full figure width but only A_H tall, so a length in inches
 # is A_H/W times as much x-fraction as y-fraction. Getting this wrong is not
 # cosmetic here: the caption claims the two arrows are drawn AT the measured
@@ -255,24 +273,29 @@ sub_label(0.647, "measured, top-ranked model")
 arrow(0.549, 0.575, 0.572, 0.575)
 
 # -- stage 4: the two scoring rules, and what each concludes ---------------
+# The three baselines in each box are set from the MEASURED ink of the three
+# lines (ascent/descent at their own sizes), not from an even pitch: the
+# formulas at FS_EQ are 9.7pt and 10.6pt of ink against 6.9pt for the two text
+# lines, and the old 0.09 pitch left 0.15pt between the heading's descenders
+# and the prime on $a'$. Each box now carries ~1pt of clearance at every gap.
 stage_label(0.868, "read two ways")
-box(0.739, 0.585, 0.258, 0.265, C_NO_COT, fc="#FDF0F1", lw=0.8)
-ax.text(0.752, 0.802, "magnitude (Eq. 1)", fontsize=FS, color=C_NO_COT)
+box(0.739, Y1 - SCORE_H, 0.258, SCORE_H, C_NO_COT, fc="#FDF0F1", lw=0.8)
+ax.text(0.752, 0.811, "magnitude (Eq. 1)", fontsize=FS, color=C_NO_COT)
 # The infinity norm rather than \max_i|a_i-a'_i|: mathtext sets the prime and
 # its companion subscript far enough below the baseline that they collided with
 # the "faithful on ..." line underneath. Same rule, no descender -- and
 # Delta_infty is kept, because S5 and Figure 3 are about that symbol.
-ax.text(0.752, 0.712, r"$\Delta_\infty=\|a-a'\|_\infty>\tau$", fontsize=FS,
+ax.text(0.752, 0.700, r"$\Delta_\infty=\|a-a'\|_\infty>\tau$", fontsize=FS_EQ,
         color="0.15")
-ax.text(0.752, 0.618, f"$\\Rightarrow$ faithful on {FMAG_HERO:.3f}",
+ax.text(0.752, 0.613, f"$\\Rightarrow$ faithful on {FMAG_HERO:.3f}",
         fontsize=FS, color="0.15")
 
-box(0.739, Y0, 0.258, 0.265, C_ECOT_BRIDGE, fc="#EFF6EF", lw=0.8)
-ax.text(0.752, 0.517, "direction-aware (Eq. 3)", fontsize=FS,
+box(0.739, Y0, 0.258, SCORE_H, C_ECOT_BRIDGE, fc="#EFF6EF", lw=0.8)
+ax.text(0.752, 0.500, "direction-aware (Eq. 3)", fontsize=FS,
         color=C_ECOT_BRIDGE)
-ax.text(0.752, 0.423, r"$\cos(a_{1:3},a_{1:3}')<-0.5$", fontsize=FS,
+ax.text(0.752, 0.392, r"$\cos(a_{1:3},a_{1:3}')<-0.5$", fontsize=FS_EQ,
         color="0.15")
-ax.text(0.752, 0.333, f"$\\Rightarrow$ faithful on {FDIR_HERO:.3f}",
+ax.text(0.752, 0.298, f"$\\Rightarrow$ faithful on {FDIR_HERO:.3f}",
         fontsize=FS, color="0.15")
 sub_label(0.868, "one action pair, two verdicts")
 # The same action pair, read by both rules: two arrows out of one source, not
@@ -341,9 +364,15 @@ for m in MS:
 cxx.set_xlim(-0.62, 1.62)
 cxx.set_ylim(len(MS) + 1.35, 0.45)
 cxx.set_xticks([0, 1])
+# FS_EQ, not FONT_SIZE - 3.2: these two labels are the only place the figure
+# names the two scores, and the thing that distinguishes them is a subscript.
+# At 6.8pt mathtext set "mag" and "dir" at 4.8pt -- the one glyph group a reader
+# has to tell apart to read panel (c) was the smallest type in the figure. The
+# two tick positions are 65.8pt apart and the labels are 44.9pt wide at this
+# size, so they still clear each other by 21pt.
 cxx.set_xticklabels([r"rank by $\mathcal{F}_{\mathrm{mag}}$",
                      r"rank by $\mathcal{F}_{\mathrm{dir}}$"],
-                    fontsize=FONT_SIZE - 3.2)
+                    fontsize=FS_EQ)
 cxx.set_yticks(range(1, len(MS) + 1))
 cxx.set_yticklabels(range(1, len(MS) + 1), fontsize=FONT_SIZE - 3)
 cxx.tick_params(axis="both", length=0)
@@ -356,7 +385,10 @@ cxx.set_title(f"(c) the same edit, scored for direction:\n"
 # LaTeX, and \\S is not a mathtext command.
 cxx.text(0.5, len(MS) + 0.80, "pale lines: reorderings inside the retraining "
          "error bar (Sec. 8)", ha="center", va="center",
-         fontsize=FONT_SIZE - 4.0, color="0.5", style="italic")
+         # 6.5pt, the floor: this disclaimer is what stops panel (c) from
+         # asserting an ordering S8 refuses to publish, so it is the last text
+         # in the figure that may be set too small to read.
+         fontsize=FONT_SIZE - 3.5, color="0.5", style="italic")
 
 save(fig, "fig1_overview")
 

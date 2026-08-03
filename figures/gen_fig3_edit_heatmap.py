@@ -22,8 +22,26 @@ Two things were wrong with the previous version and both are the same defect:
 
 The two ecot-bridge cells that genuinely have no measurement print as "—",
 which is what the absence of a run should look like next to a value.
-Cells: faithful rate (0-1), colored via a sequential blue-to-red map.
+Cells: faithful rate (0-1) on a sequential map whose LUMINANCE is monotonic in
+the value (Blues: low = light, high = dark).
 Highlights the no-CoT collapse and selfsplice-control null.
+
+Two further defects, both about whether the figure survives a printer:
+
+  * it used RdYlBu_r, a DIVERGING map. Diverging maps are light in the middle
+    and dark at both ends, so 0.00 (dark red-brown, L* 28) and 0.96 (dark blue,
+    L* 34) printed at essentially the same grey. The figure's entire gestalt --
+    the no-CoT row collapsing while the ECoT row stays uniformly high --
+    therefore INVERTED in greyscale, which is how this appendix reaches anyone
+    reading a printout. Blues is monotonic in L* from 97 down to 21, so the
+    ranking a reader sees in colour is the ranking they see in grey.
+  * the cell-text colour switched on the VALUE (white outside 0.35--0.75),
+    which under any map is a guess about what the map returns. Under RdYlBu_r it
+    was wrong for about ten cells -- 0.36-0.45 and 0.76-0.80 are the palest
+    fills in that map and they got white text on near-yellow. The switch now
+    reads the rendered rgba the colormap actually returns and picks the colour
+    with the higher contrast ratio against it, so it cannot disagree with the
+    fill by construction.
 
 AUTHORED AT THE INCLUDE WIDTH (see gen_fig4_dissociation.py). Drawn 9.4in wide
 and included at 0.95\\textwidth, every label printed at 78% of its authored size.
@@ -59,7 +77,13 @@ _TIER0 = [("selfspl\n(null)", "selfsplice_control"),
           ("syntactic\nscramble", "syntactic_scramble"),
           ("cross-task\nswap", "cross_task_swap")]
 _CALIB = [("bbox\njitter", "bbox_jitter_null"),
-          ("paraphrase\n(null)", "paraphrase_null"),
+          # "paraphr." not "paraphrase": at the 6.5pt the cells now carry, the
+          # full word is 28.6pt wide in a 27.6pt column slot and its box runs
+          # into "instr rand" next door (0.5pt of air between them). The rest of
+          # this axis is already abbreviated -- "subj swap", "grip flip",
+          # "selfspl" -- so the short form is the axis's own convention, and
+          # the caption spells the family out.
+          ("paraphr.\n(null)", "paraphrase_null"),
           ("instr rand\n(ceiling)", "instr_random_sub")]
 FAMILIES = _SEMANTIC + _TIER0 + _CALIB
 GROUPS = [("semantic (7)", 0, len(_SEMANTIC)),
@@ -73,19 +97,44 @@ for i, (name, key) in enumerate(MODELS):
         if v is not None:
             grid[i, j] = v
 
-# Sizes on the page. Thirteen columns share 5.0in, so each cell is 27.7pt wide
-# and 18pt tall -- a 4-character value at 5.4pt is 12.6pt, which is what sets
-# CELL. The x tick labels are two lines each and get 27.7pt of slot, so
-# "paraphrase" at 5.4pt (25pt) is what sets XTICK.
-CELL, XTICK, YTICK, XLAB, CBAR = 5.4, 5.4, 6.4, 6.6, 5.8
+# Sizes on the page. Thirteen columns share 5.0in, so each cell is 27.6pt wide
+# and 14.8pt tall; a 4-character value at 6.5pt is 11.8pt, so the cell text is
+# set by the ROW height rather than the column width and 6.5pt clears it. The x
+# tick labels are two lines each and get 27.6pt of slot, and 6.5pt is what the
+# widest of them fits in (measured: "cross-task" 26.6pt, "paraphr." 23.0pt).
+# 5.4pt -- what all of these were -- is below every legibility floor in the
+# style guides this venue's reviewers print by.
+CELL, XTICK, YTICK, XLAB, CBAR = 6.5, 6.5, 6.5, 7.0, 8.6
+
+
+def _cell_text_colour(rgba):
+    """white or black, whichever contrasts more with the RENDERED fill.
+
+    The old switch was `"white" if (v < 0.35 or v > 0.75) else "black"` -- a
+    hand-typed guess about where the colormap goes light, which the colormap
+    was under no obligation to honour. Read the rgba the map actually returns
+    instead: convert it to CIE L* and put white on anything below L* 50, which
+    is the point where white-on-fill and black-on-fill have equal WCAG contrast
+    ratio. A cell can no longer print pale text on a pale fill whatever cmap
+    this figure is drawn with next.
+    """
+    def lin(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    y = (0.2126 * lin(rgba[0]) + 0.7152 * lin(rgba[1]) + 0.0722 * lin(rgba[2]))
+    lstar = 116.0 * y ** (1 / 3) - 16.0 if y > 0.008856 else 903.3 * y
+    return "white" if lstar < 50.0 else "black"
+
 
 fig, ax = plt.subplots(figsize=(6.28, 2.55))
 # Explicit margins, and the colorbar in an axes of its own: fig.colorbar(ax=ax)
 # steals width from the heatmap AFTER subplots_adjust has run, so the emitted
 # page came out narrower than the canvas and LaTeX scaled it back up.
 fig.subplots_adjust(left=0.108, right=0.900, top=0.905, bottom=0.230)
-# Use a diverging cmap centered at 0.5 — low = decorative, high = causal.
-cmap = plt.get_cmap("RdYlBu_r")
+# Sequential and monotonic in luminance, NOT diverging: this figure is read in
+# greyscale by anyone with a printer, and RdYlBu_r sent 0.00 and 0.96 to the
+# same grey (see the module docstring). Blues runs L* 97 -> 21 with no reversal,
+# so low = light and high = dark on paper as well as on screen.
+cmap = plt.get_cmap("Blues")
 im = ax.imshow(grid, cmap=cmap, aspect="auto", vmin=0.0, vmax=1.0)
 ax.tick_params(axis="both", length=2.0, pad=1.5)
 
@@ -97,7 +146,9 @@ for i in range(len(MODELS)):
             ax.text(j, i, "—", ha="center", va="center",
                      fontsize=CELL, color="gray")
         else:
-            color = "white" if (v < 0.35 or v > 0.75) else "black"
+            # (v - vmin) / (vmax - vmin) with vmin=0, vmax=1 -- i.e. exactly the
+            # rgba imshow put in that cell, not a proxy for it.
+            color = _cell_text_colour(cmap(im.norm(v)))
             ax.text(j, i, f"{v:.2f}", ha="center", va="center",
                      fontsize=CELL, color=color)
 
@@ -123,10 +174,16 @@ for i, lbl in enumerate(ax.get_xticklabels()):
 # margins gave it.
 cax = fig.add_axes([0.916, 0.230, 0.017, 0.675])
 cbar = fig.colorbar(im, cax=cax)
-cbar.ax.tick_params(labelsize=CBAR - 0.6, length=1.8, pad=1.2)
+cbar.ax.tick_params(labelsize=CBAR - 2.1, length=1.8, pad=1.2)
 cbar.outline.set_linewidth(0.5)
-cbar.set_label("Faithful rate  ($\\Delta_\\infty > 0.05$)",
-                 fontsize=CBAR, labelpad=2.0)
+# Two lines, and 8.6pt rather than the 5.8pt this label used to be set at.
+# Mathtext renders a subscript at 0.7x the base size, so the "inf" of
+# $\Delta_\infty$ printed at 4.1pt -- the smallest mark in the paper, and part
+# of the definition of the quantity the whole colorbar is about. 8.6pt puts it
+# at 6.0pt. One line of it at that size is 105pt against the colorbar's 124pt
+# of height, which leaves no air at either end, so it is broken at the paren.
+cbar.set_label("Faithful rate\n($\\Delta_\\infty > 0.05$)",
+                 fontsize=CBAR, labelpad=2.0, linespacing=1.15)
 
 # The group boundaries the axis label used to only promise.
 for _, _, end in GROUPS[:-1]:

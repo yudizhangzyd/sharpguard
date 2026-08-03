@@ -44,9 +44,11 @@ xs = np.arange(len(MS))
 # wider than their slot, and rotation needs a single baseline anyway.
 FLAT = [LABELS[m].replace("\n", "") for m in MS]
 
-# Eight bars in a 1.6in panel leave ~14pt per slot, so these are the sizes the
-# slot can hold, not a preference.
-TITLE, TICK, VAL, YLAB, NOTE = 7.0, 5.3, 5.0, 6.4, 5.0
+# Sizes on the page. 6.5pt is the floor this paper's figures are held to (a
+# reviewer prints the body at 100%); the earlier 5.0/5.3pt run text was below
+# every venue's legibility guidance, and panel (a) in particular was READABLE
+# ONLY through its 5.0pt value labels -- see the panel's own comment block.
+TITLE, TICK, VAL, YLAB, NOTE = 7.2, 6.5, 6.5, 6.6, 6.5
 
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6.31, 2.15))
 # Explicit margins, not the defaults: savefig(bbox_inches="tight") crops to the
@@ -61,10 +63,25 @@ for ax in (ax1, ax2, ax3):
     ax.tick_params(axis="x", length=0, pad=1.5)
 
 # ---- (a) attention on CoT + the retraining band ---------------------------
+# A STRIP PLOT, not bars, and on a 0.32--0.37 axis rather than 0-0.5.
+#
+# The eight values span 0.335--0.358. Drawn as bars from zero on a 0-0.5 axis
+# they were eight rectangles differing by 4.6% of the panel height -- visually
+# identical, so the only way to read the panel was the row of 5.0pt numerals
+# above them, and the grey retraining band (1.95 pp) was 3.9% of the panel
+# height and effectively invisible. That is the exact opposite of the panel's
+# claim: a reader who cannot see the band cannot see that the spread does not
+# clear it, and a reader who reads the numerals instead sees a RANKING, which is
+# what noise_hierarchy says the data does not support.
+#
+# On a tight axis the band is ~30% of the panel height and the points sit inside
+# it. The zero baseline is what bars need and is not information here -- nothing
+# in this panel is a proportion of the axis -- so dropping it costs nothing and
+# buys a 10x expansion of the only interval that matters. Markers carry the same
+# per-model colours the other two panels use, and the sampling std stays as a
+# bar so the ties are visibly ties at the level of the measurement too.
 att = [ATTN[m]["mass"]["cot"] for m in MS]
 astd = [ATTN[m]["mass_std"]["cot"] for m in MS]
-ax1.bar(xs, att, color=COL, edgecolor="black", lw=0.4, yerr=astd, capsize=1.5,
-        error_kw={"lw": 0.5})
 mid = float(np.mean(att))
 # The band is the WORST same-config retraining difference over the seven
 # replicate pairs (1.95 pp), not the single r=32 pair the submission used
@@ -74,31 +91,39 @@ mid = float(np.mean(att))
 # -- the spread is the LARGER of the two, and the honest reading is that it
 # misses the 3x an ordering needs, not that it vanishes into the band.
 half = NH["training_run_cot_diff_pp"] / 200.0
-ax1.axhspan(mid - half, mid + half, color="gray", alpha=0.22, lw=0)
-# Anchored top-RIGHT. Two earlier placements both collided: bottom-right ran
-# back under the value labels of the final two models, and bottom-left ran
-# across the first bar. The band sits at ~0.35 and the tallest label reaches
-# ~0.39, so everything above that is free -- which is the only region of this
-# axes that is. Two lines, not three: a third would reach 0.36 and land on the
-# r=8 value label.
-ax1.text(len(MS) - 0.45, 0.495,
-         f"same-config retraining: "
-         f"{NH['training_run_cot_diff_pp']:.2f} pp (band)\n"
-         f"between-variant spread: "
+ax1.axhspan(mid - half, mid + half, color="gray", alpha=0.30, lw=0, zorder=0)
+ax1.axhline(mid - half, color="0.55", lw=0.5, zorder=0.5)
+ax1.axhline(mid + half, color="0.55", lw=0.5, zorder=0.5)
+ax1.errorbar(xs, att, yerr=astd, fmt="none", ecolor="0.30", elinewidth=0.6,
+             capsize=1.8, capthick=0.6, zorder=2)
+ax1.scatter(xs, att, s=20, c=COL, edgecolors="black", linewidths=0.45,
+            zorder=3, clip_on=False)
+# The axis is set from the data plus the band, not typed: whichever of the two
+# reaches further decides the limit, so a re-derivation that moves either one
+# cannot silently push a marker off the panel.
+_lo = min(min(a - s for a, s in zip(att, astd)), mid - half)
+_hi = max(max(a + s for a, s in zip(att, astd)), mid + half)
+# The note lives in the strip below the lowest error bar, which is the only
+# clear region once the band spans the full width. It is two lines of NOTE, so
+# the axis is opened by that much underneath rather than by a round number.
+ax1.set_ylim(_lo - 0.0135, _hi + 0.0015)
+# No per-point numerals. They were the panel's only readable content when the
+# bars were indistinguishable, and printing three decimals for eight values
+# whose differences are inside the retraining band invites exactly the ordering
+# the caption says the data cannot support. The axis carries the scale now.
+ax1.text(-0.45, _lo - 0.0125,
+         f"grey band: same-config retraining, "
+         f"{NH['training_run_cot_diff_pp']:.2f} pp\n"
+         f"spread across variants: "
          f"{NH['cross_variant_spread_pp']:.2f} pp "
          f"= {NH['spread_over_training_run_cot']:.1f}× it",
-         ha="right", va="top", fontsize=NOTE, color="0.25",
-         linespacing=1.30)
-# No leader line down to the band. At this size every vertical path from the
-# note to the band crosses the row of value labels at ~0.37, and there is only
-# one grey band in the panel for the note to be about.
-for i, v in enumerate(att):
-    ax1.text(i, v + astd[i] + 0.012, f"{v:.3f}", ha="center", fontsize=VAL)
+         ha="left", va="bottom", fontsize=NOTE, color="0.25",
+         linespacing=1.25)
 ax1.set_xticks(xs)
 ax1.set_xticklabels(FLAT, fontsize=TICK, rotation=45, ha="right",
                      rotation_mode="anchor")
 ax1.set_ylabel(r"$\alpha(m,\mathrm{cot})$", fontsize=YLAB, labelpad=1.5)
-ax1.set_ylim(0, 0.50)
+ax1.set_xlim(-0.6, len(MS) - 0.4)
 # Two lines rather than one: at 7pt a single line of this claim is wider than
 # the panel, and the claim is the reason the panel is here.
 ax1.set_title("(a) Attention on CoT:\nspread ≈ retraining noise",

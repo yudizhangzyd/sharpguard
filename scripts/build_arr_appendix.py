@@ -193,6 +193,33 @@ def transform(src: str) -> str:
                              f"expected 1 -- either it is already gone or the "
                              f"regex no longer matches its environment")
 
+    # --- drop the pointers into floats that are no longer here --------------
+    # A deferred float leaves at most a sentence behind, and rewriting that
+    # sentence in cot_faith_iclr.tex would be wrong: the figure IS there, one
+    # paragraph away, so the pointer is correct in the document this is copied
+    # from and only stale here. Dropped rather than unpointed, because
+    # "the heatmap in the full-length manuscript visualizes the same table" is a
+    # sentence that spends a line telling the reader about a figure they cannot
+    # see. Every entry is asserted to occur exactly once, so a source edit that
+    # rewords the sentence fails here instead of leaving a dangling \ref for the
+    # guard below to catch by its label.
+    for lit, why in DROPPED_POINTERS:
+        if body.count(lit) != 1:
+            raise SystemExit(f"[arr] dropped pointer {lit[:40]!r}: occurs "
+                             f"{body.count(lit)} times, expected 1 ({why})")
+        body = body.replace(lit, "")
+
+    # --- rewrite the sentences that are true only of the source document ------
+    # See REWORDED below. Same exactly-once assert as the pointers, and it runs
+    # before defer()/unpoint() so a replacement may carry a \ref like any other
+    # sentence: if it points into deferred material the guards downstream catch
+    # it, rather than this loop having to know what survives.
+    for lit, new, why in REWORDED:
+        if body.count(lit) != 1:
+            raise SystemExit(f"[arr] reworded {lit[:40]!r}: occurs "
+                             f"{body.count(lit)} times, expected 1 ({why})")
+        body = body.replace(lit, new)
+
     # --- move a float to where the appendix has room for it -----------------
     # See HOISTED below. This changes a float's POSITION and not one byte of
     # its content: the environment is cut and re-inserted verbatim.
@@ -221,6 +248,9 @@ def transform(src: str) -> str:
     # --- fit the submission budget ------------------------------------------
     body, deferred_labels, deferred_entries = defer(body)
     deferred_labels |= {lab for lab, _ in DEFERRED_FLOATS}
+    body, empty_heads = drop_empty_heads(body)
+    deferred_labels |= {l for _, secs in empty_heads for l in secs}
+    deferred_entries += empty_heads
 
     # --- namespace every surviving label ------------------------------------
     # The body was written by hand and reuses the source's names for the
@@ -270,6 +300,39 @@ def transform(src: str) -> str:
             f"[arr] FAIL: {len(dangling)} deferred label(s) are still "
             f"referenced, so \\ref would print '??': {dangling}")
 
+    # Re-homing keeps \ref from printing "??", but the number it then prints is
+    # the deferred LIST's, and nineteen sentences in the appendix read "see
+    # Section A.6" where A.6 is the list of what A.6 is not. So the pointer is
+    # spent rather than redirected: the sentence names the document the section
+    # is in. Nothing else may still point at a re-homed label afterwards --
+    # including the hand-written body, which this script cannot rewrite, so a
+    # ref there has to be fixed by hand and this is what says so.
+    body = unpoint(body, rehomed)
+    # A plural head with two deferred refs under it ("Sections~\ref{a}
+    # and~\ref{b}") is rewritten one ref at a time above, so it printed the
+    # document's name twice: "the central negative result of Sections~the
+    # full-length manuscript and~the full-length manuscript". Collapse the pair,
+    # then assert no doubled phrase survives anywhere -- the collapse is a
+    # literal rewrite and the guard is what makes the next shape of this defect
+    # fail the build instead of printing.
+    body = re.sub(r"Sections~" + re.escape(UNPOINT)
+                  + r"\s+and~?\s*" + re.escape(UNPOINT),
+                  "the sections deferred to " + UNPOINT, body)
+    doubled = re.findall(re.escape(UNPOINT) + r"[^.]{0,20}?"
+                         + re.escape(UNPOINT), body)
+    if doubled:
+        raise SystemExit(
+            f"[arr] FAIL: {len(doubled)} unpointed reference(s) print the "
+            f"document name twice in one phrase: {doubled}")
+    circular = sorted(rehomed & set(re.findall(
+        r"\\(?:ref|autoref|eqref|Cref|cref)\{([^}]*)\}",
+        uncommented(body) + uncommented(arr))))
+    if circular:
+        raise SystemExit(
+            f"[arr] FAIL: {len(circular)} reference(s) resolve to the list of "
+            f"deferred sections, which sends the reader in a circle: "
+            f"{circular}")
+
     if body_src.exists():
         for lab in sorted(labels(body) & body_labels):
             body = body.replace(r"\label{" + lab + "}",
@@ -278,9 +341,29 @@ def transform(src: str) -> str:
                           + re.escape(lab) + r"\}",
                           r"\1app:" + lab + "}", body)
 
-    return (HEADER + "\n\\section{Evidence for the body}\n"
-            "\\label{sec:appendix}\n" + NOTE + body.strip() + "\n"
-            + deferred_list(deferred_entries))
+    out = (HEADER + "\n\\section{Evidence for the body}\n"
+           "\\label{sec:appendix}\n" + NOTE + body.strip() + "\n"
+           + deferred_list(deferred_entries))
+
+    # Every \ref the appendix prints must land on a \label one of the two files
+    # defines. The guards above cover the labels this script DROPS; this one
+    # covers the labels it never had. The deferred list is prose written here
+    # rather than copied, and its first draft cited two labels by the names they
+    # have after namespacing -- which they do not have, since only labels the
+    # body also defines are prefixed. Both printed as "??" on the last page of
+    # the submission, in the one paragraph whose whole job is to tell a reader
+    # where the missing sections are.
+    unresolved = sorted(
+        set(re.findall(r"\\(?:ref|autoref|eqref|Cref|cref)\{([^}]*)\}",
+                       uncommented(out)))
+        - labels(out) - body_labels)
+    if unresolved:
+        raise SystemExit(
+            f"[arr] FAIL: {len(unresolved)} reference(s) in the appendix "
+            f"resolve to no label in either file, so they print '??': "
+            f"{unresolved}")
+
+    return out
 
 
 # Sections not reproduced in the submitted PDF. See defer(); a leading "*"
@@ -306,6 +389,16 @@ def transform(src: str) -> str:
 DEFERRED = (
     "Introduction",
     "*Related work",
+    # The body defines the score, in the same two display equations under the
+    # same names (\S2, eq:delta and eq:faith), and its "Edit families"
+    # paragraph carries this section's null-control validation whole: the
+    # identity control scoring $0$ on 11/11, paraphrase_null judged
+    # meaning-preserving at 0.975, bbox_jitter_null at 1.000. So the copy here
+    # was the definition a reader had already read three pages earlier, printed
+    # a second time with its equations renumbered -- half a column spent on
+    # nothing, in a document whose page cap is the reason the deferred list
+    # below exists at all.
+    "Faithfulness Score",
     "Per-token normalization",
     "Attention noise, decomposed.",
     "The bucket ordering is an artifact",
@@ -328,7 +421,11 @@ DEFERRED = (
     "F3: Attention distribution does not predict",
     # The body's own "What the magnitude score counts" section carries
     # this one's argument, its table and its numbers, so the prose here
-    # is a second copy; fig12 exists nowhere else, so it stays.
+    # is a second copy. Its figure used to be the reason for the "*": fig12
+    # existed nowhere else. It is now in DEFERRED_FLOATS, with its numbers
+    # written into that entry, so the "*" no longer keeps anything -- it is
+    # left in place because removing it would change nothing and asserting
+    # that is cheaper than re-deriving it at the next edit.
     "*F6: magnitude-based edit scoring inverts the model ordering",
     "Attention-as-failure AUROC (P3): specified",
     # The body argues the paraphrase floor at length (\S3-\S4 and
@@ -337,7 +434,12 @@ DEFERRED = (
     # of it. The floats stay: the leaderboard caption and the taxonomy's
     # coverage sentence both point at tab:calibration.
     "*Paraphrase-null: models are sensitive to surface tokens",
-    "Do the edit families do what their names say",
+    # "Do the edit families do what their names say" was deferred here. It is
+    # the judge protocol, and both floors the paper reports -- the paraphrase
+    # null and the cross_task_swap ceiling -- are certified meaning-preserving
+    # by that judge, in the body's own tab:floors caption. Deferring it left
+    # the certification behind every headline number in neither half of the
+    # submission, which is a worse trade than the third of a column it costs.
     "*F7: P2 on a second architecture family",
     "*P3, re-run in-domain",
     "*Limitation (v), measured",
@@ -345,11 +447,13 @@ DEFERRED = (
 
 NOTE = r"""
 This appendix carries the evidence the eight-page body cites, copied from the
-full-length manuscript rather than rewritten for it. It is a selection: the
-submitted PDF is capped at $20$ pages, and the sections it does not reproduce
-are named in \S\ref{sec:deferred}, which says where to read them. No number
-here is retyped, and no cross-reference in the body points into anything left
-out.
+full-length manuscript rather than rewritten for it, so no number here is
+retyped. It is a selection: the submitted PDF is capped at $20$ pages, and the
+sections it does not reproduce are named in \S\ref{sec:deferred}, which says
+where to read them. Where a sentence would have cited one of those sections it
+names that document instead of a number, and where one pointed at a dropped
+float the pointer is dropped too, so every cross-reference in these pages lands
+on something the reader can turn to.
 
 """
 
@@ -394,8 +498,86 @@ def defer(body: str):
     return body, dropped, entries
 
 
+# Both starred and unstarred, unlike FLOAT: defer() only ever has to recognize
+# the full-width floats, but a heading can be emptied down to a single-column
+# one just as easily.
+ANY_FLOAT = re.compile(r"\\begin\{(table|figure)\*?\}.*?\\end\{\1\*?\}\s*", re.S)
+
+
+def drop_empty_heads(body: str):
+    """Delete every heading whose prose was deferred out from under it.
+
+    defer() drops spans, and a parent heading whose children all went with them
+    is left printing a numbered title with nothing under it. `A.5 Discussion
+    and limitations` shipped that way for four builds, with three \\ref pointing
+    into it, two of them naming numbered items that are only in the deferred
+    text. Floats inside the span are content the submission keeps, and they
+    carry their own captions, so they outlive the heading they sat under.
+
+    Returns (body, [(title, [section labels dropped])]) in defer()'s shape, so
+    the caller can re-home the labels onto the deferred list like any other.
+    One heading is dropped per pass and the scan restarts, because dropping a
+    child can be what empties its parent.
+    """
+    entries = []
+    while True:
+        for m in re.finditer(HEAD, body):
+            level = LEVELS[m.group(1)]
+            end = len(body)
+            for nxt in re.finditer(HEAD, body[m.end():]):
+                if LEVELS[nxt.group(1)] <= level:
+                    end = m.end() + nxt.start()
+                    break
+            span = body[m.start():end]
+            title, after = braced(span)
+            floats = "".join(f.group(0) for f in ANY_FLOAT.finditer(span))
+            rest = re.sub(r"\\label\{[^}]*\}", "",
+                          ANY_FLOAT.sub("", uncommented(span[after:])))
+            if rest.strip():
+                continue
+            entries.append(
+                (title, sorted(l for l in labels(span) - labels(floats)
+                               if l.startswith("sec:"))))
+            body = body[:m.start()] + floats + body[end:]
+            break
+        else:
+            return body, entries
+
+
+UNPOINT = "the full-length manuscript"
+
+
+def unpoint(body: str, rehomed: set) -> str:
+    """Rewrite every \\ref into a deferred section as prose.
+
+    The label is the wrong thing to point at once its section is gone (see the
+    caller), so the reference is replaced by the name of the document that has
+    it. An optional `Section~`/`Appendix~`/`\\S~` in front is swallowed, since
+    "Section the full-length manuscript" is not English.
+    """
+    if not rehomed:
+        return body
+    pat = re.compile(r"(?:(?:Section|Appendix|\\S)~?\s*)?"
+                     r"\\(?:ref|autoref|Cref|cref)\{(?:"
+                     + "|".join(re.escape(l) for l in sorted(rehomed)) + r")\}")
+
+    def sub(m):
+        # Capitalized when it opens a sentence: one of these follows a period
+        # inside \textbf{...}, so the closing brace counts as a full stop too.
+        head = body[:m.start()].rstrip()
+        upper = head.endswith((".", "!", "?", "}"))
+        return (UNPOINT[0].upper() if upper else UNPOINT[0]) + UNPOINT[1:]
+
+    return pat.sub(sub, body)
+
+
 def heading_title(span: str) -> str:
-    """The braced argument of the heading `span` opens with.
+    """The braced argument of the heading `span` opens with."""
+    return braced(span)[0]
+
+
+def braced(span: str):
+    """(braced argument of the heading `span` opens with, index just past it).
 
     Brace-counted rather than matched by regex: two of these titles carry
     $\\mathcal{F}_{\\text{dir}}$, which nests two deep, and a regex that
@@ -407,8 +589,9 @@ def heading_title(span: str) -> str:
     for j in range(i, len(span)):
         depth += {"{": 1, "}": -1}.get(span[j], 0)
         if depth == 0:
-            return span[i + 1:j]
+            return span[i + 1:j], j + 1
     raise SystemExit(f"[arr] FAIL: unbalanced heading: {span[:60]!r}")
+
 
 
 def deferred_list(entries) -> str:
@@ -422,12 +605,13 @@ def deferred_list(entries) -> str:
     return (r"""
 \subsection{Sections deferred to the full-length manuscript}
 \label{sec:deferred}
-The submitted PDF is capped at $20$ pages. These sections of the full-length
-manuscript are therefore not reproduced above; they are in the released source
-(\texttt{cot\_faith\_iclr.tex}), which is the document the audit script checks
-claim by claim and the document every line above was copied from. They are
-named here so that a reader can tell what exists from what was cut, and no
-claim in the body rests on one of them:
+The submitted PDF is capped at $20$ pages, so these sections of the full-length
+manuscript are not reproduced above. They are in the released source
+(\texttt{cot\_faith\_iclr.tex}), the document the audit script checks claim by
+claim and the one every line above was copied from, and they are named here so
+that a reader can tell what exists from what was cut. Where the pages above
+draw on one of them the sentence names that document rather than a section
+number, so no reference above resolves to this list:
 """ + items + ".\n" + floats_note())
 
 
@@ -448,10 +632,14 @@ ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
 # defined in both files makes the number LaTeX prints unpredictable, and the
 # duplicate is a warning rather than an error, so it ships silently.
 # The body is the definition; the appendix cites it by \ref like any other.
-# fig:frames is also the anti-duplication half of the rollout split: the strip
-# is drawn by the body float and the appendix keeps only fig:paths, so the same
-# six frames are not printed twice in one submission.
-PROMOTED = ("tab:directional", "fig:dissociation", "fig:frames")
+# fig:paths is also the anti-duplication half of the rollout split: the pose
+# panels are drawn by the body float and the appendix keeps only fig:frames, so
+# the same capture is not drawn twice in one submission. The split runs this way
+# round rather than the other because the body's claim -- an edit reaches the
+# actuator and keeps the arm moving -- is legible at print size in a two-panel
+# line plot and is not legible in eighteen thumbnails, and because the strip is
+# 261pt of artwork against the pose panels' 124pt on a body at its page limit.
+PROMOTED = ("tab:directional", "fig:dissociation", "fig:paths")
 
 # Floats deferred for space, as (label, how the deferred list names it). These
 # have NO copy in the submission at all, unlike PROMOTED.
@@ -467,10 +655,107 @@ PROMOTED = ("tab:directional", "fig:dissociation", "fig:frames")
 DEFERRED_FLOATS = (
     ("fig:taxonomy",
      r"the taxonomy figure, ``The edit taxonomy, with the real text each "
-     r"family rewrites'' \textemdash{} one panel per family with a real "
+     r"family rewrites'': one panel per family with a real "
      r"generator-output excerpt of the span it rewrote, from "
      r"\texttt{figures/\allowbreak{}fig1\_\allowbreak{}task\_"
      r"\allowbreak{}examples.pdf} in the release"),
+    # The next three are cut for the same reason and by the same standard the
+    # taxonomy figure was: each draws numbers the surviving prose prints, and
+    # none of the three was pointed at by a single \ref in either document.
+    #
+    # tab:crossfamily is the sharpest case. Its four rows are four rows of
+    # tab:calibration -- the same runs, as its own section says -- plus one
+    # subtraction, floor - F-bar, which the section states in words for each
+    # row. So the appendix printed the second architecture family's
+    # calibration twice, three pages apart, and the reference in the
+    # leaderboard caption now names the block of tab:calibration that holds it.
+    ("tab:crossfamily",
+     r"``P2 on the DeepThinkVLA family (F7)'', whose four rows are four rows "
+     r"of the two-sided calibration table for the same runs, plus the "
+     r"$\bar{\mathcal{F}}_{\text{diff}}$ subtraction the cross-family "
+     r"section states in words for each"),
+    ("fig:cross_corpus",
+     r"``Cross-corpus attention profile (F5)'': the four-corpus attention "
+     r"bar chart, every bar and error bar of which is printed as a "
+     r"mean$\pm$std in the paragraph above it"),
+    ("fig:cross_corpus_edit",
+     r"``Cross-corpus causal-edit response (F5)'': the eight-bar "
+     r"\emph{direction\_flip}/\emph{gripper\_flip} chart, every bar of which "
+     r"is printed with its own $N$ in the paragraph above it, including the "
+     r"two protocol disclosures from its caption"),
+    # And the fifth, which is the plainest duplicate in the submission: its own
+    # caption opens "This is Table 6", and the 88 cells it colours are the 88
+    # cells of the leaderboard three pages earlier, printed there with the
+    # error bars the heatmap cannot show. The colour ramp is the only thing it
+    # adds, and it adds it to a table the paper explicitly says is not a
+    # ranking. The generator, its 13-family coverage and the group split all
+    # stay under audit against cot_faith_iclr.tex, where the figure prints.
+    ("fig:edit_heatmap",
+     r"``The same magnitude scores as a heatmap, all 13 families'', whose 88 "
+     r"coloured cells are the 88 cells of the leaderboard table, without its "
+     r"error bars"),
+    # The sixth, and the only one whose numbers are not printed elsewhere in
+    # these pages, so they are printed HERE: the entry carries the panel's
+    # whole content and defers the drawing of it. It is the last float cut and
+    # the reason is arithmetic -- with it in, the submission set 21 pages
+    # against a cap of 20, and the alternative cuts were a measurement or the
+    # only picture of a rollout in the paper. Its own caption already records
+    # that two of its three panels were removed for redrawing tab:directional
+    # digit for digit; what is deferred now is the third.
+    ("fig:directional",
+     r"``The differential leaderboard'': $\mathcal{F}_{\text{diff}} = "
+     r"\mathcal{F}(f) - \mathcal{F}(\text{paraphrase\_null})$ for "
+     r"\emph{ours-no-CoT}, the one model whose floor ($0.19$) is low enough "
+     r"for the differential to be readable, over all $12$ non-reference "
+     r"families. The numbers are here, the drawing is in the release: the "
+     r"whole floor-to-ceiling band is $0.07$ wide, from "
+     r"\emph{selfsplice\_control} at $-0.193$ (the identity null, minus the "
+     r"floor by construction) and \emph{bbox\_jitter\_null} at $-0.147$ up to "
+     r"the ceiling, the random instruction substitution "
+     r"\emph{instr\_random\_sub} at $+0.070$; $8$ of the $12$ families sit "
+     r"below their own floor, the four that clear it do so by "
+     r"${\leq}0.081$, and \emph{direction\_flip}'s $+0.081$ is \emph{above} "
+     r"that ceiling: a meaning-changing edit moves this model no further "
+     r"than a random instruction does"),
+)
+
+# Sentences that exist only to point at a float this appendix does not print,
+# as (literal, which float it pointed at). See the loop in transform().
+DROPPED_POINTERS = (
+    (r" Fig.~\ref{fig:edit_heatmap} visualizes the same table as a heatmap.",
+     "fig:edit_heatmap, deferred above"),
+)
+
+# Sentences whose CONTENT is true of the full-length manuscript and false of
+# this appendix, as (literal, replacement, why). Distinct from DROPPED_POINTERS,
+# which deletes; and from unpoint(), which only swaps a \ref for a document
+# name. These are rewritten because deleting them would remove something the
+# reader needs, and rewriting them in cot_faith_iclr.tex would make that
+# document wrong.
+#
+# The one entry is the Analysis opener. In the source it promises to answer five
+# questions and then answers them, four of the five in sections deferred here.
+# So verbatim it advertises F1--F3 and O4 twelve pages from any argument for
+# them, and points at the direction-aware section as "then", when here that
+# section is a table with no prose. What the appendix actually adds to those
+# four is what the replacement says: the evidence the eight-page body cites.
+REWORDED = (
+    (r"We now use CoT-Faith to answer five questions about manipulation "
+     r"CoT-VLAs: three (F1--F3) that admit controlled comparisons under our "
+     r"benchmark, one (O4) that we treat as an uncontrolled observation "
+     r"because two axes are confounded, and one (F5) on cross-corpus transfer "
+     r"at $N{=}100$. Section~\ref{sec:directional} then re-examines all of "
+     r"them under a direction-aware scoring rule, which reverses the "
+     r"leaderboard ordering.",
+     r"The body answers five questions about manipulation CoT-VLAs with "
+     r"CoT-Faith: F1--F3 under controlled comparisons, O4 as an uncontrolled "
+     r"observation because two axes are confounded, and F5 on cross-corpus "
+     r"transfer at $N{=}100$. It argues four of the five in place "
+     r"(\S\ref{sec:deferred}); this section adds F5 in full, the per-task "
+     r"decomposition behind the below-floor result, and the judge validation "
+     r"of the edit generators all five are scored with.",
+     "F1--F3 and O4 are deferred, so the source's 'we now answer' opener "
+     "promises four arguments this document does not print"),
 )
 
 # Floats moved earlier in the appendix, as (label, the literal string to put it
@@ -480,14 +765,17 @@ DEFERRED_FLOATS = (
 # and [t] floats can only move forward. fig:paths is declared in the full-length
 # manuscript inside the rollout-gate discussion, nearly all of which is deferred
 # here, so in the appendix it arrives with no text after it and drains onto a
-# page of its own -- a 21st page holding one 123pt figure. Declaring it in front
-# of the per-task table puts it in the queue where there is room, and the
-# appendix is a selection rather than a reading order, so nothing about the
-# figure or the text it sits between changes. The guard in transform() refuses
-# an anchor that would move a float LATER, which is the way this would silently
-# stop working.
+# page of its own -- a 21st page holding one figure. Declaring it in front of the
+# per-task table puts it in the queue where there is room, and the appendix is a
+# selection rather than a reading order, so nothing about the figure or the text
+# it sits between changes. The guard in transform() refuses an anchor that would
+# move a float LATER, which is the way this would silently stop working.
+#
+# It is fig:frames rather than fig:paths for the reason PROMOTED gives: the two
+# floats are declared seven lines apart inside the same deferred discussion, so
+# whichever one the appendix keeps inherits the same empty page after it.
 HOISTED = (
-    ("fig:paths", r"\subsubsection{Per-task decomposition"),
+    ("fig:frames", r"\subsubsection{Per-task decomposition"),
 )
 
 

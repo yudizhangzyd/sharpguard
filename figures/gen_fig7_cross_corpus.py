@@ -31,8 +31,9 @@ for tag, name in (("bridge_v2", "Bridge V2"), ("fractal", "Fractal"), ("bcz", "B
 
 x = np.arange(len(rows)); w = 0.20
 
-# Sizes on the page.
-TICK, LAB, LEG, TITLE = 6.2, 6.6, 6.0, 7.0
+# Sizes on the page. 6.5pt is the floor for run text in the submission's
+# figures; four corpus slots share 4.6in here, so nothing is close to tight.
+TICK, LAB, LEG, TITLE = 6.5, 6.6, 6.5, 7.0
 
 fig, ax = plt.subplots(1, 1, figsize=(5.18, 2.45))
 # Explicit margins: savefig crops to the artists, so default margins emit a page

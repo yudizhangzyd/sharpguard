@@ -2315,9 +2315,49 @@ def audit_no_published_ranking(a: Audit) -> None:
                    "a ranking'")
     a.check(sec, "the admission rule is stated against our own submissions",
             True,
-            "seven of our own eight submissions would be rejected" in tex,
+            "none of our eight submissions is admissible" in tex,
             source="this is what converts the missing floors from an excuse "
                    "into the protocol's teeth")
+
+    # ...and it has to be TRUE of the release, not merely present in the tex.
+    # It was present and stale for four builds: the sentence said seven of the
+    # eight rows carried no paraphrase floor, which stopped being the case when
+    # the 3-seed 13-family runs populated the floor on all 8. What disqualifies
+    # them now is the score, not the missing field, so the check is on the
+    # score. A row is admissible only if its mean over the non-control families
+    # clears its own floor; F_bar_diff is that difference.
+    d = load(DERIVED)
+    a.check(sec, "the derived file carries a floor and an F_bar_diff per model",
+            True, bool(d) and all("F_bar_diff" in m and "paraphrase_null_floor" in m
+                                  for m in (d or {}).get("models", {}).values()),
+            source="results_v2/derived_metrics.json")
+    if d:
+        rows = d["models"]
+        admitted = sorted(k for k, m in rows.items() if m["F_bar_diff"] >= 0)
+        a.check(sec, "every one of our own submissions is below its own floor, "
+                     "so the admission rule admits none of them",
+                [], admitted,
+                source=f"{len(rows)} models in derived_metrics.json, "
+                       f"F_bar_diff in "
+                       f"[{min(m['F_bar_diff'] for m in rows.values()):.3f}, "
+                       f"{max(m['F_bar_diff'] for m in rows.values()):.3f}]")
+        a.check(sec, "there are 8 of them, as the sentence says", 8, len(rows),
+                source="results_v2/derived_metrics.json models")
+        # The one the sentence singles out: a floor at the height of its own
+        # maximum-effect ceiling leaves no interval for a semantic effect to
+        # live in, which is a second and independent reason to refuse the row.
+        b = rows.get("ecot-bridge", {})
+        a.check(sec, "the highest-scoring row's floor sits at its ceiling "
+                     "(gap under 0.02)",
+                True, b and (b["cross_task_swap_ceiling"]
+                             - b["paraphrase_null_floor"]) < 0.02,
+                source=f"ecot-bridge floor {b.get('paraphrase_null_floor')}, "
+                       f"ceiling {b.get('cross_task_swap_ceiling')}")
+        a.check(sec, "the floor and ceiling the sentence quotes for it",
+                (0.947, 0.963),
+                (round(b.get("paraphrase_null_floor", -1), 3),
+                 round(b.get("cross_task_swap_ceiling", -1), 3)),
+                source="results_v2/derived_metrics.json ecot-bridge")
 
     # The leaderboard table body must contain no \textbf at all: a single bold
     # cell reinstates the ranking the surrounding prose disclaims.
@@ -4597,6 +4637,209 @@ def audit_collision_decomposition(a: Audit) -> None:
             in tex, source="cot_faith_iclr.tex")
 
 
+def audit_arr_body_derivations(a: Audit, d: dict) -> None:
+    """The numbers the ARR body derives rather than copies.
+
+    Most of this script checks a cell against the field of an artifact it was
+    typed from. This function covers a different and more dangerous class: the
+    quantities that exist ONLY in the body, because a sentence computed them
+    from the artifacts and no released JSON carries the result. A multiplicity
+    correction, a confidence interval, a ratio of two error bars, a
+    distributional bound. Nothing upstream can catch an arithmetic slip in one
+    of those, and each of them is load-bearing -- each is the qualifier that
+    turns a headline into a bounded claim.
+
+    Every group below recomputes the number from the artifact and also asserts
+    the literal the body prints, so neither half can drift alone: fixing the
+    arithmetic without editing the prose fails, and editing the prose without
+    the arithmetic fails too.
+    """
+    sec = "Derived-in-prose numbers of the ARR body"
+    arr = ROOT / "cot_faith_arr.tex"
+    t = arr.read_text() if arr.exists() else ""
+    a.check(sec, "the ARR body is present", True, bool(t), source=str(arr))
+    if not t:
+        return
+
+    # --- 1. Holm over the 8 per-task tests ---------------------------------
+    # S5 states a corrected outcome ("all seven survive Holm correction across
+    # the eight tests"), which is the one place the paper reports a corrected
+    # family rather than each test. The correction is done here, not taken on
+    # trust: Holm is easy to state and easy to get wrong by one index, and the
+    # error that matters is the optimistic one -- a step-down that rejects a
+    # test the real procedure retains would turn "all seven survive" into an
+    # overclaim with no artifact to contradict it.
+    #
+    # Holm: sort p ascending, compare p_i against alpha/(m-i), stop at the
+    # first failure and retain everything after it. The stop is the part worth
+    # writing out, since running the comparison independently per test is the
+    # usual off-by-one and is anti-conservative.
+    ptart = ROOT / "results_v2/canonical_runs/per_task_decomposition/per_task.json"
+    pt = load(ptart)
+    a.check(sec, "the per-task artifact carrying the eight binomial tests is "
+                 "released", True, bool(pt),
+            source=str(ptart.relative_to(ROOT)))
+    if pt:
+        tests = sorted(((v.get("all") or {}).get("p_two_sided"), m)
+                       for m, v in (pt.get("models") or {}).items())
+        a.check(sec, "there are 8 tests in the family, which is the m Holm "
+                     "divides by", 8, len(tests),
+                source="per_task.json:models[*].all.p_two_sided")
+        if len(tests) == 8 and all(p is not None for p, _ in tests):
+            m_tests, rejected = len(tests), []
+            for i, (p, mdl) in enumerate(tests):
+                if p > 0.05 / (m_tests - i):
+                    break          # step-down stops here; the rest are retained
+                rejected.append(mdl)
+            a.check(sec, "Holm at alpha=0.05 rejects exactly 7 of the 8, which "
+                         "is S5's 'all seven survive'", 7, len(rejected),
+                    source=f"thresholds 0.05/8={0.05/8:.5f} down to "
+                           f"0.05/1=0.05000")
+            a.check(sec, "and the one it retains is the no-CoT control, i.e.\\ "
+                         "the row that should not separate",
+                    ["ours-no-cot"],
+                    [mdl for _, mdl in tests if mdl not in rejected],
+                    source="per_task.json")
+            # The printed p range is the range over the SEVEN full-CoT rows,
+            # not over all eight: the eighth is quoted separately as the null.
+            lo_p, hi_p = tests[0][0], tests[6][0]
+            a.check(sec, "the p range S5 prints over the seven full-CoT rows",
+                    (r"9.0{\times}10^{-11}", "0.020"),
+                    (rf"{lo_p / 10 ** -11:.1f}{{\times}}10^{{-11}}",
+                     f"{hi_p:.3f}"),
+                    source=f"min={lo_p:.4g}, max over the 7 = {hi_p:.4g}")
+            a.check(sec, "S5 states that range as a literal", True,
+                    r"$p$ from $9.0{\times}10^{-11}$ to $0.020$" in t,
+                    source="cot_faith_arr.tex")
+            a.check(sec, "and states the Holm outcome rather than leaving the "
+                         "reader to apply it", True,
+                    "all seven survive Holm correction across the eight tests"
+                    in t, source="cot_faith_arr.tex")
+        # The control row is quoted with its counts, which is what makes it
+        # readable as a null rather than as a test that merely failed.
+        nc = ((pt.get("models") or {}).get("ours-no-cot") or {}).get("all") or {}
+        a.check(sec, "the no-CoT control's counts and p as S5 prints them",
+                r"($25$ below, $29$ above, $p = 0.683$)",
+                rf"(${nc.get('n_below')}$ below, ${nc.get('n_above')}$ above, "
+                rf"$p = {nc.get('p_two_sided', 0):.3f}$)",
+                source="per_task.json:models['ours-no-cot'].all")
+        a.check(sec, "and S5 prints it", True,
+                r"($25$ below, $29$ above, $p = 0.683$)" in t,
+                source="cot_faith_arr.tex")
+
+    # --- 2. the five specificity margins, individually ---------------------
+    # The count (5 of 12 clear the out-of-CoT control) and the comparison that
+    # sinks it (none by more than the 0.092 retraining noise) are both checked
+    # elsewhere. What is NOT checked elsewhere is the list of five margins S5
+    # prints in descending order, and that list is what lets a reader see the
+    # bound is not carried by one outlier. Retyped by hand from seven
+    # subtractions, so it gets recomputed.
+    marg = sorted(((mv.get("F_bar_mag") or 0)
+                   - ((mv.get("families") or {}).get("instr_random_sub") or {})
+                   .get("F_mag", 0), m)
+                  for m, mv in (d.get("models") or {}).items()
+                  if mv.get("F_bar_mag") is not None
+                  and (mv.get("families") or {}).get("instr_random_sub"))
+    pos = [g for g, _ in marg if g > 0]
+    a.check(sec, "the positive margins, to the 3dp S5 prints them at",
+            ["+0.083", "+0.074", "+0.025", "+0.014", "+0.009"],
+            [f"{g:+.3f}" for g in sorted(pos, reverse=True)],
+            source="derived_metrics.json: F_bar_mag - instr_random_sub F_mag")
+    a.check(sec, "S5 prints them in that order", True,
+            r"the margins are $+0.083$, $+0.074$, $+0.025$, $+0.014$ and "
+            r"$+0.009$ in $\bar{\mathcal{F}}$" in t,
+            source="cot_faith_arr.tex")
+    # The sentence is an inequality, so what has to hold is that the LARGEST
+    # margin is under the noise -- not merely that the two numbers as rounded
+    # happen to differ. Checking the rounded strings would pass on a tie.
+    noise = max((dig(d, "training_replicate", "F_bar_abs_diff_per_pair")
+                 or {}).values() or [0])
+    a.check(sec, "the widest margin is strictly under the retraining noise, "
+                 "which is what 'no configuration clears its own control by "
+                 "more than its own noise' asserts", True,
+            bool(pos) and max(pos) < noise,
+            source=f"widest margin {max(pos, default=0):.4f} < noise "
+                   f"{noise:.4f}")
+    a.check(sec, "and the noise bound as S5 prints it", "0.092",
+            f"{noise:.3f}", source="training_replicate.F_bar_abs_diff_per_pair")
+
+    # --- 3. the isotropic bound on F_dir -----------------------------------
+    # S8 bounds the absolute values of the one constructive result by a
+    # distributional argument rather than by a measurement, and that argument
+    # is the strongest self-limiting statement in the paper: if a null-free
+    # reading of F_dir were possible, F_dir would be an effect size. Derived
+    # here from the threshold in the artifact so that changing tau without
+    # changing the sentence fails.
+    #
+    # For a direction drawn isotropically in R^n against any fixed reference,
+    # the cosine is NOT uniform for n > 2 -- but the paper's criterion is
+    # applied to the 3-DoF translation component, where the surface measure of
+    # a spherical cap makes cos uniform on [-1, 1] exactly (Archimedes). So
+    # P(cos < tau) = (tau + 1) / 2, and at tau = -0.5 that is 0.25.
+    fdn = load(ROOT / "results_v2/canonical_runs/fdir_null/fdir_null.json")
+    if fdn:
+        tau_c = fdn.get("cos_threshold")
+        a.check(sec, "the criterion the bound is computed at is the one the "
+                     "artifact scored", -0.5, tau_c, source="fdir_null.json")
+        if tau_c is not None:
+            a.check(sec, "an isotropic translation direction scores (tau+1)/2, "
+                         "which S8 states as 0.25", "0.25",
+                    f"{(tau_c + 1) / 2:.2f}",
+                    source=f"uniform cos on [-1,1] at tau={tau_c}")
+        a.check(sec, "S8 states the bound and the criterion together, so "
+                     "neither can be read without the other", True,
+            r"An isotropic action distribution scores $0.25$ at our "
+            r"$\cos < -0.5$ criterion" in t, source="cot_faith_arr.tex")
+        # "far below 0.25" is a claim about EVERY row, so every row is checked.
+        # The bound cuts the other way too: a ceiling near 0.25 would mean the
+        # nulls are indistinguishable from noise, which would be a different
+        # and worse paper. The margin is reported so the word "far" is legible.
+        ceils = {c.get("config"): max((v.get("F_dir") or 0)
+                                      for v in (c.get("nulls") or {}).values())
+                 for c in (fdn.get("per_config") or [])}
+        a.check(sec, "every tab:fdirnull ceiling sits below the isotropic "
+                     "0.25, which is what makes the clustering claim true of "
+                     "the whole table", [],
+                sorted(k for k, v in ceils.items() if v >= 0.25),
+                source=f"{len(ceils)} configs; highest ceiling "
+                       f"{max(ceils.values(), default=0):.3f}")
+
+    # --- 4. the two error-bar ratios in S7 ---------------------------------
+    # S7 converts the retraining spread into multiples of the submitted error
+    # bar, because "0.260" means nothing to a reader who has not memorised the
+    # CI column. Both ratios are recomputed against the widest Wilson
+    # half-width in the release -- the widest, not the mean, so the comparison
+    # is the conservative one and cannot be made to look worse by picking a
+    # tighter row.
+    wil = max([(w[1] - w[0]) / 2
+               for mv in (d.get("models") or {}).values()
+               for fv in (mv.get("families") or {}).values()
+               for w in [fv.get("F_mag_wilson")] if w] or [0])
+    # 0.067 is an upper BOUND the body prints ("half-widths <= 0.067"), so it is
+    # the 3dp ceiling of the widest half-width, not its nearest-3dp rounding --
+    # 0.0664 rounds to 0.066, which would be a bound the data violates. Checking
+    # the ceiling keeps the sentence conservative in the right direction.
+    a.check(sec, "the widest Wilson half-width, rounded UP to the 0.067 the "
+                 "body states as the bound on the CI column", "0.067",
+            f"{math.ceil(wil * 1000) / 1000:.3f}",
+            source=f"widest = {wil:.4f}; the bound must not round down")
+    a.check(sec, "and the printed bound really bounds it", True, wil <= 0.067,
+            source=f"{wil:.4f} <= 0.067")
+    per_max = max((dig(d, "training_replicate", "F_max_abs_diff_per_pair")
+                   or {}).values() or [0])
+    if wil:
+        a.check(sec, "per-family F moves 3.9x that half-width across the "
+                     "replicate pairs", "3.9", f"{per_max / wil:.1f}",
+                source=f"{per_max:.3f} / {wil:.4f}")
+        a.check(sec, "and F_bar moves 1.4x it", "1.4", f"{noise / wil:.1f}",
+                source=f"{noise:.3f} / {wil:.4f}")
+    for lit in (r"up to $\mathbf{0.260}$, which is about $3.9\times$ that "
+                r"widest Wilson half-width",
+                r"by up to $0.092$, which is $1.4\times$ it"):
+        a.check(sec, f"S7 prints {lit[:38]!r}...", True, lit in t,
+                source="cot_faith_arr.tex")
+
+
 def audit_arr_submission(a: Audit) -> None:
     """The ARR body is a second manuscript, so it needs the same treatment.
 
@@ -4834,10 +5077,10 @@ def audit_arr_submission(a: Audit) -> None:
                      "read order", [], dup,
                 source="cot_faith_arr.tex vs arr_appendix.tex")
         # And no artwork is printed twice. This is the reader-visible form of the
-        # same defect: one capture feeds the body's filmstrip and the appendix's
-        # pose panels, and for several revisions the appendix figure opened with
-        # the same six frames the body prints -- a full-width float of a page
-        # spent restating an exhibit, in a submission capped at 20 pages. A
+        # same defect: one capture feeds both rollout figures, the pose panels
+        # and the filmstrip, and for several revisions the pose figure opened
+        # with the same six frames the strip draws -- a full-width float of a
+        # page spent restating an exhibit, in a submission capped at 20 pages. A
         # duplicate \includegraphics is what that looks like in the source.
         art = re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}",
                          both_tex)
@@ -5365,6 +5608,90 @@ def audit_arr_submission(a: Audit) -> None:
                  "argues from", True,
             bool(re.search(r"12/12.*12/12.*12/12", floors_tex, re.S)),
             source="cot_faith_arr.tex")
+
+    # \bar{F} means two different family sets in the two halves of the
+    # submission: the body's column averages the nine families
+    # floor_invariance.json calls semantic (the cross_task_swap ceiling and the
+    # out-of-CoT instr_random_sub control among them), and the appendix's
+    # F_bar_mag averages the seven that are left when those two come out. Same
+    # symbol, values 0.02-0.05 apart, so the caption now states the difference
+    # -- and these checks are what keep that statement true, including the part
+    # that matters: the 12/12 sign result does not depend on the convention.
+    seven = set(fi.get("semantic_families") or []) - {"cross_task_swap",
+                                                      "instr_random_sub"}
+    a.check(sec, "the seven-family convention is the nine minus the ceiling "
+                 "and the out-of-CoT control", 7, len(seven),
+            source="floor_invariance.json semantic_families")
+    shifts, diffs7 = [], []
+    for c in (fi.get("per_config") or []):
+        pf = c["per_family"]
+        f7 = sum(pf[x]["F"] for x in seven) / len(seven)
+        shifts.append(c["f_bar_semantic"] - f7)
+        diffs7.append(f7 - c["floor_paraphrase_null"]["F"])
+    a.check(sec, "the nine-family mean is the higher one on every "
+                 "configuration, by 0.004 to 0.048 as the caption says",
+            [0.004, 0.048], [round(min(shifts), 3), round(max(shifts), 3)],
+            source="floor_invariance.json per_config")
+    a.check(sec, "and the below-floor result is 12/12 under the seven-family "
+                 "convention too, so the sign does not depend on which "
+                 "\\bar{F} the reader has in mind",
+            12, sum(1 for x in diffs7 if x < 0),
+            source="floor_invariance.json per_config")
+    a.check(sec, "the seven-family differences the caption quotes as its range",
+            [-0.013, -0.180],
+            [round(max(diffs7), 3), round(min(diffs7), 3)],
+            source="floor_invariance.json per_config")
+
+    # The Bridge-4k footnote. Both of its numbers were unsupported for four
+    # builds: they appeared in this caption only, in neither the appendix nor
+    # any artifact, and nothing checked them. They are now derived here from the
+    # released per-sample records of that checkpoint, which is what the caption
+    # cites, and the definitions are the caption's: among the samples the
+    # checkpoint scores as faithful (delta_linf > tau), the share whose only
+    # above-tau dimension is the gripper bit, and the mean per-axis translation
+    # change over the same samples against ECoT-bridge's over its three seeds.
+    def _faithful(path):
+        r = load(ROOT / path) or {}
+        ok = [s for s in (r.get("per_sample") or [])
+              if not s.get("skipped") and s.get("faithful")]
+        return ok
+
+    b4k = _faithful("results_v2/canonical_runs/bridge_subset_deconfound/"
+                    "cotfaith-bridge-subset-edit/cot_edit_report.json")
+    a.check(sec, "the Bridge-4k per-sample records are released", True,
+            len(b4k) > 0,
+            source="bridge_subset_deconfound/cotfaith-bridge-subset-edit/"
+                   "cot_edit_report.json")
+    if b4k:
+        grip = sum(1 for s in b4k
+                   if abs(s["delta_per_dim"][6]) > 0.05
+                   and max(abs(x) for x in s["delta_per_dim"][:6]) <= 0.05)
+        a.check(sec, "90% of Bridge-4k's faithful samples move the gripper bit "
+                     "and nothing else, as the footnote says", 0.90,
+                round(grip / len(b4k), 2), tol=0.005,
+                source=f"{grip}/{len(b4k)} faithful samples")
+
+        def _xyz(rows):
+            return sum(sum(abs(x) for x in s["delta_per_dim"][:3]) / 3
+                       for s in rows) / len(rows)
+
+        e = [_xyz(_faithful(f"results_v2/canonical_runs/"
+                            f"ecot_bridge_edit_seed{i}.json")) for i in range(3)]
+        emean, bmean = sum(e) / 3, _xyz(b4k)
+        a.check(sec, "and its mean per-axis translation change is the 0.010 the "
+                     "footnote prints", 0.010, round(bmean, 3), tol=0.0005,
+                source="bridge_subset_deconfound per_sample")
+        a.check(sec, "against ECoT-bridge's 0.197 over its three seeds", 0.197,
+                round(emean, 3), tol=0.0005,
+                source="ecot_bridge_edit_seed{0,1,2}.json")
+        a.check(sec, "which is the 20x the footnote claims", 20,
+                round(emean / bmean), tol=0.5,
+                source=f"{emean:.4f} / {bmean:.4f} = {emean / bmean:.1f}")
+        for want in (r"$90\%$ move the single gripper bit",
+                     r"$20\times$ smaller than ECoT-bridge's "
+                     r"($0.010$ against $0.197$)"):
+            a.check(sec, f"the caption prints it: {want[:40]}", True, want in t,
+                    source="cot_faith_arr.tex tab:floors caption")
 
     # tab:directional prints seed stds alongside every mean. They are quoted
     # to 3dp with the leading zero dropped ($.006$), which no other table does,
@@ -6268,10 +6595,12 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     trajectories, PNGs exist on disk, and every number in the caption is a field
     of fig15_facts.json.
 
-    One capture, two figures: the body prints the filmstrip (fig:frames, checked
-    by audit_body_frames_figure) and the appendix prints the pose panels
-    (fig:paths, checked here). The gate below is on the pose figure's artwork,
-    because that is what this section's numbers describe.
+    One capture, two figures: the pose panels (fig:paths, checked here) and the
+    filmstrip (fig:frames, checked by audit_body_frames_figure). Which half sits
+    in which document has changed once already, so neither is named as ``the
+    body's'' anywhere below; what is fixed is that exactly one of the two draws
+    the strip. The gate below is on the pose figure's artwork, because that is
+    what this section's numbers describe.
 
     This is silent until the figure is actually in the manuscript. That branch is
     worth stating plainly: a figure not yet included is not a failed claim, but
@@ -6281,10 +6610,11 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     """
     sec = "Rollout pose panels (fig:paths, WorldGym-style motion figure)"
     root = ROOT
-    # Both documents, because the float is free to move between them: the body
-    # is at its 8-page limit, so the figure ships in the appendix, and a gate
-    # that read only cot_faith_arr.tex would have switched this whole section
-    # off the moment it moved -- silently, and in the direction of fewer claims.
+    # Both documents, because the float is free to move between them: the two
+    # halves swapped once when the page budget changed which one the body could
+    # afford, and a gate that read only cot_faith_arr.tex would have switched
+    # this whole section off the moment it moved -- silently, and in the
+    # direction of fewer claims.
     t = "".join((root / n).read_text() for n in ("cot_faith_arr.tex",
                                                  "arr_appendix.tex")
                 if (root / n).exists())
@@ -6312,15 +6642,15 @@ def audit_rollout_filmstrip(a: Audit) -> None:
         return
 
     # This figure is the pose panels ALONE. It used to open with the same six
-    # frames the body prints, which is one exhibit shown twice and a page of a
-    # 20-page submission spent on it. The generator's two halves are mutually
-    # exclusive by construction rather than by convention -- it exits rather
-    # than accept both flags -- and this figure's fact sheet must record that it
-    # drew no strip. The complementary assertion, that the BODY's does, is in
-    # audit_body_frames_figure, so neither figure can quietly start drawing what
-    # the other already draws.
+    # frames the strip figure draws, which is one exhibit shown twice and a page
+    # of a 20-page submission spent on it. The generator's two halves are
+    # mutually exclusive by construction rather than by convention -- it exits
+    # rather than accept both flags -- and this figure's fact sheet must record
+    # that it drew no strip. The complementary assertion, that the strip
+    # figure's does, is in audit_body_frames_figure, so neither figure can
+    # quietly start drawing what the other already draws.
     a.check(sec, "the released pose figure draws no filmstrip, so the six frames "
-                 "the body prints are not reprinted here",
+                 "the strip figure draws are not reprinted here",
             False, bool(facts.get("strip_drawn")),
             source="fig15_facts.json: strip_drawn")
     a.check(sec, "and the generator refuses the two halves at once rather than "
@@ -6497,6 +6827,41 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                      f"({v if v is None else round(v, 1)})",
                 True, v is not None and f"${v:.1f}$" in t,
                 source="fig15_facts.json: final_cm_from_clean")
+    # Every check above asks whether the number appears in the SUBMISSION, which
+    # is the concatenation of both released documents. That is the right question
+    # for a figure free to move between them, and it has one hole: this figure is
+    # captioned twice -- once in the ARR body, once in the full-length manuscript
+    # -- so one caption can drift a digit while the other goes on carrying it and
+    # nothing above notices. A fire test found exactly that, and the full-length
+    # manuscript's copy of this caption was reached by NO check at all, since `t`
+    # above is the submission only. So each caption is now located by its own
+    # \includegraphics, across every released document, and required to carry the
+    # numbers on its own -- which is also the reader's view: nobody reads both.
+    both15 = t + (ROOT / "cot_faith_iclr.tex").read_text()
+    caps = re.findall(r"\\includegraphics(?:\[[^\]]*\])?"
+                      r"\{fig15_rollout_paths\.pdf\}.*?\\caption\{(.*?)\}\s*"
+                      r"\\label\{(?:app:)?fig:paths\}", both15, re.S)
+    a.check(sec, "the pose figure is captioned in at least one released "
+                 "document, so the per-caption checks below are not vacuous",
+            True, bool(caps),
+            source=f"{len(caps)} caption(s) of fig15_rollout_paths.pdf")
+    quoted = [(f"{peak.get('cot_direction_flip', float('nan')):.1f}",
+               "the flipped arm's peak"),
+              (f"{peak.get('nocot', float('nan')):.1f}", "the no-CoT arm's peak"),
+              (f"{(final.get('nocot') if final.get('nocot') is not None else float('nan')):.1f}",
+               "the no-CoT arm's final distance"),
+              (f"{(final.get('cot_direction_flip') if final.get('cot_direction_flip') is not None else float('nan')):.1f}",
+               "the flipped arm's final distance"),
+              (f"{(span if span is not None else float('nan')):.1f}",
+               "the clean arm's extent")]
+    for val, what in quoted:
+        a.check(sec, f"EVERY caption of this figure prints {what} ({val}), so "
+                     f"one document cannot drift a digit while the other "
+                     f"carries it", [],
+                [i for i, c in enumerate(caps) if f"${val}$" not in c],
+                source="fig15_facts.json vs each caption of "
+                       "fig15_rollout_paths.pdf")
+
     # And the direction of the contrast, recomputed rather than read off the
     # caption: the no-CoT arm must genuinely come back (final well below its own
     # peak) while the flipped arm must genuinely finish at its furthest. If a
@@ -6762,27 +7127,34 @@ def audit_per_task(a: Audit) -> None:
 
 
 def audit_body_frames_figure(a: Audit) -> None:
-    """The body's Figure 2 is panel (a) of the filmstrip, drawn by the same run.
+    """The filmstrip figure is panel (a) of the pose figure's run, drawn alone.
 
-    The submitted body has room for the strip but not for the three-panel figure
+    The submission has room for the strip but not for the three-panel figure
     (its caption alone is taller than a column), so the generator has a
     --strip-only mode that draws panel (a) on its own. That creates the one
     failure mode a shared caption cannot have: two figures, two fact sheets, and
-    nothing forcing them to be the same capture. A body figure quietly redrawn
-    from a scratch rollout while the appendix's is the released one would look
-    exactly right and argue about a different episode.
+    nothing forcing them to be the same capture. Either one quietly redrawn from
+    a scratch rollout while the other is the released one would look exactly
+    right and argue about a different episode.
 
     So the checks here are about identity and about what the shorter caption is
     allowed to claim: same capture directory, same suite, same arms, same steps;
     and no promise of the pose-derived panels this mode does not draw.
+
+    Both documents, for the reason the pose-panel section gives: the two floats
+    have already swapped halves once (the strip is 261pt of artwork against the
+    pose panels' 124pt, and the body is the half with the 8-page limit), so a
+    gate reading only cot_faith_arr.tex would have switched every check below
+    off the moment it moved -- silently, and toward fewer claims.
     """
-    sec = "Body Figure 2 (rollout frames, panel (a) alone)"
-    arr_p = ROOT / "cot_faith_arr.tex"
-    t = arr_p.read_text() if arr_p.exists() else ""
+    sec = "Filmstrip figure (rollout frames, panel (a) alone)"
+    t = "".join((ROOT / n).read_text()
+                for n in ("cot_faith_arr.tex", "arr_appendix.tex")
+                if (ROOT / n).exists())
     if "fig2_rollout_frames" not in t:
         return
     pdf = ROOT / "figures" / "fig2_rollout_frames.pdf"
-    a.check(sec, "the body figure's PDF is in the repository, so the submitted "
+    a.check(sec, "the filmstrip figure's PDF is in the repository, so the "
                  "build is not drawn from an untracked file", True, pdf.exists(),
             source=str(pdf))
     gen = ROOT / "figures" / "gen_fig15_rollout_filmstrip.py"
@@ -6802,7 +7174,7 @@ def audit_body_frames_figure(a: Audit) -> None:
 
     cap = ROOT / "results_v2" / "canonical_runs" / "rollout_filmstrip"
     f2 = load(cap / "fig2_frames_facts.json")
-    a.check(sec, "the body figure has its own fact sheet, so its caption's "
+    a.check(sec, "the filmstrip has its own fact sheet, so its caption's "
                  "numbers are checked against what it drew and not against the "
                  "three-panel figure's", True, f2 is not None,
             source=str(cap / "fig2_frames_facts.json"))
@@ -6815,22 +7187,22 @@ def audit_body_frames_figure(a: Audit) -> None:
                       ("suite", "the suite"),
                       ("steps_per_arm", "the arms and their step counts"),
                       ("cot_refresh_steps", "the CoT refresh interval")):
-        a.check(sec, f"the body figure and the appendix filmstrip agree on "
+        a.check(sec, f"the two figures drawn from this capture agree on "
                      f"{what}, so they are one rollout and not two",
                 f15.get(key), f2.get(key),
                 source="fig2_frames_facts.json vs fig15_facts.json")
-    # The pairing measurement, again: it is the body caption's one quantitative
+    # The pairing measurement, again: it is the strip caption's one quantitative
     # claim about the drawing, and the strip is where a reader can see the rows.
-    a.check(sec, "the body strip's three rows are bit-identical at the first "
+    a.check(sec, "the released strip's three rows are bit-identical at the first "
                  "column", 0.0, f2.get("step0_pairing_max_mean_abs_pixel"),
             source="fig2_frames_facts.json")
-    a.check(sec, "and the body caption prints that measurement rather than "
+    a.check(sec, "and the strip's caption prints that measurement rather than "
                  "asserting the rows match", True,
             r"|\Delta\text{pixel}| = 0.0$" in t,
             source="fig2_frames_facts.json: "
                    "step0_pairing_max_mean_abs_pixel=0.0")
     steps = f2.get("columns_at_steps") or []
-    a.check(sec, "the body caption prints the column steps the artifact "
+    a.check(sec, "the strip's caption prints the column steps the artifact "
                  "records, so the strip's own axis is checkable", True,
             bool(steps) and f"$t = {', '.join(str(x) for x in steps)}$" in t,
             source=f"fig2_frames_facts.json: columns_at_steps={steps}")
@@ -6843,17 +7215,17 @@ def audit_body_frames_figure(a: Audit) -> None:
                      f"pixel levels)", True,
                 f"${lo:.2f}$" in t and f"${hi:.1f}$" in t,
                 source="fig2_frames_facts.json: column_change_mean_abs_pixel")
-    # What this mode does NOT draw, asserted as an absence. The body caption is
+    # What this mode does NOT draw, asserted as an absence. The strip caption is
     # short precisely because it drops the pose panels; a clause about a gripper
     # path or a distance curve would describe a figure the reader is not looking
-    # at. Scoped to this caption, since the body's text is free to point at the
-    # appendix figure that does draw them -- and must.
+    # at. Scoped to this caption, since the surrounding text is free to point at
+    # the figure that does draw them -- and must.
     m = re.search(r"\\includegraphics(?:\[[^\]]*\])?\{fig2_rollout_frames\.pdf\}"
                   r".*?\\caption\{(.*?)\}\s*\\label\{fig:frames\}", t, re.S)
     cap_txt = m.group(1) if m else ""
-    a.check(sec, "the body figure's caption is locatable", True, bool(cap_txt),
-            source="cot_faith_arr.tex")
-    a.check(sec, "no pose was logged for this capture, and the body caption "
+    a.check(sec, "the filmstrip's caption is locatable", True, bool(cap_txt),
+            source="cot_faith_arr.tex + arr_appendix.tex")
+    a.check(sec, "no pose was logged for this capture, and the strip's caption "
                  "promises neither a path nor a distance curve", False,
             bool(f2.get("eef_logged"))
             or "top-down" in cap_txt or "per-step distance" in cap_txt,
@@ -6862,17 +7234,17 @@ def audit_body_frames_figure(a: Audit) -> None:
     a.check(sec, "and it sends the reader to the figure that does draw them, "
                  "so dropping the panels does not drop the evidence", True,
             r"\ref{fig:paths}" in cap_txt,
-            source="cot_faith_arr.tex: fig:frames caption")
+            source="the fig:frames caption, in whichever half carries it")
     # The anti-duplication invariant, from the two fact sheets rather than from
     # the captions: one capture feeds two figures, and until the generator grew
-    # a --no-strip mode the appendix figure opened with the SAME six frames the
-    # body prints, which is one exhibit shown twice. Each mode records whether
+    # a --no-strip mode the pose figure opened with the SAME six frames the strip
+    # draws, which is one exhibit shown twice. Each mode records whether
     # it drew the strip, so "exactly one released figure draws it" is checked
     # here instead of being a property of whichever mode was regenerated last.
     fp = load(ROOT / "results_v2" / "canonical_runs" / "rollout_filmstrip"
               / "fig15_facts.json") or {}
     a.check(sec, "exactly one of the two figures drawn from this capture draws "
-                 "the filmstrip, and it is the body's",
+                 "the filmstrip, and it is the one drawn in --strip-only mode",
             [True, False], [f2.get("strip_drawn"), fp.get("strip_drawn")],
             source="fig2_frames_facts.json vs fig15_facts.json: strip_drawn")
 
@@ -7417,6 +7789,31 @@ def audit_rank_correlation(a: Audit, d: dict) -> None:
     a.check(sec, "the per-seed rho range S6 quotes", ("0.400", "0.500"),
             (f"{min(rhos):.3f}", f"{max(rhos):.3f}"), source=src)
 
+    # --- the interval on rho, which is the part that bounds the claim -------
+    # rho = 0.476 on eight configurations is one number with almost no
+    # precision, and quoting it alone invites the reading that the two rules
+    # broadly agree. S6 therefore prints the Fisher-z interval, which spans 0.
+    # It is recomputed here rather than trusted: the whole point of the sentence
+    # is that the interval contains 0, and an arithmetic slip in the direction
+    # of a narrower interval would turn a disclaimer into a finding.
+    #
+    # z = atanh(rho), se = 1/sqrt(n-3), back-transformed with tanh. n-3 rather
+    # than n-1 because this is the Spearman variant of the transform, which is
+    # what n=8 needs; the difference is 15% of the interval width at this n.
+    rho_m = mean.get("spearman_rho")
+    if rho_m is not None and n > 3:
+        z = math.atanh(rho_m)
+        se = 1.0 / math.sqrt(n - 3)
+        lo_ci = math.tanh(z - 1.96 * se)
+        hi_ci = math.tanh(z + 1.96 * se)
+        a.check(sec, "the Fisher-z 95% interval on rho at n=8, recomputed",
+                (-0.34, 0.88), (round(lo_ci, 2), round(hi_ci, 2)),
+                source=f"atanh({rho_m:.3f}) +- 1.96/sqrt({n}-3)")
+        a.check(sec, "and it spans zero, which is why S6 claims no general "
+                     "agreement between the two rules", True,
+                lo_ci < 0 < hi_ci,
+                source=f"[{lo_ci:.3f}, {hi_ci:.3f}]")
+
     # --- and the prose, in every place it is stated ------------------------
     arr = ROOT / "cot_faith_arr.tex"
     t = arr.read_text() if arr.exists() else ""
@@ -7424,6 +7821,8 @@ def audit_rank_correlation(a: Audit, d: dict) -> None:
                        (r"\rho = 0.476", "S6 and the conclusion"),
                        (r"\tau_b = 0.500", "S6"),
                        ("21 concordant against 7 discordant", "S6"),
+                       (r"Fisher-$z$ 95\% interval of $[-0.34, 0.88]$",
+                        "S6, bounding what eight configurations can show"),
                        ("$0.400$--$0.500$", "S6's per-seed range")):
         a.check(sec, f"the ARR body states {lit!r} in {where}", True,
                 lit in t, source="cot_faith_arr.tex")
@@ -8036,9 +8435,9 @@ def audit_directional_inversion_figure(a: Audit, d: Optional[dict]) -> None:
     fig = ROOT / "figures" / "fig12_directional_inversion.pdf"
     a.check(sec, "the figure is built", True, fig.exists(), source=str(fig))
     tex = TEX.read_text()
-    a.check(sec, "and the include width matches the page savefig emits (446.1pt "
-                 "of a 455.2pt column)", 1,
-            tex.count(r"\includegraphics[width=0.98\textwidth]"
+    a.check(sec, "and the include width matches the page savefig emits (218.4pt "
+                 "of a 455.2pt column, i.e. one \\columnwidth)", 1,
+            tex.count(r"\includegraphics[width=0.48\textwidth]"
                       r"{fig12_directional_inversion.pdf}"), source=str(TEX))
 
     for claim, needle in [
@@ -8347,6 +8746,7 @@ def main() -> int:
     audit_directional_inversion_figure(a, d)
     audit_overview_figure(a, d)
     audit_arr_submission(a)
+    audit_arr_body_derivations(a, d)
     audit_derived_paths_are_portable(a)
 
     # The manuscript states how many claims this script checks. Let the script
