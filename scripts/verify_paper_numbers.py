@@ -1941,6 +1941,12 @@ def audit_manuscript_hygiene(a: Audit) -> None:
         "run-to-run noise floor": "retracted 1.45 pp single-pair noise floor",
         r"inside the $1.45$": "2.30 pp spread described as inside a 1.45 pp "
                               "floor (it is 1.2x larger)",
+        r"positive entry is the independent retraining of the no-CoT variant "
+        r"($+0.127$)":
+            "the no-CoT replicate's two-sided statistic quoted as its "
+            "F_bar_diff, which is +0.014 (the long-form manuscript's "
+            "'single positive two-sided score ... ($+0.127$)' names the "
+            "quantity and is correct; this wording did not)",
         # 28,443 is the seed-0 slice across the 30 runs the collision
         # decomposition covers. The release carries 45,989 scored deltas,
         # because every "ours" row was re-run at three sampling seeds after
@@ -3814,6 +3820,12 @@ def audit_floor_invariance(a: Audit) -> None:
                 source=src)
         return
     tex = TEX.read_text() if TEX.exists() else ""
+    # The ARR body separately, because the two counts this section reconciles
+    # live in different documents' shortened wordings and only the ARR file is
+    # what ARR compiles.
+    arr_p = root / "cot_faith_arr.tex"
+    arr_tex = arr_p.read_text() if arr_p.exists() else ""
+    d = load(root / "results_v2" / "derived_metrics.json") or {}
     n = r.get("n_configs")
 
     a.check(sec, "all twelve configurations scored, so the rate is over the "
@@ -3834,6 +3846,74 @@ def audit_floor_invariance(a: Audit) -> None:
                  "twelve -- which is what makes both floors unusable rather "
                  "than one of them right",
             n, r.get("n_null_spread_exceeds_margin"), source=src)
+
+    # Two disjoint twelves. This artifact's twelve configurations and
+    # derived_metrics' twelve calibration entries differ by one member each
+    # way -- the 4k Bridge subset is here and not there, the no-CoT retraining
+    # is there and not here -- and they carry different F_diff values for the
+    # same model besides, because f_bar_semantic averages a different family
+    # set. The ARR body says "negative on 12 of 12" of THIS twelve and the
+    # Limitations say "11 of 12" of the OTHER, and both are true. What was not
+    # true is what sat between them: S4 cited Table 1 and then printed the
+    # calibration range (-0.179 to +0.014), i.e. claimed twelve negatives and
+    # printed a positive one of them in the same clause. So the range each
+    # count is quoted with is asserted against the artifact that count is over,
+    # and the composition gap is asserted too -- a future editor who merges the
+    # two lists fails here rather than in a reader's head.
+    pcfg = [c.get("config") for c in (r.get("per_config") or [])]
+    csum = dig(d, "calibration_summary") or {}
+    cmods = csum.get("models") or []
+    a.check(sec, "the two twelves are different sets: the 4k Bridge subset "
+                 "calibrates a floor pair but is not in the calibration "
+                 "table", (True, False),
+            ("bridge_subset_4k" in pcfg, "bridge_subset_4k" in cmods),
+            source=f"{src} per_config vs calibration_summary.models")
+    a.check(sec, "and the no-CoT retraining is in the calibration table but "
+                 "has no floor pair here", (False, True),
+            (any("retrain" in (c or "") for c in pcfg),
+             "ours-no-cot-retrain" in cmods),
+            source=f"{src} per_config vs calibration_summary.models")
+
+    dps = [c["f_diff_vs_paraphrase"] for c in (r.get("per_config") or [])]
+    if dps:
+        a.check(sec, "S4 prints THIS table's F_diff range beside its citation "
+                     "to it, not the calibration set's",
+                True,
+                f"from ${min(dps):.3f}$ to ${max(dps):.3f}$" in arr_tex,
+                source=f"{src}: {min(dps):.3f} to {max(dps):.3f}")
+    cdiff = csum.get("F_bar_diff_vs_paraphrase_null_by_model") or {}
+    pos = {k: v for k, v in cdiff.items() if v > 0}
+    a.check(sec, "exactly one calibration entry comes out positive, and it is "
+                 "the no-CoT retraining -- the negative control",
+            ["ours-no-cot-retrain"], sorted(pos),
+            source="derived_metrics.calibration_summary")
+    a.check(sec, "S4 names that entry as off-table and prints its F_diff "
+                 "rather than its two-sided statistic", True,
+            all(s in arr_tex for s in ("is off this table",
+                                       "no-CoT variant ($+0.014$)")),
+            source=f"F_bar_diff={r3(pos.get('ours-no-cot-retrain'))}, "
+                   f"two_sided="
+                   f"{r3((csum.get('F_bar_two_sided_by_model') or {}).get('ours-no-cot-retrain'))}")
+    # +0.127 is a real number about that same model -- its two-sided score --
+    # and a number that is right about one statistic and printed against
+    # another is precisely the defect this block reconciles. The ARR body
+    # carries no two-sided column, so the only thing +0.127 could be doing
+    # there is standing in for an F_diff; the long-form manuscript may print
+    # it, and must name the statistic when it does.
+    a.check(sec, "the ARR body, which has no two-sided column, does not print "
+                 "the two-sided +0.127 at all", True,
+            "$+0.127$" not in arr_tex, source="cot_faith_arr.tex")
+    a.check(sec, "and where the long-form manuscript does print it, it names "
+                 "the statistic", True,
+            "single positive two-sided score" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and the Limitations' 11-of-12 is the calibration set's "
+                 "count, stated as a different row set from Table 1's twelve",
+            (11, 12, True),
+            (csum.get("n_F_bar_below_paraphrase_floor"),
+             csum.get("n_models_calibrated"),
+             "differs from Table~\\ref{tab:floors}'s twelve" in arr_tex),
+            source="derived_metrics.calibration_summary")
 
     # Both floors have to be meaning-preserving by the SAME judge, or the whole
     # argument collapses into "one of these families isn't a floor".
