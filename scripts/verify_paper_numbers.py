@@ -4187,6 +4187,142 @@ def audit_threshold_sweep(a: Audit) -> None:
             source="cot_faith_iclr.tex")
 
 
+def audit_rank_ablation(a: Audit, d: Optional[dict]) -> None:
+    """Does LoRA rank order causal effect? No -- and the caption used to say it
+    did, on 4/5 families.
+
+    Same defect class as audit_threshold_sweep, from the same cause: the old
+    generator read /tmp/cf_full_sweep, which has no lora-r32 directory, so it
+    swept [8, 16, 64] while its own docstring said (8, 16, 32, 64). Dropping the
+    paper's CANONICAL rank is the entire reason "monotonic on 4/5 families"
+    looked true. It also drew the superseded single-run point estimates rather
+    than the 3-sampling-seed means the rest of the paper reports, which is where
+    the manuscript's 0.94 on cross_task_swap came from -- that number appears
+    nowhere in the release (r=64 reads 0.887).
+
+    So this function pins the corrected finding (0/5 monotonic), the two
+    endpoint facts that DO hold, the bound that makes the whole sweep a
+    non-result (its widest spread is under the same-config retraining
+    difference on that very family), and -- because the defect was a
+    provenance defect -- that the generator no longer reads /tmp at all.
+    """
+    sec = "LoRA-rank ablation (fig:ablation panel a)"
+    root = Path(__file__).resolve().parent.parent
+    tex = TEX.read_text() if TEX.exists() else ""
+    fams = ["direction_flip", "gripper_flip", "verb_swap", "negation",
+            "cross_task_swap"]
+    ranks = ["ours-r8", "ours-r16", "ours-r32", "ours-r64"]
+
+    curves = {f: [dig(d, "models", m, "families", f, "F_mag") for m in ranks]
+              for f in fams}
+    missing = [f"{m}:{f}" for f in fams for m, v in zip(ranks, curves[f])
+               if v is None]
+    a.check(sec, "all 4 trained ranks x 5 families are in the release, so the "
+                 "figure sweeps every rank the paper trained", [], missing,
+            source="derived_metrics.models.ours-r{8,16,32,64}.families")
+    if missing:
+        return
+
+    # The corrected claim.
+    mono = [f for f in fams
+            if all(curves[f][i] <= curves[f][i + 1] for i in range(3))]
+    a.check(sec, "ZERO of the 5 families are monotonic in r once r=32 is put "
+                 "back (the caption used to claim 4/5)", [], mono)
+    a.check(sec, "r=32 falls below r=16 on all 5 families", 5,
+            sum(1 for f in fams if curves[f][2] < curves[f][1]))
+    a.check(sec, "r=32 falls below r=8 on 4 of the 5", 4,
+            sum(1 for f in fams if curves[f][2] < curves[f][0]))
+    # The two endpoint facts the manuscript is allowed to state.
+    a.check(sec, "r=64 is the best of the four ranks on all 5 families", 5,
+            sum(1 for f in fams if curves[f].index(max(curves[f])) == 3))
+    a.check(sec, "r=32 is the worst of the four on 4 of the 5", 4,
+            sum(1 for f in fams if curves[f].index(min(curves[f])) == 2))
+    a.check(sec, "the verb_swap curve the manuscript quotes reads "
+                 "0.643 -> 0.677 -> 0.587 -> 0.840",
+            [0.643, 0.677, 0.587, 0.84],
+            [r3(v) for v in curves["verb_swap"]])
+
+    # Why 0/5 is not merely a wiggle: the whole sweep is inside training noise.
+    spreads = {f: max(curves[f]) - min(curves[f]) for f in fams}
+    worst_fam = max(spreads, key=spreads.get)
+    a.check(sec, "the widest across-rank spread is on verb_swap", "verb_swap",
+            worst_fam)
+    a.check(sec, "and it is 0.253", 0.253, r3(spreads[worst_fam]), tol=0.0015)
+    retrain = dig(d, "training_replicate", "by_label", "ours-r8",
+                  "F_per_family", "max_abs_diff")
+    a.check(sec, "the same-config retraining difference it is compared against "
+                 "is the released 0.260 on ours-r8:verb_swap", 0.260,
+            r3(retrain), tol=0.0015,
+            source="derived_metrics.training_replicate.by_label.ours-r8")
+    a.check(sec, "so the widest rank spread is SMALLER than retraining the "
+                 "same config once, i.e. the sweep licenses no rank ordering",
+            True, retrain is not None and spreads[worst_fam] < retrain)
+
+    # Provenance: the defect was that the generator went around _data.py.
+    gen = root / "figures" / "gen_fig8_ablation.py"
+    src = gen.read_text() if gen.exists() else ""
+    # /tmp is allowed to appear in the module docstring -- the retracted path is
+    # recorded there on purpose -- but nowhere in the executable body.
+    body = src.split('"""')[2] if src.count('"""') >= 2 else src
+    a.check(sec, "the generator reads the release, not a /tmp scratch "
+                 "directory", True, bool(src) and "/tmp" not in body,
+            source="figures/gen_fig8_ablation.py")
+    a.check(sec, "and the retracted /tmp path is recorded in its docstring "
+                 "rather than silently dropped", True, "/tmp" in src,
+            source="figures/gen_fig8_ablation.py")
+    a.check(sec, "and it goes through _data.py, so it inherits the no-hardcoded"
+                 "-literal rule", True, "from _data import fam" in src,
+            source="figures/gen_fig8_ablation.py")
+    a.check(sec, "the generator sweeps all four ranks", True,
+            'RANKS = [(8, "ours-r8"), (16, "ours-r16"), (32, "ours-r32"), '
+            '(64, "ours-r64")]' in src,
+            source="figures/gen_fig8_ablation.py")
+
+    # Panel (b): the seed spread the manuscript tightened from "<=15pp".
+    seeds = ["ours-data50A", "ours-data50B"]
+    sp = {f: abs(dig(d, "models", seeds[0], "families", f, "F_mag")
+                 - dig(d, "models", seeds[1], "families", f, "F_mag"))
+          for f in fams}
+    a.check(sec, "the 50%-data seed spread is 10.7 pp at its widest, not the "
+                 "'<=15pp' the caption used to round it to", 10.7,
+            round(max(sp.values()) * 100, 1), tol=0.06)
+    a.check(sec, "widest on verb_swap", "verb_swap", max(sp, key=sp.get))
+    a.check(sec, "narrowest on cross_task_swap, at 0.3 pp", 0.3,
+            round(min(sp.values()) * 100, 1), tol=0.06)
+
+    # And that the manuscript now says all of this. The two quantities the old
+    # version got wrong are asserted by COUNT, not by presence: each appears
+    # once in the body and once in the caption, and a presence check is
+    # satisfied by either one alone -- so reverting just the caption would slip
+    # through, which is the exact shape of the defect being fixed here.
+    a.check(sec, "both the body and the caption name all four ranks", 2,
+            tex.count(r"$r \in \{8,16,32,64\}$"), source=str(TEX))
+    a.check(sec, "and neither still names the three the old figure swept",
+            0, tex.count(r"\{8, 16, 64\}") + tex.count(r"\{8,16,64\}"),
+            source=str(TEX))
+    a.check(sec, "both quote the measured 10.7 pp seed spread", 2,
+            tex.count(r"$\leq 10.7$pp"), source=str(TEX))
+    a.check(sec, "and neither still rounds it to the old '<=15pp'", 0,
+            tex.count(r"$\leq 15$pp"), source=str(TEX))
+    for want, why in (
+            ("zero of the 5 families are monotonic",
+             "the body states the corrected count"),
+            ("No family is monotonic in $r$",
+             "the caption states the corrected count"),
+            ("that claim is retracted", "the caption retracts the old one"),
+            ("we retract that claim", "the body retracts the old one")):
+        a.check(sec, why, True, want in tex, source=str(TEX))
+    for gone, why in (
+            ("monotonically raises causal effect on 4/5 families",
+             "the withdrawn caption claim is gone"),
+            ("gripper\\_flip is rank-insensitive",
+             "the false 'rank-insensitive' claim is gone (gripper_flip rises "
+             "0.110 -> 0.173)"),
+            (r"($0.86 \to 0.94$)",
+             "the superseded /tmp point estimate 0.94 is gone")):
+        a.check(sec, why, False, gone in tex, source=str(TEX))
+
+
 def audit_collision_decomposition(a: Audit) -> None:
     """How much of F_mag is a decode-collision counter? The paper argued from
     the bimodality of the Delta distribution that F is robust to tau. The same
@@ -6330,6 +6466,7 @@ def main() -> int:
     audit_fdir_null(a)
     audit_collision_decomposition(a)
     audit_threshold_sweep(a)
+    audit_rank_ablation(a, d)
     audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
     audit_rollout_edited_arm(a)
