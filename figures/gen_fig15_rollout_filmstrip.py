@@ -30,21 +30,31 @@ half-drawn version of this figure would be a claim about motion that was not
 measured.
 
 Usage:  python figures/gen_fig15_rollout_filmstrip.py [<capture_dir>]
-                 [--no-eef] [--strip-only]
+                 [--no-eef] [--strip-only] [--no-strip]
 where <capture_dir> holds rollout_edit_report.json and frames/. `--no-eef`
 draws panel (a) alone, for a capture whose env did not expose end-effector
 poses; it must be passed explicitly, because silently dropping two panels is
 how a figure comes to show less than its caption claims.
 
 `--strip-only` is the same drawing for a different reason: the two-column body
-prints the filmstrip on its own as fig2_rollout_frames.pdf, with panels (b)
-and (c) left in the appendix figure, because a body float carrying all three
+prints the filmstrip on its own as fig2_rollout_frames.pdf, with the pose
+panels left in the appendix figure, because a body float carrying all three
 plus the caption they need is taller than the page it has to land on. It is a
 separate output name and a separate fact sheet (fig2_frames_facts.json) so the
 two figures cannot be confused for each other, and it never overwrites
-fig15_facts.json -- panels (b)/(c) are not drawn in this mode, so their
+fig15_facts.json -- the pose panels are not drawn in this mode, so their
 numbers are absent here, and a shared file would report that absence as if the
 arms had never separated.
+
+`--no-strip` is its complement, and the two are meant to be run as a pair: it
+draws the pose panels WITHOUT the filmstrip, as fig15_rollout_paths.pdf. Once
+the body prints the strip, an appendix figure that opens with the same six
+frames is the same exhibit twice -- the reader pays a third of a page for a row
+they have already seen, and the appendix figure's own two measurements get the
+bottom fifth of the float. So exactly one released figure draws the strip. Each
+mode records `strip_drawn` in its fact sheet, and the audit asserts the two
+disagree, because "no exhibit appears twice" is otherwise a property of what
+happened to be regenerated last.
 """
 import json
 import os
@@ -259,7 +269,13 @@ def column_motion(cap_dir, key, arm, steps, eps) -> dict:
 def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("--")]
     strip_only = "--strip-only" in sys.argv
+    no_strip = "--no-strip" in sys.argv
+    if strip_only and no_strip:
+        die("--strip-only and --no-strip ask for disjoint halves of the same "
+            "figure; passing both would silently draw one of them.")
     no_eef = "--no-eef" in sys.argv or strip_only
+    if no_strip and no_eef:
+        die("--no-strip with no pose panels leaves nothing to draw.")
     cap_dir = argv[0] if argv else DEFAULT
     rep, key, eps, all_keys = load(cap_dir)
     steps = pick_steps(eps)
@@ -310,9 +326,14 @@ def main() -> int:
     # and panel (b)'s y-label overhangs the leftmost axes by ~0.06in. Authoring
     # at 6.20 landed the PDF at 456.5pt against a 453.6pt \textwidth, so LaTeX
     # rescaled every captured frame by 0.995 for nothing.
-    W = 6.14
+    # 6.32 rather than 6.14 under --no-strip. save() writes a tight bbox with
+    # 0.05in of pad, and the widest artist is the right edge of panel (c), so the
+    # PDF's width is the panels' own extent: at the strip's 6.14 the drawing came
+    # out 440.6pt against a 453.6pt \textwidth and \includegraphics scaled every
+    # label up 2.9%, which is a different type size from every other figure here.
+    W = 6.32 if no_strip else 6.14
     cell = (W - 0.62) / len(steps)         # 0.62in of row labels on the left
-    strip_h = 3 * (cell + 0.20) + 0.16     # +0.20 per row for the MOVE caption
+    strip_h = 0.0 if no_strip else 3 * (cell + 0.20) + 0.16   # +0.20 per row
     # 0.44in for (b)/(c)'s tick labels and axis labels, PLOT_H of axes, 0.11in
     # of air under the last MOVE caption. The first version left 0.38in of dead
     # band between the strip and the plots and gave the plots 0.80in, which read
@@ -325,44 +346,71 @@ def main() -> int:
     # 1.93in x 1.21in is the box the tracks' own extent asks for (see below).
     PLOT_H = 1.21
     bot_h = (0.44 + PLOT_H + 0.11) if have_eef else 0.16
+    # Without the strip above them the two panels lose the 0.16in top pad the
+    # strip carried, and their titles then sit on the figure's bbox edge, which
+    # save()'s tight bbox crops into the capital letters.
+    if no_strip:
+        bot_h += 0.19
     H = strip_h + bot_h
     fig = plt.figure(figsize=(W, H))
 
     # ---- (a) the filmstrip ----------------------------------------------
-    y_top = 1.0 - 0.16 / H
-    for r, (arm, label, colour) in enumerate(ARMS):
-        row_top = y_top - r * (cell + 0.20) / H
-        for c, st in enumerate(steps):
-            img, rec = frame(cap_dir, key, arm, st, eps)
-            ax = fig.add_axes([(0.62 + c * cell) / W, row_top - cell / H,
-                               cell / W, cell / H])
-            ax.set_xticks([]); ax.set_yticks([])
-            for s in ax.spines.values():
-                s.set_visible(True); s.set_color(colour); s.set_linewidth(0.9)
-            if img is None:
-                ax.text(0.5, 0.5, "no frame", ha="center", va="center",
-                        fontsize=FONT_SIZE - 3, color="0.5")
-            else:
-                ax.imshow(img)
-            if r == 0:
-                ax.set_title(f"$t={st}$", fontsize=FONT_SIZE - 2, pad=2.5)
-            # The MOVE phrase under the cell it produced. Only the CoT arms get
-            # one: the no-CoT arm reads no reasoning, so there is no phrase to
-            # print, and an empty strip under that row says so.
-            if arm != "nocot":
-                ax.text(0.5, -0.055, short_move(rec and rec.get("move")),
-                        transform=ax.transAxes, ha="center", va="top",
-                        fontsize=FONT_SIZE - 4.2, color=colour, clip_on=False)
-        fig.text(0.60 / W, row_top - 0.5 * cell / H, label, ha="right",
-                 va="center", fontsize=FONT_SIZE - 2, color=colour,
-                 linespacing=1.15)
+    # Skipped under --no-strip: the body prints this strip as its own float, and
+    # the same six frames in the appendix figure is one exhibit drawn twice.
+    if not no_strip:
+        y_top = 1.0 - 0.16 / H
+        for r, (arm, label, colour) in enumerate(ARMS):
+            row_top = y_top - r * (cell + 0.20) / H
+            for c, st in enumerate(steps):
+                img, rec = frame(cap_dir, key, arm, st, eps)
+                ax = fig.add_axes([(0.62 + c * cell) / W, row_top - cell / H,
+                                   cell / W, cell / H])
+                ax.set_xticks([]); ax.set_yticks([])
+                for s in ax.spines.values():
+                    s.set_visible(True); s.set_color(colour); s.set_linewidth(0.9)
+                if img is None:
+                    ax.text(0.5, 0.5, "no frame", ha="center", va="center",
+                            fontsize=FONT_SIZE - 3, color="0.5")
+                else:
+                    ax.imshow(img)
+                if r == 0:
+                    ax.set_title(f"$t={st}$", fontsize=FONT_SIZE - 2, pad=2.5)
+                # The MOVE phrase under the cell it produced. Only the CoT arms
+                # get one: the no-CoT arm reads no reasoning, so there is no
+                # phrase to print, and an empty strip under that row says so.
+                if arm != "nocot":
+                    ax.text(0.5, -0.055, short_move(rec and rec.get("move")),
+                            transform=ax.transAxes, ha="center", va="top",
+                            fontsize=FONT_SIZE - 4.2, color=colour,
+                            clip_on=False)
+            fig.text(0.60 / W, row_top - 0.5 * cell / H, label, ha="right",
+                     va="center", fontsize=FONT_SIZE - 2, color=colour,
+                     linespacing=1.15)
 
-    fig.text(0.02 / W, y_top + 0.10 / H, "(a)", fontsize=FONT_SIZE - 1,
-             fontweight="bold", va="bottom")
+        fig.text(0.02 / W, y_top + 0.10 / H, "(a)", fontsize=FONT_SIZE - 1,
+                 fontweight="bold", va="bottom")
+
+    # Panel letters are positional, not fixed: under --no-strip the pose panels
+    # are the figure's first and second, and a figure whose only panels are
+    # labelled (b) and (c) reads as one with a missing (a).
+    L_PATH, L_DIST = ("(a)", "(b)") if no_strip else ("(b)", "(c)")
 
     # Panels (b) and (c) exist only if poses were logged. `peak` stays empty in
     # that case rather than being filled with a stand-in, so the facts file says
     # "no measurement" instead of reporting one that was never taken.
+    # Panel x-geometry. With the strip gone the 0.62in reserved for its row
+    # labels is dead space, so the two panels start further left and take the
+    # width back: at 0.62 the drawing's natural width was 441pt against a
+    # 453.6pt \textwidth, and \includegraphics[width=\textwidth] then scaled
+    # every label up by 3% -- small, but it makes this figure's type a different
+    # size from every other figure's.
+    X0 = 0.46 if no_strip else 0.62
+    # Panel (b) keeps its 1.93in in both modes: it is on an equal aspect with
+    # adjustable="datalim", so widening the box widens the x range shown and
+    # spreads the three tracks apart -- which put the centred colour key on top
+    # of the flipped arm's track. The freed width goes to (c), whose x axis is
+    # 400 rollout steps and gains resolution from every point of it.
+    WB, GAP, WC = ((1.93, 0.50, 3.33) if no_strip else (1.93, 0.50, 2.99))
     peak, final = {}, {}
     clean_span_cm = None
     if have_eef:
@@ -379,7 +427,7 @@ def main() -> int:
         # its side the same tracks fill a landscape box at true scale. No claim
         # here depends on which axis is horizontal; the panel asserts no left or
         # right, only how far.
-        axb = fig.add_axes([0.62 / W, 0.44 / H, 1.93 / W, PLOT_H / H])
+        axb = fig.add_axes([X0 / W, 0.44 / H, WB / W, PLOT_H / H])
         # cot_clean drawn LAST and on top. It is the reference the other two
         # panels are measured against, and it is also the smallest track by two
         # orders of magnitude, so in ARMS order it vanished underneath the arm
@@ -441,10 +489,13 @@ def main() -> int:
                      arrowprops=dict(arrowstyle="-", lw=0.6,
                                      color=C_COT_TRAINED, shrinkA=1.0,
                                      shrinkB=1.5))
-        # The colour key goes in the middle of the panel, which is empty because
-        # the no-CoT arm's excursion encloses it: an endpoint label on each track
-        # ran off the axes on the arm that ends nearest a corner, and a corner
-        # legend sits on top of a track in every corner this panel has.
+        # The colour key is placed by `best`, not pinned: an endpoint label on
+        # each track ran off the axes on the arm that ends nearest a corner, and
+        # a corner legend sits on top of a track in every corner this panel has.
+        # It was pinned to the centre while panel (b) was 1.93in in a 6.14in
+        # figure; at the wider figure --no-strip draws, the equal aspect widens
+        # the x range and the flipped arm's track crosses the centre, so the
+        # position has to be a function of the data rather than a constant.
         # ARMS order, not draw order: cot_clean is drawn last so it lands on
         # top, and letting the legend inherit that put "own CoT" third, which
         # is the one reading order this figure is built to prevent.
@@ -452,7 +503,7 @@ def main() -> int:
         axb.legend(handles=[Line2D([], [], color=c, lw=1.1,
                                    label=l.replace("\n", " "))
                             for _, l, c in ARMS],
-                   loc="center", fontsize=FONT_SIZE - 4.2, frameon=False,
+                   loc="best", fontsize=FONT_SIZE - 4.2, frameon=False,
                    handlelength=1.2, borderaxespad=0.1, labelspacing=0.3,
                    handletextpad=0.5)
         axb.set_xlabel("gripper $y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
@@ -472,13 +523,14 @@ def main() -> int:
         axb.set_title("top-down path, true scale "
                       "($\\bullet$ = shared start, $\\blacksquare$ = end)",
                       fontsize=FONT_SIZE - 2, pad=2.5)
-        fig.text(0.02 / W, (0.44 + PLOT_H) / H, "(b)", fontsize=FONT_SIZE - 1,
+        fig.text(0.02 / W, (0.44 + PLOT_H) / H, L_PATH, fontsize=FONT_SIZE - 1,
                  fontweight="bold", va="bottom")
 
         # ---- (c) distance from the clean-CoT arm -------------------------
         # Defined at every step whether or not any arm succeeds, which is the
         # point: DSR is undefined here (SR(cot_clean) = 0), and this is not.
-        axc = fig.add_axes([(0.62 + 2.43) / W, 0.44 / H, 2.99 / W, PLOT_H / H])
+        axc = fig.add_axes([(X0 + WB + GAP) / W, 0.44 / H, WC / W,
+                            PLOT_H / H])
         s_cl, xyz_cl = tracks["cot_clean"]
         for arm, label, colour in ARMS:
             if arm == "cot_clean":
@@ -505,7 +557,12 @@ def main() -> int:
         # stretch the sampling skipped over.
         for st in steps:
             axc.axvline(st, color="0.85", lw=0.5, zorder=0)
-        axc.set_xlabel("rollout step (grey rules = filmstrip columns)",
+        # The rules mark where the strip's columns fall, wherever the strip is
+        # printed: under --no-strip that is the body figure, so the label says
+        # "the strip" rather than pointing at a panel this figure does not have.
+        axc.set_xlabel("rollout step (grey rules = "
+                       + ("the strip's columns" if no_strip
+                          else "filmstrip columns") + ")",
                        fontsize=FONT_SIZE - 2, labelpad=1.5)
         axc.set_ylabel("distance from\nown-CoT arm (cm)",
                        fontsize=FONT_SIZE - 2, labelpad=1.5, linespacing=1.1)
@@ -515,10 +572,11 @@ def main() -> int:
         # hide the divergence this panel exists to show.
         axc.legend(loc="best", fontsize=FONT_SIZE - 4, frameon=False,
                    handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
-        fig.text((0.62 + 2.38) / W, (0.44 + PLOT_H) / H, "(c)",
+        fig.text((X0 + WB + GAP - 0.05) / W, (0.44 + PLOT_H) / H, L_DIST,
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
     save(fig, "fig2_rollout_frames" if strip_only
+              else "fig15_rollout_paths" if no_strip
               else "fig15_rollout_filmstrip")
 
     # Everything the caption needs to quote, printed so it is copied from a
@@ -543,6 +601,11 @@ def main() -> int:
         # peak_cm_from_clean is ambiguous between "the arms never separated"
         # and "no pose was ever logged" -- opposite readings of the same file.
         "eef_logged": bool(have_eef),
+        # Whether THIS figure draws the six frames. The body figure and the
+        # appendix figure are cut from one capture, and for four builds both
+        # opened with the same strip; the audit asserts exactly one of the two
+        # fact sheets says true, so the duplication cannot come back silently.
+        "strip_drawn": not no_strip,
         # The pairing measurement, so the audit can assert the released strip's
         # rows were one scene without loading the PNGs itself. Must be 0.0.
         "step0_pairing_max_mean_abs_pixel": step0_pairing,

@@ -174,8 +174,53 @@ def transform(src: str) -> str:
                              f"expected 1 -- the body and the appendix would "
                              f"both define it")
 
+    # --- drop the floats deferred for space ---------------------------------
+    # See DEFERRED_FLOATS below. Unlike PROMOTED these have no copy anywhere in
+    # the submission, so the dangling-\ref check below is what makes this safe:
+    # a float label cannot be re-homed onto the deferred list the way a section
+    # label can (\label outside a float picks up the section counter, so the
+    # \ref would print a section number and read as a figure that does not
+    # exist), so every reference to one has to be rewritten by hand first.
+    for lab, _ in DEFERRED_FLOATS:
+        env = "table" if lab.startswith("tab:") else "figure"
+        pat = (r"\\begin\{" + env + r"\*?\}(?:\[[^\]]*\])?"
+               r"(?:(?!\\begin\{" + env + r").)*?"
+               r"\\label\{" + re.escape(lab) + r"\}"
+               r".*?\\end\{" + env + r"\*?\}\s*")
+        body, n = re.subn(pat, "", body, flags=re.S)
+        if n != 1:
+            raise SystemExit(f"[arr] deferred float {lab}: removed {n}, "
+                             f"expected 1 -- either it is already gone or the "
+                             f"regex no longer matches its environment")
+
+    # --- move a float to where the appendix has room for it -----------------
+    # See HOISTED below. This changes a float's POSITION and not one byte of
+    # its content: the environment is cut and re-inserted verbatim.
+    for lab, anchor in HOISTED:
+        env = "table" if lab.startswith("tab:") else "figure"
+        pat = (r"\\begin\{" + env + r"\*?\}(?:\[[^\]]*\])?"
+               r"(?:(?!\\begin\{" + env + r").)*?"
+               r"\\label\{" + re.escape(lab) + r"\}"
+               r".*?\\end\{" + env + r"\*?\}\s*")
+        m = re.search(pat, body, flags=re.S)
+        if m is None:
+            raise SystemExit(f"[arr] hoisted float {lab}: not found")
+        if body.count(anchor) != 1:
+            raise SystemExit(f"[arr] hoisted float {lab}: its anchor occurs "
+                             f"{body.count(anchor)} times, expected 1")
+        at = body.index(anchor)
+        if at > m.start():
+            raise SystemExit(f"[arr] hoisted float {lab}: the anchor is AFTER "
+                             f"the float, so this moves it later rather than "
+                             f"earlier and cannot free a page")
+        blk = m.group(0)
+        body = body[:m.start()] + body[m.end():]
+        at = body.index(anchor)
+        body = body[:at] + blk + body[at:]
+
     # --- fit the submission budget ------------------------------------------
     body, deferred_labels, deferred_entries = defer(body)
+    deferred_labels |= {lab for lab, _ in DEFERRED_FLOATS}
 
     # --- namespace every surviving label ------------------------------------
     # The body was written by hand and reuses the source's names for the
@@ -211,8 +256,13 @@ def transform(src: str) -> str:
     # version. A float label cannot be treated that way -- \label outside a
     # float picks up the section counter, so \ref{tab:x} would print a section
     # number and read as a table that does not exist -- so those still fail.
+    # LaTeX comments are excluded, and that distinction is load-bearing rather
+    # than cosmetic: both manuscripts carry preamble comments explaining what a
+    # float is and why its placement was tuned, and those sentences cite it by
+    # \ref like the prose does. A \ref TeX never typesets cannot print "??", so
+    # counting one would make deferring a documented float impossible.
     pointed_at = set(re.findall(r"\\(?:ref|autoref|eqref|Cref|cref)\{([^}]*)\}",
-                                body + arr))
+                                uncommented(body) + uncommented(arr)))
     rehomed = {l for _, secs in deferred_entries for l in secs}
     dangling = sorted((deferred_labels - rehomed - body_labels) & pointed_at)
     if dangling:
@@ -254,15 +304,6 @@ def transform(src: str) -> str:
 # reader can follow in the release: the four rollout-gate failures, the
 # limitation enumeration, and the discussion that restates the body.
 DEFERRED = (
-    # The per-task decomposition. It is deferred whole, floats included, and
-    # not because it is weak: the below-floor result holds task by task on 7 of
-    # 8 models. It is the last section added and the submission was already at
-    # exactly 20 pages, and its wide table alone costs the 21st -- measured,
-    # both with the four paragraphs and with the table on its own. Nothing in
-    # the body cites it, so nothing in the body weakens by its absence, and
-    # \S\ref{sec:deferred} names it. Full argument and table: full-length
-    # manuscript, \S"Per-task decomposition".
-    "Per-task decomposition",
     "Introduction",
     "*Related work",
     "Per-token normalization",
@@ -387,7 +428,18 @@ manuscript are therefore not reproduced above; they are in the released source
 claim by claim and the document every line above was copied from. They are
 named here so that a reader can tell what exists from what was cut, and no
 claim in the body rests on one of them:
-""" + items + ".\n")
+""" + items + ".\n" + floats_note())
+
+
+def floats_note() -> str:
+    # Floats are named separately from the sections, because a deferred float
+    # sits inside a section that DID survive: a reader who meets
+    # \S\ref{sec:taxonomy} with no figure in it should be told the figure exists
+    # rather than assume the section was printed whole.
+    if not DEFERRED_FLOATS:
+        return ""
+    return ("\nDeferred with them, from sections that are otherwise reproduced "
+            "in full: " + "; ".join(d for _, d in DEFERRED_FLOATS) + ".\n")
 
 
 ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
@@ -396,11 +448,58 @@ ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
 # defined in both files makes the number LaTeX prints unpredictable, and the
 # duplicate is a warning rather than an error, so it ships silently.
 # The body is the definition; the appendix cites it by \ref like any other.
-PROMOTED = ("tab:directional", "fig:dissociation")
+# fig:frames is also the anti-duplication half of the rollout split: the strip
+# is drawn by the body float and the appendix keeps only fig:paths, so the same
+# six frames are not printed twice in one submission.
+PROMOTED = ("tab:directional", "fig:dissociation", "fig:frames")
+
+# Floats deferred for space, as (label, how the deferred list names it). These
+# have NO copy in the submission at all, unlike PROMOTED.
+#
+# fig:taxonomy is the one entry, and it is the cheapest full page in the
+# document: 387pt of artwork plus a ten-line full-width caption, on a page
+# budget that the per-task decomposition section put over 20. What it draws
+# that the prose does not is one real (original, edited) excerpt per family;
+# what it draws that the prose DOES is every family name, tier and judged
+# meaning-preserved rate, all of which survive in \S sec:taxonomy and
+# \S sec:judge_edits. So the deferral costs the reader the illustration and no
+# fact. It stays in the full-length manuscript, where it is Figure 6.
+DEFERRED_FLOATS = (
+    ("fig:taxonomy",
+     r"the taxonomy figure, ``The edit taxonomy, with the real text each "
+     r"family rewrites'' \textemdash{} one panel per family with a real "
+     r"generator-output excerpt of the span it rewrote, from "
+     r"\texttt{figures/\allowbreak{}fig1\_\allowbreak{}task\_"
+     r"\allowbreak{}examples.pdf} in the release"),
+)
+
+# Floats moved earlier in the appendix, as (label, the literal string to put it
+# in front of). Position only: the environment is re-inserted byte-identical.
+#
+# Why this is needed at all: a float's page is decided by where it is DECLARED,
+# and [t] floats can only move forward. fig:paths is declared in the full-length
+# manuscript inside the rollout-gate discussion, nearly all of which is deferred
+# here, so in the appendix it arrives with no text after it and drains onto a
+# page of its own -- a 21st page holding one 123pt figure. Declaring it in front
+# of the per-task table puts it in the queue where there is room, and the
+# appendix is a selection rather than a reading order, so nothing about the
+# figure or the text it sits between changes. The guard in transform() refuses
+# an anchor that would move a float LATER, which is the way this would silently
+# stop working.
+HOISTED = (
+    ("fig:paths", r"\subsubsection{Per-task decomposition"),
+)
 
 
 def labels(text: str) -> set:
     return set(re.findall(r"\\label\{([^}]*)\}", text))
+
+
+def uncommented(text: str) -> str:
+    # Drop LaTeX comments: an unescaped % to end of line. \% is a printed
+    # percent sign and starts nothing, which matters here because the appendix
+    # quotes parse-failure rates as 10.2\%.
+    return re.sub(r"(?<!\\)%.*", "", text)
 
 
 def main() -> int:
@@ -423,7 +522,8 @@ def main() -> int:
     out_labels |= {l[4:] for l in out_labels if l.startswith("app:")}
     # The title/abstract region and the Conclusion are intentionally dropped.
     dropped = {l for l in src_labels - out_labels}
-    expected_drops = ({"sec:conclusion"} | set(PROMOTED) | DEFERRED_LABELS)
+    expected_drops = ({"sec:conclusion"} | set(PROMOTED) | DEFERRED_LABELS
+                      | {lab for lab, _ in DEFERRED_FLOATS})
     unexpected = dropped - expected_drops
     if unexpected:
         print(f"[arr] FAIL: {len(unexpected)} label(s) lost: "

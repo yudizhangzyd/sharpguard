@@ -1251,20 +1251,25 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
         a.check(sec, "and the ARR body says the two names are the same null, "
                      "rather than printing both and leaving it to be inferred",
                 True,
-                "the judge export and Figure~\\ref{fig:taxonomy} name it "
-                "\\emph{identity\\_control}" in t,
+                "the judge export names it \\emph{identity\\_control}" in t,
                 source="cot_faith_arr.tex S3, edit-families paragraph")
 
     # The protocol's own census: "ten families in three tiers and three
     # calibration nulls" is 13, and 13 is what the artifacts carry -- but the
-    # split is not the one the taxonomy figure draws. The figure groups the
-    # identity null with the nulls (Tier N) and cannot draw instr_random_sub at
-    # all, since that family edits the instruction and leaves the CoT alone. So
-    # the prose counts 10+3 while the figure shows 9+3, and a reader who counts
-    # panels finds 12 against a protocol described as 13. Both descriptions are
-    # correct and neither is derivable from the other, which is why the body now
+    # judge, and the taxonomy figure that draws its rates, cover 12. Both group
+    # the identity null with the nulls under its export name, and neither can
+    # treat instr_random_sub, which edits the instruction and leaves the CoT
+    # alone, so there is no CoT edit to judge or to draw. So a reader who counts
+    # rates finds 12 against a protocol described as 13. Both descriptions are
+    # correct and neither is derivable from the other, which is why the body
     # states the total, says which side the identity null is filed on, and says
-    # the figure draws 12 of the 13 -- and why all three are asserted here.
+    # the judge scores 12 of the 13 -- and why all three are asserted here.
+    #
+    # The count is tied to the JUDGE's own family list rather than to the
+    # figure's panel count, because the figure is deferred from the submission
+    # for space and the sentence has to stay checkable against something the
+    # submission prints. The two agree family for family, which is asserted
+    # below rather than assumed.
     n_fams = max((len((mv or {}).get("families") or {})
                   for mv in (dig(d, "models") or {}).values()), default=0)
     a.check(sec, "the protocol has 13 families in the artifacts", 13, n_fams,
@@ -1279,20 +1284,28 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
     a.check(sec, "the taxonomy figure records how many families it drew",
             True, isinstance(n_panels, int) and n_panels > 0,
             source="figures/fig1_task_examples_facts.json:n_panels")
-    if isinstance(n_panels, int) and n_fams:
-        a.check(sec, f"and the body's \"{n_panels} of the {n_fams}\" matches "
-                     f"the panels drawn against the families scored", True,
-                f"draws {n_panels} of the {n_fams}" in t,
-                source=f"{n_panels} panels in fig1_task_examples_facts.json, "
+    n_judged = len(judge_fams)
+    if n_judged and n_fams:
+        a.check(sec, f"and the body's \"{n_judged} of the {n_fams}\" matches "
+                     f"the families judged against the families scored", True,
+                f"the judge scores {n_judged} of the {n_fams}" in t,
+                source=f"{n_judged} families in judge_report.json per_family, "
                        f"{n_fams} families in derived_metrics.json")
-        a.check(sec, "and the family the figure leaves out is the out-of-CoT "
-                     "control, which has no CoT span to draw",
+        a.check(sec, "and the family neither the judge nor the figure covers is "
+                     "the out-of-CoT control, which has no CoT edit to read",
                 ["instr_random_sub"],
-                sorted(dm_fams - set(ff.get("families_drawn") or [])
-                       - {"selfsplice_control"}),
-                source="derived_metrics families minus the panels drawn "
-                       "(selfsplice_control is drawn under its judge-export "
-                       "name, identity_control)")
+                sorted(dm_fams - judge_fams - {"selfsplice_control"}),
+                source="derived_metrics families minus the judged families "
+                       "(selfsplice_control is judged under its export name, "
+                       "identity_control)")
+    if isinstance(n_panels, int) and n_judged:
+        a.check(sec, "and the figure draws exactly the families the judge "
+                     "scored, so deferring it from the submission drops no "
+                     "rate the prose still quotes",
+                (n_judged, sorted(judge_fams)),
+                (n_panels, sorted(ff.get("families_drawn") or [])),
+                source="fig1_task_examples_facts.json:families_drawn vs "
+                       "judge_report.json:per_family")
 
 
 def audit_attention_cluster_range(a: Audit, d: Optional[dict]) -> None:
@@ -4792,7 +4805,13 @@ def audit_arr_submission(a: Audit) -> None:
         # Every \ref in the submission must resolve inside the submission. This
         # is the failure a page cut actually causes: deferring a section takes
         # its \label with it, and LaTeX prints "??" while exiting 0.
-        both_tex = t + ap_sel
+        #
+        # LaTeX comments are stripped first. Both files carry preamble comments
+        # that cite a float by \ref while explaining why its placement was
+        # tuned, and one of those floats is now deferred for space; a \ref TeX
+        # never typesets cannot print "??", so counting it would have made this
+        # check fire on a submission that is correct.
+        both_tex = re.sub(r"(?<!\\)%.*", "", t + ap_sel)
         defined = set(re.findall(r"\\label\{([^}]+)\}", both_tex))
         pointed = set(re.findall(r"\\(?:ref|autoref|Cref|cref)\{([^}]+)\}",
                                  both_tex))
@@ -4800,6 +4819,32 @@ def audit_arr_submission(a: Audit) -> None:
                      "label the page cut removed", set(),
                 pointed - defined,
                 source="cot_faith_arr.tex + arr_appendix.tex")
+        # Nothing may be defined twice either, and this is the other half of the
+        # same page cut: the body carries floats the appendix source also
+        # defines, and the builder REMOVES those copies (PROMOTED). If one stops
+        # being removed, LaTeX resolves the duplicate \label to whichever file
+        # it read last and only warns, so \ref lands on an unpredictable number
+        # while the build stays green.
+        dup = sorted(set(re.findall(r"\\label\{([^}]+)\}",
+                                    re.sub(r"(?<!\\)%.*", "", t)))
+                     & set(re.findall(r"\\label\{([^}]+)\}",
+                                      re.sub(r"(?<!\\)%.*", "", ap_sel))))
+        a.check(sec, "and no label is defined in both halves of the submission, "
+                     "which would make the number LaTeX prints for it depend on "
+                     "read order", [], dup,
+                source="cot_faith_arr.tex vs arr_appendix.tex")
+        # And no artwork is printed twice. This is the reader-visible form of the
+        # same defect: one capture feeds the body's filmstrip and the appendix's
+        # pose panels, and for several revisions the appendix figure opened with
+        # the same six frames the body prints -- a full-width float of a page
+        # spent restating an exhibit, in a submission capped at 20 pages. A
+        # duplicate \includegraphics is what that looks like in the source.
+        art = re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}",
+                         both_tex)
+        a.check(sec, "and no figure file is included twice in the submission, "
+                     "so no exhibit is printed twice", [],
+                sorted({f for f in art if art.count(f) > 1}),
+                source=f"{len(art)} \\includegraphics in the submission")
 
     # Ink outside the column. pdflatex reports every overfull box and exits 0,
     # so this is found by grepping a log or not at all -- and build_local.sh
@@ -5102,19 +5147,36 @@ def audit_arr_submission(a: Audit) -> None:
             True, isinstance(flag, dict) and bool(flag),
             source="figures/fig1_task_examples_facts.json -- written by "
                    "figures/gen_fig1_task_examples.py")
-    # The taxonomy figure moved out of the body and into the appendix, which
-    # ships in the same PDF, so the caption is looked for in both documents.
-    # Widened here rather than in `t`: `t` backs the format constraints above,
-    # and those are desk-reject conditions of the body alone.
-    both = t + ((ROOT / "arr_appendix.tex").read_text()
-                if (ROOT / "arr_appendix.tex").exists() else "")
+    # The taxonomy figure is DEFERRED from the submission (it is 387pt of
+    # artwork plus a ten-line full-width caption, and the per-task
+    # decomposition section needed the page), so the caption is looked for in
+    # the full-length manuscript as well. The checks below are about the
+    # caption's account of what the generator drew, which is a property of the
+    # figure in whichever document prints it, not of the page cut.
+    appx = ((ROOT / "arr_appendix.tex").read_text()
+            if (ROOT / "arr_appendix.tex").exists() else "")
+    subm = t + appx
+    both = subm + (ROOT / "cot_faith_iclr.tex").read_text()
     cm = re.search(r"\\includegraphics\[[^\]]*\]\{fig1_task_examples\.pdf\}"
                    r".*?\\caption\{(.*?)\}\s*\\label\{(?:app:)?fig:taxonomy\}",
                    both, re.S)
     cap_tax = cm.group(1) if cm else ""
-    a.check(sec, "fig:taxonomy's caption is locatable in the submitted PDF, "
-                 "body or appendix", True, bool(cap_tax),
-            source="cot_faith_arr.tex + arr_appendix.tex")
+    a.check(sec, "fig:taxonomy's caption is locatable in a released document",
+            True, bool(cap_tax),
+            source="cot_faith_arr.tex + arr_appendix.tex + cot_faith_iclr.tex")
+    # A deferred float is the one cut that a reader cannot detect: the section
+    # around it is printed in full, so a missing figure reads as a figure that
+    # was never drawn. Exactly one of the two states must hold -- printed in the
+    # submission, or named in its deferred-float list -- so putting the figure
+    # back does not leave the list claiming it is absent, and cutting it does
+    # not leave the reader uninformed.
+    drawn = "fig1_task_examples.pdf" in subm
+    listed = "the taxonomy figure" in appx
+    a.check(sec, "the submission either prints the taxonomy figure or tells the "
+                 "reader where it went, and does not do both",
+            [True, True], [drawn != listed, drawn or listed],
+            source=f"drawn in submission={drawn}, named in the deferred-float "
+                   f"list={listed}")
     for fam, rate in sorted((flag or {}).items()):
         a.check(sec, f"fig:taxonomy's caption names {fam}, whose rate the "
                      f"figure draws red", True,
@@ -6199,12 +6261,17 @@ def audit_dt_decode_equivalence(a: Audit) -> None:
 def audit_rollout_filmstrip(a: Audit) -> None:
     """The motion figure must be drawn from captured frames, not described.
 
-    Fig 15 is the only figure in this paper whose content is pixels from a
+    This figure is the only one in the paper whose content is pixels from a
     simulator rather than a plot of a JSON field, which makes it the easiest one
     to fake and the hardest one to check by reading the .tex. So the checks are
     on the chain: the generator reads the run report, the report carries
     trajectories, PNGs exist on disk, and every number in the caption is a field
     of fig15_facts.json.
+
+    One capture, two figures: the body prints the filmstrip (fig:frames, checked
+    by audit_body_frames_figure) and the appendix prints the pose panels
+    (fig:paths, checked here). The gate below is on the pose figure's artwork,
+    because that is what this section's numbers describe.
 
     This is silent until the figure is actually in the manuscript. That branch is
     worth stating plainly: a figure not yet included is not a failed claim, but
@@ -6212,7 +6279,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     and a missing capture is a hard fail rather than a figure of unknown
     provenance.
     """
-    sec = "Rollout filmstrip (fig15, WorldGym-style motion figure)"
+    sec = "Rollout pose panels (fig:paths, WorldGym-style motion figure)"
     root = ROOT
     # Both documents, because the float is free to move between them: the body
     # is at its 8-page limit, so the figure ships in the appendix, and a gate
@@ -6221,7 +6288,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     t = "".join((root / n).read_text() for n in ("cot_faith_arr.tex",
                                                  "arr_appendix.tex")
                 if (root / n).exists())
-    if "fig15_rollout_filmstrip" not in t:
+    if "fig15_rollout_paths" not in t:
         return
 
     gen = root / "figures" / "gen_fig15_rollout_filmstrip.py"
@@ -6243,6 +6310,22 @@ def audit_rollout_filmstrip(a: Audit) -> None:
             facts is not None, source=str(cap / "fig15_facts.json"))
     if not facts:
         return
+
+    # This figure is the pose panels ALONE. It used to open with the same six
+    # frames the body prints, which is one exhibit shown twice and a page of a
+    # 20-page submission spent on it. The generator's two halves are mutually
+    # exclusive by construction rather than by convention -- it exits rather
+    # than accept both flags -- and this figure's fact sheet must record that it
+    # drew no strip. The complementary assertion, that the BODY's does, is in
+    # audit_body_frames_figure, so neither figure can quietly start drawing what
+    # the other already draws.
+    a.check(sec, "the released pose figure draws no filmstrip, so the six frames "
+                 "the body prints are not reprinted here",
+            False, bool(facts.get("strip_drawn")),
+            source="fig15_facts.json: strip_drawn")
+    a.check(sec, "and the generator refuses the two halves at once rather than "
+                 "silently drawing one of them", True,
+            "if strip_only and no_strip:" in body, source=str(gen))
 
     # The frames themselves. A facts file naming six columns beside a frames/
     # directory holding none would pass every check above.
@@ -6284,13 +6367,13 @@ def audit_rollout_filmstrip(a: Audit) -> None:
             0, sum(1 for v in succ.values() if v),
             source=f"fig15_facts.json: success_per_arm={succ}")
 
-    # Panels (b) and (c) are claims about measured pose. If the env logged none,
+    # Panels (a) and (b) are claims about measured pose. If the env logged none,
     # the generator drops them -- and the caption must then not describe them.
     # Checked in both directions, since either mismatch ships a caption
     # describing a figure the reader is not looking at.
     eef = bool(facts.get("eef_logged"))
-    for lit, what in (("per-step distance", "panel (c)'s distance curve"),
-                      ("top-down", "panel (b)'s path")):
+    for lit, what in (("per-step distance", "panel (b)'s distance curve"),
+                      ("top-down", "panel (a)'s path")):
         a.check(sec, f"the caption describes {what} exactly when a pose was "
                      f"logged (eef_logged={eef})", eef, lit in t,
                 source=f"the manuscript mentions {lit!r}: {lit in t}")
@@ -6369,7 +6452,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                 True, f"${lo:.2f}$" in t and f"${hi:.1f}$" in t,
                 source="fig15_facts.json: column_change_mean_abs_pixel")
 
-    # ---- Panel (b): the caption now makes claims about the DRAWING, not only
+    # ---- Panel (a): the caption now makes claims about the DRAWING, not only
     # about the numbers behind it, and those are the claims a reader checks by
     # looking. The first revision of this panel drew the path on an
     # aspect-free axes, so a 22 cm box and a 1.4 m loop occupied comparable
@@ -6378,7 +6461,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # Checked as an equivalence, so dropping the caption clause without fixing
     # the axes fails here too, rather than making the check vacuous.
     equal_aspect = 'set_aspect("equal"' in body
-    a.check(sec, "panel (b) promises true scale exactly when it is drawn on an "
+    a.check(sec, "panel (a) promises true scale exactly when it is drawn on an "
                  "equal aspect", equal_aspect, "at true scale" in t,
             source=f"{gen}: equal aspect={equal_aspect}")
     # ... and the same clause says WHICH way it is laid out. The generator puts
@@ -6398,7 +6481,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
         a.check(sec, f"and it draws {what}, as the caption instructs the reader "
                      f"to read", True, lit in body, source=str(gen))
 
-    # ---- Panel (c): "the peak is not the end" is a NEW claim, and it is the one
+    # ---- Panel (b): "the peak is not the end" is a NEW claim, and it is the one
     # that stops a reader taking the two peaks as final displacements. It needs
     # both endpoints in the release, so the generator now records them.
     final = facts.get("final_cm_from_clean") or {}
@@ -6778,8 +6861,20 @@ def audit_body_frames_figure(a: Audit) -> None:
                    f"{f2.get('eef_logged')}")
     a.check(sec, "and it sends the reader to the figure that does draw them, "
                  "so dropping the panels does not drop the evidence", True,
-            r"\ref{fig:filmstrip}" in cap_txt,
+            r"\ref{fig:paths}" in cap_txt,
             source="cot_faith_arr.tex: fig:frames caption")
+    # The anti-duplication invariant, from the two fact sheets rather than from
+    # the captions: one capture feeds two figures, and until the generator grew
+    # a --no-strip mode the appendix figure opened with the SAME six frames the
+    # body prints, which is one exhibit shown twice. Each mode records whether
+    # it drew the strip, so "exactly one released figure draws it" is checked
+    # here instead of being a property of whichever mode was regenerated last.
+    fp = load(ROOT / "results_v2" / "canonical_runs" / "rollout_filmstrip"
+              / "fig15_facts.json") or {}
+    a.check(sec, "exactly one of the two figures drawn from this capture draws "
+                 "the filmstrip, and it is the body's",
+            [True, False], [f2.get("strip_drawn"), fp.get("strip_drawn")],
+            source="fig2_frames_facts.json vs fig15_facts.json: strip_drawn")
 
 
 def audit_arm_pairing_defect(a: Audit) -> None:

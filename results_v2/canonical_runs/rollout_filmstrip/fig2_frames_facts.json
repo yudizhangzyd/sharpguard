@@ -26,6 +26,7 @@
   },
   "n_edit_skipped_flip": 0,
   "eef_logged": false,
+  "strip_drawn": true,
   "step0_pairing_max_mean_abs_pixel": 0.0,
   "column_change_mean_abs_pixel": {
     "nocot": {

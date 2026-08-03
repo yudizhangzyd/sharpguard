@@ -1,9 +1,19 @@
-# Rollout filmstrip capture (Figure 15 / appendix Figure 16)
+# Rollout filmstrip capture (body Figure 2, appendix pose panels)
 
-The capture that Figure~\ref{fig:filmstrip} is drawn from. Regenerate the figure
-with no arguments — this directory is the generator's default:
+The capture that both rollout figures are drawn from. It feeds two figures, and
+the split matters: the filmstrip is drawn **once**, by the body figure, and the
+appendix figure draws only the pose panels, so the same six frames never appear
+twice in one submission.
 
-    python figures/gen_fig15_rollout_filmstrip.py
+    python figures/gen_fig15_rollout_filmstrip.py --strip-only   # fig2_rollout_frames.pdf  (\ref{fig:frames})
+    python figures/gen_fig15_rollout_filmstrip.py --no-strip     # fig15_rollout_paths.pdf  (\ref{fig:paths})
+
+The two modes write separate fact sheets (`fig2_frames_facts.json` and
+`fig15_facts.json`), each recording `strip_drawn`; the audit asserts the two
+disagree, so "no exhibit appears twice" is a checked invariant rather than a
+property of whichever mode was regenerated last. Running the generator with
+neither flag draws the old combined three-panel figure, which no manuscript
+includes any more.
 
 Compute-platform task `9r2mm3n3na`, git sha `7b092889`. Config: `libero_90`,
 task 0 / episode 0, three arms (`nocot`, `cot_clean`, `cot_direction_flip`)
@@ -16,7 +26,7 @@ replayed from one init state, 400 steps, CoT regenerated **every** step,
 | --- | --- |
 | `rollout_edit_report.json` | the run's own report: per-arm trajectory (step, frame name, end-effector pose, action, MOVE phrase), SR, skipped-edit counts |
 | `rollout_edit_probe.json` | the pre-run arm-pairing probe for this capture |
-| `fig15_facts.json` | every number the caption quotes, written by the generator and read back by `scripts/verify_paper_numbers.py` |
+| `fig15_facts.json` | every number the pose-panel caption quotes, written by the generator and read back by `scripts/verify_paper_numbers.py` (`fig2_frames_facts.json` is its filmstrip counterpart) |
 | `frames/t0_ep0/` | 120 PNGs — 40 captured steps × 3 arms, the frame as the policy saw it, after the same flip and preprocessing |
 
 Frames for `t1_ep0` are **not** included. The figure draws the lowest-numbered
