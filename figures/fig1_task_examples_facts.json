@@ -6,6 +6,21 @@
     "bbox_jitter_null",
     "identity_control"
   ],
+  "n_panels": 12,
+  "families_drawn": [
+    "syntactic_scramble",
+    "cross_task_swap",
+    "direction_flip",
+    "gripper_flip",
+    "verb_swap",
+    "negation",
+    "subject_swap",
+    "location_swap",
+    "adversarial_plausible",
+    "paraphrase_null",
+    "bbox_jitter_null",
+    "identity_control"
+  ],
   "flagged_meaning_preserved_rate": {
     "syntactic_scramble": 1.0,
     "verb_swap": 0.575

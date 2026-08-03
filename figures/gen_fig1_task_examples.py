@@ -278,6 +278,13 @@ with open(facts_path, "w") as fh:
                 "intended to change it scores > 0.3",
         "intended_preserving": ["paraphrase_null", "bbox_jitter_null",
                                 "identity_control"],
+        # How many of the protocol's families this figure actually draws. The
+        # body says "12 of the 13", which is only true because instr_random_sub
+        # edits the instruction and so has no CoT span to show and no judge
+        # verdict to print. A panel count restated in prose is a count that goes
+        # stale the first time a tier gains a family.
+        "n_panels": sum(len(f) for _, _, f in TIERS),
+        "families_drawn": [f for _, _, fams in TIERS for f in fams],
         "flagged_meaning_preserved_rate": flagged,
         "source_judge_run": D["source_judge_run"],
     }, fh, indent=2)

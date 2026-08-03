@@ -1115,6 +1115,8 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
     # requiring the disclosure, so if the two ever unify the check retires
     # itself rather than demanding a note about a name that no longer exists.
     root = Path(__file__).resolve().parent.parent
+    arr = root / "cot_faith_arr.tex"
+    t = arr.read_text() if arr.exists() else ""
     jr = load(root / "results_v2" / "canonical_runs" / "judge_edit_families"
               / "judge_report.json")
     dm_fams = set()
@@ -1130,14 +1132,51 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
             source="derived_metrics.json families vs judge_report.json "
                    "per_family")
     if collides:
-        arr = root / "cot_faith_arr.tex"
-        t = arr.read_text() if arr.exists() else ""
         a.check(sec, "and the ARR body says the two names are the same null, "
                      "rather than printing both and leaving it to be inferred",
                 True,
                 "the judge export and Figure~\\ref{fig:taxonomy} name it "
                 "\\emph{identity\\_control}" in t,
                 source="cot_faith_arr.tex S3, edit-families paragraph")
+
+    # The protocol's own census: "ten families in three tiers and three
+    # calibration nulls" is 13, and 13 is what the artifacts carry -- but the
+    # split is not the one the taxonomy figure draws. The figure groups the
+    # identity null with the nulls (Tier N) and cannot draw instr_random_sub at
+    # all, since that family edits the instruction and leaves the CoT alone. So
+    # the prose counts 10+3 while the figure shows 9+3, and a reader who counts
+    # panels finds 12 against a protocol described as 13. Both descriptions are
+    # correct and neither is derivable from the other, which is why the body now
+    # states the total, says which side the identity null is filed on, and says
+    # the figure draws 12 of the 13 -- and why all three are asserted here.
+    n_fams = max((len((mv or {}).get("families") or {})
+                  for mv in (dig(d, "models") or {}).values()), default=0)
+    a.check(sec, "the protocol has 13 families in the artifacts", 13, n_fams,
+            source="derived_metrics.json models[*].families")
+    a.check(sec, "and the ARR body gives the total and its 10+3 split, so the "
+                 "two counts cannot drift apart", True,
+            "Thirteen families: ten in three tiers" in t
+            and "three calibration nulls" in t,
+            source="cot_faith_arr.tex S3, edit-families paragraph")
+    ff = load(root / "figures" / "fig1_task_examples_facts.json") or {}
+    n_panels = ff.get("n_panels")
+    a.check(sec, "the taxonomy figure records how many families it drew",
+            True, isinstance(n_panels, int) and n_panels > 0,
+            source="figures/fig1_task_examples_facts.json:n_panels")
+    if isinstance(n_panels, int) and n_fams:
+        a.check(sec, f"and the body's \"{n_panels} of the {n_fams}\" matches "
+                     f"the panels drawn against the families scored", True,
+                f"draws {n_panels} of the {n_fams}" in t,
+                source=f"{n_panels} panels in fig1_task_examples_facts.json, "
+                       f"{n_fams} families in derived_metrics.json")
+        a.check(sec, "and the family the figure leaves out is the out-of-CoT "
+                     "control, which has no CoT span to draw",
+                ["instr_random_sub"],
+                sorted(dm_fams - set(ff.get("families_drawn") or [])
+                       - {"selfsplice_control"}),
+                source="derived_metrics families minus the panels drawn "
+                       "(selfsplice_control is drawn under its judge-export "
+                       "name, identity_control)")
 
 
 def audit_attention_cluster_range(a: Audit, d: Optional[dict]) -> None:
