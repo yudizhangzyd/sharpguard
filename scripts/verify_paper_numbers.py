@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DERIVED = ROOT / "results_v2" / "derived_metrics.json"
 DECODER_AUDIT = ROOT / "results_v2" / "decoder_audit.json"
 TEX = ROOT / "cot_faith_iclr.tex"
+ARR = ROOT / "cot_faith_arr.tex"
 
 OURS = ["ours-r8", "ours-r16", "ours-r32", "ours-r64",
         "ours-no-cot", "ours-data50A", "ours-data50B"]
@@ -170,6 +171,46 @@ def audit_f1(a: Audit, d: Optional[dict]) -> None:
             None if not nc else
             (len(nc) == 4 and all(dig(nc, m, "mass", "cot") == 0.0 for m in nc)),
             source="derived_metrics.json:attention_baselines_noncot")
+
+    # The sharpest form of the dissociation, and the one fig:dissociation's
+    # caption now states: the action-only-target control is not merely inside
+    # the CoT-trained attention range, it is indistinguishable from a specific
+    # CoT-trained variant, while the edit protocol separates the same pair by
+    # 2.1x. An unused 280-token CoT span still draws architectural-baseline
+    # attention, so attention cannot even detect the absence of CoT training.
+    ncot = dig(att, "ours-no-cot", "mass", "cot")
+    d50b = dig(att, "ours-data50B", "mass", "cot")
+    f_ncot = dig(d, "models", "ours-no-cot", "F_bar_mag")
+    f_d50b = dig(d, "models", "ours-data50B", "F_bar_mag")
+    a.check(sec, "the no-CoT control's alpha(cot) is inside the CoT-trained "
+                 "range rather than at a floor of its own", True,
+            None if any(c is None for c in cots) else
+            min(c for m, c in zip(OURS, cots) if m != "ours-no-cot") <= ncot
+            <= max(c for m, c in zip(OURS, cots) if m != "ours-no-cot"),
+            source="derived_metrics.json:attention[*].mass.cot")
+    a.check(sec, "and it is within 0.002 pp of data-50B, i.e. the same value "
+                 "to three decimals", True,
+            None if None in (ncot, d50b) else abs(ncot - d50b) * 100 < 0.0025,
+            source="derived_metrics.json:attention[*].mass.cot")
+    a.check(sec, "while that same pair differs by 2.1x in causal effect", 2.13,
+            None if None in (f_ncot, f_d50b) or not f_ncot
+            else round(f_d50b / f_ncot, 2), tol=0.005,
+            source="derived_metrics.json:models[*].F_bar_mag")
+    a.check(sec, "data-50B is the *lowest* CoT-trained variant on causal "
+                 "effect, so 2.1x is the smallest gap the pairing can show",
+            "ours-data50B",
+            min((m for m in ALL8 if m != "ours-no-cot"),
+                key=lambda m: dig(d, "models", m, "F_bar_mag") or 9e9),
+            source="derived_metrics.json:models[*].F_bar_mag")
+    _t = ARR.read_text() if ARR.exists() else ""
+    a.check(sec, "the dissociation caption states the pairing rather than "
+                 "leaving it for a reader to find in the bars", True,
+            "within $0.002$\\,pp of \\texttt{data-50B}" in _t,
+            source="cot_faith_arr.tex fig:dissociation")
+    a.check(sec, "and the body draws the conclusion the pairing licenses, so "
+                 "the caption can stay to the facts", True,
+            "a monitor reading the first is not reading the second" in _t,
+            source="cot_faith_arr.tex S6")
 
 
 def audit_per_token(a: Audit, d: Optional[dict]) -> None:
