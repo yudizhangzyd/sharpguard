@@ -648,7 +648,6 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
             obs, _, _, _ = env.step(NO_OP)
     success, steps = False, 0
     n_cot_ok = n_cot_bad = n_edit_skipped = n_cot_gen = 0
-    deltas = []
     # Regenerating the CoT every step costs ~8.9 s of the 9.5 s step on a 7B
     # (bolt nskmsunnpb: 3.6 min/episode with no CoT, 63 min with one), so a
     # per-step protocol buys ~9 episodes out of a 20 h budget and a 0/9 bound.
@@ -746,8 +745,16 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
     r = {"arm": arm, "family": family, "success": bool(success),
          "steps": steps, "n_cot_structured": n_cot_ok,
          "n_cot_unstructured": n_cot_bad, "n_edit_skipped": n_edit_skipped,
-         "n_cot_generated": n_cot_gen, "cot_refresh_steps": refresh,
-         "n_delta_recorded": len(deltas)}
+         "n_cot_generated": n_cot_gen, "cot_refresh_steps": refresh}
+    # No n_delta_recorded here. It used to be reported as len() of a list this
+    # function never appended to, so every report in results_v2/ carries it as a
+    # constant 0 -- which reads as "the per-step action deltas were measured and
+    # were all zero", the strongest possible null, from code that measured
+    # nothing. A single-arm rollout cannot produce that quantity at all: a delta
+    # is a comparison between this arm and the clean arm at the same step, and
+    # the arms run in separate passes. It is computed where the pairing exists,
+    # from the trajectory poses, by scripts/analyze_rollout_deltapath.py.
+
     if cap_dir is not None:
         r["trajectory"] = traj
         # Whether the poses are real is a property of the env, not of this run,
