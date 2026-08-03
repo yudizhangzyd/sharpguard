@@ -6117,6 +6117,44 @@ def audit_overview_figure(a: Audit, d: dict) -> None:
                  "rather than for looks", True,
             "retraining error bar" in body, source=str(gen))
 
+    # Panel (c) is ranked on direction_flip alone, because F_dir needs a family
+    # with an implied direction. That is NOT the family-mean leaderboard order
+    # -- on the mean, r=8 outranks data-50A, and here it does not -- so the
+    # caption has to name the family or the figure reads as contradicting the
+    # leaderboard. Bind the figure to the table that carries the same ranks, so
+    # the two cannot drift apart silently.
+    mag_df = {m: (((d.get("models") or {}).get(m) or {}).get("families") or {})
+                 .get("direction_flip", {}).get("F_mag")
+              for m in ["ecot-bridge", "ours-r64", "ours-r16", "ours-data50A",
+                        "ours-r8", "ours-r32", "ours-data50B", "ours-no-cot"]}
+    drawn = sorted((m for m in mag_df if mag_df[m] is not None),
+                   key=lambda m: -mag_df[m])
+    tab = {r"\texttt{ECoT-bridge}": "ecot-bridge", r"\texttt{r=64}": "ours-r64",
+           r"\texttt{r=16}": "ours-r16", r"\texttt{data-50A}": "ours-data50A",
+           r"\texttt{r=8}": "ours-r8", r"\texttt{r=32}": "ours-r32",
+           r"\texttt{data-50B}": "ours-data50B",
+           r"\texttt{no-CoT}": "ours-no-cot"}
+    printed = {}
+    for pat, key in tab.items():
+        m = re.search(re.escape(pat) + r"\s*&[^&]*&[^&]*&\s*\\?t?e?x?t?b?f?\{?"
+                      r"(\d)", t)
+        if m:
+            printed[key] = int(m.group(1))
+    a.check(sec, "panel (c)'s F_mag ranking is recomputable from the release "
+                 "on direction_flip for all 8 configurations", 8, len(drawn),
+            source="derived_metrics.json models.*.families.direction_flip")
+    a.check(sec, "and it is the same ordering tab:directional prints, so the "
+                 "headline figure and the table cannot disagree",
+            drawn, [k for k, _ in sorted(printed.items(), key=lambda x: x[1])],
+            source="cot_faith_arr.tex tab:directional rank column")
+    a.check(sec, "the caption names direction_flip, since on the family mean "
+                 "r=8 outranks data-50A and here it does not", True,
+            "both on \\emph{direction\\_flip}" in t,
+            source="cot_faith_arr.tex")
+    a.check(sec, "and says so is not the leaderboard ordering", True,
+            "not the family-mean ordering of the leaderboard" in t,
+            source="cot_faith_arr.tex")
+
 
 def audit_derived_paths_are_portable(a):
     """The released derived file must not name anybody's home directory.
