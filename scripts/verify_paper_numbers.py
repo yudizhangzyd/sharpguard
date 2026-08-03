@@ -4082,27 +4082,30 @@ def audit_arr_submission(a: Audit) -> None:
                      f"tall, inside the {cap:.0f}pt a top float may occupy "
                      f"(caption excluded)", True, scaled < cap,
                 source=f"{w:.0f}x{h:.0f}pt native, textheight {th:.0f}pt")
-        # And the other direction: a wide figure squeezed into a 218pt column
-        # scales its type down with it. fig4_dissociation is 3.2:1, and at
-        # \columnwidth it set 8pt tick labels at about 3pt -- present in the
-        # PDF, unreadable on paper, and invisible to every check that only
-        # asks whether a float fits.
+        # And the other direction: a figure authored wider than the slot it is
+        # included in scales its type down with it. Matplotlib font sizes are
+        # absolute points, so a figure authored w points wide and included at
+        # `avail` sets every label on the page at avail/w of the size written in
+        # its generator -- present in the PDF, unreadable on paper, and invisible
+        # to the fits-on-the-page check above.
         #
-        # The threshold is 2.6:1, and it is set from measurement rather than
-        # taste. What matters is the scale factor a figure suffers, not its
-        # shape: at \columnwidth a figure authored W points wide is scaled to
-        # 218/W. fig14 is 2.2:1, authored at 7.1in for exactly this slot, and
-        # renders legibly at 50% -- checked against the built PDF. fig4 at
-        # 3.2:1 renders at 27% and does not. A threshold tight enough to catch
-        # fig14 would fire on a figure that is fine, and a check that fires on
-        # what is fine is one that gets waived.
-        if not star and w / h > 2.6:
-            a.check(sec, f"{m.group(1)} is {w/h:.1f}:1 and set at "
-                         f"\\columnwidth, which scales its type to "
-                         f"{100 * avail / w:.0f}% of the authored size",
-                    True, False,
-                    source="use figure* + \\textwidth, or re-author the "
-                           "figure at the column's aspect ratio")
+        # This asserts the scale factor directly. It replaces an aspect-ratio
+        # proxy that was both loose and wrong: the proxy waived fig14 at 2.2:1
+        # on a note claiming it "renders legibly at 50% -- checked against the
+        # built PDF", and it did not. Measured off the built page, fig14's tick
+        # and value labels arrived at 3.5pt and its legend at 3.0pt, which is
+        # smaller than the fig4 defect the proxy existed to catch. Aspect ratio
+        # was never the quantity; it only correlated with it. Both figures are
+        # now authored at their include width, so the real invariant is
+        # available to state, and stating it is what stops the next figure from
+        # being drawn at 7in and dropped into a 3in column.
+        scale = avail / w
+        a.check(sec, f"{m.group(1)} is included at {100 * scale:.0f}% of its "
+                     f"authored width, so the font sizes in its generator are "
+                     f"the sizes a reader gets on the page",
+                True, 0.94 <= scale <= 1.06,
+                source=f"{w:.1f}pt authored, {avail:.1f}pt available; the fix "
+                       f"is to re-author at the include width, not to scale")
 
     # --- long \texttt paths must be breakable in two columns ----------------
     # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
