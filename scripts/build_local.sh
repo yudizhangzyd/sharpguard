@@ -43,6 +43,36 @@ latexmk -pdf -interaction=nonstopmode -outdir="$TMP/proof" -jobname=proof \
 cp "$TMP/sub/cot_faith_arr.pdf"  build/cot_faith_arr.pdf
 cp "$TMP/proof/proof.pdf"        build/cot_faith_arr_proof.pdf
 
+# The page geometry acl.sty ends up with, recorded where the audit can read it.
+# scripts/verify_paper_numbers.py checks each body figure's height against the
+# fraction a top float may occupy, and \textheight is set by geometry inside the
+# style rather than written in our source, so it has to come from a build. It
+# used to be read straight out of a build directory -- and this script builds
+# into a mktemp it deletes, so the value came from whichever scratch outdir was
+# last left lying around. When that directory went away the checks did not fail;
+# they stopped existing, and the only trace was the audit's claim count dropping
+# by ten. An artifact under version control is the difference between a value
+# that is measured and a value that is nearby.
+python3 - "$TMP/sub/cot_faith_arr.log" <<'PY'
+import json, pathlib, re, sys
+log = pathlib.Path(sys.argv[1]).read_text(errors="replace")
+geo = {}
+for key, cmd in (("textheight_pt", "textheight"), ("textwidth_pt", "textwidth"),
+                 ("columnwidth_pt", "columnwidth"), ("columnsep_pt", "columnsep")):
+    m = re.search(r"\\" + cmd + r"=([\d.]+)pt", log)
+    if m:
+        geo[key] = float(m.group(1))
+if "textheight_pt" not in geo:
+    raise SystemExit("[local] FAILED: the build log does not report "
+                     "\\textheight; the figure-geometry checks would go quiet")
+geo["source"] = "pdflatex log for cot_faith_arr.tex, scripts/build_local.sh"
+dest = pathlib.Path("results_v2/canonical_runs/arr_build")
+dest.mkdir(parents=True, exist_ok=True)
+(dest / "geometry.json").write_text(json.dumps(geo, indent=2) + "\n")
+print("[local] geometry: " + ", ".join(f"{k}={v}" for k, v in geo.items()
+                                      if k != "source"))
+PY
+
 # Where every body float actually printed. This is the check that would have
 # caught the figures-on-page-41 defect, and it is cheap enough to run on every
 # local build rather than only in CI: \newlabel already records the page each

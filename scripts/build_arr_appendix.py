@@ -85,11 +85,18 @@ def transform(src: str) -> str:
     # \allowbreak after each separator gives TeX a legal breakpoint without
     # inserting a hyphen, so no break can be misread as part of a filename.
     # Applied only inside \texttt{...} -- the separators mean nothing in prose.
+    #
+    # The hyphen is in the list because HF repo ids are the one long \texttt
+    # span that carries none of the others: \texttt{openvla-7b-finetuned-
+    # libero-spatial} ran 10.9pt past the column, and breakable() had already
+    # run on it and found nothing to break. A hyphen is a legal breakpoint that
+    # stays with the line above, so the break cannot be read as an added
+    # character the way a hyphenation would be.
     def breakable(m):
         inner = m.group(1)
         if len(inner) < 24:          # short spans fit; leave them alone
             return m.group(0)
-        inner = re.sub(r"(/|\\_|\{|,)", r"\1\\allowbreak{}", inner)
+        inner = re.sub(r"(/|\\_|\{|,|-)", r"\1\\allowbreak{}", inner)
         return r"\texttt{" + inner + "}"
 
     body = re.sub(r"\\texttt\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", breakable, body)

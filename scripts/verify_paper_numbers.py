@@ -4046,20 +4046,36 @@ def audit_arr_submission(a: Audit) -> None:
     # Each body float must be small enough to be placeable at all. A figure*
     # taller than \dbltopfraction x \textheight can never be set as a top
     # float, and LaTeX will defer it forever without saying so. \textheight is
-    # read from the build log rather than assumed, because acl.sty sets it via
+    # read from the build rather than assumed, because acl.sty sets it via
     # geometry and a style update would move it.
-    logp = Path("/tmp/arrbuild/arr/cot_faith_arr.log")
-    th = None
-    if logp.exists():
-        m = re.search(r"\\textheight=([\d.]+)pt",
-                      logp.read_text(errors="replace"))
-        th = float(m.group(1)) if m else None
+    #
+    # It is read from a committed artifact and not from a build directory. The
+    # path here used to be a scratch outdir on one machine; scripts/build_local.sh
+    # builds into a mktemp it deletes, so the value was coming from whatever
+    # outdir was last left behind. When that directory went away, \textheight
+    # came back None and every per-figure check below stopped registering --
+    # silently, with the claim count dropping by ten as the only symptom. That is
+    # the failure mode this whole script exists to make impossible, so the
+    # geometry is now an artifact, and its absence is a check rather than a skip.
+    geop = root / "results_v2" / "canonical_runs" / "arr_build" / "geometry.json"
+    geo = json.loads(geop.read_text()) if geop.exists() else {}
+    th = geo.get("textheight_pt")
+    a.check(sec, "the built page geometry is on disk, so each body figure's "
+                 "height is checked against the height a top float may occupy "
+                 "instead of the checks quietly not running", True,
+            th is not None,
+            source="results_v2/canonical_runs/arr_build/geometry.json -- "
+                   "written by scripts/build_local.sh")
+    # Measured, for the same reason: 16cm of text and a 0.6cm gutter are the
+    # style's numbers, and restating them here is how the two drift apart.
+    tw = geo.get("textwidth_pt", 453.6)
+    cs = geo.get("columnsep_pt", 17.0)
     figs = root / "figures"
     for block in re.findall(r"\\begin\{figure(\*?)\}(.*?)\\end\{figure\*?\}",
                             vis, re.S):
         star, body_ = block
         m = re.search(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}", body_)
-        if not (m and th):
+        if not m:
             continue
         pdf = figs / m.group(1)
         if not pdf.exists():
@@ -4070,18 +4086,19 @@ def audit_arr_submission(a: Audit) -> None:
         x0, y0, x1, y1 = (float(v) for v in box.group(1).split())
         w, h = x1 - x0, y1 - y0
         # \textwidth in the ACL style; a \columnwidth figure gets half of it
-        # less the 0.6cm gutter. Scaled height is what competes for the page.
-        avail = 453.6 if star else (453.6 - 17.0) / 2
+        # less the gutter. Scaled height is what competes for the page.
+        avail = tw if star else (tw - cs) / 2
         scaled = h * avail / w
         # The governing fraction is the one this float's own environment obeys:
         # figure* competes for the double-column top area, figure for the
         # single-column one. Read from the source, not restated, so relaxing
         # one of them cannot leave this check asserting the other's value.
-        cap = floatp_got["dbltopfraction" if star else "topfraction"] * th
-        a.check(sec, f"{m.group(1)} at its include width is {scaled:.0f}pt "
-                     f"tall, inside the {cap:.0f}pt a top float may occupy "
-                     f"(caption excluded)", True, scaled < cap,
-                source=f"{w:.0f}x{h:.0f}pt native, textheight {th:.0f}pt")
+        if th:
+            cap = floatp_got["dbltopfraction" if star else "topfraction"] * th
+            a.check(sec, f"{m.group(1)} at its include width is {scaled:.0f}pt "
+                         f"tall, inside the {cap:.0f}pt a top float may occupy "
+                         f"(caption excluded)", True, scaled < cap,
+                    source=f"{w:.0f}x{h:.0f}pt native, textheight {th:.0f}pt")
         # And the other direction: a figure authored wider than the slot it is
         # included in scales its type down with it. Matplotlib font sizes are
         # absolute points, so a figure authored w points wide and included at
