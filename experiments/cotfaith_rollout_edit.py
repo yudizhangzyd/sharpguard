@@ -712,17 +712,28 @@ def run_arm(model, processor, env, task_lang, *, arm, family, device,
         a = decode(model, processor, img, task_lang, device=device,
                    pixel_dtype=pixel_dtype, prompt=prompt, **dec_kw)
         a = _apply_gripper_transform(a, args.gripper_transform)
-        if cap_dir is not None and steps % cap_every == 0:
-            # The frame as the POLICY saw it, after the same flip and
-            # preprocessing, so the figure shows the policy's input rather than
-            # a differently-oriented render of the same instant.
-            name = f"{arm}_t{steps:04d}.png"
-            try:
-                from PIL import Image
-                Image.fromarray(np.asarray(img, dtype=np.uint8)).save(cap_dir / name)
-            except Exception as e:
-                print(f"[capture] frame {name} not written: {type(e).__name__}: {e}")
-                name = None
+        if cap_dir is not None:
+            # The pose is recorded EVERY step; only the image is subsampled.
+            # These used to share one `steps % cap_every` gate, which tied the
+            # sampling of the arm's path to the sampling of the filmstrip. At
+            # --capture-every 10 over 80 steps that left 8 waypoints, and the
+            # path-deviation readout this run exists for is a curve, not 8
+            # points. A pose is 3 floats and a frame is a PNG, so there is no
+            # reason for the cheap one to inherit the expensive one's rate.
+            name = None
+            if steps % cap_every == 0:
+                # The frame as the POLICY saw it, after the same flip and
+                # preprocessing, so the figure shows the policy's input rather
+                # than a differently-oriented render of the same instant.
+                name = f"{arm}_t{steps:04d}.png"
+                try:
+                    from PIL import Image
+                    Image.fromarray(np.asarray(img, dtype=np.uint8)).save(
+                        cap_dir / name)
+                except Exception as e:
+                    print(f"[capture] frame {name} not written: "
+                          f"{type(e).__name__}: {e}")
+                    name = None
             traj.append({"step": steps, "frame": name, "eef": _eef(obs),
                          "action": [round(float(v), 5) for v in a],
                          "move": cur_move})

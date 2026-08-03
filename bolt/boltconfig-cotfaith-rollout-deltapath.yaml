@@ -55,12 +55,21 @@ environment_variables:
   N_TASKS: '2'
   N_EPS_PER_TASK: '1'
 
-  # The capture itself. Named episodes, not a count: the filmstrip compares
-  # arms on ONE init state, and a count would film whichever episodes ran first.
-  CAPTURE_EPISODES: ''
-  # 400 steps / 10 = 40 frames per arm per episode, at 256x256. Enough to pick
-  # a well-spaced 6-frame strip after the fact without re-running the job, and
-  # ~250 PNGs total, which is nothing against a 512 GB disk.
+  # Capture ON, and it is not optional for this run: the end-effector pose is
+  # only recorded when a capture directory exists, so the first submission of
+  # this config (ip3c2794f7) left it empty and would have written no trajectory
+  # at all -- six GPU-hours whose only readout would have been
+  # delta_sr_vs_cot_clean, which is 0.00 on every arm because in-suite SR is
+  # 0/20. That is precisely the "table of 0.00 deltas that reads like a null
+  # result" the harness docstring warns about. Path deviation is the readout, so
+  # the poses that define it have to be written.
+  #
+  # Named episodes, not a count: the deviation is measured BETWEEN arms on one
+  # init state, and a count would film whichever episodes ran first.
+  CAPTURE_EPISODES: '0:0,1:0'
+  # Frames only; the pose is now recorded every step regardless of this rate, so
+  # this sets the filmstrip's density and not the path's resolution. 80/10 = 8
+  # frames per arm per episode at 256x256, ~240 PNGs, nothing against 512 GB.
   CAPTURE_EVERY: '10'
 
   # Per-step reasoning (k=1), matching the protocol the reported SR was
