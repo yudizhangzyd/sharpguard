@@ -1868,9 +1868,20 @@ def audit_manuscript_hygiene(a: Audit) -> None:
     except Exception:
         a.check(sec, "manuscript is readable", True, None, source=str(TEX))
         return
+    # The ARR body is searched for stale text alongside the long-form
+    # manuscript. The two carry the same sentences in shortened form, so a
+    # needle that is gone from one and alive in the other is exactly the state
+    # this audit exists to catch -- and the submitted PDF is built from the ARR
+    # file. Kept separate from `tex` because the cross-reference checks below
+    # resolve labels within one document and would see every \ref the ARR body
+    # makes into its generated appendix as dangling.
+    arr = ROOT / "cot_faith_arr.tex"
+    both = tex + "\n" + (arr.read_text() if arr.exists() else "")
 
     stale = {
-        r"N{=}1$ pilot": "stale N=1 cross-corpus pilot text (F5 is now N=30)",
+        r"N{=}1$ pilot": "stale N=1 cross-corpus pilot text (F5 now runs at "
+                        "n_samples_used=100 per corpus; the derived key is "
+                        "still called cross_corpus_n30, see derive_metrics.py)",
         "in progress and will populate": "stale 'in progress' promise",
         r"AUROC is $\leq 0.65$": "withdrawn P3 AUROC value still asserted",
         # Was a bare "0.853" guard. It had to be narrowed once the rollout
@@ -1882,12 +1893,25 @@ def audit_manuscript_hygiene(a: Audit) -> None:
         r"to $0.853$ on our": "stale F_bar upper bound (correct value 0.860)",
         r"5.5\times$ spread": "stale F_bar spread (correct value 5.6x)",
         "natural strengthening we plan": "stale paraphrase-null promise",
+        # 28,443 is the seed-0 slice across the 30 runs the collision
+        # decomposition covers. The release carries 45,989 scored deltas,
+        # because every "ours" row was re-run at three sampling seeds after
+        # this decomposition was computed. Describing the smaller number as
+        # "all" or "the release" understates the release by 17,546 records and
+        # makes the decomposition look like it was run over everything.
+        r"$28{,}443$ scored records in the release":
+            "28,443 described as the whole release (it is the 30-run, "
+            "one-seed-per-configuration slice; the release has 45,989)",
+        r"over all $28{,}443$":
+            "28,443 described as 'all' scored records (it is one seed per "
+            "configuration across 30 runs)",
         "none is marked ``---''": "false full-population claim (the para "
                                   "column legitimately has 7 dashes)",
     }
     for needle, why in stale.items():
-        a.check(sec, f"no stale text: {why}", True, needle not in tex,
-                source=f"searched for {needle!r}")
+        a.check(sec, f"no stale text: {why}", True, needle not in both,
+                source=f"searched for {needle!r} in cot_faith_iclr.tex and "
+                       f"cot_faith_arr.tex")
 
     labels = set(re.findall(r"\\label\{([^}]+)\}", tex))
     refs = set(re.findall(r"\\(?:ref|eqref)\{([^}]+)\}", tex))
@@ -4066,6 +4090,25 @@ def audit_arr_submission(a: Audit) -> None:
             th is not None,
             source="results_v2/canonical_runs/arr_build/geometry.json -- "
                    "written by scripts/build_local.sh")
+    # The page budget, from the same artifact. ARR's 8 pages are body pages:
+    # Limitations, Ethics, references and the appendix follow it and are
+    # unlimited, so what is bounded is the last page carrying numbered-section
+    # text. Asserted here because reading it off the PDF by hand is a check that
+    # runs when someone remembers to run it: a two-line prose correction to
+    # Section 5 moved a float from page 7 to page 8 and pushed seven lines of
+    # the Conclusion onto page 9, which is a desk-reject-class violation whose
+    # only symptom was a page nobody re-read.
+    blp = geo.get("body_last_page")
+    a.check(sec, "the built page budget is on disk, so the 8-page body limit "
+                 "is asserted rather than eyeballed", True, blp is not None,
+            source="body_last_page in geometry.json -- measured from "
+                   "build/cot_faith_arr_proof.pdf by scripts/build_local.sh")
+    if blp is not None:
+        a.check(sec, "the body ends on or before page 8, the ARR limit "
+                     "(Limitations and everything after it are exempt)",
+                True, blp <= 8,
+                source=f"body_last_page={blp}, Limitations starts on page "
+                       f"{geo.get('limitations_starts_page')}")
     # Measured, for the same reason: 16cm of text and a 0.6cm gutter are the
     # style's numbers, and restating them here is how the two drift apart.
     tw = geo.get("textwidth_pt", 453.6)

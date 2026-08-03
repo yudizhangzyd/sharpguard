@@ -12,9 +12,9 @@
 # lineno v5.7 (TeX Live 2026) places [switch]-mode numbers over the body text
 # instead of in the margin; v4.41, which the Bolt build image carries and which
 # ARR compiles against, puts them where they belong. The defect is the
-# package's and it is local-only -- both builds paginate identically at 46
-# pages -- but it makes the submission copy unreadable on this machine, and a
-# PDF you cannot read is a PDF you will not proofread.
+# package's and it is local-only -- both builds paginate identically -- but it
+# makes the submission copy unreadable on this machine, and a PDF you cannot
+# read is a PDF you will not proofread.
 #
 # Both are built from the same source in the same run, so they cannot drift.
 set -euo pipefail
@@ -90,6 +90,39 @@ for lab in sorted(placed, key=placed.get):
 missing = sorted(body - set(placed))
 if missing:
     print(f"[local]   UNRESOLVED: {', '.join(missing)}")
+PY
+
+# Where the body actually ends. ARR's 8-page limit counts body pages only:
+# Limitations, Ethics, references and appendix are unlimited and follow it, so
+# the budget is "the last page carrying numbered-section text". That page was
+# checked by hand until a two-line prose fix pushed a float from page 7 to
+# page 8 and spilled seven lines of the Conclusion onto page 9 -- a limit
+# violation whose only symptom was a page nobody re-read. Measured here and
+# asserted by scripts/verify_paper_numbers.py, in the same artifact as the
+# geometry and for the same reason.
+pdftotext -layout build/cot_faith_arr_proof.pdf "$TMP/proof.txt"
+python3 - "$TMP/proof.txt" <<'PY'
+import json, pathlib, sys
+pages = pathlib.Path(sys.argv[1]).read_text(errors="replace").split("\f")
+hit = [(i + 1, p.lstrip().startswith("Limitations"))
+       for i, p in enumerate(pages)
+       if any(ln.startswith("Limitations") for ln in p.splitlines())]
+if not hit:
+    raise SystemExit("[local] FAILED: the Limitations heading is not in the "
+                     "rendered text, so the body page count cannot be measured")
+page, at_top = hit[0]
+# If the heading starts the page, the body ended on the page before it;
+# if it starts partway down, the body ran to that page and the page counts.
+last = page - 1 if at_top else page
+geop = pathlib.Path("results_v2/canonical_runs/arr_build/geometry.json")
+geo = json.loads(geop.read_text())
+geo["body_last_page"] = last
+geo["limitations_starts_page"] = page
+geo["n_pages"] = sum(1 for p in pages if p.strip())
+geop.write_text(json.dumps(geo, indent=2) + "\n")
+flag = "" if last <= 8 else "  <-- OVER the ARR 8-page body limit"
+print(f"[local] body ends page {last} (Limitations starts page {page}"
+      f"{', mid-page' if not at_top else ''}){flag}")
 PY
 
 for f in build/cot_faith_arr.pdf build/cot_faith_arr_proof.pdf; do
