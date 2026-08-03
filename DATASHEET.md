@@ -40,12 +40,20 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
 2. **Attention records** (3,620 released) — per-observation four-bucket
    decomposition of action-token attention mass (visual / instruction / CoT /
    previous-action), with segment boundaries and segment token counts so that
-   per-token normalization is recomputable.
+   per-token normalization is recomputable. **On 15 of the reports the released
+   per-sample list is the first 20 records, while that report's own aggregate is
+   over all 100 (99 on BC-Z)** — the three cross-corpus runs and the three
+   DeepThinkVLA runs the paper plots, plus nine superseded ones. The harness
+   truncated the list for compactness after aggregating, so the means and stds
+   the paper quotes are full-N; the shipped prefix reproduces every bucket mean
+   to within 0.37 pp and every bucket ordering exactly, which is measured by
+   `verify_paper_numbers.py` rather than asserted here. The 3,620 above counts
+   records actually shipped, not observations behind the aggregates.
 3. **Derived metrics** (`results_v2/derived_metrics.json`) — every aggregate
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-56,311 records in 49.0 MB of JSON across 15 models: 52,338 edit records, 3,620
+56,311 records in 53.9 MB of JSON across 15 models: 52,338 edit records, 3,620
 attention records, and 353 records behind the P3 probe (200 from the withdrawn
 cross-domain run, retained so the withdrawal is checkable rather than asserted,
 plus the 153 of the in-domain re-run that replaced it). The edit release is 45

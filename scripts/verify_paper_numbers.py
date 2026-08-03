@@ -1696,6 +1696,139 @@ def audit_release(a: Audit) -> None:
     a.check(sec, "the release size the manuscript quotes matches the release",
             want_mb, round(total_mb, 1), tol=0.15,
             source="cot_faith_iclr.tex: '$N$\\,MB of JSON in total'")
+    # The datasheet quotes the same size, and it drifted once: the paper was
+    # updated to 53.9 MB while DATASHEET.md still said 49.0, so the release
+    # described itself two ways. Pinned to the paper rather than to a constant,
+    # since the paper's own figure is already pinned to the bytes above.
+    ds = (root / "DATASHEET.md").read_text() if (root / "DATASHEET.md").exists() \
+        else ""
+    m = re.search(r"records in ([\d.]+) MB of JSON", ds)
+    a.check(sec, "the datasheet quotes the same release size as the manuscript, "
+                 "so the two documents cannot describe different releases",
+            want_mb, float(m.group(1)) if m else None,
+            source="DATASHEET.md: 'N MB of JSON'")
+
+    # --- the truncated per-sample attention lists, and what the prefix costs --
+    # The reports whose attention AGGREGATE is over more observations than the
+    # per-sample list they release: the harness truncates that list to 20 for
+    # compactness (experiments/cotfaith_bridge.py, experiments/
+    # cotfaith_deepthink.py) after computing the mean and std over the full set.
+    # The paper plots the aggregates, so nothing quoted is wrong -- but a reader
+    # recomputing from the release lands on a 20-record prefix, and that gap is
+    # disclosed rather than left to be discovered. Everything below is
+    # RECOMPUTED, so the disclosure cannot rot into a stale reassurance.
+    BUCK = {"visual": "action->visual", "instr": "action->instr",
+            "cot": "action->cot", "prev": "action->action_prev"}
+    trunc, worst, worst_at, order_kept = [], 0.0, None, True
+    for f in sorted((root / "results_v2").rglob("*.json")):
+        rec = load(f)
+        if not isinstance(rec, dict):
+            continue
+        ps, n_ok = rec.get("per_sample_attn"), rec.get("n_attn_ok")
+        if not (isinstance(ps, list) and isinstance(n_ok, int)
+                and n_ok > len(ps)):
+            continue
+        trunc.append(f.name)
+        agg = rec.get("attention_aggregate") or {}
+        for b, k in BUCK.items():
+            full = (agg.get(k) or {}).get("mean")
+            vals = [s[k] for s in ps if isinstance(s, dict)
+                    and s.get(k) is not None]
+            if full is None or not vals:
+                continue
+            gap = abs(full - sum(vals) / len(vals)) * 100.0
+            if gap > worst:
+                worst, worst_at = gap, (f.name, b)
+        have = [b for b in BUCK if (agg.get(BUCK[b]) or {}).get("mean")
+                is not None]
+        if have and ps:
+            by_full = sorted(have, key=lambda b: -agg[BUCK[b]]["mean"])
+            by_pref = sorted(have, key=lambda b: -sum(
+                s[BUCK[b]] for s in ps if s.get(BUCK[b]) is not None)
+                / max(1, sum(1 for s in ps if s.get(BUCK[b]) is not None)))
+            order_kept &= (by_full == by_pref)
+
+    a.check(sec, "the release still carries the 15 reports whose per-sample "
+                 "attention list is a prefix of what their aggregate covers, "
+                 "which is what the release paragraph discloses", 15,
+            len(trunc), source=f"{len(trunc)} report(s) with "
+                               f"len(per_sample_attn) < n_attn_ok")
+    # The six the PAPER PLOTS, named, so a future run that stops truncating
+    # takes the disclosure with it instead of leaving it as a false statement.
+    LIVE = ["cross_corpus_bcz_n100.json", "cross_corpus_bridge_v2_n100.json",
+            "cross_corpus_fractal_n100.json", "deepthink_base_13family.json",
+            "deepthink_rl_13family.json", "deepthink_sft_13family.json"]
+    a.check(sec, "and six of them are the reports whose attention this paper "
+                 "plots -- the three cross-corpus and the three DeepThinkVLA "
+                 "runs the release paragraph names", LIVE,
+            [n for n in LIVE if n in trunc], source="results_v2/canonical_runs/")
+    a.check(sec, "each of those six releases exactly 20 records against an "
+                 "aggregate over 99 or 100", [(20, True)] * len(LIVE),
+            [(len((load(root / "results_v2" / "canonical_runs" / n)
+                   or {}).get("per_sample_attn") or []),
+              (load(root / "results_v2" / "canonical_runs" / n)
+               or {}).get("n_attn_ok") in (99, 100)) for n in LIVE],
+            source="results_v2/canonical_runs/")
+    # The truncation is a property of the harnesses, asserted at the source, so
+    # that "the release ships a prefix" stops being true the moment they change.
+    for hn in ("cotfaith_bridge.py", "cotfaith_deepthink.py"):
+        hp = root / "experiments" / hn
+        a.check(sec, f"and {hn} is the code that truncates it, so the "
+                     f"disclosure names a mechanism and not a mystery", True,
+                hp.exists() and "[:20]" in hp.read_text(),
+                source=f"experiments/{hn}")
+    # What the prefix costs, recomputed. 0.37 pp is the number both manuscripts
+    # quote; it is a MEASURED worst case, so it is asserted as one.
+    a.check(sec, "recomputing every bucket mean from the shipped prefix agrees "
+                 "with the full-N aggregate to within the 0.37 pp the release "
+                 "paragraph quotes", 0.37, round(worst, 2),
+            source=f"worst case {worst_at} at {worst:.3f} pp")
+    a.check(sec, "and the prefix preserves the bucket ORDERING on every one of "
+                 "those reports, which is the claim the sections' rankings "
+                 "actually rest on", True, order_kept,
+            source="recomputed over all truncated reports")
+    a.check(sec, "and that worst case is under a fifth of the 2.1 pp "
+                 "cross-corpus spread F5 rests on, as the paragraph says",
+            True, worst < 2.1 / 5, source=f"{worst:.3f} pp vs 2.1/5 pp")
+    # Both documents have to carry it. The figure caption is where a reader
+    # meets the plotted means; the release paragraph is where they learn what
+    # they can recompute; the datasheet is where the gap is a first-class entry.
+    # The paragraph is matched on its OWN wording rather than on "first 20",
+    # which the caption also contains -- otherwise deleting the paragraph's
+    # sentence leaves the check passing on the caption's.
+    for label, txt, path, lit in (
+            ("appendix", tex, "cot_faith_iclr.tex",
+             r"store the \emph{first $20$} per-observation attention records"),
+            ("datasheet", ds, "DATASHEET.md",
+             "the released\n   per-sample list is the first 20 records")):
+        a.check(sec, f"the {label} discloses the prefix and the 0.37 pp it "
+                     f"costs", [1, True],
+                [txt.count(lit),
+                 (r"$\mathbf{0.37}$\,pp" in txt or "0.37 pp" in txt)],
+                source=path)
+    # The ARR body carries the prefix itself but not the 0.37 pp: the body is at
+    # its 8-page limit and the quantification did not fit, so it lives in the
+    # appendix release paragraph and DATASHEET.md (both shipped with the same
+    # submission), which the two checks above already pin. What the body may not
+    # do is quote the record count with no hint that some of it is a prefix, so
+    # that clause is required here.
+    arr_txt = ARR.read_text() if ARR.exists() else ""
+    a.check(sec, "the ARR body's release sentence says the attention records "
+                 "are a per-run prefix where the aggregate is larger, since a "
+                 "bare count would read as complete", 1,
+            len(re.findall(r"the first \$20\$ per run where the aggregate is "
+                           r"over \$100\$", arr_txt)), source=str(ARR))
+    a.check(sec, "and the appendix that ships with it carries the 0.37 pp the "
+                 "body had no room for", 1,
+            len(re.findall(r"to within \$\\mathbf\{0\.37\}\$\\,pp",
+                           (ROOT / "arr_appendix.tex").read_text()
+                           if (ROOT / "arr_appendix.tex").exists() else "")),
+            source="arr_appendix.tex")
+    a.check(sec, "the figure whose bars are those aggregates says so in its own "
+                 "caption, where a reader meets them", 1,
+            len(re.findall(r"ships the first \$20\$ of those records per run",
+                           tex)),
+            source="cot_faith_iclr.tex: fig:cross_corpus caption")
 
     # --- no stale n=1 artifact sitting next to the N=30 claim (reviewer 5d) ---
     stale = []
