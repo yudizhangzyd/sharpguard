@@ -174,6 +174,16 @@ def main() -> int:
             d = deviation(xyz, clean)
             d["family"] = e.get("family")
             d["success"] = bool(e.get("success"))
+            # How often the edit actually landed. An edit family is applied to
+            # the CoT the policy just generated, and a family whose premise that
+            # trace does not satisfy -- subject_swap on a trace naming no
+            # subject -- is skipped for that step. An arm skipped at every step
+            # ran the CLEAN CoT under an edit arm's name, so its deviation is
+            # near zero for a reason that has nothing to do with faithfulness,
+            # and averaging it into a rank correlation is how a protocol failure
+            # gets read as evidence that the edit does not matter.
+            d["n_edit_skipped"] = int(e.get("n_edit_skipped") or 0)
+            d["n_cot_generated"] = int(e.get("n_cot_generated") or 0)
             out[arm] = d
             if d["step0_cm"] > 1e-6:
                 pairing_defects.append(
@@ -215,18 +225,31 @@ def main() -> int:
             "clean_path_len_cm": float(np.mean(
                 [r["clean_path_len_cm"] for r in rows])),
             "n_steps_compared": int(min(r["n_steps_compared"] for r in rows)),
+            "n_edit_skipped": sum(r["n_edit_skipped"] for r in rows),
+            "n_cot_generated": sum(r["n_cot_generated"] for r in rows),
         }
+        gen = by_arm[arm]["n_cot_generated"]
+        by_arm[arm]["edit_landed_frac"] = (
+            None if not gen or by_arm[arm]["family"] is None
+            else round(1.0 - by_arm[arm]["n_edit_skipped"] / gen, 4))
 
     # --- the comparison this run exists for --------------------------------
     derived = json.loads(DERIVED.read_text())
     fams = derived["models"][MODEL_ROW]["families"]
-    paired, missing = [], []
+    paired, missing, never_applied = [], [], []
     for arm, row in by_arm.items():
         fam = row["family"]
         if arm == "nocot" or not fam:
             continue
         if fam not in fams:
             missing.append(fam)
+            continue
+        # An arm whose edit never landed is the clean arm wearing another name.
+        # Excluded from the correlation and named in the output, rather than
+        # contributing a ~0 deviation that would read as "this edit family does
+        # not change behaviour" when what happened is that no edit was made.
+        if row["edit_landed_frac"] == 0.0:
+            never_applied.append(fam)
             continue
         paired.append((fam, fams[fam], row))
 
@@ -280,6 +303,7 @@ def main() -> int:
         "n_scenes": len(per_scene),
         "arms_compared": len(by_arm),
         "families_not_in_derived_metrics": sorted(set(missing)),
+        "families_excluded_edit_never_landed": sorted(set(never_applied)),
         "step0_pairing_verified": True,
         "by_arm": by_arm,
         "per_scene": per_scene,
@@ -305,11 +329,20 @@ def main() -> int:
 
     print(f"[deltapath] {len(per_scene)} scene(s), {len(paired)} families, "
           f"{by_arm[arms[0]]['n_steps_compared']} steps compared")
-    print(f"[deltapath] {'family':22} {'dev_cm':>8} {'F_mag':>7} {'cos_xyz':>8}")
+    print(f"[deltapath] {'family':22} {'dev_cm':>8} {'F_mag':>7} {'cos_xyz':>8}"
+          f" {'edit%':>6}")
     for fam, f, r in order:
+        lf = r.get("edit_landed_frac")
         print(f"[deltapath] {fam:22} {r['mean_cm']:8.2f} "
               f"{f.get('F_mag', float('nan')):7.3f} "
-              f"{f.get('cos_xyz', float('nan')):8.3f}")
+              f"{f.get('cos_xyz', float('nan')):8.3f} "
+              f"{'   n/a' if lf is None else f'{100 * lf:5.1f}'}")
+    # Named loudly, not left to the JSON: a family missing from the table above
+    # without a line here would look like a family we chose not to run.
+    if never_applied:
+        print(f"[deltapath] EXCLUDED, edit never landed on any step: "
+              f"{sorted(set(never_applied))} -- these arms ran the clean CoT, "
+              f"so their deviation measures nothing about the edit")
     for key, c in corr.items():
         print(f"[deltapath] rho({key}, deviation) = {c['spearman_rho']:+.3f}  "
               f"p = {c['perm_p']:.4f}  (n={c['n_families']})")
