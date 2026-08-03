@@ -1104,6 +1104,41 @@ def audit_deepthink_p2(a: Audit, d: Optional[dict]) -> None:
             "8/8 CoT-VLAs" not in tex and "11/11 CoT-VLAs" in tex,
             source=str(TEX) + ": 3 DeepThinkVLA rows now have the identity null")
 
+    # One null, two names in the release: the scoring pipeline writes
+    # selfsplice_control and the judge / edit-pair exports write
+    # identity_control. Both names are therefore correct where they appear, and
+    # the ARR body prints both -- selfsplice_control in S3 and S8, and
+    # identity_control on fig:taxonomy, which reads the judge artifact. A
+    # reader who meets the second name with no warning has to guess whether it
+    # is a fourth null, so the alias has to be stated where the null is
+    # introduced. This asserts the collision is real in the artifacts before
+    # requiring the disclosure, so if the two ever unify the check retires
+    # itself rather than demanding a note about a name that no longer exists.
+    root = Path(__file__).resolve().parent.parent
+    jr = load(root / "results_v2" / "canonical_runs" / "judge_edit_families"
+              / "judge_report.json")
+    dm_fams = set()
+    for mv in (dig(d, "models") or {}).values():
+        dm_fams |= set((mv or {}).get("families") or {})
+    judge_fams = set(dig(jr, "per_family") or {})
+    collides = ("selfsplice_control" in dm_fams
+                and "identity_control" in judge_fams)
+    a.check(sec, "the identity null really does carry two names across the "
+                 "release, which is what makes the alias note necessary",
+            [True, True],
+            ["selfsplice_control" in dm_fams, "identity_control" in judge_fams],
+            source="derived_metrics.json families vs judge_report.json "
+                   "per_family")
+    if collides:
+        arr = root / "cot_faith_arr.tex"
+        t = arr.read_text() if arr.exists() else ""
+        a.check(sec, "and the ARR body says the two names are the same null, "
+                     "rather than printing both and leaving it to be inferred",
+                True,
+                "the judge export and Figure~\\ref{fig:taxonomy} name it "
+                "\\emph{identity\\_control}" in t,
+                source="cot_faith_arr.tex S3, edit-families paragraph")
+
 
 def audit_attention_cluster_range(a: Audit, d: Optional[dict]) -> None:
     """F1/F3's headline interval, checked digit-for-digit against the artifact.
