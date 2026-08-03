@@ -37,7 +37,7 @@ from paper_plot_style import *          # noqa: F401,F403  (rcParams + save)
 from _data import MODELS, ORDER, LABELS, fam
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, FancyArrow
+from matplotlib.patches import Rectangle, Arc
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FI = os.path.join(ROOT, "results_v2", "canonical_runs", "floor_invariance",
@@ -155,6 +155,16 @@ ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
 FS = FONT_SIZE - 2.6
 MONO = {"family": "monospace", "fontsize": FONT_SIZE - 3.0}
 
+# The four stages sit in ONE horizontal band. The first draft let the two
+# scoring boxes hang below the band and left a hole between the CoT box and
+# them, so the panel read as scattered parts rather than a pipeline.
+Y0, Y1 = 0.30, 0.85
+# This axes is the full figure width but only A_H tall, so a length in inches
+# is A_H/W times as much x-fraction as y-fraction. Getting this wrong is not
+# cosmetic here: the caption claims the two arrows are drawn AT the measured
+# cosine, and the first draft used H/W, which stretched the angle by 2.8x.
+ASP = A_H / W
+
 
 def box(x0, y0, w, h, ec, fc="none", lw=0.8, ls="-"):
     ax.add_patch(Rectangle((x0, y0), w, h, transform=ax.transAxes, fill=True,
@@ -173,6 +183,9 @@ def arrow(x0, y0, x1, y1, color="0.35", lw=0.8):
 # the boxes is what made fig1_workflow unreadable: the text set at the size the
 # panel could afford, then overran the box it was supposed to name.
 LABEL_Y = 0.945
+# and one baseline of sub-captions below, so the panel has two rules rather
+# than text at five different heights.
+SUB_Y = 0.185
 
 
 def stage_label(x, text):
@@ -180,21 +193,25 @@ def stage_label(x, text):
             style="italic", color="0.38")
 
 
+def sub_label(x, text, size=None):
+    ax.text(x, SUB_Y, text, ha="center", va="center",
+            fontsize=size or FS, color="0.42", style="italic")
+
+
 # -- stage 1: what is held fixed -------------------------------------------
-box(0.005, 0.30, 0.155, 0.55, "0.45", fc="0.965")
-stage_label(0.0825, "held fixed")
+box(0.004, Y0, 0.144, Y1 - Y0, "0.45", fc="0.965")
+stage_label(0.076, "held fixed")
 for i, line in enumerate(("observation", "instruction", "greedy decode")):
-    ax.text(0.0825, 0.735 - 0.125 * i, line, ha="center", va="center",
+    ax.text(0.076, 0.735 - 0.125 * i, line, ha="center", va="center",
             fontsize=FS, color="0.15")
-ax.text(0.0825, 0.19, "$\\times$ 15 VLAs, 4 families", ha="center",
-        va="center", fontsize=FS, color="0.38", style="italic")
+sub_label(0.076, "$\\times$ 15 VLAs, 4 families")
 
 # -- stage 2: the two reasoning traces, real text --------------------------
 def draw_move(y, words, tint, tag):
     """One MOVE line, with the diffed words tinted. Drawn word by word so the
     edited span is highlighted without writing the span out here."""
-    ax.text(0.185, y + 0.11, tag, fontsize=FS, color=tint, va="center")
-    x = 0.185
+    ax.text(0.191, y + 0.11, tag, fontsize=FS, color=tint, va="center")
+    x = 0.191
     for w, same in words:
         t = ax.text(x, y, w + " ", transform=ax.transAxes, va="center",
                     color=("0.2" if same else tint),
@@ -204,52 +221,64 @@ def draw_move(y, words, tint, tag):
         x += bb.width / (fig.dpi * W)
 
 
-box(0.175, 0.30, 0.375, 0.55, "0.45")
+box(0.180, Y0, 0.365, Y1 - Y0, "0.45")
 stage_label(0.3625, "the reasoning text, rewritten in one span")
 draw_move(0.665, W_ORIG, C_COT_TRAINED, "the model's own CoT")
 draw_move(0.395, W_EDIT, C_NO_COT, "edited  ($\\mathit{direction\\_flip}$)")
-ax.text(0.3625, 0.19, "10 edit families in 3 tiers $+$ 3 calibration nulls",
-        ha="center", va="center", fontsize=FS, color="0.38", style="italic")
-arrow(0.163, 0.575, 0.173, 0.575)
+sub_label(0.3625, "10 edit families in 3 tiers $+$ 3 calibration nulls")
+arrow(0.152, 0.575, 0.176, 0.575)
 
 # -- stage 3: the action pair, drawn at the measured cosine ----------------
-cx, cy, r = 0.585, 0.40, 0.165
-stage_label(0.635, "two 7-DoF actions")
+# Framed like the other stages so it stops reading as blank space between two
+# boxes. The angle between the arrows, and the arc that spans it, are the
+# measured mean translation cosine of the model panels (b) and (c) are about.
+box(0.576, Y0, 0.142, Y1 - Y0, "0.72", fc="0.985")
+stage_label(0.647, "two 7-DoF actions")
+cx, cy, r = 0.606, 0.485, 0.285
 ang = np.degrees(np.arccos(np.clip(COS_HERO, -1, 1)))
 base = 90.0 - ang / 2.0
+ax.add_patch(Arc((cx, cy), width=2 * 0.175 * ASP, height=2 * 0.175,
+                 theta1=base - ang, theta2=base, transform=ax.transAxes,
+                 ls=":", lw=0.7, color="0.45", zorder=2))
+ax.plot([cx], [cy], "o", ms=1.8, color="0.35", transform=ax.transAxes,
+        zorder=3)
 for a_deg, col, lab in ((base, C_COT_TRAINED, "$a$"),
                         (base - ang, C_NO_COT, "$a'$")):
-    dx = r * np.cos(np.radians(a_deg)) * (H / W)
+    dx = r * np.cos(np.radians(a_deg)) * ASP
     dy = r * np.sin(np.radians(a_deg))
     arrow(cx, cy, cx + dx, cy + dy, col, lw=1.4)
-    ax.text(cx + dx * 1.20, cy + dy * 1.14, lab, fontsize=FS + 0.8,
+    ax.text(cx + dx * 1.28, cy + dy * 1.20, lab, fontsize=FS + 0.8,
             color=col, ha="center", va="center")
-ax.text(0.635, 0.19, f"measured $\\cos = {COS_HERO:+.3f}$", ha="center",
-        va="center", fontsize=FS, color="0.15")
-ax.text(0.635, 0.08, "on the top-ranked model", ha="center", va="center",
-        fontsize=FS - 0.6, color="0.5", style="italic")
-arrow(0.556, 0.575, 0.575, 0.470)
+ax.text(0.647, 0.355, f"$\\cos = {COS_HERO:+.3f}$", ha="center", va="center",
+        fontsize=FS, color="0.15")
+sub_label(0.647, "measured, top-ranked model")
+arrow(0.549, 0.575, 0.572, 0.575)
 
 # -- stage 4: the two scoring rules, and what each concludes ---------------
-stage_label(0.866, "read two ways")
-box(0.735, 0.555, 0.262, 0.295, C_NO_COT, fc="#FDF0F1", lw=0.8)
-ax.text(0.748, 0.788, "magnitude (Eq. 1)", fontsize=FS, color=C_NO_COT)
-ax.text(0.748, 0.685, r"$\Delta_\infty=\max_i|a_i-a'_i|>\tau$", fontsize=FS,
+stage_label(0.868, "read two ways")
+box(0.739, 0.585, 0.258, 0.265, C_NO_COT, fc="#FDF0F1", lw=0.8)
+ax.text(0.752, 0.802, "magnitude (Eq. 1)", fontsize=FS, color=C_NO_COT)
+# The infinity norm rather than \max_i|a_i-a'_i|: mathtext sets the prime and
+# its companion subscript far enough below the baseline that they collided with
+# the "faithful on ..." line underneath. Same rule, no descender -- and
+# Delta_infty is kept, because S5 and Figure 3 are about that symbol.
+ax.text(0.752, 0.712, r"$\Delta_\infty=\|a-a'\|_\infty>\tau$", fontsize=FS,
         color="0.15")
-ax.text(0.748, 0.598, f"$\\Rightarrow$ faithful on {FMAG_HERO:.3f}",
+ax.text(0.752, 0.618, f"$\\Rightarrow$ faithful on {FMAG_HERO:.3f}",
         fontsize=FS, color="0.15")
 
-box(0.735, 0.215, 0.262, 0.295, C_ECOT_BRIDGE, fc="#EFF6EF", lw=0.8)
-ax.text(0.748, 0.448, "direction-aware (Eq. 3)", fontsize=FS,
+box(0.739, Y0, 0.258, 0.265, C_ECOT_BRIDGE, fc="#EFF6EF", lw=0.8)
+ax.text(0.752, 0.517, "direction-aware (Eq. 3)", fontsize=FS,
         color=C_ECOT_BRIDGE)
-ax.text(0.748, 0.345, r"$\cos(a_{1:3},a'_{1:3})<-0.5$", fontsize=FS,
+ax.text(0.752, 0.423, r"$\cos(a_{1:3},a_{1:3}')<-0.5$", fontsize=FS,
         color="0.15")
-ax.text(0.748, 0.258, f"$\\Rightarrow$ faithful on {FDIR_HERO:.3f}",
+ax.text(0.752, 0.333, f"$\\Rightarrow$ faithful on {FDIR_HERO:.3f}",
         fontsize=FS, color="0.15")
+sub_label(0.868, "one action pair, two verdicts")
 # The same action pair, read by both rules: two arrows out of one source, not
 # a chain, because neither rule is downstream of the other.
-arrow(0.706, 0.480, 0.732, 0.690, "0.45", lw=0.7)
-arrow(0.706, 0.440, 0.732, 0.360, "0.45", lw=0.7)
+arrow(0.722, 0.575, 0.735, 0.700, "0.45", lw=0.7)
+arrow(0.722, 0.575, 0.735, 0.450, "0.45", lw=0.7)
 ax.text(0.005, LABEL_Y, "(a)", fontsize=FONT_SIZE - 1, fontweight="bold",
         va="center")
 
@@ -323,8 +352,10 @@ for sp in ("left", "bottom"):
 cxx.set_title(f"(c) the same edit, scored for direction:\n"
               f"rank {HERO_FROM} becomes rank {HERO_TO}",
               loc="left", fontsize=FONT_SIZE - 1.6, style="italic", pad=3.5)
+# "\\S8" here would set as a literal backslash: this is matplotlib text, not
+# LaTeX, and \\S is not a mathtext command.
 cxx.text(0.5, len(MS) + 0.80, "pale lines: reorderings inside the retraining "
-         "error bar (\\S8)", ha="center", va="center",
+         "error bar (Sec. 8)", ha="center", va="center",
          fontsize=FONT_SIZE - 4.0, color="0.5", style="italic")
 
 save(fig, "fig1_overview")
