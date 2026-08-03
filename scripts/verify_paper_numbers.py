@@ -6618,8 +6618,23 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     t = "".join((root / n).read_text() for n in ("cot_faith_arr.tex",
                                                  "arr_appendix.tex")
                 if (root / n).exists())
-    if "fig15_rollout_paths" not in t:
+    # Two states are live, and both are checkable. Either the submission DRAWS
+    # the panels, or it defers them for space and prints their five distances in
+    # the deferred-float note instead (DEFERRED_FLOATS in
+    # scripts/build_arr_appendix.py). Keyed on \includegraphics alone this gate
+    # switched the whole section off the day the panels were deferred -- forty
+    # checks, silently, on a submission that still quotes every number they were
+    # checking. So the gate is the disjunction, and the handful of checks that
+    # are about the DRAWING rather than the capture are gated on `drawn` below.
+    drawn = "fig15_rollout_paths" in t
+    deferred = "The same three arms as motion rather than as frames" in t
+    if not (drawn or deferred):
         return
+    a.check(sec, "the submission either draws the pose panels or names them in "
+                 "its deferred-float list, so a reader who meets the distances "
+                 "in prose can find out what drew them",
+            True, drawn or deferred,
+            source=f"drawn={drawn}, deferred-with-numbers={deferred}")
 
     gen = root / "figures" / "gen_fig15_rollout_filmstrip.py"
     body = gen.read_text() if gen.exists() else ""
@@ -6791,9 +6806,18 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # Checked as an equivalence, so dropping the caption clause without fixing
     # the axes fails here too, rather than making the check vacuous.
     equal_aspect = 'set_aspect("equal"' in body
-    a.check(sec, "panel (a) promises true scale exactly when it is drawn on an "
-                 "equal aspect", equal_aspect, "at true scale" in t,
-            source=f"{gen}: equal aspect={equal_aspect}")
+    if drawn:
+        a.check(sec, "panel (a) promises true scale exactly when it is drawn on "
+                     "an equal aspect", equal_aspect, "at true scale" in t,
+                source=f"{gen}: equal aspect={equal_aspect}")
+    else:
+        # Deferred: no caption of it is in the submission to promise anything, so
+        # what is left to check is the drawing itself, in the release the note
+        # sends the reader to.
+        a.check(sec, "panel (a) is drawn on an equal aspect, so the release the "
+                     "deferred note points at shows the $21.8$\\,cm box and the "
+                     "workspace-crossing loops at comparable scale",
+                True, equal_aspect, source=str(gen))
     # ... and the same clause says WHICH way it is laid out. The generator puts
     # the y coordinate on the horizontal axis; if that ever flips back, the
     # caption's "($y$ across, $x$ up)" sends the reader to the wrong axis.
@@ -7231,10 +7255,22 @@ def audit_body_frames_figure(a: Audit) -> None:
             or "top-down" in cap_txt or "per-step distance" in cap_txt,
             source=f"fig2_frames_facts.json: eef_logged="
                    f"{f2.get('eef_logged')}")
-    a.check(sec, "and it sends the reader to the figure that does draw them, "
-                 "so dropping the panels does not drop the evidence", True,
-            r"\ref{fig:paths}" in cap_txt,
-            source="the fig:frames caption, in whichever half carries it")
+    # Either form is acceptable, and one of them is required. Where the
+    # submission draws the panels the caption \ref's them; where they are
+    # deferred for space it has to name the deferred list instead, since a \ref
+    # to a float that is not in the PDF prints "??". What may not happen is the
+    # sentence going away: the strip's caption disclaims the distances two lines
+    # earlier, so with no pointer the submission says what this figure is not
+    # and never says where the measurement is.
+    paths_drawn = "fig15_rollout_paths" in t
+    a.check(sec, "and it sends the reader to the distances -- to the pose figure "
+                 "where the submission draws it, to the deferred list where it "
+                 "does not -- so dropping the panels does not drop the evidence",
+            True,
+            (r"\ref{fig:paths}" in cap_txt) if paths_drawn
+            else (r"\ref{sec:deferred}" in cap_txt),
+            source=f"the fig:frames caption, in whichever half carries it "
+                   f"(pose panels drawn: {paths_drawn})")
     # The anti-duplication invariant, from the two fact sheets rather than from
     # the captions: one capture feeds two figures, and until the generator grew
     # a --no-strip mode the pose figure opened with the SAME six frames the strip

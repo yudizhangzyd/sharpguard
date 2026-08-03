@@ -607,11 +607,11 @@ def deferred_list(entries) -> str:
 \label{sec:deferred}
 The submitted PDF is capped at $20$ pages, so these sections of the full-length
 manuscript are not reproduced above. They are in the released source
-(\texttt{cot\_faith\_iclr.tex}), the document the audit script checks claim by
-claim and the one every line above was copied from, and they are named here so
-that a reader can tell what exists from what was cut. Where the pages above
-draw on one of them the sentence names that document rather than a section
-number, so no reference above resolves to this list:
+(\texttt{cot\_faith\_iclr.tex}), which the audit checks claim by claim and which
+every line above was copied from; they are named here so a reader can tell what
+exists from what was cut. Where the pages above draw on one, the sentence names
+that document rather than a section number, so no reference above resolves to
+this list:
 """ + items + ".\n" + floats_note())
 
 
@@ -632,14 +632,19 @@ ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
 # defined in both files makes the number LaTeX prints unpredictable, and the
 # duplicate is a warning rather than an error, so it ships silently.
 # The body is the definition; the appendix cites it by \ref like any other.
-# fig:paths is also the anti-duplication half of the rollout split: the pose
-# panels are drawn by the body float and the appendix keeps only fig:frames, so
-# the same capture is not drawn twice in one submission. The split runs this way
-# round rather than the other because the body's claim -- an edit reaches the
-# actuator and keeps the arm moving -- is legible at print size in a two-panel
-# line plot and is not legible in eighteen thumbnails, and because the strip is
-# 261pt of artwork against the pose panels' 124pt on a body at its page limit.
-PROMOTED = ("tab:directional", "fig:dissociation", "fig:paths")
+#
+# fig:paths WAS promoted and now is not printed at all (DEFERRED_FLOATS), and
+# the reason is the 8-page body limit. As a body figure* the pose panels cost
+# 124pt of artwork across both columns plus a full-width caption, about 2.6k
+# characters of page, and the Conclusion sat 2.4k characters past page 8. Of
+# the four floats the body carried it is the one whose removal costs no claim
+# its evidence: its own caption opens by saying it measures nothing the paper
+# claims ("Neither panel is a faithfulness measurement"; all three arms score
+# 0, so no dSR is defined). Moving it into the appendix instead was the first
+# attempt and set 21 pages against the cap of 20, because it also restored the
+# thing this comment used to forbid -- one capture drawn twice in one
+# submission, the strip and the panels, three pages apart.
+PROMOTED = ("tab:directional", "fig:dissociation")
 
 # Floats deferred for space, as (label, how the deferred list names it). These
 # have NO copy in the submission at all, unlike PROMOTED.
@@ -696,12 +701,9 @@ DEFERRED_FLOATS = (
      r"error bars"),
     # The sixth, and the only one whose numbers are not printed elsewhere in
     # these pages, so they are printed HERE: the entry carries the panel's
-    # whole content and defers the drawing of it. It is the last float cut and
-    # the reason is arithmetic -- with it in, the submission set 21 pages
-    # against a cap of 20, and the alternative cuts were a measurement or the
-    # only picture of a rollout in the paper. Its own caption already records
-    # that two of its three panels were removed for redrawing tab:directional
-    # digit for digit; what is deferred now is the third.
+    # whole content and defers the drawing of it. Its own caption already
+    # records that two of its three panels were removed for redrawing
+    # tab:directional digit for digit; what is deferred now is the third.
     ("fig:directional",
      r"``The differential leaderboard'': $\mathcal{F}_{\text{diff}} = "
      r"\mathcal{F}(f) - \mathcal{F}(\text{paraphrase\_null})$ for "
@@ -717,6 +719,44 @@ DEFERRED_FLOATS = (
      r"${\leq}0.081$, and \emph{direction\_flip}'s $+0.081$ is \emph{above} "
      r"that ceiling: a meaning-changing edit moves this model no further "
      r"than a random instruction does"),
+    # The seventh, and the second half of one capture: the submission draws that
+    # capture once, as the filmstrip (fig:frames), and the panels that plot the
+    # same 400 steps as motion are deferred. This is the anti-duplication rule
+    # PROMOTED used to enforce across the two documents, applied inside one.
+    # The entry carries all five numbers the panels drew, because the strip's
+    # caption prints none of them: they are distances, and the strip is frames.
+    ("fig:paths",
+     r"``The same three arms as motion rather than as frames'': the top-down "
+     r"gripper path and the per-step distance from the clean-CoT arm, over the "
+     r"$400$ steps Figure~\ref{fig:frames} samples six columns of. The "
+     r"numbers are here, the drawing is in the release: the arm reading its "
+     r"\emph{own} reasoning barely travels, its whole path inside a "
+     r"$21.8$\,cm box, while both others cross the workspace; distance from "
+     r"it peaks at $139.7$\,cm for the flipped arm and $128.8$\,cm for the "
+     r"no-CoT arm, and the peak is not the end, since the no-CoT arm loops "
+     r"back to $73.5$\,cm by $t{=}390$ while the flipped arm finishes at its "
+     r"furthest ($139.6$\,cm). No panel of it is a faithfulness measurement "
+     r"either; what they add to the strip is a divergence that is sustained "
+     r"and directed rather than first-step jitter"),
+    # The eighth, and the only float cut for what it is rather than for what it
+    # repeats: every cell of its five prior-benchmark rows is a categorical
+    # judgement about someone else's paper, ``partial (DL)'', ``no
+    # (robustness)'', rather than a measurement from an artifact this audit can
+    # check, and it is the only float in the submission of which that is true.
+    # The paragraph that read it out is deferred with the rest of Related work,
+    # so here the matrix already stood with no prose around it, three sentences
+    # into the appendix; and the body's Related work makes its point in words --
+    # prior work scores an edit by the magnitude of the induced change. The one
+    # row whose cells are ours stays measured and stays printed, in tab:models
+    # and the taxonomy count.
+    ("tab:compare",
+     r"``CoT-Faith vs.\ prior manipulation VLA benchmarks'': the six-row "
+     r"matrix over faithfulness-specificity, edit-family count, null control, "
+     r"model and corpus coverage, and the reasoning-target ablation. Ours is "
+     r"the one row whose cells are measurements, and they are printed in these "
+     r"pages ($15$ models over $4$ model families, $13$ edit families of which "
+     r"$3$ are nulls, four corpora); the five rows above it read prior "
+     r"benchmarks off their papers, which is what the deferral costs"),
 )
 
 # Sentences that exist only to point at a float this appendix does not print,
@@ -724,6 +764,13 @@ DEFERRED_FLOATS = (
 DROPPED_POINTERS = (
     (r" Fig.~\ref{fig:edit_heatmap} visualizes the same table as a heatmap.",
      "fig:edit_heatmap, deferred above"),
+    # A clause rather than a sentence, and the only reference to tab:compare
+    # that survived the deferral of Related work: it cross-checks the family
+    # count against the comparison matrix's own row, which is a check on a
+    # table the reader no longer has. The count it checks is stated in the same
+    # sentence, so dropping the clause costs the sentence nothing.
+    (r", matching Table~\ref{tab:compare}",
+     "tab:compare, deferred above"),
 )
 
 # Sentences whose CONTENT is true of the full-length manuscript and false of
@@ -756,6 +803,18 @@ REWORDED = (
      r"of the edit generators all five are scored with.",
      "F1--F3 and O4 are deferred, so the source's 'we now answer' opener "
      "promises four arguments this document does not print"),
+    # The strip's caption closes by sending the reader to the panels that plot
+    # the same capture as motion. Deleting the sentence would drop the pointer
+    # to where the distances live, so it is repointed at the document that
+    # still draws them. The audit requires this sentence to exist in whichever
+    # form the document supports, so that deferring the panels cannot quietly
+    # turn into deferring the evidence.
+    (r"Where the three arms went, and how far apart: "
+     r"Figure~\ref{fig:paths}.",
+     r"Where the three arms went, and how far apart, is the motion figure "
+     r"deferred to " + UNPOINT + r" (\S\ref{sec:deferred}), whose distances "
+     r"are quoted there in full.",
+     "fig:paths is deferred here, so the source's \\ref would print '??'"),
 )
 
 # Floats moved earlier in the appendix, as (label, the literal string to put it
@@ -771,9 +830,11 @@ REWORDED = (
 # it sits between changes. The guard in transform() refuses an anchor that would
 # move a float LATER, which is the way this would silently stop working.
 #
-# It is fig:frames rather than fig:paths for the reason PROMOTED gives: the two
-# floats are declared seven lines apart inside the same deferred discussion, so
-# whichever one the appendix keeps inherits the same empty page after it.
+# It is fig:frames because it is the only rollout float the submission draws:
+# the two are declared seven lines apart inside the same deferred discussion,
+# so each inherits the same empty page after it, and fig:paths is now deferred
+# outright (see DEFERRED_FLOATS). Hoisting both, which the intermediate build
+# did, set 21 pages -- 385pt of full-width artwork queued at one anchor.
 HOISTED = (
     ("fig:frames", r"\subsubsection{Per-task decomposition"),
 )
