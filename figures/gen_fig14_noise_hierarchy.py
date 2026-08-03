@@ -103,8 +103,15 @@ ax2.annotate(f"widest Wilson half-width ({wilson:.3f})",
              annotation_clip=False,
              arrowprops=dict(arrowstyle="->", lw=0.6, color="0.35"))
 ax2.set_yticks(ys)
-ax2.set_yticklabels([m.replace("ours-", "") for m in labels],
-                    fontsize=FONT_SIZE - 3)
+# Spell the configs the way every table and the other four figures spell them.
+# The artifact keys are ours-r8 / ours-data50A, which strip to "r8" / "data50A"
+# and read as different models from the "r=8" / "data-50A" rows they are.
+NICE = {"r8": "r=8", "r16": "r=16", "r32": "r=32", "r64": "r=64",
+        "data50A": "data-50A", "data50B": "data-50B", "no-cot": "no-CoT"}
+short = [m.replace("ours-", "") for m in labels]
+missing = [s for s in short if s not in NICE]
+assert not missing, f"no display name for replicate pair(s) {missing}"
+ax2.set_yticklabels([NICE[s] for s in short], fontsize=FONT_SIZE - 3)
 ax2.set_ylim(len(labels) - 0.5, -1.35)   # headroom for the Wilson label
 ax2.set_xlabel(r"$|\Delta\mathcal{F}|$ between two trainings of the same config")
 ax2.set_xlim(0, max(per_max.values()) * 1.30)
