@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ast
 import json
 import math
 import re
@@ -248,6 +249,44 @@ def audit_per_token(a: Audit, d: Optional[dict]) -> None:
     else:
         a.check(sec, "per-token CoT range across 8 models = [0.00119, 0.00128]",
                 True, None)
+
+    # Figure 2's third panel. It went into the paper with no caption sentence at
+    # all -- the caption described (a) and (b) and stopped -- and its title
+    # printed the 8-model MEAN ratio as 4.0x beside a paragraph quoting 3.9x for
+    # r=32. Two correct numbers for two different quantities, rounded apart,
+    # with nothing on either saying which was which. The panel now prints the
+    # range across the 8, and these checks hold the range, the caption's
+    # existence, and the containment that makes the two statements consistent.
+    fig = ROOT / "figures" / "gen_fig2_attention.py"
+    fsrc = fig.read_text() if fig.exists() else ""
+    ratios = ([p["instruction"] / p["cot"] for p in pts]
+              if pts and all(p and p.get("cot") for p in pts) else None)
+    a.check(sec, "the per-model instruction/CoT ratio range panel (c) prints is "
+                 "3.7--4.2x", [3.7, 4.2],
+            [round(min(ratios), 1), round(max(ratios), 1)] if ratios else None,
+            source="derived_metrics.json:attention[*].per_token")
+    a.check(sec, "and it CONTAINS the 3.9x the per-token paragraph quotes for "
+                 "r=32, so the figure and the prose are the same claim at two "
+                 "granularities rather than two roundings of one", True,
+            (round(min(ratios), 1) <= 3.9 <= round(max(ratios), 1))
+            if ratios else None, source="derived_metrics.json")
+    a.check(sec, "the generator prints that range and not its mean, which is "
+                 "what read as 4.0x", [1, 0],
+            [1 if "ratio_lo, ratio_hi = min(ratios), max(ratios)" in fsrc else 0,
+             fsrc.count("np.mean([r[1][\"instruction\"]")], source=str(fig))
+    tex = TEX.read_text()
+    a.check(sec, "the caption describes panel (c) at all -- it described only "
+                 "(a) and (b) when the figure shipped with three", 1,
+            tex.count("Panel (c) --- the same records with every bucket "
+                      "divided by its own token count"), source=str(TEX))
+    a.check(sec, "and names the range rather than a single ratio", 1,
+            tex.count(r"$3.7$--$4.2\times$ more attention each"), source=str(TEX))
+    a.check(sec, "the caption explains panel (c)'s TALLEST bars, which are "
+                 "action_prev and belong to no claim the old caption made", 1,
+            tex.count(r"at $8.1\times$ the per-token CoT rate"), source=str(TEX))
+    a.check(sec, "and the omission is recorded rather than quietly repaired", 1,
+            tex.count("described panels (a) and (b) and stopped"),
+            source=str(TEX))
 
 
 def audit_noise_floor(a: Audit, d: Optional[dict]) -> None:
@@ -6521,6 +6560,231 @@ def audit_rank_correlation(a: Audit, d: dict) -> None:
             unqualified, source="cot_faith_arr.tex")
 
 
+def audit_bridge_figure(a: Audit, d: Optional[dict]) -> None:
+    """Figure 5 drew 3 families and called them "the 3 shared families".
+
+    Eleven are shared. The three that survived were all semantic -- the one
+    subset under which the figure reads as "Bridge-trained CoT is more
+    faithful", which is the reading Section 6.7 exists to refuse. With all 11
+    drawn, ECoT-bridge sits at 0.947 on the paraphrase null and 0.856 on
+    syntactic_scramble, so the same picture that shows the O4 gap also shows why
+    the gap is not a faithfulness difference.
+
+    The checks pin the shared set (computed, not listed), that the two families
+    ECoT-bridge really lacks are the only two it lacks, the two control values
+    that carry the caveat, the 2.18x mean ratio the manuscript quotes for O4
+    against the 1.2x-5.4x per-family range, and the caption stating all of it.
+    """
+    sec = "Figure 5 (Bridge vs LIBERO): all 11 shared families"
+    gen = ROOT / "figures" / "gen_fig5_bridge_vs_libero.py"
+    src = gen.read_text() if gen.exists() else ""
+    a.check(sec, "the generator is released", True, bool(src), source=str(gen))
+
+    of = dig(d, "models", "ours-r32", "families") or {}
+    bf = dig(d, "models", "ecot-bridge", "families") or {}
+    shared = sorted(set(of) & set(bf))
+    a.check(sec, "the two models share 11 families, not the 3 the figure used "
+                 "to draw", 11, len(shared) if of and bf else None,
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and the only families ECoT-bridge lacks are bbox_jitter_null "
+                 "and instr_random_sub", ["bbox_jitter_null",
+                                          "instr_random_sub"],
+            sorted(set(of) - set(bf)) if of and bf else None,
+            source="results_v2/derived_metrics.json")
+    # Read the family list the generator actually concatenates into FAMS, not the
+    # family names that appear anywhere in the file: the 3-family version still
+    # mentioned all 13 in its own docstring.
+    drawn = None
+    try:
+        tree = ast.parse(src)
+        groups, order = {}, None
+        for node in tree.body:
+            if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+                continue
+            name = getattr(node.targets[0], "id", None)
+            if name in ("_SEMANTIC", "_TIER0", "_CALIB"):
+                groups[name] = [t[1] for t in ast.literal_eval(node.value)]
+            elif name == "FAMS":
+                order = [n.id for n in ast.walk(node.value)
+                         if isinstance(n, ast.Name)]
+        drawn = [f for g in (order or []) for f in groups.get(g, [])]
+    except (SyntaxError, ValueError, TypeError):
+        drawn = None
+    a.check(sec, "and the family list it concatenates into FAMS is exactly the "
+                 "shared set", shared, sorted(drawn) if drawn else None,
+            source=str(gen))
+    a.check(sec, "with no family drawn twice", len(shared),
+            len(drawn) if drawn else None, source=str(gen))
+    a.check(sec, "and takes its semantic group from the derivation rather than "
+                 "retyping it", True,
+            "set(NON_CONTROL)" in src
+            and "has drifted from derive_metrics.NON_CONTROL" in src,
+            source=str(gen))
+
+    # The two values that make the full figure argue the opposite of the 3-family
+    # one. If either drops, the caption's claim goes with it.
+    a.check(sec, "ECoT-bridge is 0.947 on the paraphrase null -- as high as on "
+                 "the semantic families, which is what the 3-family version hid",
+            0.947, r3(dig(bf, "paraphrase_null", "F_mag")),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and 0.856 on syntactic_scramble, a Tier-0 control", 0.856,
+            r3(dig(bf, "syntactic_scramble", "F_mag")),
+            source="results_v2/derived_metrics.json")
+
+    # The ratios: the range the caption gives, and the mean the O4 claim uses.
+    NC = ["direction_flip", "gripper_flip", "verb_swap", "negation",
+          "subject_swap", "location_swap", "adversarial_plausible"]
+    ratios = {f: dig(bf, f, "F_mag") / dig(of, f, "F_mag")
+              for f in shared
+              if dig(of, f, "F_mag") and dig(bf, f, "F_mag") is not None}
+    a.check(sec, "the per-family gap runs 1.2x (cross_task_swap) to 5.4x "
+                 "(gripper_flip), as the caption says",
+            [1.2, "cross_task_swap", 5.4, "gripper_flip"],
+            [round(min(ratios.values()), 1), min(ratios, key=ratios.get),
+             round(max(ratios.values()), 1), max(ratios, key=ratios.get)]
+            if ratios else None, source="results_v2/derived_metrics.json")
+    mo = [dig(of, f, "F_mag") for f in NC]
+    mb = [dig(bf, f, "F_mag") for f in NC]
+    ok = all(v is not None for v in mo + mb)
+    a.check(sec, "the ~2x O4 figure is the ratio of the 7-non-control MEANS "
+                 "(0.860 / 0.395 = 2.18x) and no single family sits there",
+            [0.395, 0.86, 2.18],
+            [r3(sum(mo) / 7), r3(sum(mb) / 7),
+             round((sum(mb) / 7) / (sum(mo) / 7), 2)] if ok else None,
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and indeed no family's own ratio rounds to 2.18", 0,
+            sum(1 for v in ratios.values() if round(v, 2) == 2.18)
+            if ratios else None, source="results_v2/derived_metrics.json")
+    a.check(sec, "the identity null is 0.00 on BOTH, so its pair is a measured "
+                 "agreement rather than a gap", [0.0, 0.0],
+            [r3(dig(of, "selfsplice_control", "F_mag")),
+             r3(dig(bf, "selfsplice_control", "F_mag"))],
+            source="results_v2/derived_metrics.json")
+
+    tex = TEX.read_text()
+    a.check(sec, "the caption says all 11 shared families are drawn", 1,
+            tex.count(r"all $11$ shared families (O4 observation)"),
+            source=str(TEX))
+    a.check(sec, "and records that the earlier version drew 3 and called them "
+                 "the shared ones", 1,
+            tex.count(r"drew $3$ families and called them ``the $3$ shared "
+                      r"families''"), source=str(TEX))
+    a.check(sec, "and states the reversal the full figure produces", 1,
+            tex.count(r"\textbf{All $11$ says the opposite"), source=str(TEX))
+    a.check(sec, "and quotes the two control values that produce it", 1,
+            tex.count(r"at $0.947$ on the \emph{paraphrase} null and $0.856$ on "
+                      r"\emph{syntactic\_scramble}"), source=str(TEX))
+    a.check(sec, "and still separates the per-family range from the mean the O4 "
+                 "claim uses", 1,
+            tex.count(r"no single family sits at that ratio"), source=str(TEX))
+    # Include width has to track the new canvas or the labels shrink on the page.
+    a.check(sec, "the include width matches the widened canvas (the 3-family "
+                 "figure was included at 0.680, which would print this one's "
+                 "5.6pt labels at 3.9pt)", 1,
+            tex.count(r"\includegraphics[width=0.970\textwidth]"
+                      r"{fig5_bridge_vs_libero.pdf}"), source=str(TEX))
+
+
+def audit_edit_heatmap_figure(a: Audit, d: Optional[dict]) -> None:
+    """Figure 3 drew 11 of the 13 families and its axis label named a grouping
+    it did not have.
+
+    Fifth instance of the class this audit keeps finding: a figure reports a
+    subset chosen by nothing in particular and the caption reads as if it were
+    the whole. The two dropped columns are the ones that hurt most --
+    bbox_jitter_null is the tightest floor in the release and instr_random_sub
+    is the out-of-CoT ceiling the CoT families are compared against -- and both
+    are measured on all seven "ours" rows, so their absence was not a data gap.
+    Without them, every column in the grid except the identity null sat
+    mid-to-high, which is exactly the impression the paper spends Section 4
+    arguing against.
+
+    The checks pin: all 13 columns present, the two genuinely-absent cells being
+    only ecot-bridge's, the group split matching derive_metrics.NON_CONTROL
+    rather than a hand-typed list, and the caption stating all of it.
+    """
+    sec = "Figure 3 (edit heatmap): all 13 families, grouped as claimed"
+    gen = ROOT / "figures" / "gen_fig3_edit_heatmap.py"
+    src = gen.read_text() if gen.exists() else ""
+    a.check(sec, "the heatmap generator is released", True, bool(src),
+            source=str(gen))
+
+    MODELS8 = ["ours-r8", "ours-r16", "ours-r32", "ours-r64", "ours-no-cot",
+               "ours-data50A", "ours-data50B", "ecot-bridge"]
+    NC = ["direction_flip", "gripper_flip", "verb_swap", "negation",
+          "subject_swap", "location_swap", "adversarial_plausible"]
+    TIER0 = ["selfsplice_control", "syntactic_scramble", "cross_task_swap"]
+    CALIB = ["bbox_jitter_null", "paraphrase_null", "instr_random_sub"]
+    ALL13 = NC + TIER0 + CALIB
+
+    # Every one of the 13 has to appear in the generator's family list, or the
+    # figure is a subset again.
+    a.check(sec, "the generator names all 13 families", [],
+            [f for f in ALL13 if f'"{f}"' not in src], source=str(gen))
+    a.check(sec, "including the two the old version dropped", 2,
+            sum(1 for f in ("bbox_jitter_null", "instr_random_sub")
+                if f'"{f}"' in src), source=str(gen))
+    # And it must take the semantic group from the derivation, not retype it.
+    a.check(sec, "and it imports NON_CONTROL rather than retyping which "
+                 "families are semantic", True,
+            "NON_CONTROL" in src and "set(NON_CONTROL)" in src, source=str(gen))
+    a.check(sec, "the generator asserts that group against the derivation, so a "
+                 "change to NON_CONTROL breaks the figure instead of silently "
+                 "regrouping it", True,
+            "has drifted from derive_metrics.NON_CONTROL" in src, source=str(gen))
+    a.check(sec, "the axis label no longer promises an ordering the columns do "
+                 "not have", [1, 0],
+            [src.count("all 13, grouped"),
+             src.count("semantic \u2192 controls") + src.count("semantic → controls")],
+            source=str(gen))
+
+    # The two blank cells are the only two blank cells, and they are absences of
+    # a run rather than of a column.
+    absent = [(m, f) for m in MODELS8 for f in ALL13
+              if dig(d, "models", m, "families", f, "F_mag") is None]
+    a.check(sec, "exactly 2 of the 104 cells have no measurement, and both are "
+                 "ecot-bridge's -- so dropping their columns dropped 14 "
+                 "measured cells to hide 2 missing ones",
+            [("ecot-bridge", "bbox_jitter_null"),
+             ("ecot-bridge", "instr_random_sub")], absent,
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "all seven 'ours' rows carry bbox_jitter_null", 7,
+            sum(1 for m in MODELS8 if m != "ecot-bridge"
+                and dig(d, "models", m, "families", "bbox_jitter_null",
+                        "F_mag") is not None),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and all seven carry instr_random_sub", 7,
+            sum(1 for m in MODELS8 if m != "ecot-bridge"
+                and dig(d, "models", m, "families", "instr_random_sub",
+                        "F_mag") is not None),
+            source="results_v2/derived_metrics.json")
+
+    # The reason the omission mattered: bbox_jitter_null is the low column.
+    bb = [dig(d, "models", m, "families", "bbox_jitter_null", "F_mag")
+          for m in MODELS8 if m != "ecot-bridge"]
+    a.check(sec, "bbox_jitter_null spans 0.05--0.09, the tightest floor in the "
+                 "release and the only low column besides the identity null",
+            [0.05, 0.09],
+            [round(min(bb), 2), round(max(bb), 2)] if all(bb) else None,
+            source="results_v2/derived_metrics.json")
+
+    tex = TEX.read_text()
+    a.check(sec, "the caption says all 13 families are drawn", 1,
+            tex.count("as a heatmap, all 13 families"), source=str(TEX))
+    a.check(sec, "and names the two the earlier version omitted", 1,
+            tex.count(r"The two it omitted are \emph{bbox\_jitter\_null} and "
+                      r"\emph{instr\_random\_sub}"), source=str(TEX))
+    a.check(sec, "and records the drawing-11-of-13 defect rather than quietly "
+                 "repairing it", 1,
+            tex.count(r"drew $11$ of the $13$ and did not say so"),
+            source=str(TEX))
+    a.check(sec, "and says the blank cells are absent runs, not values", 1,
+            tex.count("cells with no run print as"), source=str(TEX))
+    a.check(sec, "and names the group split the columns are drawn in", 1,
+            tex.count("the $3$ Tier-0 controls, and the $3$ calibration "
+                      "columns"), source=str(TEX))
+
+
 def audit_overview_figure(a: Audit, d: dict) -> None:
     """Fig 1 says what the instrument does AND what it found, so it is checked.
 
@@ -6793,6 +7057,8 @@ def main() -> int:
     audit_rollout_filmstrip(a)
     audit_arm_pairing_defect(a)
     audit_rank_correlation(a, d)
+    audit_edit_heatmap_figure(a, d)
+    audit_bridge_figure(a, d)
     audit_overview_figure(a, d)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)

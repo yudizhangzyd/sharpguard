@@ -113,7 +113,9 @@ ax1.set_title(r"(a) Raw bucket mass. $\alpha(\mathrm{cot}){=}0$ for OpenVLA"
 _bars(ax2, DT, KEYS, 0.70, dt=True)
 # Three short lines, not one long one: this panel is 0.9in wide and the
 # single-line form ran a full inch into panel (c)'s territory.
-ax2.set_title("(b) DeepThink-\nVLA: " + r"$\alpha(\mathrm{cot})$" + "\nis never largest",
+# Three lines because the panel is 0.9in wide, but broken at word boundaries:
+# the earlier form hyphenated "DeepThink-/VLA" across two of them.
+ax2.set_title("(b) DT family:\n" + r"$\alpha(\mathrm{cot})$" + "\nnever largest",
               fontsize=TITLE, loc="left", style="italic", pad=2.0,
               linespacing=1.25)
 
@@ -134,9 +136,18 @@ ax3.set_yscale("log")
 ax3.set_ylim(8e-4, 3e-2)
 ax3.set_axisbelow(True)
 ax3.yaxis.grid(True, linestyle=":", linewidth=0.4, alpha=0.5)
-ratio = np.mean([r[1]["instruction"] / r[1]["cot"] for r in PT])
-ax3.set_title(f"(c) Per-token: instruction gets\n{ratio:.1f}"
-              r"$\times$ MORE attention per token than CoT",
+ratios = [r[1]["instruction"] / r[1]["cot"] for r in PT]
+# A RANGE over the 8 CoT-VLAs, not their mean. The mean printed "4.0x" here
+# while Section 5's per-token paragraph quotes "3.9x" for r=32 -- two correct
+# numbers for two different quantities, rounded apart, with nothing on either
+# to say which was which. The range covers the r=32 value the prose quotes and
+# cannot be mistaken for a single-model figure.
+ratio_lo, ratio_hi = min(ratios), max(ratios)
+# En dash, not "--": this is a matplotlib string, not LaTeX, so "--" prints as
+# two hyphens.
+ax3.set_title(f"(c) Per-token: instruction beats CoT by {ratio_lo:.1f}"
+              f"\u2013{ratio_hi:.1f}" r"$\times$"
+              "\non every one of the 8 CoT-VLAs",
               fontsize=TITLE, loc="left", style="italic", pad=2.0,
               linespacing=1.25)
 # ONE legend for the whole figure, above the panel titles. Per-axes legends put
@@ -153,4 +164,7 @@ save(fig, "fig2_attention_distribution")
 
 print(f"[audit] panel (a) models : {len(MAIN)}")
 print(f"[audit] panel (b) models : {len(DT)}")
-print(f"[audit] per-token ratio  : {ratio:.2f}x")
+print(f"[audit] per-token ratio  : {ratio_lo:.2f}x--{ratio_hi:.2f}x "
+      f"(r=32 alone: {PT[2][1]['instruction'] / PT[2][1]['cot']:.2f}x)")
+print(f"[audit] action_prev/cot  : "
+      f"{PT[2][1]['action_prev'] / PT[2][1]['cot']:.2f}x at r=32")
