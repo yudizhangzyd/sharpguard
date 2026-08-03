@@ -4483,6 +4483,37 @@ def audit_arr_submission(a: Audit) -> None:
                 (len(clears), len(fdn.get("per_config") or [])),
                 source="fdir_null.json")
 
+        # The 6.2--11.1x range describes six of the seven clearing configs, not
+        # all seven: ECoT-bridge clears at 3.8x, well below the bottom of it.
+        # An unscoped "7 of 11 clear at 6.2--11.1x" therefore overstates one
+        # row by 1.6x, and it is exactly the row the rest of the paper leans on.
+        # So: recompute which configs the range does cover, and require every
+        # sentence that prints the range to name ECoT-bridge's ratio too.
+        ratios = {c["config"]: c.get("ratio") for c in fdn["per_config"]
+                  if c.get("clears_null")}
+        lo, hi = 6.2, 11.1
+        inside = sorted(k for k, v in ratios.items()
+                        if v is not None and lo <= round(v, 1) <= hi)
+        outside = sorted(k for k, v in ratios.items()
+                         if v is None or not lo <= round(v, 1) <= hi)
+        a.check(sec, "the 6.2--11.1x range covers our six LoRA/data variants "
+                     "and no other clearing config",
+                (6, ["ecot_bridge"]), (len(inside), outside),
+                source="fdir_null.json per_config[*].ratio, clears_null only")
+        a.check(sec, "ECoT-bridge's ratio really is outside that range, which "
+                     "is why the range cannot be quoted for all 7", "3.8",
+                f"{ratios.get('ecot_bridge'):.1f}", source="fdir_null.json")
+        unscoped = []
+        for m in re.finditer(r"\$6\.2\$?--\$?\\?mathbf\{?11\.1|6\.2.{0,12}11\.1",
+                             t):
+            near = t[m.start():m.end() + 260]
+            if "3.8" not in near:
+                unscoped.append(t[max(0, m.start() - 60):m.end() + 60])
+        a.check(sec, "every sentence that quotes 6.2--11.1x also gives "
+                     "ECoT-bridge's 3.8x, so the range is never read as "
+                     "covering all 7 clearing configurations", [], unscoped,
+                source="cot_faith_arr.tex")
+
 
 def audit_rollout_insuite(a: Audit) -> None:
     """Limitation (v)'s 0/40: assert the bound, and assert it stays a bound.
