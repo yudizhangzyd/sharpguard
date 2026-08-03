@@ -39,9 +39,11 @@ HEADER = r"""% ============================================================
 % Source: cot_faith_iclr.tex (the full-length version).
 % Regenerate:  python3 scripts/build_arr_appendix.py
 %
-% This is the unabridged evidence for the 8-page body in cot_faith_arr.tex.
-% ARR excludes the appendix from the page limit, so nothing is cut here; the
-% body cites into this file by \ref, and every \label in the source survives.
+% This is the evidence for the 8-page body in cot_faith_arr.tex. ARR excludes
+% the appendix from the 8-page limit but caps the whole PDF at 20 pages, so
+% this is a selection: the sections it leaves out are named in the deferred
+% list it generates, no \label the body \ref's into is ever dropped, and every
+% number carried over is the source's own.
 % ============================================================
 """
 
@@ -172,6 +174,9 @@ def transform(src: str) -> str:
                              f"expected 1 -- the body and the appendix would "
                              f"both define it")
 
+    # --- fit the submission budget ------------------------------------------
+    body, deferred_labels, deferred_entries = defer(body)
+
     # --- namespace every surviving label ------------------------------------
     # The body was written by hand and reuses the source's names for the
     # sections and equations it restates: sec:intro, eq:delta, eq:faith,
@@ -184,9 +189,38 @@ def transform(src: str) -> str:
     # appendix are rewritten to match, so its internal cross-references still
     # land on its own copy; refs in the body keep pointing at the body's.
     body_src = DEST.parent / "cot_faith_arr.tex"
+    arr = body_src.read_text() if body_src.exists() else ""
+    body_labels = labels(arr)
+
+    # A deferred section the BODY also has under its own name needs no re-homing
+    # and must not get one: sec:intro and sec:related are defined in both files,
+    # so a re-homed copy in the list below would define them twice and \ref
+    # would resolve to whichever LaTeX read last -- silently, since a duplicate
+    # \label is a warning. Those refs belong on the body's own sections anyway.
+    deferred_entries = [(t, [l for l in secs if l not in body_labels])
+                        for t, secs in deferred_entries]
+
+    # A deferred section must not be one something still points at. \ref to a
+    # missing label prints "??" and pdflatex only warns, so this is asserted
+    # here rather than left to be found in the PDF by a reader.
+    #
+    # Section labels are the exception, and they are re-homed rather than left
+    # to dangle: deferred_list() re-attaches each one to the entry that names
+    # its section, so a sentence saying "see \S~\ref{sec:f2_calib}" lands on the
+    # list, which tells the reader that section is in the released full-length
+    # version. A float label cannot be treated that way -- \label outside a
+    # float picks up the section counter, so \ref{tab:x} would print a section
+    # number and read as a table that does not exist -- so those still fail.
+    pointed_at = set(re.findall(r"\\(?:ref|autoref|eqref|Cref|cref)\{([^}]*)\}",
+                                body + arr))
+    rehomed = {l for _, secs in deferred_entries for l in secs}
+    dangling = sorted((deferred_labels - rehomed - body_labels) & pointed_at)
+    if dangling:
+        raise SystemExit(
+            f"[arr] FAIL: {len(dangling)} deferred label(s) are still "
+            f"referenced, so \\ref would print '??': {dangling}")
+
     if body_src.exists():
-        body_labels = set(re.findall(r"\\label\{([^}]*)\}",
-                                     body_src.read_text()))
         for lab in sorted(labels(body) & body_labels):
             body = body.replace(r"\label{" + lab + "}",
                                 r"\label{app:" + lab + "}")
@@ -194,8 +228,166 @@ def transform(src: str) -> str:
                           + re.escape(lab) + r"\}",
                           r"\1app:" + lab + "}", body)
 
-    return (HEADER + "\n\\section{Full-length manuscript}\n"
-            "\\label{sec:appendix}\n" + body.strip() + "\n")
+    return (HEADER + "\n\\section{Evidence for the body}\n"
+            "\\label{sec:appendix}\n" + NOTE + body.strip() + "\n"
+            + deferred_list(deferred_entries))
+
+
+# Sections not reproduced in the submitted PDF. See defer(); a leading "*"
+# keeps the floats inside the span and drops only its prose.
+#
+# ARR excludes the appendix from the 8-page body limit, but a submission is
+# still a document someone has to read, and the full-length manuscript makes
+# this one 54 pages. The cap we set is 20, so what ships is a SELECTION.
+# Two properties make that safe to do mechanically rather than by hand:
+#
+#   * nothing is rewritten. Every line here is byte-identical to
+#     cot_faith_iclr.tex, which ships in the release and is the document
+#     scripts/verify_paper_numbers.py audits, so deferred text is one file
+#     away rather than gone. The appendix says so, by name, at the end.
+#   * no cross-reference may dangle. transform() fails if the body or the
+#     surviving appendix still points at a label inside a deferred span.
+#
+# What stays is what the body's claims rest on: how the benchmark is built,
+# the per-family numbers, the calibration floors that make the score
+# readable, and the disclosures. What goes is the long-form narrative a
+# reader can follow in the release: the four rollout-gate failures, the
+# limitation enumeration, and the discussion that restates the body.
+DEFERRED = (
+    # The per-task decomposition. It is deferred whole, floats included, and
+    # not because it is weak: the below-floor result holds task by task on 7 of
+    # 8 models. It is the last section added and the submission was already at
+    # exactly 20 pages, and its wide table alone costs the 21st -- measured,
+    # both with the four paragraphs and with the table on its own. Nothing in
+    # the body cites it, so nothing in the body weakens by its absence, and
+    # \S\ref{sec:deferred} names it. Full argument and table: full-length
+    # manuscript, \S"Per-task decomposition".
+    "Per-task decomposition",
+    "Introduction",
+    "*Related work",
+    "Per-token normalization",
+    "Attention noise, decomposed.",
+    "The bucket ordering is an artifact",
+    "*The gate also fails on our own checkpoint",
+    "The rollout gate: four failures",
+    "The gate passes, and both corrections",
+    "The decode defect is on the rollout path",
+    "Norm-stats provenance",
+    "*The blocker on that ablation is not compute",
+    "Is the floor itself confounded",
+    "*All eleven calibrated models",
+    "Ancillary: prompt-format ablation",
+    "Threshold and metric sensitivity.",
+    "*What is missing.",
+    r"$\mathcal{F}_{\text{dir}}$, unlike",
+    "O4 (observation, not a controlled finding)",
+    "F1: Attention on CoT is a floor",
+    "F2: Causal effect requires",
+    "F2 calibrated",
+    "F3: Attention distribution does not predict",
+    # The body's own "What the magnitude score counts" section carries
+    # this one's argument, its table and its numbers, so the prose here
+    # is a second copy; fig12 exists nowhere else, so it stays.
+    "*F6: magnitude-based edit scoring inverts the model ordering",
+    "Attention-as-failure AUROC (P3): specified",
+    # The body argues the paraphrase floor at length (\S3-\S4 and
+    # tab:floors) and this section is its supporting detail, including the
+    # out-of-CoT walk-through that used to be deferred separately as a child
+    # of it. The floats stay: the leaderboard caption and the taxonomy's
+    # coverage sentence both point at tab:calibration.
+    "*Paraphrase-null: models are sensitive to surface tokens",
+    "Do the edit families do what their names say",
+    "*F7: P2 on a second architecture family",
+    "*P3, re-run in-domain",
+    "*Limitation (v), measured",
+)
+
+NOTE = r"""
+This appendix carries the evidence the eight-page body cites, copied from the
+full-length manuscript rather than rewritten for it. It is a selection: the
+submitted PDF is capped at $20$ pages, and the sections it does not reproduce
+are named in \S\ref{sec:deferred}, which says where to read them. No number
+here is retyped, and no cross-reference in the body points into anything left
+out.
+
+"""
+
+LEVELS = {"subsection": 1, "subsubsection": 2, "paragraph": 3}
+HEAD = r"\\(subsection|subsubsection|paragraph)\{"
+FLOAT = re.compile(r"\\begin\{(table|figure)\*\}.*?\\end\{\1\*\}\s*", re.S)
+
+# Filled by defer(); read by main()'s no-label-may-be-lost guard, which has to
+# tell a deliberate deferral from a section that fell out by accident.
+DEFERRED_LABELS = set()
+
+
+def defer(body: str):
+    """Drop each DEFERRED span.
+
+    Returns (body, every label dropped, [(title, [section labels dropped])]).
+    """
+    dropped, entries = set(), []
+    for entry in DEFERRED:
+        floats_stay = entry.startswith("*")
+        title = entry.lstrip("*")
+        m = re.search(HEAD + re.escape(title), body)
+        if not m:
+            raise SystemExit(f"[arr] FAIL: deferred section {title!r} is not "
+                             f"in the source under that name")
+        # The span ends at the next heading that is not a child of this one.
+        level = LEVELS[m.group(1)]
+        end = len(body)
+        for nxt in re.finditer(HEAD, body[m.end():]):
+            if LEVELS[nxt.group(1)] <= level:
+                end = m.end() + nxt.start()
+                break
+        span = body[m.start():end]
+        keep = "".join(f.group(0) for f in FLOAT.finditer(span)) \
+            if floats_stay else ""
+        gone = labels(span) - labels(keep)
+        dropped |= gone
+        entries.append((heading_title(span),
+                        sorted(l for l in gone if l.startswith("sec:"))))
+        body = body[:m.start()] + keep + body[end:]
+    DEFERRED_LABELS.update(dropped)
+    return body, dropped, entries
+
+
+def heading_title(span: str) -> str:
+    """The braced argument of the heading `span` opens with.
+
+    Brace-counted rather than matched by regex: two of these titles carry
+    $\\mathcal{F}_{\\text{dir}}$, which nests two deep, and a regex that
+    stops at the first unbalanced brace silently returns a truncated title
+    -- which would print a mangled entry in the deferred list.
+    """
+    i = span.index("{", span.index("\\"))
+    depth = 0
+    for j in range(i, len(span)):
+        depth += {"{": 1, "}": -1}.get(span[j], 0)
+        if depth == 0:
+            return span[i + 1:j]
+    raise SystemExit(f"[arr] FAIL: unbalanced heading: {span[:60]!r}")
+
+
+def deferred_list(entries) -> str:
+    # Run together rather than itemized. 27 one-line \items spend a third of a
+    # column on bullets and inter-item leading, and this list is a pointer
+    # rather than something a reader works down; the \labels that were re-homed
+    # onto the items ride along in the same order, so a \ref still lands here.
+    items = "; ".join(t.strip().rstrip(".")
+                      + "".join(r"\label{" + l + "}" for l in secs)
+                      for t, secs in entries)
+    return (r"""
+\subsection{Sections deferred to the full-length manuscript}
+\label{sec:deferred}
+The submitted PDF is capped at $20$ pages. These sections of the full-length
+manuscript are therefore not reproduced above; they are in the released source
+(\texttt{cot\_faith\_iclr.tex}), which is the document the audit script checks
+claim by claim and the document every line above was copied from. They are
+named here so that a reader can tell what exists from what was cut, and no
+claim in the body rests on one of them:
+""" + items + ".\n")
 
 
 ANON_FORBIDDEN = ("sharpguard", "ICLR 2026")
@@ -231,7 +423,7 @@ def main() -> int:
     out_labels |= {l[4:] for l in out_labels if l.startswith("app:")}
     # The title/abstract region and the Conclusion are intentionally dropped.
     dropped = {l for l in src_labels - out_labels}
-    expected_drops = {"sec:conclusion"} | set(PROMOTED)
+    expected_drops = ({"sec:conclusion"} | set(PROMOTED) | DEFERRED_LABELS)
     unexpected = dropped - expected_drops
     if unexpected:
         print(f"[arr] FAIL: {len(unexpected)} label(s) lost: "

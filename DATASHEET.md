@@ -33,42 +33,49 @@ Anonymous for review. Compute was provided by the authors' institution.
 **What do the instances represent?**
 Three kinds of record, all keyed to a (model, observation, edit family) triple:
 
-1. **Edit records** (52,338 released; 45,989 scored) — for one image/instruction/CoT triple
+1. **Edit records** (52,338 released; 45,989 scored), for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
-   boolean `faithful = delta_linf > tau`.
-2. **Attention records** (3,620 released) — per-observation four-bucket
+   boolean `faithful = delta_linf > tau`. Each record also names the LIBERO
+   episode file it came from in `file_base`, which is what makes the records
+   regroupable by task rather than only by family: `scripts/derive_per_task.py`
+   uses it to recompute F within each of the 85 tasks the 3-seed runs cover and
+   writes `results_v2/canonical_runs/per_task_decomposition/per_task.json`. That
+   file is derived, not raw, and the script reproduces each model's published
+   `F_bar_mag` and paraphrase floor from these records before regrouping them,
+   refusing to run if either disagrees.
+2. **Attention records** (3,620 released), per-observation four-bucket
    decomposition of action-token attention mass (visual / instruction / CoT /
    previous-action), with segment boundaries and segment token counts so that
    per-token normalization is recomputable. **On 15 of the reports the released
    per-sample list is the first 20 records, while that report's own aggregate is
-   over all 100 (99 on BC-Z)** — the three cross-corpus runs and the three
+   over all 100 (99 on BC-Z)**: the three cross-corpus runs and the three
    DeepThinkVLA runs the paper plots, plus nine superseded ones. The harness
    truncated the list for compactness after aggregating, so the means and stds
    the paper quotes are full-N; the shipped prefix reproduces every bucket mean
    to within 0.37 pp and every bucket ordering exactly, which is measured by
    `verify_paper_numbers.py` rather than asserted here. The 3,620 above counts
    records actually shipped, not observations behind the aggregates.
-3. **Derived metrics** (`results_v2/derived_metrics.json`) — every aggregate
+3. **Derived metrics** (`results_v2/derived_metrics.json`), every aggregate
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-56,311 records in 53.9 MB of JSON across 15 models: 52,338 edit records, 3,620
+56,311 records in 54.1 MB of JSON across 15 models: 52,338 edit records, 3,620
 attention records, and 353 records behind the P3 probe (200 from the withdrawn
 cross-domain run, retained so the withdrawal is checkable rather than asserted,
 plus the 153 of the in-domain re-run that replaced it). The edit release is 45
-runs: 32 of 1,300 records (13 families x N=100 — the seven "ours" models at 3
+runs: 32 of 1,300 records (13 families x N=100: the seven "ours" models at 3
 sampling seeds each, the ECoT-bridge and no-CoT calibration runs, the six
 same-config retraining replicates, and the three DeepThinkVLA checkpoints), 3
-of 1,100 (11 families — the three ECoT-bridge leaderboard seeds), 7 of 1,000
-(10 families — the superseded single-seed "ours" runs, retained as the pairing
+of 1,100 (11 families: the three ECoT-bridge leaderboard seeds), 7 of 1,000
+(10 families: the superseded single-seed "ours" runs, retained as the pairing
 partner for the retraining-variance measurement), and 3 cross-corpus runs of
 143–151. This is 3.2x the submitted release; the growth is the 3-seed
 13-family re-runs that replaced the submission's single-run point estimates,
 plus a second same-config training run of every one of the seven trained rows.
 
 Of the 52,338 edit records, **45,989 carry a scored action pair**. The other
-6,349 are retained with `skipped: true` and a machine-readable `reason` --- most
+6,349 are retained with `skipped: true` and a machine-readable `reason`: most
 often that the edit family's target object is not visible in the frame, which
 is a property of the observation, not a failure. They are released rather than
 filtered so that the denominator of every reported `F` is recomputable and no
@@ -82,9 +89,9 @@ deliberately incomplete in ways the paper states as limitations:
 
 - **The calibration floors now exist for all 11 CoT-VLAs, in both
   architecture families; one cell is inapplicable by construction rather than
-  missing.** All eleven models — the seven "ours" leaderboard rows at 3
+  missing.** All eleven models (the seven "ours" leaderboard rows at 3
   sampling seeds each, ECoT-bridge, an independent retraining of the no-CoT
-  variant, and the three DeepThinkVLA checkpoints — carry `paraphrase_null`,
+  variant, and the three DeepThinkVLA checkpoints) carry `paraphrase_null`,
   `instr_random_sub`, and their semantic families in one 13-family run, so
   `F_diff`, the two-sided score, and the out-of-CoT specificity ratio are
   defined for every model in the benchmark
@@ -97,7 +104,7 @@ deliberately incomplete in ways the paper states as limitations:
   represented in the rendered CoT"`, and `derive_metrics.py` reports it under
   `families_inapplicable` rather than averaging a zero into `F_bar`. This
   release previously shipped that cell as `n = 100`, `F = 0.000` with every
-  delta identically zero — a vacuous identity edit presented as perfect
+  delta identically zero, a vacuous identity edit presented as perfect
   robustness; the superseded runs are kept under `results_v2/superseded/` with
   a README naming the defect. What the completed sweep found is stated in the
   paper and is not uniformly favourable to the metric: `F_bar` sits **below**
@@ -106,7 +113,7 @@ deliberately incomplete in ways the paper states as limitations:
   eight** non-degenerate full-CoT variants in both architecture families (so
   the ceiling-normalized F2 table, now recomputable two-sided, is negative on
   **all seven** "ours" rows and its one-sided ordering is **not**
-  floor-corrected), and the specificity ratio exceeds 1 on 5 of 12 — which
+  floor-corrected), and the specificity ratio exceeds 1 on 5 of 12, which
   corrects the submission's stronger claim that no model passes that check,
   while **none** of those 5 clear it by more than same-config retraining
   variance, and all 5 are ECoT variants we trained (the ratio is below 1 on
@@ -117,7 +124,7 @@ deliberately incomplete in ways the paper states as limitations:
   submission reported**: alpha(cot) = 0.344 (0-3), 0.157 (8-11), 0.212 (16-19),
   0.262 (28-31), 0.213 (all 32), while `visual` leads in the other four sets.
   The 18.7 pp swing is non-monotone in depth and runs against a worst-case
-  three-seed sampling sigma of 0.26 pp — a ratio of 72x, so this is not noise.
+  three-seed sampling sigma of 0.26 pp, a ratio of 72x, so this is not noise.
   Do not quote a bucket ordering from this release without stating its layer
   set. All five sets are released
   (`ecot_bridge_rvis_{earlylayers,layers8_11,layers16_19,layers28_31,fulllayers}_seed{0,1,2}.json`).
@@ -125,13 +132,13 @@ deliberately incomplete in ways the paper states as limitations:
   row, but one replicate per row is one degree of freedom.** Sampling noise is
   measured at sigma <= 0.094 pp at the reported layer set and <= 0.26 pp across
   all five (3 seeds, N=100 each), but the quantity leaderboard rows differ in
-  is same-config retraining, for which 7 pairs now exist — one per trained row,
-  spanning 0.12, 0.14, 0.56, 0.56, 0.73, 1.45 and 1.95 pp — against a
+  is same-config retraining, for which 7 pairs now exist (one per trained row,
+  spanning 0.12, 0.14, 0.56, 0.56, 0.73, 1.45 and 1.95 pp) against a
   2.30 pp within-family spread. That ratio (1.2x) supports **no** within-family
   ordering, and it is *less* margin than the 1.6x the earlier two-pair estimate
   reported, because the widest retraining gap in the benchmark belongs to a
   configuration that previously had no replicate at all. For `F`, those seven
-  pairs differ by mean 0.024-0.079 and max up to 0.260 across 9 families — the
+  pairs differ by mean 0.024-0.079 and max up to 0.260 across 9 families, the
   error bar to attach to every single-run leaderboard cell.
 - **DeepThinkVLA now has edit records; an earlier release had none, for a
   reason worth keeping on the record.** The edit harness was originally written
@@ -154,8 +161,8 @@ deliberately incomplete in ways the paper states as limitations:
   the same pass, both of which had silently produced healthy-looking output:
   `cross_task_swap` recorded n=0 on all three models because the harness called
   the edit function without a donor sample, and the records lacked the
-  `a_orig`/`a_edit` pair, which made the direction-aware score `F_dir` — the
-  statistic this paper argues is the load-bearing one — uncomputable for the
+  `a_orig`/`a_edit` pair, which made the direction-aware score `F_dir` (the
+  statistic this paper argues is the load-bearing one) uncomputable for the
   entire family. Both are asserted against now. (A separate
   empty-report path had the same shape: jobs scheduled on a B200 pool whose
   PyTorch lacked sm_100 kernels failed every sample, were caught per-sample, and
@@ -184,7 +191,7 @@ deliberately incomplete in ways the paper states as limitations:
   first diagnostic rollout returned Task SR 0/20 on a public checkpoint with a
   published ~85% SR; cause, a scoring bug reading `info["success"]`, a key
   LIBERO never sets. With that fixed the four-suite gate returned 0.08
-  (libero_goal) and 0.00 (libero_object) — also not the policy: LIBERO's
+  (libero_goal) and 0.00 (libero_object), also not the policy: LIBERO's
   `.pruned_init` files are `torch.save` archives, our loader read them with
   `np.load` (which opens the zip and returns raw `bytes`), so every episode fell
   back to a random `env.reset()` instead of the suite's canonical evaluation
@@ -198,7 +205,7 @@ deliberately incomplete in ways the paper states as limitations:
   (`results_v2/canonical_runs/gate_foursuite/`, released as the pre-fix
   baseline), and a source-level diff against `openvla/openvla` produced two
   candidate causes that both measured null (`gate_factorial_pil/`,
-  `gate_factorial_tf/`, `gripper_ab_null/` — all released, all 0/10). The third
+  `gate_factorial_tf/`, `gripper_ab_null/`: all released, all 0/10). The third
   cause was our action decode itself. With the checkpoint's own
   `predict_action` in place of our masked-argmax loop, plus upstream's
   `g -> -sign(2g-1)` gripper convention, the gate passes at upstream's own
@@ -207,8 +214,8 @@ deliberately incomplete in ways the paper states as limitations:
   0.844 / 0.881 / 0.794 / 0.539 (0.877 to 1.022 of published, weakest cell
   0.853), all 50/50 on canonical init states
   (`results_v2/canonical_runs/gate_foursuite_winning/`). libero_10 was the one
-  suite the pre-fix baseline had to exclude as uninterpretable — we ran a flat
-  400 steps where upstream allots 520 — and it now runs at 520 and scores 23/50,
+  suite the pre-fix baseline had to exclude as uninterpretable (we ran a flat
+  400 steps where upstream allots 520), and it now runs at 520 and scores 23/50,
   so that caveat is retired by measurement rather than by argument. Four suites
   is the **whole** gate, not a subset: upstream publishes exactly four LIBERO
   checkpoints and no libero_90 checkpoint, so there is no fifth suite with a
@@ -216,7 +223,7 @@ deliberately incomplete in ways the paper states as limitations:
   decoder and drops only the gripper convention and scores 0.00 / 0.00 / 0.12 /
   0.00, so the release lets a reader check that both corrections are necessary
   rather than take it on our word. **No number in the
-  paper is conditioned on a rollout** — the gate validates the harness, it does
+  paper is conditioned on a rollout**: the gate validates the harness, it does
   not turn the leaderboard into a rollout metric.
 - **Norm-stats provenance is now measured, and it rules the public CoT
   checkpoint out of the rollout-level protocol.**
@@ -225,7 +232,7 @@ deliberately incomplete in ways the paper states as limitations:
   `bridge_orig` **only**; requesting `libero_spatial_no_noops` raises upstream's
   own `ValueError` rather than degrading. Without LIBERO percentiles the policy's
   actions reach `env.step()` at raw `[-1,1]` scale, so Task SR is pinned at 0 in
-  every arm including the unedited control — five identically-zero arms are a
+  every arm including the unedited control: five identically-zero arms are a
   broken setup, not a null result about CoT faithfulness. This is also the
   mechanism behind the withdrawn P3 run below: there was never a LIBERO
   percentile set to use. The probe records the independent half too, which is
@@ -244,14 +251,14 @@ deliberately incomplete in ways the paper states as limitations:
   `selfsplice_control` are N=60-69 (skipped when the target object is not
   visible in frame); `location_swap` is N=74 on the "ours" rows and N=70 on
   ECoT-bridge. The N=12 `location_swap` cells that the submission carried on
-  the seven pre-fix "ours" rows are **gone** — every row is now from a post-fix
+  the seven pre-fix "ours" rows are **gone**: every row is now from a post-fix
   run, so per-family N is uniform across rows.
 - **Seeds:** all 8 rows of the leaderboard are 3-sampling-seed means with
   Wilson 95% intervals computed on pooled counts (half-widths <= 0.067). The
   three DeepThinkVLA checkpoints remain single-run point estimates. Sampling
   seeds hold the checkpoint fixed and are therefore **not** the error bar that
-  matters for comparing rows: the seven same-config retraining pairs — one for
-  every trained row — move a single family's `F` by up to 0.260 and move
+  matters for comparing rows: the seven same-config retraining pairs (one for
+  every trained row) move a single family's `F` by up to 0.260 and move
   `F_bar` by 0.006-0.092.
 
 **Does the dataset contain confidential or offensive content?**
@@ -348,13 +355,13 @@ check (0.824). Result: **`paraphrase_null` preserves meaning at 0.975 and
 argument depend on are validated. **One family's name overstates it:**
 `adversarial_plausible` changes the referent as designed (0.958) but is judged
 plausible on only **0.125** of pairs, against a description that promised
-"visually plausible but wrong" — so treat it as an unconstrained object
+"visually plausible but wrong", so treat it as an unconstrained object
 substitution. Two by-products: `syntactic_scramble`, listed as a Tier-0
 structural edit, preserves meaning at 1.000 and is really a third
 meaning-preserving family; and `verb_swap` changes meaning on only 0.575, which
 is also the family with the largest same-config retraining movement in the
 benchmark (max |ΔF| = 0.260). This validates the *generators* over the same
-corpus and demo files, **not** the specific scored pairs — the released records
+corpus and demo files, **not** the specific scored pairs: the released records
 store actions only. `results_v2/canonical_runs/judge_edit_families/` (bolt
 `jhcgnqbmf2`) carries the report, all 437 judged pairs with both traces verbatim,
 and a README.
@@ -402,7 +409,7 @@ score is not interpretable in absolute terms without them.
 - Do **not** report `F` as an absolute faithfulness number. On the first model
   where we measured a floor, a meaning-preserving paraphrase scores 0.960
   against a maximum-effect ceiling of 0.970, and an out-of-CoT control that
-  never touches the reasoning scores 0.99 — higher than all ten CoT families.
+  never touches the reasoning scores 0.99: higher than all ten CoT families.
   This is not specific to that model or that architecture: across all **four**
   models with a measured floor that are not the no-CoT control (ECoT-bridge and
   the three DeepThinkVLA checkpoints), the mean semantic `F` sits **below** the
@@ -463,10 +470,10 @@ defined, so `F` is not licensed as a reading of semantic CoT->action flow on
 any full-CoT model here, in either family. But the CoT-specificity ratio
 exceeds 1 on 5 of 12 (r=8 1.222, r=16 1.022, r=32 1.067, r=64 1.028,
 data-50B 1.307), which **contradicts** the submission's claim that no model
-passes that check — and of those five, **none** clears the out-of-CoT control by
+passes that check, and of those five, **none** clears the out-of-CoT control by
 more than the 0.006-0.092 that retraining one configuration moves `F_bar`. The
 two widest margins, r=8 (+0.074) and data-50B (+0.083), both sit under the
-0.092 that retraining data-50B alone moves `F_bar` — and data-50B is both the
+0.092 that retraining data-50B alone moves `F_bar`, and data-50B is both the
 widest margin and the largest retraining move, which is what a margin drawn
 from run-to-run variation rather than from CoT routing looks like. An earlier
 revision of this entry put those two above the bar; it was measuring against a

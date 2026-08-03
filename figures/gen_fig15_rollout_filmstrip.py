@@ -29,11 +29,22 @@ is missing or carries no poses, this exits non-zero and says which -- a
 half-drawn version of this figure would be a claim about motion that was not
 measured.
 
-Usage:  python figures/gen_fig15_rollout_filmstrip.py [<capture_dir>] [--no-eef]
+Usage:  python figures/gen_fig15_rollout_filmstrip.py [<capture_dir>]
+                 [--no-eef] [--strip-only]
 where <capture_dir> holds rollout_edit_report.json and frames/. `--no-eef`
 draws panel (a) alone, for a capture whose env did not expose end-effector
 poses; it must be passed explicitly, because silently dropping two panels is
 how a figure comes to show less than its caption claims.
+
+`--strip-only` is the same drawing for a different reason: the two-column body
+prints the filmstrip on its own as fig2_rollout_frames.pdf, with panels (b)
+and (c) left in the appendix figure, because a body float carrying all three
+plus the caption they need is taller than the page it has to land on. It is a
+separate output name and a separate fact sheet (fig2_frames_facts.json) so the
+two figures cannot be confused for each other, and it never overwrites
+fig15_facts.json -- panels (b)/(c) are not drawn in this mode, so their
+numbers are absent here, and a shared file would report that absence as if the
+arms had never separated.
 """
 import json
 import os
@@ -247,7 +258,8 @@ def column_motion(cap_dir, key, arm, steps, eps) -> dict:
 
 def main() -> int:
     argv = [a for a in sys.argv[1:] if not a.startswith("--")]
-    no_eef = "--no-eef" in sys.argv
+    strip_only = "--strip-only" in sys.argv
+    no_eef = "--no-eef" in sys.argv or strip_only
     cap_dir = argv[0] if argv else DEFAULT
     rep, key, eps, all_keys = load(cap_dir)
     steps = pick_steps(eps)
@@ -256,7 +268,7 @@ def main() -> int:
           f"columns at steps {steps}")
 
     tracks = {a: eef_track(eps[a]) for a, _, _ in ARMS}
-    have_eef = all(t[0] is not None for t in tracks.values())
+    have_eef = all(t[0] is not None for t in tracks.values()) and not strip_only
 
     # The rows must be one scene before they can be three conditions. Checked on
     # the earliest shared step, which is captured before that step's action is
@@ -288,7 +300,10 @@ def main() -> int:
             f"to draw the filmstrip alone, which is a smaller figure and not a "
             f"weaker one -- but say so, rather than losing the panels quietly.")
     if not have_eef:
-        print("[fig15] --no-eef: drawing panel (a) only; no pose was logged")
+        print("[fig15] " + ("--strip-only: drawing panel (a) for the body"
+                           if strip_only else
+                           "--no-eef: drawing panel (a) only; no pose was "
+                           "logged"))
 
     # ---- geometry -------------------------------------------------------
     # 6.14in, not 6.20: save() trims to the tight bbox and adds 2*pad_inches,
@@ -503,7 +518,8 @@ def main() -> int:
         fig.text((0.62 + 2.38) / W, (0.44 + PLOT_H) / H, "(c)",
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
-    save(fig, "fig15_rollout_filmstrip")
+    save(fig, "fig2_rollout_frames" if strip_only
+              else "fig15_rollout_filmstrip")
 
     # Everything the caption needs to quote, printed so it is copied from a
     # measurement rather than recalled. The audit reads these back out of the
@@ -544,7 +560,8 @@ def main() -> int:
         "cot_clean_xy_span_cm": (None if clean_span_cm is None
                                  else round(clean_span_cm, 2)),
     }
-    p = os.path.join(cap_dir, "fig15_facts.json")
+    p = os.path.join(cap_dir, "fig2_frames_facts.json" if strip_only
+                     else "fig15_facts.json")
     with open(p, "w") as fh:
         json.dump(facts, fh, indent=2)
     print(json.dumps(facts, indent=2))

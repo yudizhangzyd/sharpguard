@@ -108,13 +108,27 @@ PY
 # violation whose only symptom was a page nobody re-read. Measured here and
 # asserted by scripts/verify_paper_numbers.py, in the same artifact as the
 # geometry and for the same reason.
-pdftotext -layout build/cot_faith_arr_proof.pdf "$TMP/proof.txt"
+# Extracted WITHOUT -layout, i.e. in reading order rather than in visual
+# columns. -layout preserves the two columns by padding one line with both, so
+# a heading that starts column 2 arrives appended to a column-1 line -- which
+# is what happened the first time the Limitations heading landed beside body
+# text instead of on its own page, and the measurement failed closed rather
+# than reporting page 8. Reading order puts the heading on its own line
+# wherever it is, and "is there body text before it on this page" is exactly
+# the question the 8-page limit asks.
+pdftotext build/cot_faith_arr_proof.pdf "$TMP/proof.txt"
 python3 - "$TMP/proof.txt" <<'PY'
 import json, pathlib, sys
 pages = pathlib.Path(sys.argv[1]).read_text(errors="replace").split("\f")
-hit = [(i + 1, p.lstrip().startswith("Limitations"))
-       for i, p in enumerate(pages)
-       if any(ln.startswith("Limitations") for ln in p.splitlines())]
+hit = []
+for i, page_txt in enumerate(pages):
+    lines = page_txt.splitlines()
+    for j, ln in enumerate(lines):
+        if ln.strip() == "Limitations":
+            hit.append((i + 1, not any(x.strip() for x in lines[:j])))
+            break
+    if hit:
+        break
 if not hit:
     raise SystemExit("[local] FAILED: the Limitations heading is not in the "
                      "rendered text, so the body page count cannot be measured")

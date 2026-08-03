@@ -35,3 +35,5 @@ sharpguard.env
 # in history each time the paper changes, and the source is the thing under
 # review.
 build/
+# Same, for the full-length manuscript: pdflatex -output-directory=build_iclr
+build_iclr/

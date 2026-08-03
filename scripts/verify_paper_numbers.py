@@ -277,7 +277,7 @@ def audit_per_token(a: Audit, d: Optional[dict]) -> None:
     tex = TEX.read_text()
     a.check(sec, "the caption describes panel (c) at all -- it described only "
                  "(a) and (b) when the figure shipped with three", 1,
-            tex.count("Panel (c) --- the same records with every bucket "
+            tex.count("Panel (c): the same records with every bucket "
                       "divided by its own token count"), source=str(TEX))
     a.check(sec, "and names the range rather than a single ratio", 1,
             tex.count(r"$3.7$--$4.2\times$ more attention each"), source=str(TEX))
@@ -1691,7 +1691,7 @@ def audit_release(a: Audit) -> None:
 
     total_mb = sum(f.stat().st_size for f in (root / "results_v2").rglob("*.json"))
     total_mb /= 1024 * 1024
-    m = re.search(r"--- \$([\d.]+)\$\\,MB of JSON in total", tex)
+    m = re.search(r"\$([\d.]+)\$\\,MB of JSON in total", tex)
     want_mb = float(m.group(1)) if m else None
     a.check(sec, "the release size the manuscript quotes matches the release",
             want_mb, round(total_mb, 1), tol=0.15,
@@ -1806,24 +1806,26 @@ def audit_release(a: Audit) -> None:
                 [txt.count(lit),
                  (r"$\mathbf{0.37}$\,pp" in txt or "0.37 pp" in txt)],
                 source=path)
-    # The ARR body carries the prefix itself but not the 0.37 pp: the body is at
-    # its 8-page limit and the quantification did not fit, so it lives in the
-    # appendix release paragraph and DATASHEET.md (both shipped with the same
-    # submission), which the two checks above already pin. What the body may not
-    # do is quote the record count with no hint that some of it is a prefix, so
-    # that clause is required here.
+    # What the body may not do is quote the record count with no hint that some
+    # of it is a prefix, so that clause is required here.
     arr_txt = ARR.read_text() if ARR.exists() else ""
     a.check(sec, "the ARR body's release sentence says the attention records "
                  "are a per-run prefix where the aggregate is larger, since a "
                  "bare count would read as complete", 1,
             len(re.findall(r"the first \$20\$ per run where the aggregate is "
                            r"over \$100\$", arr_txt)), source=str(ARR))
-    a.check(sec, "and the appendix that ships with it carries the 0.37 pp the "
-                 "body had no room for", 1,
-            len(re.findall(r"to within \$\\mathbf\{0\.37\}\$\\,pp",
-                           (ROOT / "arr_appendix.tex").read_text()
-                           if (ROOT / "arr_appendix.tex").exists() else "")),
-            source="arr_appendix.tex")
+    # ... and the submitted PDF has to quantify how much that prefix costs. The
+    # release paragraph that carried the number was deferred out of the
+    # 20-page appendix, so the body now states it and either document
+    # satisfies this: what matters is that a reader of the submission meets
+    # the bound, not which of its two files carries it.
+    apx_txt = ((ROOT / "arr_appendix.tex").read_text()
+               if (ROOT / "arr_appendix.tex").exists() else "")
+    pat = r"to within \$\\mathbf\{0\.37\}\$\\,pp"
+    a.check(sec, "and the submitted PDF quantifies what that prefix costs, in "
+                 "the body or in the appendix that ships with it", True,
+            bool(re.search(pat, arr_txt) or re.search(pat, apx_txt)),
+            source="cot_faith_arr.tex + arr_appendix.tex")
     a.check(sec, "the figure whose bars are those aggregates says so in its own "
                  "caption, where a reader meets them", 1,
             len(re.findall(r"ships the first \$20\$ of those records per run",
@@ -4755,6 +4757,50 @@ def audit_arr_submission(a: Audit) -> None:
                 True, blp <= 8,
                 source=f"body_last_page={blp}, Limitations starts on page "
                        f"{geo.get('limitations_starts_page')}")
+    # The whole-PDF budget, from the same artifact. ARR exempts the appendix
+    # from the 8 body pages but caps the submission at 20 pages total, and that
+    # limit is the one an over-long appendix violates: the generated appendix
+    # was 46 pages and the submission 54 before sections were deferred out of
+    # it. Nothing in the build fails on it -- pdflatex sets 54 pages as happily
+    # as 20 -- so it is asserted here.
+    npg = geo.get("n_pages")
+    a.check(sec, "the built total page count is on disk, so the 20-page "
+                 "submission cap is asserted rather than eyeballed", True,
+            npg is not None,
+            source="n_pages in geometry.json -- measured from "
+                   "build/cot_faith_arr.pdf by scripts/build_local.sh")
+    if npg is not None:
+        a.check(sec, "and the whole submission, appendix included, is within "
+                     "ARR's 20-page cap", True, npg <= 20,
+                source=f"n_pages={npg}")
+
+    # An appendix that is a selection has to say so and say what it left out,
+    # or a reader meets a paper whose own \S-references point at nothing. The
+    # generator writes both the disclosure and the deferred list; these assert
+    # they are in the shipped file, because a selection presented as complete
+    # is the dishonest version of this page cut.
+    apx_p = root / "arr_appendix.tex"
+    if apx_p.exists():
+        ap_sel = apx_p.read_text()
+        a.check(sec, "the appendix discloses that it is a selection, since the "
+                     "20-page cap means it is not the full evidence", True,
+                "It is a selection" in ap_sel, source="arr_appendix.tex")
+        a.check(sec, "and it names the sections it does not reproduce, so a "
+                     "reader can tell what is missing and where to read it",
+                True, r"\label{sec:deferred}" in ap_sel,
+                source="arr_appendix.tex: the generated deferred list")
+        # Every \ref in the submission must resolve inside the submission. This
+        # is the failure a page cut actually causes: deferring a section takes
+        # its \label with it, and LaTeX prints "??" while exiting 0.
+        both_tex = t + ap_sel
+        defined = set(re.findall(r"\\label\{([^}]+)\}", both_tex))
+        pointed = set(re.findall(r"\\(?:ref|autoref|Cref|cref)\{([^}]+)\}",
+                                 both_tex))
+        a.check(sec, "and no cross-reference in the submitted PDF points at a "
+                     "label the page cut removed", set(),
+                pointed - defined,
+                source="cot_faith_arr.tex + arr_appendix.tex")
+
     # Ink outside the column. pdflatex reports every overfull box and exits 0,
     # so this is found by grepping a log or not at all -- and build_local.sh
     # builds into a mktemp it deletes. An 8.9pt overfull display equation
@@ -5056,12 +5102,19 @@ def audit_arr_submission(a: Audit) -> None:
             True, isinstance(flag, dict) and bool(flag),
             source="figures/fig1_task_examples_facts.json -- written by "
                    "figures/gen_fig1_task_examples.py")
+    # The taxonomy figure moved out of the body and into the appendix, which
+    # ships in the same PDF, so the caption is looked for in both documents.
+    # Widened here rather than in `t`: `t` backs the format constraints above,
+    # and those are desk-reject conditions of the body alone.
+    both = t + ((ROOT / "arr_appendix.tex").read_text()
+                if (ROOT / "arr_appendix.tex").exists() else "")
     cm = re.search(r"\\includegraphics\[[^\]]*\]\{fig1_task_examples\.pdf\}"
-                   r".*?\\caption\{(.*?)\}\s*\\label\{fig:taxonomy\}",
-                   t, re.S)
+                   r".*?\\caption\{(.*?)\}\s*\\label\{(?:app:)?fig:taxonomy\}",
+                   both, re.S)
     cap_tax = cm.group(1) if cm else ""
-    a.check(sec, "fig:taxonomy's caption is locatable in the ARR body",
-            True, bool(cap_tax), source="cot_faith_arr.tex")
+    a.check(sec, "fig:taxonomy's caption is locatable in the submitted PDF, "
+                 "body or appendix", True, bool(cap_tax),
+            source="cot_faith_arr.tex + arr_appendix.tex")
     for fam, rate in sorted((flag or {}).items()):
         a.check(sec, f"fig:taxonomy's caption names {fam}, whose rate the "
                      f"figure draws red", True,
@@ -6382,6 +6435,353 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                     source=f"peak {fl_p} cm, final {fl_f} cm")
 
 
+def audit_per_task(a: Audit) -> None:
+    """The per-task decomposition: every row of tab:per_task, and its prose.
+
+    This section regroups the released edit records by LIBERO task, so the first
+    thing to check is not any of its own numbers but that the regrouping reads
+    the release the way the leaderboard pipeline does. derive_per_task.py refuses
+    to run unless it reproduces each model's published F_bar and paraphrase floor
+    from the same records, and this audit re-checks that agreement against
+    derived_metrics.json independently: a provenance guard that only the guarded
+    script can see is a guard on trust.
+
+    Then every quoted number is mirrored. Table rows are checked as whole
+    literals rather than field by field, because the failure mode worth catching
+    is a row that was correct when it was typed and is now stale, and a stale row
+    usually keeps most of its fields.
+    """
+    sec = "Per-task decomposition (tab:per_task)"
+    art = ROOT / "results_v2" / "canonical_runs" / "per_task_decomposition" / "per_task.json"
+    a.check(sec, "the per-task artifact is in the repository", True, art.exists(),
+            source=str(art))
+    if not art.exists():
+        return
+    d = load(art)
+    m, sm = d["models"], d["summary"]
+    tex = TEX.read_text()
+    # The source pads table cells for alignment; the numbers are what is being
+    # checked, so both sides are compared with runs of spaces collapsed.
+    flat = re.sub(r"[ \t]+", " ", tex)
+    src = str(art.relative_to(ROOT))
+
+    def pfmt(x: float) -> str:
+        if x >= 0.001:
+            return f"${x:.3f}$"
+        e = math.floor(math.log10(x))
+        return f"${x / 10 ** e:.1f}\\!\\times\\!10^{{{e}}}$"
+
+    # --- the regrouping reads the release the way the leaderboard does -------
+    pub = load(DERIVED)["models"]
+    for k, v in m.items():
+        a.check(sec, f"{k}: the per-task run reproduces the published "
+                     f"$\\bar{{\\mathcal{{F}}}}$ from the same records",
+                r3(pub[k]["F_bar_mag"]), r3(v["provenance"]["F_bar_mag"]),
+                source=src)
+        a.check(sec, f"{k}: and reproduces the published paraphrase floor",
+                r3(pub[k]["paraphrase_null_floor"]),
+                r3(v["provenance"]["paraphrase_null_floor"]), source=src)
+
+    # --- the protocol the section describes ---------------------------------
+    a.check(sec, "the decomposition covers $85$ LIBERO-90 episode files", 85,
+            sm["n_tasks_max_over_models"], source=src)
+    a.check(sec, "and it is the same $85$ for all eight models, so the columns "
+                 "are comparable", 85, sm["n_tasks_min_over_models"], source=src)
+    a.check(sec, "it pools $3$ sampling seeds per model", [3] * 8,
+            [v["n_seeds_pooled"] for v in m.values()], source=src)
+    a.check(sec, "every task carries at least $4$ of the $7$ non-control "
+                 "families", 4,
+            min(v["min_n_families_per_task"] for v in m.values()), source=src)
+    a.check(sec, "from at least $5$ scored records", 5,
+            min(v["min_n_sem_per_task"] for v in m.values()), source=src)
+    a.check(sec, "the restricted test keeps the $53$ tasks whose floor rests on "
+                 "$\\ge 3$ samples", 53, sm["n_tasks_restricted"], source=src)
+    a.check(sec, "and it restricts on every model, not just the one the summary "
+                 "reports", [53] * 8,
+            [v["floor_ge3"]["n_tasks"] for v in m.values()], source=src)
+    a.check(sec, "a restriction that dropped nothing would not be one: it drops "
+                 "$32$ of the $85$", True,
+            all(v["floor_ge3"]["n_tasks"] < v["n_tasks"] for v in m.values()),
+            source=src)
+
+    # --- the headline of the section -----------------------------------------
+    a.check(sec, "on $7$ of the $8$ models the majority of tasks sit below "
+                 "their own paraphrase floor", 7,
+            sm["n_models_majority_below_own_floor"], source=src)
+    a.check(sec, "and all $7$ are significant at $p<0.05$", 7,
+            sm["n_models_significant_p05"], source=src)
+    a.check(sec, "the one exception is the no-CoT control", ["ours-no-cot"],
+            sm["exceptions"], source=src)
+    others = [k for k in m if k != "ours-no-cot"]
+    ps = [m[k]["all"]["p_two_sided"] for k in others]
+    a.check(sec, "the smallest of those $p$ is $9.0\\times10^{-11}$", -10.05,
+            math.log10(min(ps)), tol=0.05, source=src)
+    a.check(sec, "the largest is $0.020$", 0.020, max(ps), tol=0.0005,
+            source=src)
+    meds = [m[k]["all"]["median_F_diff"] for k in others]
+    a.check(sec, "median per-task $\\mathcal{{F}}_{{\\text{{diff}}}}$ runs "
+                 "from $-0.167$", -0.167, min(meds), tol=0.0005, source=src)
+    a.check(sec, "to $-0.050$", -0.050, max(meds), tol=0.0005, source=src)
+    for k, disp, below, untied in (("ours-r32", "r=32", 64, 74),
+                                   ("ours-r8", "r=8", 60, 74),
+                                   ("ecot-bridge", "ECoT-bridge", 60, 75)):
+        v = m[k]["all"]
+        a.check(sec, f"{disp} is below on {below} of {untied} untied tasks",
+                (below, untied), (v["n_below"], v["n_below"] + v["n_above"]),
+                source=src)
+    a.check(sec, "restricting to the $\\ge 3$-sample floors keeps $6$ of the "
+                 "$8$ significant", 6,
+            sm["n_models_significant_p05_floor_ge3"], source=src)
+    flipped = [k for k in m if m[k]["all"]["majority_below"]
+               and not m[k]["floor_ge3"]["majority_below"]]
+    a.check(sec, "and reverses no sign: no model that was majority-below over "
+                 "all $85$ tasks stops being so under the restriction", [],
+            flipped, source=src)
+    a.check(sec, "data-50B is the row that loses significance, $0.020$",
+            0.020, m["ours-data50B"]["all"]["p_two_sided"], tol=0.0005,
+            source=src)
+    a.check(sec, "going to $0.085$", 0.085,
+            m["ours-data50B"]["floor_ge3"]["p_two_sided"], tol=0.0005,
+            source=src)
+
+    # --- the null row, and why it is the coherent one ------------------------
+    nc = m["ours-no-cot"]
+    a.check(sec, "no-CoT splits $25/29/31$ with $p=0.683$",
+            (25, 29, 31, 0.683),
+            (nc["all"]["n_below"], nc["all"]["n_above"], nc["all"]["n_tied"],
+             r3(nc["all"]["p_two_sided"])), source=src)
+    a.check(sec, "and it is the model with the smallest aggregate margin, "
+                 "$\\bar{{\\mathcal{{F}}}}_{{\\text{{diff}}}} = -0.028$",
+            -0.028,
+            nc["provenance"]["F_bar_mag"]
+            - nc["provenance"]["paraphrase_null_floor"], tol=0.0005, source=src)
+    margins = {k: abs(v["provenance"]["F_bar_mag"]
+                      - v["provenance"]["paraphrase_null_floor"])
+               for k, v in m.items()}
+    a.check(sec, "smallest in the benchmark, i.e. no other model is closer to "
+                 "its own floor", "ours-no-cot",
+            min(margins, key=margins.get), source=src)
+
+    # --- task heterogeneity vs the leaderboard gaps --------------------------
+    a.check(sec, "the smallest within-model task IQR is $0.143$ "
+                 "(ECoT-bridge)", 0.143, sm["smallest_F_sem_task_iqr"],
+            tol=0.0005, source=src)
+    a.check(sec, "and it is ECoT-bridge's", "ecot-bridge",
+            min(m, key=lambda k: m[k]["F_sem_task_iqr"]), source=src)
+    a.check(sec, "the largest is $0.343$ (r=16)", 0.343,
+            sm["largest_F_sem_task_iqr"], tol=0.0005, source=src)
+    a.check(sec, "and it is r=16's", "ours-r16",
+            max(m, key=lambda k: m[k]["F_sem_task_iqr"]), source=src)
+    a.check(sec, "three of the eight models span the entire unit interval "
+                 "across tasks", 3,
+            sum(1 for v in m.values() if v["F_sem_task_min"] == 0.0
+                and v["F_sem_task_max"] == 1.0), source=src)
+    a.check(sec, "$6$ of the $7$ adjacent leaderboard gaps are smaller than "
+                 "both models' task IQR", 6,
+            sm["n_adjacent_pairs_inside_both_task_iqrs"], source=src)
+    a.check(sec, "the largest such gap is $0.187$", 0.187,
+            sm["largest_adjacent_gap_inside_both_task_iqrs"], tol=0.0005,
+            source=src)
+    sep = [x for x in sm["adjacent_pairs"] if not x["inside_both_task_iqrs"]]
+    a.check(sec, "exactly one adjacent pair separates at task granularity", 1,
+            len(sep), source=src)
+    if sep:
+        a.check(sec, "and it is r=64 versus ECoT-bridge",
+                ("ours-r64", "ecot-bridge"),
+                (sep[0]["lower"], sep[0]["upper"]), source=src)
+        a.check(sec, "at a gap of $0.346$", 0.346, sep[0]["gap"], tol=0.0005,
+                source=src)
+
+    # --- the table, row by row, as whole literals ---------------------------
+    # --- and the prose has to quote the artifact, not a memory of it --------
+    # Each needle interpolates the artifact's own value, so a number that drifts
+    # in the JSON and not in the manuscript (or the reverse) stops matching.
+    WORDS = {3: "three", 6: "six", 7: "seven", 8: "eight"}
+    nt, nr = sm["n_tasks_max_over_models"], sm["n_tasks_restricted"]
+    b = {k: (m[k]["all"]["n_below"],
+             m[k]["all"]["n_below"] + m[k]["all"]["n_above"]) for k in m}
+    nc_a = nc["all"]
+    span = sum(1 for v in m.values()
+               if v["F_sem_task_min"] == 0.0 and v["F_sem_task_max"] == 1.0)
+    needles = [
+        (f"gives $\\mathbf{{{nt}}}$ distinct LIBERO-90 episode files",
+         "the protocol paragraph quotes the task count the artifact has"),
+        (f"over the same ${nt}$ LIBERO-90 episode files for all eight models",
+         "and so does the table caption"),
+        (f"(at least ${min(v['min_n_families_per_task'] for v in m.values())}$ "
+         f"of the $7$ on every task, from at least "
+         f"${min(v['min_n_sem_per_task'] for v in m.values())}$ scored records)",
+         "the per-task coverage the protocol paragraph promises is the "
+         "artifact's worst case"),
+        (f"$p$ from {pfmt(min(ps))} to {pfmt(max(ps))}",
+         "the quoted $p$ range is the artifact's"),
+        (f"from ${min(meds):+.3f}$ to ${max(meds):+.3f}$",
+         "the quoted median range is the artifact's"),
+        (f"below on ${b['ours-r32'][0]}$ of ${b['ours-r32'][1]}$ untied tasks "
+         f"and \\emph{{r=8}} on ${b['ours-r8'][0]}$ of ${b['ours-r8'][1]}$, "
+         f"against ECoT-bridge's ${b['ecot-bridge'][0]}$ of "
+         f"${b['ecot-bridge'][1]}$",
+         "the three worked counts in the result paragraph are the artifact's"),
+        (f"Restricting to the ${nr}$ tasks whose floor rests on at least $3$ "
+         f"samples", "the result paragraph quotes the restricted task count"),
+        (f"repeat the test on the ${nr}$ tasks",
+         "and so does the table caption"),
+        (f"keeps {WORDS[sm['n_models_significant_p05_floor_ge3']]} of the "
+         f"{WORDS[sm['n_models']]} significant",
+         "the restricted survival count in the prose is the artifact's"),
+        (f"(${m['ours-data50B']['all']['p_two_sided']:.3f} \\to "
+         f"{m['ours-data50B']['floor_ge3']['p_two_sided']:.3f}$)",
+         "data-50B's before-and-after $p$ is the artifact's"),
+        (f"(${nc_a['n_below']}$ below, ${nc_a['n_above']}$ above, "
+         f"${nc_a['n_tied']}$ tied, $p = {nc_a['p_two_sided']:.3f}$)",
+         "the null row's split is the artifact's"),
+        (f"runs from ${sm['smallest_F_sem_task_iqr']:.3f}$ (ECoT-bridge) to "
+         f"${sm['largest_F_sem_task_iqr']:.3f}$",
+         "the task-IQR range is the artifact's"),
+        (f"on {WORDS[span]} of the {WORDS[sm['n_models']]} models the task "
+         f"range is the entire unit interval",
+         "the count of models spanning the unit interval is the artifact's"),
+        (f"{sm['n_adjacent_pairs_inside_both_task_iqrs']} of the "
+         f"{len(sm['adjacent_pairs'])} adjacent gaps are smaller than "
+         f"both models' task-level IQR",
+         "the adjacent-gap count in the prose is the artifact's"),
+        (f"the largest such gap being "
+         f"${sm['largest_adjacent_gap_inside_both_task_iqrs']:.3f}$",
+         "the largest gap inside both IQRs is the artifact's"),
+        (f"ECoT-bridge at ${sep[0]['gap']:.3f}$" if sep else "",
+         "the one separating gap is the artifact's"),
+    ]
+    for needle, claim in needles:
+        a.check(sec, claim, 1, flat.count(needle), source=needle)
+
+    DISP = [("ours-r8", "Ours r=8"), ("ours-r16", "Ours r=16"),
+            ("ours-r32", "Ours r=32"), ("ours-r64", "Ours r=64"),
+            ("ours-no-cot", "Ours no-CoT"), ("ours-data50A", "Ours data-50A"),
+            ("ours-data50B", "Ours data-50B"), ("ecot-bridge", "ECoT-bridge")]
+    for k, disp in DISP:
+        v, al, r = m[k], m[k]["all"], m[k]["floor_ge3"]
+        cnt = f"${al['n_below']}/{al['n_above']}/{al['n_tied']}$"
+        cnt3 = f"${r['n_below']}/{r['n_above']}/{r['n_tied']}$"
+        # The no-CoT row bolds its two null cells; nothing else does.
+        if k == "ours-no-cot":
+            cnt = "$\\mathbf{" + cnt.strip("$") + "}$"
+            pcell = "$\\mathbf{0.683}$"
+        else:
+            pcell = pfmt(al["p_two_sided"])
+        p3cell = ("$\\mathbf{0.085}$" if k == "ours-data50B"
+                  else pfmt(r["p_two_sided"]))
+        row = (f"{disp} & ${r3(v['provenance']['F_bar_mag']):.3f}$ & "
+               f"${r3(v['provenance']['paraphrase_null_floor']):.3f}$ & "
+               f"{cnt} & {pcell} & ${al['median_F_diff']:+.3f}$ & {cnt3} & "
+               f"{p3cell} & ${v['F_sem_task_iqr']:.3f}$")
+        a.check(sec, f"the {disp} row of tab:per_task is the artifact's",
+                1, flat.count(row), source=row)
+
+
+def audit_body_frames_figure(a: Audit) -> None:
+    """The body's Figure 2 is panel (a) of the filmstrip, drawn by the same run.
+
+    The submitted body has room for the strip but not for the three-panel figure
+    (its caption alone is taller than a column), so the generator has a
+    --strip-only mode that draws panel (a) on its own. That creates the one
+    failure mode a shared caption cannot have: two figures, two fact sheets, and
+    nothing forcing them to be the same capture. A body figure quietly redrawn
+    from a scratch rollout while the appendix's is the released one would look
+    exactly right and argue about a different episode.
+
+    So the checks here are about identity and about what the shorter caption is
+    allowed to claim: same capture directory, same suite, same arms, same steps;
+    and no promise of the pose-derived panels this mode does not draw.
+    """
+    sec = "Body Figure 2 (rollout frames, panel (a) alone)"
+    arr_p = ROOT / "cot_faith_arr.tex"
+    t = arr_p.read_text() if arr_p.exists() else ""
+    if "fig2_rollout_frames" not in t:
+        return
+    pdf = ROOT / "figures" / "fig2_rollout_frames.pdf"
+    a.check(sec, "the body figure's PDF is in the repository, so the submitted "
+                 "build is not drawn from an untracked file", True, pdf.exists(),
+            source=str(pdf))
+    gen = ROOT / "figures" / "gen_fig15_rollout_filmstrip.py"
+    body = gen.read_text() if gen.exists() else ""
+    a.check(sec, "it is drawn by the filmstrip's own generator in --strip-only "
+                 "mode rather than by a second script, so both figures read one "
+                 "capture", True,
+            "--strip-only" in body and "fig2_rollout_frames" in body,
+            source=str(gen))
+    # The mode must force the pose panels off. Otherwise a future capture that
+    # does log a pose would draw (b) and (c) into a figure whose caption -- and
+    # whose page budget -- has no room for them.
+    a.check(sec, "and that mode forces the pose panels off rather than drawing "
+                 "whatever the capture happens to have", True,
+            'no_eef = "--no-eef" in sys.argv or strip_only' in body,
+            source=str(gen))
+
+    cap = ROOT / "results_v2" / "canonical_runs" / "rollout_filmstrip"
+    f2 = load(cap / "fig2_frames_facts.json")
+    a.check(sec, "the body figure has its own fact sheet, so its caption's "
+                 "numbers are checked against what it drew and not against the "
+                 "three-panel figure's", True, f2 is not None,
+            source=str(cap / "fig2_frames_facts.json"))
+    if not f2:
+        return
+    f15 = load(cap / "fig15_facts.json") or {}
+    # Same capture, field by field. Equality is the whole check: it is what makes
+    # the body figure and the appendix figure the same episode.
+    for key, what in (("capture_dir", "the capture directory"),
+                      ("suite", "the suite"),
+                      ("steps_per_arm", "the arms and their step counts"),
+                      ("cot_refresh_steps", "the CoT refresh interval")):
+        a.check(sec, f"the body figure and the appendix filmstrip agree on "
+                     f"{what}, so they are one rollout and not two",
+                f15.get(key), f2.get(key),
+                source="fig2_frames_facts.json vs fig15_facts.json")
+    # The pairing measurement, again: it is the body caption's one quantitative
+    # claim about the drawing, and the strip is where a reader can see the rows.
+    a.check(sec, "the body strip's three rows are bit-identical at the first "
+                 "column", 0.0, f2.get("step0_pairing_max_mean_abs_pixel"),
+            source="fig2_frames_facts.json")
+    a.check(sec, "and the body caption prints that measurement rather than "
+                 "asserting the rows match", True,
+            r"|\Delta\text{pixel}| = 0.0$" in t,
+            source="fig2_frames_facts.json: "
+                   "step0_pairing_max_mean_abs_pixel=0.0")
+    steps = f2.get("columns_at_steps") or []
+    a.check(sec, "the body caption prints the column steps the artifact "
+                 "records, so the strip's own axis is checkable", True,
+            bool(steps) and f"$t = {', '.join(str(x) for x in steps)}$" in t,
+            source=f"fig2_frames_facts.json: columns_at_steps={steps}")
+    cc = f2.get("column_change_mean_abs_pixel") or {}
+    vals = [v for v in cc.values() if v]
+    if vals:
+        lo, hi = (min(v["min"] for v in vals), max(v["max"] for v in vals))
+        a.check(sec, f"and the between-column change range that lets a reader "
+                     f"read a stall as a stall ({lo:.2f}-{hi:.1f} absolute "
+                     f"pixel levels)", True,
+                f"${lo:.2f}$" in t and f"${hi:.1f}$" in t,
+                source="fig2_frames_facts.json: column_change_mean_abs_pixel")
+    # What this mode does NOT draw, asserted as an absence. The body caption is
+    # short precisely because it drops the pose panels; a clause about a gripper
+    # path or a distance curve would describe a figure the reader is not looking
+    # at. Scoped to this caption, since the body's text is free to point at the
+    # appendix figure that does draw them -- and must.
+    m = re.search(r"\\includegraphics(?:\[[^\]]*\])?\{fig2_rollout_frames\.pdf\}"
+                  r".*?\\caption\{(.*?)\}\s*\\label\{fig:frames\}", t, re.S)
+    cap_txt = m.group(1) if m else ""
+    a.check(sec, "the body figure's caption is locatable", True, bool(cap_txt),
+            source="cot_faith_arr.tex")
+    a.check(sec, "no pose was logged for this capture, and the body caption "
+                 "promises neither a path nor a distance curve", False,
+            bool(f2.get("eef_logged"))
+            or "top-down" in cap_txt or "per-step distance" in cap_txt,
+            source=f"fig2_frames_facts.json: eef_logged="
+                   f"{f2.get('eef_logged')}")
+    a.check(sec, "and it sends the reader to the figure that does draw them, "
+                 "so dropping the panels does not drop the evidence", True,
+            r"\ref{fig:filmstrip}" in cap_txt,
+            source="cot_faith_arr.tex: fig:frames caption")
+
+
 def audit_arm_pairing_defect(a: Audit) -> None:
     """The pairing defect the appendix discloses, checked against its pixels.
 
@@ -6637,15 +7037,32 @@ def audit_arm_pairing_defect(a: Audit) -> None:
             "restores the gripper accumulator to the snapshot" in gt,
             source="tests/test_rollout_arms_and_refresh.py")
 
-    # Every number above is quoted in the appendix. Checked in that direction
+    # Every number above is quoted in the manuscript. Checked in that direction
     # too: an artifact that stops matching the prose is the failure this whole
     # script exists to catch, and it is silent unless someone looks.
-    apx = ROOT / "arr_appendix.tex"
-    at = apx.read_text() if apx.exists() else ""
+    #
+    # The document checked is the full-length one. The 20-page ARR submission
+    # does not reproduce this span -- build_arr_appendix.py defers it and names
+    # it in the deferred list -- so cot_faith_iclr.tex is where these digits
+    # live, and it is the document that ships in the release and that this
+    # script audits claim by claim. Redirected rather than dropped: a deferred
+    # section is not an unaudited one, and the submission's own account of the
+    # four defects is asserted separately below.
+    at = TEX.read_text()
+    arrt = (ROOT / "cot_faith_arr.tex").read_text()
     for val in ("10.4", "0.0000", "8.8411", "2.7762", "31.7356", "0.1876",
                 "198"):
-        a.check(sec, f"the appendix quotes ${val}$ from this artifact",
-                True, val in at, source="arr_appendix.tex")
+        a.check(sec, f"the manuscript quotes ${val}$ from this artifact",
+                True, val in at, source=str(TEX))
+    # ... and the submission, which has room for the conclusion but not the
+    # walk-through, still names the defect count and the pixel figure that
+    # makes the last one a defect rather than a rounding difference.
+    for lit, what in (("four arm-pairing defects", "the count"),
+                      ("$116$ pixel levels", "the pixel difference")):
+        a.check(sec, f"the submitted body states {what} of the pairing "
+                     f"defects, which is what a reader of the 20-page PDF "
+                     f"meets", True, lit in arrt,
+                source="cot_faith_arr.tex, Limitations")
 
 
     # --- defect 4: identical state, different frame ------------------------
@@ -6737,13 +7154,12 @@ def audit_arm_pairing_defect(a: Audit) -> None:
                 len(clocks), source=f"{src}: distinct clock pairs = {clocks}")
         if len(clocks) == 1:
             lo, hi = clocks[0]
-            a.check(sec, "and the appendix quotes both clock values exactly, "
-                         "since a rounded version of this number is the same "
-                         "number", (True, True),
-                    (repr(lo) in at, repr(hi) in at),
-                    source="arr_appendix.tex")
+            a.check(sec, "and the manuscript quotes both clock values "
+                         "exactly, since a rounded version of this number is "
+                         "the same number", (True, True),
+                    (repr(lo) in at, repr(hi) in at), source=str(TEX))
             a.check(sec, "and their difference is at the 1e-15 scale the "
-                         "appendix states", True,
+                         "manuscript states", True,
                     0 < abs(hi - lo) < 1e-14,
                     source=f"|delta| = {abs(hi - lo):.3g}")
         sdf = d4f.get("state_determines_frame") or {}
@@ -6751,20 +7167,19 @@ def audit_arm_pairing_defect(a: Audit) -> None:
                      "writing the same state and re-rendering does NOT give "
                      "the same frame", False, bool(sdf.get("bit_identical")),
                 source=src)
-        a.check(sec, "and it differs by the 116 levels the appendix quotes",
+        a.check(sec, "and it differs by the 116 levels the manuscript quotes",
                 116.0, float((sdf.get("pixels") or {}).get("max", -1)),
                 source=src)
         for val in ("160", "116", "206", "vu6yavsp4a", "e268dqs2t8"):
-            a.check(sec, f"the appendix quotes '{val}' from the defect-4 "
-                         f"artifacts", True, val in at,
-                    source="arr_appendix.tex")
-        a.check(sec, "the appendix says four defects rather than three, so the "
-                     "count in the prose tracks the diagnostics released",
-                True, "Four pairing defects" in at, source="arr_appendix.tex")
+            a.check(sec, f"the manuscript quotes '{val}' from the defect-4 "
+                         f"artifacts", True, val in at, source=str(TEX))
+        a.check(sec, "the manuscript says four defects rather than three, so "
+                     "the count in the prose tracks the diagnostics released",
+                True, "Four pairing defects" in at, source=str(TEX))
         a.check(sec, "and it retracts the state-implies-pixels inference it "
                      "made for defect 2 rather than quietly deleting it", True,
                 "falsifies" in at and "the assumption that hid" in at,
-                source="arr_appendix.tex")
+                source=str(TEX))
 
     # Defect 4's fix, as source properties. The sampling phase must be
     # snapshotted with the settle and restored on rewind, and it must be
@@ -7542,7 +7957,7 @@ def audit_directional_inversion_figure(a: Audit, d: Optional[dict]) -> None:
         ("it names bbox_jitter_null at $-0.147$",
          r"\emph{bbox\_jitter\_null} at $-0.147$"),
         ("it names instr_random_sub as the ceiling",
-         r"\emph{instr\_random\_sub} at $+0.070$ --- the deliberately random "
+         r"\emph{instr\_random\_sub} at $+0.070$, the deliberately random "
          r"instruction substitution, i.e.\ the \emph{ceiling}"),
         ("it states the band width and the count below the floor",
          r"the entire floor-to-ceiling band is $0.07$ wide: $8$ of the $12$ "
@@ -7826,6 +8241,8 @@ def main() -> int:
     audit_rollout_deltapath(a, d)
     audit_rollout_edited_arm(a)
     audit_rollout_filmstrip(a)
+    audit_body_frames_figure(a)
+    audit_per_task(a)
     audit_arm_pairing_defect(a)
     audit_rank_correlation(a, d)
     audit_edit_heatmap_figure(a, d)
