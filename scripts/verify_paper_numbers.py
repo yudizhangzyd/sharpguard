@@ -6560,6 +6560,142 @@ def audit_rank_correlation(a: Audit, d: dict) -> None:
             unqualified, source="cot_faith_arr.tex")
 
 
+def audit_prompt_ablation_figure(a: Audit, d: Optional[dict]) -> None:
+    """Figure 9's caption was one sentence: "truncating any portion of the CoT
+    causes >=95% of samples to change action."
+
+    It described 3 of the 6 bars. One of the six is the reference the others are
+    differenced from, so its 0.00 is definitional. One of the five perturbations
+    is a shuffle, which the harness documents as "grammar destroyed, content
+    preserved" -- not a truncation, and at 0.95 it is this model's own paraphrase
+    null (0.947 at the same tau). And two bars have different denominators than
+    the other four.
+
+    The report also lived only in /tmp, so neither the reader nor this audit
+    could see it; it is now released and everything below is read from it.
+    """
+    sec = "Figure 9 (prompt-format ablation): read against the model's own floor"
+    rep_path = ROOT / "results_v2/canonical_runs/prompt_ablation/cot_prompt_report.json"
+    src_rel = "results_v2/canonical_runs/prompt_ablation/cot_prompt_report.json"
+    a.check(sec, "the prompt-ablation report is in the release, not only in the "
+                 "scratch directory the figure used to read", True,
+            rep_path.exists(), source=src_rel)
+    if not rep_path.exists():
+        return
+    rep = json.loads(rep_path.read_text())
+    agg = rep.get("aggregate") or {}
+
+    gen = ROOT / "figures" / "gen_fig9_prompt_ablation.py"
+    gsrc = gen.read_text() if gen.exists() else ""
+    # The docstring says the word /tmp (it records what this figure used to read),
+    # so the check has to look at the code, not the file.
+    gcode = "\n".join(l for l in gsrc.split('"""')[-1].splitlines()
+                      if not l.lstrip().startswith("#"))
+    a.check(sec, "and the generator reads the release rather than /tmp",
+            [True, False],
+            ["canonical_runs" in gcode and "prompt_ablation" in gcode,
+             "/tmp" in gcode], source=str(gen))
+
+    a.check(sec, "the run is 100 requested samples at tau = 0.05", [100, 0.05],
+            [rep.get("n_samples"), rep.get("threshold")], source=src_rel)
+
+    VAR = ["full", "task_only", "plan_only", "task_plan_subtask", "shuffled",
+           "empty"]
+    a.check(sec, "the figure draws every variant the report aggregates -- no "
+                 "subset", sorted(VAR), sorted(agg),
+            source=src_rel)
+    a.check(sec, "and the generator names all six", [],
+            [v for v in VAR if f'"{v}"' not in gsrc], source=str(gen))
+
+    rates = [dig(agg, v, "faithful_rate") for v in VAR]
+    a.check(sec, "the six faithful rates (0.00 / 0.98 / 0.969 / 0.968 / 0.95 / "
+                 "1.00)", [0.0, 0.98, 0.969, 0.968, 0.95, 1.0],
+            [r3(x) for x in rates], source=src_rel)
+    a.check(sec, "the reference variant's 0.00 is definitional, i.e. its own "
+                 "delta_linf is identically 0 and not merely below tau",
+            [0.0, 0.0], [dig(agg, "full", "delta_linf_mean"),
+                         dig(agg, "full", "delta_linf_median")],
+            source=src_rel)
+    ns = [dig(agg, v, "n") for v in VAR]
+    a.check(sec, "the denominators are NOT all 100: plan_only lost 4 samples and "
+                 "task+plan+subtask lost 5, where the continuation did not "
+                 "decode 7 action bins", [100, 100, 96, 95, 100, 100], ns,
+            source=src_rel)
+    # Recompute each rate from the per-sample records: the aggregate is the thing
+    # the figure prints, so it is not allowed to be the only witness to itself.
+    per = rep.get("per_sample") or []
+    recomputed, counted = [], []
+    for v in VAR:
+        rows = [r for r in per if r.get("variant") == v]
+        counted.append(len(rows))
+        recomputed.append(round(sum(1 for r in rows if r.get("faithful"))
+                                / len(rows), 6) if rows else None)
+    a.check(sec, "and every rate recomputes from the per-sample records",
+            [r3(x) for x in rates], [r3(x) for x in recomputed],
+            source=src_rel)
+    a.check(sec, "with the per-sample record count equal to the reported n",
+            ns, counted, source=src_rel)
+    # The worst case for the >=95% claim: count every dropped sample as no change.
+    worst = [round(round(r * n) / 100, 2) for r, n in zip(rates, ns)]
+    a.check(sec, "counting the dropped samples as NO change, the two affected "
+                 "bars are >= 0.93 and >= 0.92 of all 100 -- which is what the "
+                 "caption quotes instead of a bare 0.97", [0.93, 0.92],
+            [worst[2], worst[3]], source=src_rel)
+
+    floor = dig(d, "models", "ecot-bridge", "families", "paraphrase_null",
+                "F_mag")
+    a.check(sec, "the floor the figure draws is this model's paraphrase null at "
+                 "the same tau", 0.947, r3(floor),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and the generator reads it from the derivation instead of "
+                 "typing it", True,
+            'fam("ecot-bridge", "paraphrase_null", "F_mag")' in gsrc,
+            source=str(gen))
+    if floor:
+        over = {v: r - floor for v, r in zip(VAR, rates) if v != "full"}
+        trunc = [over[v] for v in ("task_only", "plan_only",
+                                   "task_plan_subtask", "empty")]
+        a.check(sec, "the four truncations clear that floor by 0.02 to 0.05, as "
+                     "the caption and the section say", [0.02, 0.05],
+                [round(min(trunc), 2), round(max(trunc), 2)],
+                source=src_rel)
+        a.check(sec, "and the content-preserving shuffle clears it by 0.003, "
+                     "i.e. it is the null", 0.003, round(over["shuffled"], 3),
+                source=src_rel)
+        a.check(sec, "so no perturbation is BELOW the floor -- the figure's point "
+                     "is that they are all AT it, not that some are lower",
+                0, sum(1 for x in over.values() if x < 0), source=src_rel)
+
+    harn = ROOT / "experiments" / "cotfaith_prompt.py"
+    htxt = harn.read_text() if harn.exists() else ""
+    a.check(sec, "the harness itself documents the shuffle as content-preserving, "
+                 "which is why the caption may not call it a truncation", 1,
+            htxt.count("grammar destroyed,\n                  content preserved")
+            + htxt.count("grammar destroyed, content preserved"),
+            source=str(harn))
+
+    tex = TEX.read_text()
+    a.check(sec, "the caption quotes the one-sentence version it replaces", 1,
+            tex.count(r"truncating any portion of the CoT causes $\geq 95\%$ of "
+                      r"samples to change action''"), source=str(TEX))
+    a.check(sec, "and says the 0.00 bar is definitional", 1,
+            tex.count(r"\emph{full CoT} at $0.00$ is definitional"),
+            source=str(TEX))
+    a.check(sec, "and says the shuffle is not a truncation", 1,
+            tex.count("so it is not a truncation"), source=str(TEX))
+    a.check(sec, "and prints the floor next to the shuffle's 0.95", 1,
+            tex.count(r"it sits \emph{at} this model's paraphrase null of $0.947$"),
+            source=str(TEX))
+    a.check(sec, "and discloses the two moved denominators", 1,
+            tex.count(r"$\geq 0.93$ / $\geq 0.92$ of all $100$"), source=str(TEX))
+    a.check(sec, "and the section prose no longer calls the shuffle a removal", 0,
+            tex.count(r"removing any portion of the CoT (task\_only, plan\_only, "
+                      r"shuffled, empty)"), source=str(TEX))
+    a.check(sec, "while the section still states the floor-relative reading", 1,
+            tex.count(r"the truncations clear the floor by $0.02$--$0.05$ and the "
+                      r"shuffle by $0.003$"), source=str(TEX))
+
+
 def audit_bridge_figure(a: Audit, d: Optional[dict]) -> None:
     """Figure 5 drew 3 families and called them "the 3 shared families".
 
@@ -7059,6 +7195,7 @@ def main() -> int:
     audit_rank_correlation(a, d)
     audit_edit_heatmap_figure(a, d)
     audit_bridge_figure(a, d)
+    audit_prompt_ablation_figure(a, d)
     audit_overview_figure(a, d)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
