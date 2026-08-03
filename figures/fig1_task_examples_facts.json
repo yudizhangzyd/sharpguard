@@ -1,0 +1,14 @@
+{
+  "figure": "fig1_task_examples",
+  "rule": "a panel's judge rate is drawn in the failure colour when a family intended to preserve meaning scores < 0.9, or a family intended to change it scores > 0.3",
+  "intended_preserving": [
+    "paraphrase_null",
+    "bbox_jitter_null",
+    "identity_control"
+  ],
+  "flagged_meaning_preserved_rate": {
+    "syntactic_scramble": 1.0,
+    "verb_swap": 0.575
+  },
+  "source_judge_run": "results_v2/canonical_runs/judge_edit_families"
+}

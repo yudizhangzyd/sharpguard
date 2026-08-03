@@ -4323,6 +4323,39 @@ def audit_arr_submission(a: Audit) -> None:
                 source="judge_report.json")
         a.check(sec, f"and the ARR caption prints that {fam} rate",
                 True, f"${want}$" in t, source="cot_faith_arr.tex")
+    # Which panels the figure draws in the failure colour, from the generator
+    # rather than from the rule restated here. The caption has to account for
+    # them, and for two revisions it did not: it named adversarial_plausible as
+    # the second red rate when adversarial_plausible's printed rate is 0.000 and
+    # green, and the rate actually red beside it is verb_swap's 0.575. Nothing
+    # caught that, because every number the caption quoted was true of some
+    # field of some family. What was false was the mapping.
+    ff = load(root / "figures" / "fig1_task_examples_facts.json") or {}
+    flag = ff.get("flagged_meaning_preserved_rate")
+    a.check(sec, "the taxonomy figure records which panels it flagged, so the "
+                 "caption's account of them is checked against the drawing",
+            True, isinstance(flag, dict) and bool(flag),
+            source="figures/fig1_task_examples_facts.json -- written by "
+                   "figures/gen_fig1_task_examples.py")
+    cm = re.search(r"\\includegraphics\[[^\]]*\]\{fig1_task_examples\.pdf\}"
+                   r".*?\\caption\{(.*?)\}\s*\\label\{fig:taxonomy\}",
+                   t, re.S)
+    cap_tax = cm.group(1) if cm else ""
+    a.check(sec, "fig:taxonomy's caption is locatable in the ARR body",
+            True, bool(cap_tax), source="cot_faith_arr.tex")
+    for fam, rate in sorted((flag or {}).items()):
+        a.check(sec, f"fig:taxonomy's caption names {fam}, whose rate the "
+                     f"figure draws red", True,
+                fam.replace("_", "\\_") in cap_tax,
+                source=f"judge rate {rate}, flagged by the generator")
+    # The count in words, so a third flagged panel cannot be added to the figure
+    # while the caption goes on saying two.
+    words = {1: "One rate is", 2: "Two rates are", 3: "Three rates are"}
+    a.check(sec, "and the caption's count of red rates is the number the "
+                 "figure drew", True,
+            f"{words.get(len(flag or {}), '??')} therefore drawn red" in cap_tax,
+            source=f"{len(flag or {})} flagged in "
+                   f"fig1_task_examples_facts.json")
     # fig:noise's caption states three derived ratios/counts in prose. Each is
     # recomputed here from derived_metrics.json rather than trusted, because a
     # caption is exactly where an arithmetic slip goes unnoticed.

@@ -18,10 +18,17 @@ paper's own negative results and a taxonomy diagram is exactly where a reader
 would otherwise miss them:
 
   * syntactic_scramble sits in Tier 0 as a "structural" edit but the judge
-    calls it meaning-preserving at 1.000, so it is drawn with the nulls'
-    marking, not the semantic families'.
-  * adversarial_plausible is judged plausible on 0.125 of pairs. The panel
-    prints that rate rather than the family's name's promise.
+    calls it meaning-preserving at 1.000, so its rate is drawn in the failure
+    colour: for a family the taxonomy files as semantic, that is what a 1.000
+    is. It is also what makes the family usable as the length-exact floor.
+  * adversarial_plausible does change the referent as designed, so the rate
+    this figure prints for it (meaning preserved, 0.000) is a pass. The rate
+    that fails is its plausibility, 0.125, which is a different judge field
+    and is not drawn here -- the caption carries it, and says so.
+
+Which panels end up flagged is written to fig1_task_examples_facts.json as the
+figure draws them, so the caption's account of them is checkable against the
+drawing rather than against whoever wrote the caption last.
 
 No numeric literal for any reported quantity appears in this file.
 """
@@ -156,6 +163,14 @@ Y_RULE, Y_JUDGE = 0.20 * u, 0.078 * u
 assert PANEL_H - 0.63 - 0.20 > 0.09, "the rule would strike the edited span"
 
 y = fig_h * u
+# Which panels this figure draws in the failure colour, collected as it draws
+# them. The caption has to say which rates are flagged and why, and the ARR
+# caption named the wrong second family for two revisions -- it called out
+# adversarial_plausible, whose meaning-preserved rate is 0.000 and green, while
+# the rate actually drawn red beside it is verb_swap's 0.575. A caption cannot
+# be checked against a rule restated in the audit; it can be checked against
+# what the generator did, so the generator writes that down.
+flagged = {}
 
 
 def _fit(text, width_in, base):
@@ -239,6 +254,8 @@ for tier_name, tier_color, fams in TIERS:
         intended_preserving = fam in ("paraphrase_null", "bbox_jitter_null",
                                       "identity_control")
         ok = (rate >= 0.9) if intended_preserving else (rate <= 0.3)
+        if not ok:
+            flagged[fam] = round(rate, 3)
         ax.plot([x0 + PAD * 0.7, x0 + pw - PAD * 0.7], [bot + Y_RULE] * 2,
                 color="0.85", lw=0.5)
         ax.text(x0 + PAD, bot + Y_JUDGE, "judge: meaning preserved",
@@ -251,6 +268,22 @@ for tier_name, tier_color, fams in TIERS:
 
 save(fig, "fig1_task_examples")
 
+facts_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "fig1_task_examples_facts.json")
+with open(facts_path, "w") as fh:
+    json.dump({
+        "figure": "fig1_task_examples",
+        "rule": "a panel's judge rate is drawn in the failure colour when a "
+                "family intended to preserve meaning scores < 0.9, or a family "
+                "intended to change it scores > 0.3",
+        "intended_preserving": ["paraphrase_null", "bbox_jitter_null",
+                                "identity_control"],
+        "flagged_meaning_preserved_rate": flagged,
+        "source_judge_run": D["source_judge_run"],
+    }, fh, indent=2)
+    fh.write("\n")
+
 print(f"[audit] pairs        : {D['n_pairs']} from {D['source_judge_run']}")
 print(f"[audit] head verified: {D['head_chars_verified']} chars")
 print(f"[audit] families     : {sum(len(f) for _, _, f in TIERS)} panels")
+print(f"[audit] flagged red  : {flagged}")
