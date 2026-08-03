@@ -65,6 +65,14 @@ for key, cmd in (("textheight_pt", "textheight"), ("textwidth_pt", "textwidth"),
 if "textheight_pt" not in geo:
     raise SystemExit("[local] FAILED: the build log does not report "
                      "\\textheight; the figure-geometry checks would go quiet")
+# Text that prints outside its column. pdflatex reports every overfull box and
+# then exits 0, so this is a defect class that is only ever found by grepping a
+# log nobody keeps -- and this script builds into a mktemp it deletes. An 8.9pt
+# overfull display equation shipped in the appendix that way. Sub-2pt is below
+# what a reader can see; the audit draws the line, this only measures.
+ovf = [float(x) for x in re.findall(r"Overfull \\hbox \(([\d.]+)pt too wide", log)]
+geo["overfull_hbox_pt_max"] = max(ovf) if ovf else 0.0
+geo["overfull_hbox_count"] = len(ovf)
 geo["source"] = "pdflatex log for cot_faith_arr.tex, scripts/build_local.sh"
 dest = pathlib.Path("results_v2/canonical_runs/arr_build")
 dest.mkdir(parents=True, exist_ok=True)

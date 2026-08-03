@@ -4157,6 +4157,25 @@ def audit_arr_submission(a: Audit) -> None:
                 True, blp <= 8,
                 source=f"body_last_page={blp}, Limitations starts on page "
                        f"{geo.get('limitations_starts_page')}")
+    # Ink outside the column. pdflatex reports every overfull box and exits 0,
+    # so this is found by grepping a log or not at all -- and build_local.sh
+    # builds into a mktemp it deletes. An 8.9pt overfull display equation
+    # (F_diff's definition, whose \; spacing was authored for the single-column
+    # ICLR measure) printed past the column edge in the generated appendix for
+    # several revisions on exactly that basis. The bound is 3pt because pdflatex
+    # reports anything over 0.1pt and sub-2pt is not visible ink; what it forbids
+    # is the class that is.
+    ovf = geo.get("overfull_hbox_pt_max")
+    a.check(sec, "the build's worst overfull box is on disk, so text printing "
+                 "outside its column is asserted rather than grepped for",
+            True, ovf is not None,
+            source="overfull_hbox_pt_max in geometry.json -- parsed from the "
+                   "pdflatex log by scripts/build_local.sh")
+    if ovf is not None:
+        a.check(sec, "and no box overflows its column by more than 3pt, which "
+                     "is where the overflow becomes visible", True, ovf <= 3.0,
+                source=f"worst overfull hbox {ovf:.2f}pt over "
+                       f"{geo.get('overfull_hbox_count')} reported")
     # Measured, for the same reason: 16cm of text and a 0.6cm gutter are the
     # style's numbers, and restating them here is how the two drift apart.
     tw = geo.get("textwidth_pt", 453.6)
