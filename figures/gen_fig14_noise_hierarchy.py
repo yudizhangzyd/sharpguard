@@ -125,16 +125,30 @@ wilson = max((w[1] - w[0]) / 2
 
 per_max = TR["F_max_abs_diff_per_pair"]
 per_bar = TR["F_bar_abs_diff_per_pair"]
+# The two series range over DIFFERENT family sets and the legend has to say so:
+# the bar is the max over the 9 families compared at N>=50, which includes the
+# Tier-0 controls, while the dot is F_bar, the mean over the 7 NON-control
+# families. On data-50A the worst family IS cross_task_swap, a control -- so the
+# bar can be a control cell, and a legend reading "worst family" next to
+# "7-family mean" invites the reader to assume one set. This runs in the
+# conservative direction (a wider noise bound is a stronger caveat against our
+# own leaderboard), which is why the bars stay over all 9 rather than being
+# quietly restricted to match the dots.
+n_bar_fams = max(
+    (TR.get("by_label", {}).get(m, {}).get("F_per_family", {})
+       .get("n_families_compared") or 0)
+    for m in per_max)
+assert n_bar_fams > 0, "the replicate artifact no longer says how many families"
 # Sorted by the quantity the panel is about, so the reader can find the worst
 # pair without hunting; the labels carry the identity.
 labels = sorted(per_max, key=per_max.get, reverse=True)
 ys = np.arange(len(labels))
 ax2.barh(ys, [per_max[m] for m in labels], color=C_COT_TRAINED,
          edgecolor="black", lw=0.4, height=0.6,
-         label=r"worst family ($\max_f |\Delta\mathcal{F}|$)")
+         label=rf"worst of {n_bar_fams} families ($\max_f |\Delta\mathcal{{F}}|$)")
 ax2.plot([per_bar[m] for m in labels], ys, "o", ms=4,
          color=C_NO_COT, mec="black", mew=0.4, ls="none", zorder=3,
-         label=r"$|\Delta\bar{\mathcal{F}}|$ (7-family mean)")
+         label=r"$|\Delta\bar{\mathcal{F}}|$ (7 non-control mean)")
 ax2.axvline(wilson, color="0.35", ls="--", lw=0.8, zorder=2,
             label=f"widest Wilson half-width ({wilson:.3f})")
 ax2.set_yticks(ys)

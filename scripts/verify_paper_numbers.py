@@ -1487,6 +1487,43 @@ def audit_training_replicate(a: Audit, d: Optional[dict]) -> None:
                  "pairs (so 0.260 is not one anomalous cell)",
             3, worst_fams.count("verb_swap"))
 
+    # fig:noise panel (b) draws two series over DIFFERENT family sets: the bar
+    # is max over the 9 compared families, the dot is F_bar over the 7
+    # non-control ones. On data-50A the worst family is cross_task_swap, a
+    # Tier-0 control -- so a legend reading "worst family" beside "7-family
+    # mean" let a reader assume one set, which is the same under-specification
+    # that produced the fig:threshold and fig:ablation defects. It runs in the
+    # conservative direction here (a wider noise bound is a stronger caveat
+    # against our own leaderboard), and both the legend and the caption now say
+    # so rather than leaving it to be inferred.
+    ctl = {"cross_task_swap", "selfsplice_control", "syntactic_scramble",
+           "bbox_jitter_null", "paraphrase_null", "instr_random_sub"}
+    a.check(sec, "at least one pair's worst family is a control, so the bar "
+                 "series is not restricted to the 7 non-control families",
+            True, any(f in ctl for f in worst_fams))
+    a.check(sec, "and the pair where that happens is data-50A",
+            "cross_task_swap",
+            dig(by_label.get("ours-data50A"), "F_per_family",
+                "max_abs_diff_family"))
+    a.check(sec, "the headline 0.260 is itself a NON-control family, so the "
+                 "bound is not carried by a control", False,
+            tr.get("F_max_abs_diff_where", "").split(":")[-1] in ctl)
+    gen14 = (ROOT / "figures" / "gen_fig14_noise_hierarchy.py")
+    g14 = gen14.read_text() if gen14.exists() else ""
+    a.check(sec, "the figure's legend names both family sets rather than "
+                 "labelling one 'worst family' and the other '7-family mean'",
+            True, ("worst of {n_bar_fams} families" in g14
+                   and "7 non-control mean" in g14),
+            source="figures/gen_fig14_noise_hierarchy.py")
+    a.check(sec, "and it reads the family count from the artifact instead of "
+                 "hardcoding 9", True, "n_families_compared" in g14,
+            source="figures/gen_fig14_noise_hierarchy.py")
+    a.check(sec, "the caption states that the bars span 9 families and that "
+                 "data-50A's is a control", True,
+            "$9$ families" in ARR.read_text()
+            and "so the bound is conservative" in ARR.read_text(),
+            source=str(ARR))
+
     # F_bar itself across retraining: the unit every CoT-specificity margin in
     # Section f2_calib is measured against, so it has to be asserted, not
     # eyeballed off the per-family table.
