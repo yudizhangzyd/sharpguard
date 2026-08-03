@@ -4879,8 +4879,13 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     """
     sec = "Rollout filmstrip (fig15, WorldGym-style motion figure)"
     root = ROOT
-    arr = root / "cot_faith_arr.tex"
-    t = arr.read_text() if arr.exists() else ""
+    # Both documents, because the float is free to move between them: the body
+    # is at its 8-page limit, so the figure ships in the appendix, and a gate
+    # that read only cot_faith_arr.tex would have switched this whole section
+    # off the moment it moved -- silently, and in the direction of fewer claims.
+    t = "".join((root / n).read_text() for n in ("cot_faith_arr.tex",
+                                                 "arr_appendix.tex")
+                if (root / n).exists())
     if "fig15_rollout_filmstrip" not in t:
         return
 
@@ -4949,18 +4954,53 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # Checked in both directions, since either mismatch ships a caption
     # describing a figure the reader is not looking at.
     eef = bool(facts.get("eef_logged"))
-    for lit, what in (("gripper distance", "panel (c)'s distance curve"),
+    for lit, what in (("per-step distance", "panel (c)'s distance curve"),
                       ("top-down", "panel (b)'s path")):
         a.check(sec, f"the caption describes {what} exactly when a pose was "
                      f"logged (eef_logged={eef})", eef, lit in t,
-                source=f"cot_faith_arr.tex mentions {lit!r}: {lit in t}")
+                source=f"the manuscript mentions {lit!r}: {lit in t}")
+
+    # A released fact sheet should not record whose filesystem rendered the
+    # figure, and an absolute path here is also the tell that the committed PDF
+    # was drawn from a scratch capture rather than the released one.
+    a.check(sec, "the fact sheet's capture directory is repo-relative, so the "
+                 "released figure is drawn from the released frames",
+            True, not str(facts.get("capture_dir") or "/").startswith("/"),
+            source=f"fig15_facts.json: capture_dir="
+                   f"{facts.get('capture_dir')!r}")
 
     # Every number the caption quotes, read back out of the fact sheet, so a
-    # caption edit that changes a digit fails here rather than in review.
-    for val, what in ((len(facts.get("columns_at_steps") or []), "column count"),
-                      (facts.get("n_edit_skipped_flip"), "edits skipped")):
-        a.check(sec, f"the ARR caption prints the artifact's {what} ({val})",
+    # caption edit that changes a digit fails here rather than in review. The
+    # quantitative claims only: the two peaks, the reference arm's extent and
+    # the rollout length are what a reader carries away from this figure, and
+    # nothing else in the release constrains them.
+    peak = facts.get("peak_cm_from_clean") or {}
+    span = facts.get("cot_clean_xy_span_cm")
+    for val, what in (
+            (f"{peak.get('cot_direction_flip', float('nan')):.1f}",
+             "the flipped arm's peak distance from the clean arm, in cm"),
+            (f"{peak.get('nocot', float('nan')):.1f}",
+             "the no-CoT arm's peak distance, in cm"),
+            (f"{(span if span is not None else float('nan')):.1f}",
+             "the clean arm's own top-down extent, in cm"),
+            (f"{(facts.get('steps_per_arm') or {}).get('cot_clean')}",
+             "the rollout length in steps")):
+        a.check(sec, f"the caption prints {what} as the artifact has it ({val})",
                 True, f"${val}$" in t, source="fig15_facts.json")
+
+    # The stall. Two near-identical adjacent cells have two readings -- a policy
+    # that stopped moving, and a figure that repeated a frame -- and only this
+    # range distinguishes them, so the caption is required to carry it.
+    cc = facts.get("column_change_mean_abs_pixel") or {}
+    vals = [v for v in cc.values() if v]
+    if vals:
+        lo = min(v["min"] for v in vals)
+        hi = max(v["max"] for v in vals)
+        a.check(sec, "and the between-column change range, which is what lets a "
+                     f"reader read a stall as a stall ({lo:.2f}-{hi:.1f} "
+                     f"absolute pixel levels)",
+                True, f"${lo:.2f}$" in t and f"${hi:.1f}$" in t,
+                source="fig15_facts.json: column_change_mean_abs_pixel")
 
 
 def audit_arm_pairing_defect(a: Audit) -> None:

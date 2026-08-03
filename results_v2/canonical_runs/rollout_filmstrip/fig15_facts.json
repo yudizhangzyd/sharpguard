@@ -1,0 +1,52 @@
+{
+  "capture_dir": "results_v2/canonical_runs/rollout_filmstrip",
+  "suite": "libero_90",
+  "task": "close the top drawer of the cabinet",
+  "task_idx": 0,
+  "episode": 0,
+  "n_filmed_episodes": 1,
+  "cot_refresh_steps": 1,
+  "columns_at_steps": [
+    0,
+    80,
+    160,
+    230,
+    310,
+    390
+  ],
+  "steps_per_arm": {
+    "nocot": 400,
+    "cot_clean": 400,
+    "cot_direction_flip": 400
+  },
+  "success_per_arm": {
+    "nocot": false,
+    "cot_clean": false,
+    "cot_direction_flip": false
+  },
+  "n_edit_skipped_flip": 0,
+  "eef_logged": true,
+  "step0_pairing_max_mean_abs_pixel": 0.0,
+  "column_change_mean_abs_pixel": {
+    "nocot": {
+      "min": 0.16,
+      "max": 7.338,
+      "mean": 2.436
+    },
+    "cot_clean": {
+      "min": 1.634,
+      "max": 7.237,
+      "mean": 2.805
+    },
+    "cot_direction_flip": {
+      "min": 0.038,
+      "max": 7.674,
+      "mean": 3.837
+    }
+  },
+  "peak_cm_from_clean": {
+    "nocot": 128.84,
+    "cot_direction_flip": 139.69
+  },
+  "cot_clean_xy_span_cm": 21.76
+}

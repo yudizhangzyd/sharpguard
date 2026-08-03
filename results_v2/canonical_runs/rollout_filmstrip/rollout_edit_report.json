@@ -1,0 +1,2439 @@
+{
+  "experiment": "rollout_level_cot_edit",
+  "status": "running",
+  "config": {
+    "ckpt_path": "/tmp/cotfaith_ckpt",
+    "out": "/mnt/task_wrapper/user_output/artifacts/cotfaith-rollout-edit",
+    "suite": "libero_90",
+    "families": "direction_flip",
+    "n_tasks": 2,
+    "n_eps_per_task": 1,
+    "arms": "",
+    "cot_refresh_steps": 1,
+    "max_steps": 400,
+    "max_new_tokens": 320,
+    "unnorm_key": "",
+    "action_decoder": "ours",
+    "gripper_transform": "openvla",
+    "image_preproc": "none",
+    "dtype": "bfloat16",
+    "time_budget_h": 20.0,
+    "probe_only": false,
+    "capture_episodes": "0:0,1:0",
+    "capture_every": 10,
+    "n_tasks_est": 10,
+    "env_seed": 0
+  },
+  "arms_run": [
+    "nocot",
+    "cot_clean",
+    "cot_direction_flip"
+  ],
+  "precondition_met": false,
+  "precondition_note": "cot_clean NEVER succeeds, so DSR is 0 for every family by construction and carries no information about CoT causality. This is reported as an undefined measurement rather than as a null result. Check rollout_edit_probe.json: the usual cause is a missing norm_stats entry for this suite, i.e. a physical-scale error unrelated to any CoT.",
+  "by_arm": {
+    "nocot": {
+      "family": null,
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 0,
+      "n_cot_unstructured": 0,
+      "n_cot_generated": 0,
+      "n_steps": 400,
+      "n_edit_skipped": 0
+    },
+    "cot_clean": {
+      "family": null,
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 400,
+      "n_cot_unstructured": 0,
+      "n_cot_generated": 400,
+      "n_steps": 400,
+      "n_edit_skipped": 0
+    },
+    "cot_direction_flip": {
+      "family": "direction_flip",
+      "n": 1,
+      "successes": 0,
+      "sr": 0.0,
+      "wilson95": [
+        0.0,
+        0.7934567085261071
+      ],
+      "n_cot_structured": 400,
+      "n_cot_unstructured": 0,
+      "n_cot_generated": 400,
+      "n_steps": 400,
+      "n_edit_skipped": 0
+    }
+  },
+  "delta_sr_vs_cot_clean": {},
+  "episodes": [
+    {
+      "arm": "nocot",
+      "family": null,
+      "success": false,
+      "steps": 400,
+      "n_cot_structured": 0,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 0,
+      "cot_refresh_steps": 1,
+      "n_delta_recorded": 0,
+      "trajectory": [
+        {
+          "step": 0,
+          "frame": "nocot_t0000.png",
+          "eef": [
+            -0.20791,
+            -0.01446,
+            1.17826
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.03922,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 10,
+          "frame": "nocot_t0010.png",
+          "eef": [
+            -0.15005,
+            0.04423,
+            1.16917
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.03922,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 20,
+          "frame": "nocot_t0020.png",
+          "eef": [
+            -0.16296,
+            0.09938,
+            1.17762
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            -0.02353,
+            -0.10196,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 30,
+          "frame": "nocot_t0030.png",
+          "eef": [
+            -0.24985,
+            0.15315,
+            1.18242
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.00784,
+            0.00784,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 40,
+          "frame": "nocot_t0040.png",
+          "eef": [
+            -0.35561,
+            0.19197,
+            1.18098
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.00784,
+            0.00784,
+            -0.08627,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 50,
+          "frame": "nocot_t0050.png",
+          "eef": [
+            -0.46323,
+            0.21836,
+            1.19829
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.03137,
+            0.00784,
+            -0.11765,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 60,
+          "frame": "nocot_t0060.png",
+          "eef": [
+            -0.52923,
+            0.23023,
+            1.21111
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.00784,
+            0.00784,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 70,
+          "frame": "nocot_t0070.png",
+          "eef": [
+            -0.54014,
+            0.22161,
+            1.22659
+          ],
+          "action": [
+            0.68235,
+            -0.86275,
+            0.02353,
+            -0.02353,
+            -0.07843,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 80,
+          "frame": "nocot_t0080.png",
+          "eef": [
+            -0.48746,
+            0.17466,
+            1.2588
+          ],
+          "action": [
+            0.68235,
+            -0.1098,
+            -0.16471,
+            0.03137,
+            -0.10196,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 90,
+          "frame": "nocot_t0090.png",
+          "eef": [
+            -0.45307,
+            0.20575,
+            1.2244
+          ],
+          "action": [
+            0.68235,
+            -0.68235,
+            0.00784,
+            0.00784,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 100,
+          "frame": "nocot_t0100.png",
+          "eef": [
+            -0.49195,
+            0.25587,
+            1.2339
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 110,
+          "frame": "nocot_t0110.png",
+          "eef": [
+            -0.49811,
+            0.30593,
+            1.24967
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.00784,
+            0.00784,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 120,
+          "frame": "nocot_t0120.png",
+          "eef": [
+            -0.57739,
+            0.34521,
+            1.24284
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 130,
+          "frame": "nocot_t0130.png",
+          "eef": [
+            -0.63278,
+            0.30577,
+            1.23326
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.00784,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 140,
+          "frame": "nocot_t0140.png",
+          "eef": [
+            -0.65496,
+            0.2418,
+            1.24114
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 150,
+          "frame": "nocot_t0150.png",
+          "eef": [
+            -0.66244,
+            0.23013,
+            1.27913
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 160,
+          "frame": "nocot_t0160.png",
+          "eef": [
+            -0.67606,
+            0.28456,
+            1.28673
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 170,
+          "frame": "nocot_t0170.png",
+          "eef": [
+            -0.72443,
+            0.35233,
+            1.26081
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 180,
+          "frame": "nocot_t0180.png",
+          "eef": [
+            -0.73021,
+            0.38524,
+            1.22627
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 190,
+          "frame": "nocot_t0190.png",
+          "eef": [
+            -0.75272,
+            0.37355,
+            1.26962
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 200,
+          "frame": "nocot_t0200.png",
+          "eef": [
+            -0.75814,
+            0.36099,
+            1.36302
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 210,
+          "frame": "nocot_t0210.png",
+          "eef": [
+            -0.83873,
+            0.34084,
+            1.44485
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 220,
+          "frame": "nocot_t0220.png",
+          "eef": [
+            -0.92249,
+            0.2945,
+            1.51041
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 230,
+          "frame": "nocot_t0230.png",
+          "eef": [
+            -0.98985,
+            0.22392,
+            1.55361
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 240,
+          "frame": "nocot_t0240.png",
+          "eef": [
+            -1.05385,
+            0.09895,
+            1.60202
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.00784,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 250,
+          "frame": "nocot_t0250.png",
+          "eef": [
+            -1.09438,
+            -0.07824,
+            1.66205
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 260,
+          "frame": "nocot_t0260.png",
+          "eef": [
+            -1.06637,
+            -0.27375,
+            1.74229
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 270,
+          "frame": "nocot_t0270.png",
+          "eef": [
+            -0.99318,
+            -0.4375,
+            1.77922
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 280,
+          "frame": "nocot_t0280.png",
+          "eef": [
+            -0.91583,
+            -0.47073,
+            1.76378
+          ],
+          "action": [
+            0.68235,
+            -0.68235,
+            0.00784,
+            -0.03137,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 290,
+          "frame": "nocot_t0290.png",
+          "eef": [
+            -0.95247,
+            -0.44659,
+            1.78877
+          ],
+          "action": [
+            -0.76078,
+            0.08627,
+            0.00784,
+            0.01569,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 300,
+          "frame": "nocot_t0300.png",
+          "eef": [
+            -1.03893,
+            -0.41532,
+            1.79052
+          ],
+          "action": [
+            -0.76078,
+            0.02353,
+            0.00784,
+            0.00784,
+            -0.10196,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 310,
+          "frame": "nocot_t0310.png",
+          "eef": [
+            -1.09728,
+            -0.42794,
+            1.78801
+          ],
+          "action": [
+            0.68235,
+            -0.1098,
+            -0.16471,
+            0.03137,
+            -0.10196,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 320,
+          "frame": "nocot_t0320.png",
+          "eef": [
+            -1.02879,
+            -0.53478,
+            1.77039
+          ],
+          "action": [
+            0.68235,
+            -0.68235,
+            -0.0549,
+            -0.03137,
+            0.09412,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 330,
+          "frame": "nocot_t0330.png",
+          "eef": [
+            -0.92324,
+            -0.64496,
+            1.76062
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.00784,
+            0.00784,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 340,
+          "frame": "nocot_t0340.png",
+          "eef": [
+            -0.78186,
+            -0.70406,
+            1.76203
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 350,
+          "frame": "nocot_t0350.png",
+          "eef": [
+            -0.67965,
+            -0.72481,
+            1.73506
+          ],
+          "action": [
+            0.68235,
+            -0.68235,
+            -0.0549,
+            -0.03137,
+            0.09412,
+            0.99608,
+            -1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 360,
+          "frame": "nocot_t0360.png",
+          "eef": [
+            -0.54701,
+            -0.71993,
+            1.69689
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.0,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 370,
+          "frame": "nocot_t0370.png",
+          "eef": [
+            -0.38248,
+            -0.66095,
+            1.63888
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.00784,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 380,
+          "frame": "nocot_t0380.png",
+          "eef": [
+            -0.20145,
+            -0.56452,
+            1.5841
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.00784,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        },
+        {
+          "step": 390,
+          "frame": "nocot_t0390.png",
+          "eef": [
+            -0.0836,
+            -0.4485,
+            1.54937
+          ],
+          "action": [
+            0.58824,
+            0.03137,
+            0.00784,
+            0.06275,
+            0.00784,
+            0.99608,
+            1.0
+          ],
+          "move": null
+        }
+      ],
+      "eef_available": true,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "close the top drawer of the cabinet",
+      "arm_rewind": {
+        "controller": 1,
+        "warmstart": true,
+        "gripper": 1,
+        "clock": 3,
+        "observables": 29
+      }
+    },
+    {
+      "arm": "cot_clean",
+      "family": null,
+      "success": false,
+      "steps": 400,
+      "n_cot_structured": 400,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 400,
+      "cot_refresh_steps": 1,
+      "n_delta_recorded": 0,
+      "trajectory": [
+        {
+          "step": 0,
+          "frame": "cot_clean_t0000.png",
+          "eef": [
+            -0.20791,
+            -0.01446,
+            1.17826
+          ],
+          "action": [
+            0.00784,
+            0.80784,
+            -0.32157,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and down"
+        },
+        {
+          "step": 10,
+          "frame": "cot_clean_t0010.png",
+          "eef": [
+            -0.20918,
+            0.08322,
+            1.13919
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 20,
+          "frame": "cot_clean_t0020.png",
+          "eef": [
+            -0.20881,
+            0.0781,
+            1.09434
+          ],
+          "action": [
+            0.00784,
+            0.82353,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and down"
+        },
+        {
+          "step": 30,
+          "frame": "cot_clean_t0030.png",
+          "eef": [
+            -0.21035,
+            0.10862,
+            1.04131
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 40,
+          "frame": "cot_clean_t0040.png",
+          "eef": [
+            -0.21066,
+            0.0779,
+            0.98678
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 50,
+          "frame": "cot_clean_t0050.png",
+          "eef": [
+            -0.21295,
+            -0.03513,
+            0.93374
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 60,
+          "frame": "cot_clean_t0060.png",
+          "eef": [
+            -0.2157,
+            -0.0958,
+            0.90938
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 70,
+          "frame": "cot_clean_t0070.png",
+          "eef": [
+            -0.21553,
+            -0.09612,
+            0.90948
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 80,
+          "frame": "cot_clean_t0080.png",
+          "eef": [
+            -0.21533,
+            -0.09651,
+            0.9095
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 90,
+          "frame": "cot_clean_t0090.png",
+          "eef": [
+            -0.21513,
+            -0.09689,
+            0.90953
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 100,
+          "frame": "cot_clean_t0100.png",
+          "eef": [
+            -0.21494,
+            -0.09728,
+            0.90954
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 110,
+          "frame": "cot_clean_t0110.png",
+          "eef": [
+            -0.21474,
+            -0.09766,
+            0.90957
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 120,
+          "frame": "cot_clean_t0120.png",
+          "eef": [
+            -0.21455,
+            -0.09805,
+            0.90959
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 130,
+          "frame": "cot_clean_t0130.png",
+          "eef": [
+            -0.21435,
+            -0.09843,
+            0.90961
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 140,
+          "frame": "cot_clean_t0140.png",
+          "eef": [
+            -0.21417,
+            -0.09881,
+            0.90964
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 150,
+          "frame": "cot_clean_t0150.png",
+          "eef": [
+            -0.21398,
+            -0.0992,
+            0.90965
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 160,
+          "frame": "cot_clean_t0160.png",
+          "eef": [
+            -0.21379,
+            -0.09959,
+            0.90967
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 170,
+          "frame": "cot_clean_t0170.png",
+          "eef": [
+            -0.21365,
+            -0.09986,
+            0.90993
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 180,
+          "frame": "cot_clean_t0180.png",
+          "eef": [
+            -0.21347,
+            -0.10037,
+            0.90977
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 190,
+          "frame": "cot_clean_t0190.png",
+          "eef": [
+            -0.21329,
+            -0.10079,
+            0.90977
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 200,
+          "frame": "cot_clean_t0200.png",
+          "eef": [
+            -0.21312,
+            -0.10119,
+            0.90979
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 210,
+          "frame": "cot_clean_t0210.png",
+          "eef": [
+            -0.21294,
+            -0.10158,
+            0.90981
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 220,
+          "frame": "cot_clean_t0220.png",
+          "eef": [
+            -0.21277,
+            -0.10197,
+            0.90982
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 230,
+          "frame": "cot_clean_t0230.png",
+          "eef": [
+            -0.2126,
+            -0.10236,
+            0.90984
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 240,
+          "frame": "cot_clean_t0240.png",
+          "eef": [
+            -0.21244,
+            -0.10275,
+            0.90985
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 250,
+          "frame": "cot_clean_t0250.png",
+          "eef": [
+            -0.21227,
+            -0.10314,
+            0.90986
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 260,
+          "frame": "cot_clean_t0260.png",
+          "eef": [
+            -0.21211,
+            -0.10354,
+            0.90987
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 270,
+          "frame": "cot_clean_t0270.png",
+          "eef": [
+            -0.21196,
+            -0.10393,
+            0.90988
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 280,
+          "frame": "cot_clean_t0280.png",
+          "eef": [
+            -0.2118,
+            -0.10433,
+            0.90989
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 290,
+          "frame": "cot_clean_t0290.png",
+          "eef": [
+            -0.21165,
+            -0.10473,
+            0.90989
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 300,
+          "frame": "cot_clean_t0300.png",
+          "eef": [
+            -0.21151,
+            -0.10513,
+            0.90991
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 310,
+          "frame": "cot_clean_t0310.png",
+          "eef": [
+            -0.21136,
+            -0.10554,
+            0.90991
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 320,
+          "frame": "cot_clean_t0320.png",
+          "eef": [
+            -0.21122,
+            -0.10595,
+            0.90992
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 330,
+          "frame": "cot_clean_t0330.png",
+          "eef": [
+            -0.21107,
+            -0.10636,
+            0.90992
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 340,
+          "frame": "cot_clean_t0340.png",
+          "eef": [
+            -0.21094,
+            -0.10677,
+            0.90993
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 350,
+          "frame": "cot_clean_t0350.png",
+          "eef": [
+            -0.2108,
+            -0.10718,
+            0.90993
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.41569,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 360,
+          "frame": "cot_clean_t0360.png",
+          "eef": [
+            -0.21067,
+            -0.1076,
+            0.90994
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 370,
+          "frame": "cot_clean_t0370.png",
+          "eef": [
+            -0.21054,
+            -0.10802,
+            0.90995
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 380,
+          "frame": "cot_clean_t0380.png",
+          "eef": [
+            -0.21042,
+            -0.10844,
+            0.90996
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        },
+        {
+          "step": 390,
+          "frame": "cot_clean_t0390.png",
+          "eef": [
+            -0.2103,
+            -0.10887,
+            0.90996
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            -0.40784,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and down"
+        }
+      ],
+      "eef_available": true,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "close the top drawer of the cabinet",
+      "arm_rewind": {
+        "controller": 1,
+        "warmstart": true,
+        "gripper": 1,
+        "clock": 3,
+        "observables": 29
+      }
+    },
+    {
+      "arm": "cot_direction_flip",
+      "family": "direction_flip",
+      "success": false,
+      "steps": 400,
+      "n_cot_structured": 400,
+      "n_cot_unstructured": 0,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 400,
+      "cot_refresh_steps": 1,
+      "n_delta_recorded": 0,
+      "trajectory": [
+        {
+          "step": 0,
+          "frame": "cot_direction_flip_t0000.png",
+          "eef": [
+            -0.20791,
+            -0.01446,
+            1.17826
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 10,
+          "frame": "cot_direction_flip_t0010.png",
+          "eef": [
+            -0.21471,
+            -0.11668,
+            1.23976
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 20,
+          "frame": "cot_direction_flip_t0020.png",
+          "eef": [
+            -0.2165,
+            -0.10726,
+            1.30321
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 30,
+          "frame": "cot_direction_flip_t0030.png",
+          "eef": [
+            -0.21733,
+            -0.00581,
+            1.36246
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 40,
+          "frame": "cot_direction_flip_t0040.png",
+          "eef": [
+            -0.22178,
+            0.09849,
+            1.41751
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 50,
+          "frame": "cot_direction_flip_t0050.png",
+          "eef": [
+            -0.22649,
+            0.20125,
+            1.47141
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 60,
+          "frame": "cot_direction_flip_t0060.png",
+          "eef": [
+            -0.23133,
+            0.30101,
+            1.52332
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 70,
+          "frame": "cot_direction_flip_t0070.png",
+          "eef": [
+            -0.23646,
+            0.39435,
+            1.56826
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 80,
+          "frame": "cot_direction_flip_t0080.png",
+          "eef": [
+            -0.24496,
+            0.48459,
+            1.59421
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 90,
+          "frame": "cot_direction_flip_t0090.png",
+          "eef": [
+            -0.2672,
+            0.58147,
+            1.59877
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 100,
+          "frame": "cot_direction_flip_t0100.png",
+          "eef": [
+            -0.28782,
+            0.6849,
+            1.58635
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 110,
+          "frame": "cot_direction_flip_t0110.png",
+          "eef": [
+            -0.29383,
+            0.79012,
+            1.54327
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 120,
+          "frame": "cot_direction_flip_t0120.png",
+          "eef": [
+            -0.28243,
+            0.83058,
+            1.17828
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 130,
+          "frame": "cot_direction_flip_t0130.png",
+          "eef": [
+            -0.25166,
+            0.8312,
+            1.10875
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 140,
+          "frame": "cot_direction_flip_t0140.png",
+          "eef": [
+            -0.24428,
+            0.80951,
+            1.00904
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 150,
+          "frame": "cot_direction_flip_t0150.png",
+          "eef": [
+            -0.36488,
+            0.86038,
+            1.00752
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 160,
+          "frame": "cot_direction_flip_t0160.png",
+          "eef": [
+            -0.42256,
+            0.88275,
+            1.02177
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 170,
+          "frame": "cot_direction_flip_t0170.png",
+          "eef": [
+            -0.4969,
+            0.90385,
+            1.0405
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 180,
+          "frame": "cot_direction_flip_t0180.png",
+          "eef": [
+            -0.57645,
+            0.91739,
+            1.05397
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 190,
+          "frame": "cot_direction_flip_t0190.png",
+          "eef": [
+            -0.63232,
+            0.92862,
+            1.09823
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 200,
+          "frame": "cot_direction_flip_t0200.png",
+          "eef": [
+            -0.66896,
+            0.93338,
+            1.13009
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 210,
+          "frame": "cot_direction_flip_t0210.png",
+          "eef": [
+            -0.69002,
+            0.93823,
+            1.18137
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 220,
+          "frame": "cot_direction_flip_t0220.png",
+          "eef": [
+            -0.81602,
+            0.91198,
+            1.19284
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 230,
+          "frame": "cot_direction_flip_t0230.png",
+          "eef": [
+            -0.9756,
+            0.85652,
+            1.29493
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 240,
+          "frame": "cot_direction_flip_t0240.png",
+          "eef": [
+            -0.95222,
+            0.84467,
+            1.30589
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 250,
+          "frame": "cot_direction_flip_t0250.png",
+          "eef": [
+            -0.96644,
+            0.83648,
+            1.29694
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 260,
+          "frame": "cot_direction_flip_t0260.png",
+          "eef": [
+            -0.98974,
+            0.81198,
+            1.33372
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 270,
+          "frame": "cot_direction_flip_t0270.png",
+          "eef": [
+            -0.9856,
+            0.82521,
+            1.39505
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 280,
+          "frame": "cot_direction_flip_t0280.png",
+          "eef": [
+            -0.99566,
+            0.79229,
+            1.4615
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 290,
+          "frame": "cot_direction_flip_t0290.png",
+          "eef": [
+            -1.03439,
+            0.76453,
+            1.50973
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 300,
+          "frame": "cot_direction_flip_t0300.png",
+          "eef": [
+            -1.03055,
+            0.73992,
+            1.55831
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 310,
+          "frame": "cot_direction_flip_t0310.png",
+          "eef": [
+            -1.03491,
+            0.73517,
+            1.5958
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 320,
+          "frame": "cot_direction_flip_t0320.png",
+          "eef": [
+            -1.01357,
+            0.72747,
+            1.635
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 330,
+          "frame": "cot_direction_flip_t0330.png",
+          "eef": [
+            -1.01748,
+            0.72803,
+            1.64751
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 340,
+          "frame": "cot_direction_flip_t0340.png",
+          "eef": [
+            -1.0261,
+            0.70159,
+            1.66765
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            -1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 350,
+          "frame": "cot_direction_flip_t0350.png",
+          "eef": [
+            -1.02065,
+            0.67315,
+            1.69798
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 360,
+          "frame": "cot_direction_flip_t0360.png",
+          "eef": [
+            -1.02303,
+            0.67707,
+            1.70576
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 370,
+          "frame": "cot_direction_flip_t0370.png",
+          "eef": [
+            -1.01926,
+            0.65549,
+            1.73305
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        },
+        {
+          "step": 380,
+          "frame": "cot_direction_flip_t0380.png",
+          "eef": [
+            -1.02794,
+            0.65412,
+            1.74748
+          ],
+          "action": [
+            0.00784,
+            -0.93333,
+            0.54118,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move left and up"
+        },
+        {
+          "step": 390,
+          "frame": "cot_direction_flip_t0390.png",
+          "eef": [
+            -1.04776,
+            0.60882,
+            1.76607
+          ],
+          "action": [
+            0.00784,
+            0.79216,
+            0.44706,
+            0.00784,
+            0.00784,
+            0.00784,
+            1.0
+          ],
+          "move": "move right and up"
+        }
+      ],
+      "eef_available": true,
+      "task_idx": 0,
+      "episode": 0,
+      "task": "close the top drawer of the cabinet",
+      "arm_rewind": {
+        "controller": 1,
+        "warmstart": true,
+        "gripper": 1,
+        "clock": 3,
+        "observables": 29
+      }
+    }
+  ]
+}

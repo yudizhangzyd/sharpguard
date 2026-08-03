@@ -298,8 +298,12 @@ def main() -> int:
     W = 6.14
     cell = (W - 0.62) / len(steps)         # 0.62in of row labels on the left
     strip_h = 3 * (cell + 0.20) + 0.16     # +0.20 per row for the MOVE caption
-    bot_h = 1.30 if have_eef else 0.0
-    H = strip_h + bot_h + 0.30
+    # 0.44in for (b)/(c)'s tick labels and axis labels, 0.86in of axes, 0.11in
+    # of air under the last MOVE caption. The first version left 0.38in of dead
+    # band between the strip and the plots and gave the plots 0.80in, which read
+    # as two unrelated figures stacked rather than one figure's three panels.
+    bot_h = (0.44 + 0.86 + 0.11) if have_eef else 0.16
+    H = strip_h + bot_h
     fig = plt.figure(figsize=(W, H))
 
     # ---- (a) the filmstrip ----------------------------------------------
@@ -338,14 +342,44 @@ def main() -> int:
     # that case rather than being filled with a stand-in, so the facts file says
     # "no measurement" instead of reporting one that was never taken.
     peak = {}
+    clean_span_cm = None
     if have_eef:
         # ---- (b) top-down end-effector path -----------------------------
-        axb = fig.add_axes([0.62 / W, 0.42 / H, 1.85 / W, 0.80 / H])
-        for arm, label, colour in ARMS:
+        # Top-down, i.e. the (x, y) plane, because that is the plane a
+        # left/right word acts in: a direction edit that lands has to show up
+        # here. Which sign is "left" is a camera convention we do not assert.
+        axb = fig.add_axes([0.62 / W, 0.44 / H, 1.93 / W, 0.86 / H])
+        # cot_clean drawn LAST and on top. It is the reference the other two
+        # panels are measured against, and it is also the smallest track by two
+        # orders of magnitude, so in ARMS order it vanished underneath the arm
+        # it shares a start pose with -- the figure showed two paths where the
+        # caption promised three.
+        for arm, label, colour in sorted(ARMS, key=lambda a: a[0] == "cot_clean"):
             _, xyz = tracks[arm]
             axb.plot(xyz[:, 0], xyz[:, 1], color=colour, lw=1.1,
+                     zorder=3 if arm == "cot_clean" else 2,
                      label=label.replace("\n", " "))
-            axb.plot(xyz[0, 0], xyz[0, 1], "o", color=colour, ms=3.0, mew=0)
+            axb.plot(xyz[0, 0], xyz[0, 1], "o", color=colour, ms=3.0, mew=0,
+                     zorder=4)
+        # Labelled in place rather than left to the colour key, and labelled
+        # with its measured extent: that the arm reading its OWN reasoning is
+        # the one that barely travels is the panel's least expected reading, and
+        # a 22cm track next to two metre-long ones is easy to miss entirely.
+        # The extent is the diagonal of the track's top-down bounding box, which
+        # is what "fits in a box this size" means -- not a distance from start,
+        # which would understate a path that leaves and returns.
+        _, xyz_c = tracks["cot_clean"]
+        clean_span_cm = float(np.hypot(xyz_c[:, 0].max() - xyz_c[:, 0].min(),
+                                       xyz_c[:, 1].max() - xyz_c[:, 1].min())
+                              ) * 100.0
+        axb.annotate(f"own CoT: whole path\nin a {clean_span_cm:.0f} cm box",
+                     xy=(xyz_c[:, 0].mean(), xyz_c[:, 1].mean()),
+                     xytext=(0.46, 0.11), textcoords="axes fraction",
+                     fontsize=FONT_SIZE - 4.2, color=C_COT_TRAINED,
+                     ha="center", va="bottom", linespacing=1.15,
+                     arrowprops=dict(arrowstyle="-", lw=0.6,
+                                     color=C_COT_TRAINED, shrinkA=1.0,
+                                     shrinkB=1.5))
         axb.set_xlabel("gripper $x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
         axb.set_ylabel("$y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
         axb.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
@@ -353,13 +387,13 @@ def main() -> int:
         # paper_plot_style), so a "\," thin space prints its own backslash.
         axb.set_title("top-down path ($\\bullet$ = shared start)",
                       fontsize=FONT_SIZE - 2, pad=2.5)
-        fig.text(0.02 / W, (0.42 + 0.80) / H, "(b)", fontsize=FONT_SIZE - 1,
+        fig.text(0.02 / W, (0.44 + 0.86) / H, "(b)", fontsize=FONT_SIZE - 1,
                  fontweight="bold", va="bottom")
 
         # ---- (c) distance from the clean-CoT arm -------------------------
         # Defined at every step whether or not any arm succeeds, which is the
         # point: DSR is undefined here (SR(cot_clean) = 0), and this is not.
-        axc = fig.add_axes([(0.62 + 2.35) / W, 0.42 / H, 2.60 / W, 0.80 / H])
+        axc = fig.add_axes([(0.62 + 2.43) / W, 0.44 / H, 2.99 / W, 0.86 / H])
         s_cl, xyz_cl = tracks["cot_clean"]
         for arm, label, colour in ARMS:
             if arm == "cot_clean":
@@ -391,7 +425,7 @@ def main() -> int:
         # hide the divergence this panel exists to show.
         axc.legend(loc="best", fontsize=FONT_SIZE - 4, frameon=False,
                    handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
-        fig.text((0.62 + 2.30) / W, (0.42 + 0.80) / H, "(c)",
+        fig.text((0.62 + 2.38) / W, (0.44 + 0.86) / H, "(c)",
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
     save(fig, "fig15_rollout_filmstrip")
@@ -400,7 +434,11 @@ def main() -> int:
     # measurement rather than recalled. The audit reads these back out of the
     # same artifact.
     facts = {
-        "capture_dir": cap_dir,
+        # Relative to the repo when the capture lives in it, so the released
+        # facts file does not record whose laptop rendered the figure.
+        "capture_dir": (os.path.relpath(cap_dir, ROOT)
+                        if os.path.abspath(cap_dir).startswith(ROOT + os.sep)
+                        else cap_dir),
         "suite": rep.get("config", {}).get("suite"),
         "task": eps["cot_clean"].get("task"),
         "task_idx": key[0], "episode": key[1],
@@ -423,6 +461,12 @@ def main() -> int:
         "column_change_mean_abs_pixel": {
             a: column_motion(cap_dir, key, a, steps, eps) for a, _, _ in ARMS},
         "peak_cm_from_clean": {k: round(v, 2) for k, v in peak.items()},
+        # The reference arm's own top-down extent, which panel (b) annotates.
+        # Quoted in the caption because "the edited arms diverge" means nothing
+        # without it: they diverge from an arm that is nearly stationary in the
+        # plane the edit acts on.
+        "cot_clean_xy_span_cm": (None if clean_span_cm is None
+                                 else round(clean_span_cm, 2)),
     }
     p = os.path.join(cap_dir, "fig15_facts.json")
     with open(p, "w") as fh:
