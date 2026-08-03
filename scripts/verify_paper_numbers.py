@@ -4350,6 +4350,60 @@ def audit_arr_submission(a: Audit) -> None:
                 source=f"{w:.1f}pt authored, {avail:.1f}pt available; the fix "
                        f"is to re-author at the include width, not to scale")
 
+    # --- and the same invariant in the appendix ------------------------------
+    # The check above ran over the BODY only, and it was written that way for no
+    # reason other than that the body is where the page budget bites. Legibility
+    # is not a page-budget property. Measured across the appendix, every figure
+    # but one was downscaled -- fig12 to 46% and fig2 to 53%, which put their
+    # smallest type on the page at 3.2 and 3.7pt. Both are figures a reviewer is
+    # sent to by a \ref from the body, so "it is only the appendix" is not a
+    # defence; it is where the evidence for the body's claims lives.
+    #
+    # Two differences from the body loop, both forced by the appendix's shape:
+    # every float there is figure* (build_arr_appendix.py converts them), and
+    # the include width is a FRACTION of \textwidth rather than all of it, so
+    # the fraction is read from the source instead of assumed to be 1.
+    ap_p = root / "arr_appendix.tex"
+    if ap_p.exists() and tw:
+        ap_tex = ap_p.read_text()
+        # The retired hero figure, kept out by name. It was unreferenced, and the
+        # CoT on its canvas was hand-written while its caption presented it as a
+        # real ECoT-bridge trace -- the one figure in this paper that showed a
+        # reader a string no model emitted. Its generator and PDF are deleted;
+        # this is what stops an \includegraphics for it from coming back, since
+        # nothing else in the pipeline would notice a missing file until a build.
+        a.check(sec, "no document includes the retired fig1_hero, whose CoT was "
+                     "hand-written and whose caption called it a real trace", [],
+                [f for f in (TEX, ROOT / "cot_faith_arr.tex", ap_p)
+                 if f.exists() and re.search(
+                     r"\\includegraphics(?:\[[^\]]*\])?\{fig1_hero\.pdf\}",
+                     f.read_text())],
+                source="superseded by fig1_task_examples, every string of which "
+                       "is diffed out of the released judge run")
+        a.check(sec, "and its generator and PDF are gone, not merely unused", [],
+                [p.name for p in (figs / "gen_fig1_hero.py",
+                                  figs / "fig1_hero.pdf") if p.exists()],
+                source="figures/")
+        for frac_s, name in re.findall(
+                r"\\includegraphics\[width=([\d.]*)\\textwidth\]\{([^}]+)\}",
+                ap_tex):
+            pdf = figs / name
+            if not pdf.exists():
+                a.check(sec, f"appendix figure {name} exists", True, False,
+                        source=str(pdf))
+                continue
+            box = re.search(rb"/MediaBox\s*\[([^\]]*)\]", pdf.read_bytes())
+            x0, _, x1, _ = (float(v) for v in box.group(1).split())
+            w = x1 - x0
+            avail = float(frac_s or 1.0) * tw
+            scale = avail / w
+            a.check(sec, f"appendix figure {name} is included at "
+                         f"{100 * scale:.0f}% of its authored width, so its "
+                         f"generator's font sizes are the printed ones",
+                    True, 0.94 <= scale <= 1.06,
+                    source=f"{w:.1f}pt authored, {avail:.1f}pt available "
+                           f"({frac_s or '1.0'}x textwidth)")
+
     # --- long \texttt paths must be breakable in two columns ----------------
     # \texttt is unbreakable and the ARR column is 3.1in. The first build put a
     # 347pt overfull box on a 54-character artifact filename -- text running

@@ -48,13 +48,15 @@ Alongside these we report the substantive comparisons the benchmark supports: (F
 \end{abstract}
 
 % ============================================================
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.98\textwidth]{fig1_hero.pdf}
-    \caption{\textbf{CoT-Faith at a glance.} A real ECoT-bridge sample: original 9-tag CoT (blue) vs the same trace with a single \emph{direction\_flip} edit in \texttt{MOVE} (red). The resulting 7-dim action deltas quantify how much the CoT drives the action. CoT-Faith aggregates two probes (P1: attention decomposition, P2: causal edit $\Delta$, in both magnitude and direction-aware form) across 15 VLAs on LIBERO, plus an $N{=}100$ cross-corpus sweep on three further corpora. A third probe (attention$\to$error AUROC) is re-run in-domain after its submitted numbers were withdrawn, and returns a negative result; see Section~\ref{sec:p3_indomain}.}
-    \label{fig:hero}
-\end{figure}
-
+% fig1_hero.pdf was here and is deliberately gone. Two reasons, either of which
+% is enough: (i) nothing in either document \ref'd it, so it carried no
+% argument; (ii) the CoT text drawn on its canvas was hand-written -- its own
+% generator called it a "schematic reconstruction" -- while the caption
+% presented it as a real ECoT-bridge trace. The exhibit a reader needs here is
+% what the edit families actually do to real traces, and that is
+% fig1_task_examples in the body of cot_faith_arr.tex, every string of which is
+% diffed out of the released judge run's stored pairs.
+% scripts/verify_paper_numbers.py asserts this file does not come back.
 % ============================================================
 \section{Introduction}
 \label{sec:intro}
@@ -245,7 +247,7 @@ ECoT-bridge & 0.00 & .86\tiny{$\pm .04$} & .96\tiny{$\pm .01$} & .96\tiny{$\pm .
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\textwidth]{fig3_edit_heatmap.pdf}
+    \includegraphics[width=0.97\textwidth]{fig3_edit_heatmap.pdf}
     \caption{\textbf{The same magnitude scores as a heatmap.} This is Table~\ref{tab:leaderboard}, not a ranking; colour encodes magnitude sensitivity only. \textcolor[HTML]{EE6677}{no-CoT} row collapses across every semantic edit despite identical base and data; \textcolor[HTML]{228833}{ECoT-bridge} row is near-uniformly high. Selfsplice column is $0.00$ across all models (identity-null validation). Note that the ECoT-bridge row's uniformity is precisely the problem F6 and Section~\ref{sec:paraphrase_null} identify: it is also near-uniformly high on the \emph{paraphrase} null, and it drops to $0.12$ under direction-aware scoring. Colour here encodes magnitude sensitivity, not semantic faithfulness.}
     \label{fig:edit_heatmap}
 \end{figure}
@@ -451,7 +453,7 @@ Baseline L$_1$: predict-per-dim-mean & $0.046$ \\
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\textwidth]{fig4_dissociation.pdf}
+    \includegraphics[width=\textwidth]{fig4_dissociation.pdf}
     \caption{\textbf{Attention--causation dissociation (F3).} (a) Attention on CoT is $\in [0.335, 0.358]$ for all 8 trained CoT-VLA variants (max--min gap 2.3\,pp). (b) The same models' average faithful rate over 7 non-control edit families ranges from 0.166 (no-CoT) to 0.860 (ECoT-bridge) — a $5.2\times$ spread.}
     \label{fig:dissociation}
 \end{figure}
@@ -468,7 +470,7 @@ Running it requires the Bridge~V2 CoT annotations joined to the trajectories per
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.55\textwidth]{fig5_bridge_vs_libero.pdf}
+    \includegraphics[width=0.72\textwidth]{fig5_bridge_vs_libero.pdf}
     \caption{\textbf{Bridge- vs LIBERO-trained CoT-VLA Faithfulness Score (O4 observation).} Same architecture, same prompt, near-identical attention distributions; $\sim 2\times$ gap in causal effect on three shared edit families. Numbers match Table~\ref{tab:leaderboard} rows ``Ours r=32'' and ``ECoT-bridge'' (generated from the same \texttt{cot\_edit\_report.json} used to populate Table 1). This gap combines a $15\times$ training-data-quantity difference with a target-corpus-distribution difference and should be read as observational only.}
     \label{fig:bridge_vs_libero}
 \end{figure}
@@ -484,14 +486,14 @@ We ran the ECoT-bridge model on 3 additional manipulation corpora spanning disti
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.7\textwidth]{fig7_cross_corpus.pdf}
+    \includegraphics[width=0.93\textwidth]{fig7_cross_corpus.pdf}
     \caption{\textbf{Cross-corpus attention profile (F5, $N{=}100$ per non-LIBERO corpus).} ECoT-bridge evaluated on LIBERO (LIBERO-90, $N{=}100$) and on Bridge~V2, RT-1/Fractal, and BC-Z at $N{=}100$ each (self-decoded CoT; BC-Z yields $99$ usable attention records). Error bars are $\pm 1$ std across samples. Max deviation on any bucket is $\leq 2.1$\,pp. Replaces an $N{=}30$ pilot whose every bucket mean this run reproduces to within $0.3$\,pp; the pilot is retained under \texttt{results\_v2/superseded/}.}
     \label{fig:cross_corpus}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.7\textwidth]{fig10_cross_corpus_edit.pdf}
+    \includegraphics[width=0.92\textwidth]{fig10_cross_corpus_edit.pdf}
     \caption{\textbf{Cross-corpus causal-edit response (F5, $N{=}100$ per non-LIBERO corpus).} ECoT-bridge direction\_flip / gripper\_flip magnitude response on LIBERO ($N{=}100$) and on Bridge~V2, Fractal, BC-Z (self-decoded CoT, $N{=}51$--$92$ after visibility filtering, against $N{=}15$--$26$ in the superseded $N{=}30$ pilot). Note that these are \emph{magnitude} scores; the direction-aware scores of Section~\ref{sec:directional} do not transfer in the same way, and the calibration nulls were not run on these corpora, so no floor-corrected statement is available for them.}
     \label{fig:cross_corpus_edit}
 \end{figure}
@@ -535,7 +537,7 @@ Ours no-CoT    & 0.274 & 8 & 0.087 & $+0.759$ \\
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.8\textwidth]{fig12_directional_inversion.pdf}
+    \includegraphics[width=0.98\textwidth]{fig12_directional_inversion.pdf}
     \caption{\textbf{F6: the leaderboard inverts under direction-aware scoring.} \emph{(a)} $\mathcal{F}_{\text{mag}}$ (solid) against $\mathcal{F}_{\text{dir}}$ (hatched) on \emph{direction\_flip}, 3-seed means: the two scores track each other on the six LoRA/data variants and come apart completely on the two ends --- ECoT-bridge $0.96 \to 0.12$ and no-CoT $0.27 \to 0.09$. \emph{(b)} The signed translation cosine that produces the gap, over all samples and over the subset Eq.~\ref{eq:faith} counts as faithful; the faithful target is $-1$. Only the six full-CoT variants are on the correct side of zero, and they move further toward the target on exactly the samples magnitude-scoring credits. \emph{(c)} $\mathcal{F}_{\text{diff}} = \mathcal{F}(f) - \mathcal{F}(\text{paraphrase\_null})$ for \emph{ours-no-CoT}, the model whose floor ($0.19$) is low enough for the differential to be readable: $6$ of the $9$ families plotted sit below their own floor, and the three that clear it do so by $\leq 0.081$. Generated by \texttt{figures/gen\_fig12\_directional\_inversion.py} from \texttt{derived\_metrics.json}.}
     \label{fig:directional}
 \end{figure}
@@ -552,7 +554,7 @@ Figure~\ref{fig:ablation} isolates two additional axes. Panel (a) shows the LoRA
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\textwidth]{fig8_ablation.pdf}
+    \includegraphics[width=0.97\textwidth]{fig8_ablation.pdf}
     \caption{\textbf{Ablations.} (a) LoRA rank ($r \in \{8,16,64\}$) on 5 edit families — higher rank monotonically raises causal effect on 4/5 families. (b) 50\%-data split seed variance is $\leq 15$pp, confirming main-result gaps are not seed artifacts.}
     \label{fig:ablation}
 \end{figure}
@@ -683,7 +685,7 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.55\textwidth]{fig9_prompt_ablation.pdf}
+    \includegraphics[width=0.85\textwidth]{fig9_prompt_ablation.pdf}
     \caption{\textbf{Prompt-format ablation (ECoT-bridge).} Truncating any portion of the CoT causes $\geq 95\%$ of samples to change action.}
     \label{fig:prompt}
 \end{figure}
@@ -699,7 +701,7 @@ Figure~\ref{fig:prompt} shows that removing any portion of the CoT (task\_only, 
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.65\textwidth]{fig11_threshold_sensitivity.pdf}
+    \includegraphics[width=0.87\textwidth]{fig11_threshold_sensitivity.pdf}
     \caption{\textbf{Faithfulness Score threshold sensitivity.} Mean \emph{magnitude} faithful rate over 7 non-control families vs $\tau \in [0.01, 0.30]$ (log scale). Magnitude-score rankings are preserved across the full range and the no-CoT vs CoT-trained gap remains $\geq 2\times$ at every $\tau$, so our conclusions are not artifacts of $\tau{=}0.05$. This is robustness of the magnitude score to $\tau$ only; it does not address the direction-blindness of Section~\ref{sec:directional}, which no choice of $\tau$ can fix.}
     \label{fig:threshold}
 \end{figure}
@@ -745,7 +747,7 @@ DeepThinkVLA RL       & $778$  & $0.767$ & $0.901$ & $0.099$ \\
 
 \paragraph{Implications for interpretability claims.} F1--F3 (plus the O4 observation and F5) together imply that ``attention on CoT is high'' does \emph{not} entail ``CoT drives the action'' --- and F6 adds that ``editing the CoT moves the action'' does not entail ``the CoT's meaning drives the action'' either. Any downstream system that reads or edits the CoT to steer VLA behavior must verify, on its own deployment distribution, both that $\bar{\mathcal{F}}$ exceeds that model's paraphrase floor and that the induced action change points the intended way. The $N{=}100$ cross-corpus sweep (F5) shows the attention pipeline transfers to Bridge~V2, Fractal, and BC-Z; direction-aware causal effect does not transfer the same way and must be re-validated per corpus.
 
-\paragraph{Public release, datasheet, and license.} The full artifact accompanies this submission as supplementary material: the 13 edit-family generators, \textbf{52{,}338} per-sample edit records of which $45{,}989$ carry a scored delta and $45{,}551$ of those carry the full action pair (original action, edited action, per-dimension delta, and the edit metadata that regenerates the edited CoT deterministically from the source trace and the released generator --- the records carry \texttt{edit\_meta}, \texttt{instruction} and \texttt{file\_base}, not the edited text itself; an earlier version of this sentence claimed the verbatim edited CoT was included and it is not, on any record; the remaining $6{,}349$ are recorded as skipped, with the reason, rather than dropped), \textbf{3{,}620} per-observation attention records with segment boundaries and token counts, the $200$ records behind the withdrawn P3 probe and the $153$ behind its in-domain re-run, the decoder audit, the five-stage OpenVLA-OFT load probe and the DeepThinkVLA decode-equivalence audit, and the derivation and audit scripts --- $52.7$\,MB of JSON in total, requiring no network access to re-derive any number in this paper. The record count is $3.2\times$ the submitted release: the growth is the 3-sampling-seed re-runs of all seven ``ours'' rows at 13 families each, which replaced the submission's single-run point estimates, plus a second same-config training run of every one of those seven rows. Two commands reproduce the manuscript: \texttt{scripts/derive\_metrics.py} turns the raw reports into \texttt{derived\_metrics.json}, and \texttt{scripts/verify\_paper\_numbers.py} asserts every quoted value against it. The audit script is written to \emph{fail}: it currently checks $1{,}282$ claims, treats a claim whose supporting artifact is missing as a failure rather than skipping it, and exits non-zero on any mismatch. \textbf{It also asserts what the records \emph{contain} and not only how many there are}, which is a change this revision made after the count-only version reported $869/869$ while the sentence above it made a false claim about the schema. That check immediately found a second instance of the same defect: the $438$-record gap between the scored deltas and the full action pairs is the three cross-corpus runs of Section~\ref{sec:cross_corpus}, written by an earlier harness that stored $\Delta_\infty$ and $\Delta_{L_1}$ without the action pair or the edit metadata. Their $\mathcal{F}$ is recomputable from the release; the individual edits behind it are not, so those three runs are reproducible at the aggregate level only, and we say so rather than let a uniform record count imply otherwise. \texttt{DATASHEET.md} follows \citet{datasheets} and states the release's known gaps as first-class content --- the calibration nulls on all 11 models in both architecture families, with \emph{bbox\_jitter\_null} inapplicable by construction on the three DeepThinkVLA checkpoints rather than missing, edit error bars from 3 sampling seeds \emph{and} a same-config retraining replicate on every one of the seven trained rows, no rollout records behind any published number (the four-suite gate is released as a harness validation, not as a metric), P3 re-run in-domain on one model with a negative result, per-family $N$ varying from $58$ to $100$ --- alongside an explicit list of uses the artifact does not support. \texttt{LICENSE} places our code under MIT and our measurement records under CC~BY~4.0, and enumerates the upstream licenses of the $6$ corpora and $9$ checkpoints this release depends on and does not relicense. Those licenses were resolved from the Hugging Face Hub API by \texttt{scripts/fetch\_upstream\_licenses.py} rather than written from memory, and the machine-readable record with each repo's pinned commit sha is released as \texttt{results\_v2/license\_report.json}; the audit script asserts \texttt{LICENSE} and \texttt{DATASHEET.md} against it, having already caught two errors in our own earlier table (Bridge~V2 and BC-Z listed as CC~BY~4.0 when the LeRobot re-hosts we actually load are Apache-2.0, and two named source repos that no configuration in the release resolves). $3$ of the $15$ assets --- all three DeepThinkVLA checkpoints --- declare no license upstream at all; we disclose that verbatim and grant no rights to them rather than assign a license we cannot verify. Superseded runs are retained under \texttt{results\_v2/superseded/} with a README naming what replaced each, so the release keeps an audit trail rather than silently overwriting history. An anonymized public mirror will be linked at camera-ready.
+\paragraph{Public release, datasheet, and license.} The full artifact accompanies this submission as supplementary material: the 13 edit-family generators, \textbf{52{,}338} per-sample edit records of which $45{,}989$ carry a scored delta and $45{,}551$ of those carry the full action pair (original action, edited action, per-dimension delta, and the edit metadata that regenerates the edited CoT deterministically from the source trace and the released generator --- the records carry \texttt{edit\_meta}, \texttt{instruction} and \texttt{file\_base}, not the edited text itself; an earlier version of this sentence claimed the verbatim edited CoT was included and it is not, on any record; the remaining $6{,}349$ are recorded as skipped, with the reason, rather than dropped), \textbf{3{,}620} per-observation attention records with segment boundaries and token counts, the $200$ records behind the withdrawn P3 probe and the $153$ behind its in-domain re-run, the decoder audit, the five-stage OpenVLA-OFT load probe and the DeepThinkVLA decode-equivalence audit, and the derivation and audit scripts --- $52.7$\,MB of JSON in total, requiring no network access to re-derive any number in this paper. The record count is $3.2\times$ the submitted release: the growth is the 3-sampling-seed re-runs of all seven ``ours'' rows at 13 families each, which replaced the submission's single-run point estimates, plus a second same-config training run of every one of those seven rows. Two commands reproduce the manuscript: \texttt{scripts/derive\_metrics.py} turns the raw reports into \texttt{derived\_metrics.json}, and \texttt{scripts/verify\_paper\_numbers.py} asserts every quoted value against it. The audit script is written to \emph{fail}: it currently checks $1{,}294$ claims, treats a claim whose supporting artifact is missing as a failure rather than skipping it, and exits non-zero on any mismatch. \textbf{It also asserts what the records \emph{contain} and not only how many there are}, which is a change this revision made after the count-only version reported $869/869$ while the sentence above it made a false claim about the schema. That check immediately found a second instance of the same defect: the $438$-record gap between the scored deltas and the full action pairs is the three cross-corpus runs of Section~\ref{sec:cross_corpus}, written by an earlier harness that stored $\Delta_\infty$ and $\Delta_{L_1}$ without the action pair or the edit metadata. Their $\mathcal{F}$ is recomputable from the release; the individual edits behind it are not, so those three runs are reproducible at the aggregate level only, and we say so rather than let a uniform record count imply otherwise. \texttt{DATASHEET.md} follows \citet{datasheets} and states the release's known gaps as first-class content --- the calibration nulls on all 11 models in both architecture families, with \emph{bbox\_jitter\_null} inapplicable by construction on the three DeepThinkVLA checkpoints rather than missing, edit error bars from 3 sampling seeds \emph{and} a same-config retraining replicate on every one of the seven trained rows, no rollout records behind any published number (the four-suite gate is released as a harness validation, not as a metric), P3 re-run in-domain on one model with a negative result, per-family $N$ varying from $58$ to $100$ --- alongside an explicit list of uses the artifact does not support. \texttt{LICENSE} places our code under MIT and our measurement records under CC~BY~4.0, and enumerates the upstream licenses of the $6$ corpora and $9$ checkpoints this release depends on and does not relicense. Those licenses were resolved from the Hugging Face Hub API by \texttt{scripts/fetch\_upstream\_licenses.py} rather than written from memory, and the machine-readable record with each repo's pinned commit sha is released as \texttt{results\_v2/license\_report.json}; the audit script asserts \texttt{LICENSE} and \texttt{DATASHEET.md} against it, having already caught two errors in our own earlier table (Bridge~V2 and BC-Z listed as CC~BY~4.0 when the LeRobot re-hosts we actually load are Apache-2.0, and two named source repos that no configuration in the release resolves). $3$ of the $15$ assets --- all three DeepThinkVLA checkpoints --- declare no license upstream at all; we disclose that verbatim and grant no rights to them rather than assign a license we cannot verify. Superseded runs are retained under \texttt{results\_v2/superseded/} with a README naming what replaced each, so the release keeps an audit trail rather than silently overwriting history. An anonymized public mirror will be linked at camera-ready.
 
 % ============================================================
 \section{Conclusion}
