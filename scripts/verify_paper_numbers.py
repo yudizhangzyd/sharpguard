@@ -1893,6 +1893,15 @@ def audit_manuscript_hygiene(a: Audit) -> None:
         r"to $0.853$ on our": "stale F_bar upper bound (correct value 0.860)",
         r"5.5\times$ spread": "stale F_bar spread (correct value 5.6x)",
         "natural strengthening we plan": "stale paraphrase-null promise",
+        # The 1.45 pp "run-to-run noise floor" is the r=32 replicate pair alone,
+        # and the long-form manuscript retracts it as a conflation of sampling
+        # with training noise. All seven configurations have a replicate now; the
+        # worst is 1.95 pp, and the 2.30 pp between-variant spread is 1.2x that
+        # rather than inside it. Any surviving copy of the old phrasing states a
+        # false inequality in the direction that flatters the paper.
+        "run-to-run noise floor": "retracted 1.45 pp single-pair noise floor",
+        r"inside the $1.45$": "2.30 pp spread described as inside a 1.45 pp "
+                              "floor (it is 1.2x larger)",
         # 28,443 is the seed-0 slice across the 30 runs the collision
         # decomposition covers. The release carries 45,989 scored deltas,
         # because every "ours" row was re-run at three sampling seeds after
@@ -4378,22 +4387,60 @@ def audit_arr_submission(a: Audit) -> None:
                      len(per_max)),
             source=f"widest Wilson half-width = {wil:.4f}")
 
+    dm = re.search(r"\\includegraphics\[[^\]]*\]\{fig4_dissociation\.pdf\}"
+                   r".*?\\caption\{(.*?)\}\s*\\label\{fig:dissociation\}",
+                   t, re.S)
+    cap_dis = dm.group(1) if dm else ""
+    a.check(sec, "fig:dissociation's caption is locatable in the ARR body",
+            True, bool(cap_dis), source="cot_faith_arr.tex")
+
     # fig:dissociation's caption gained two numbers when the figure was
     # promoted to full width and its third panel became legible enough to be
     # worth describing. Both are recomputed, and both are asserted to appear
     # in the caption -- a value that is right in the JSON and absent from the
     # text is the same defect as one that is wrong.
-    anf = d.get("attention_noise_floor", {})
-    a.check(sec, "fig:dissociation's caption: the run-to-run noise band is "
-                 "1.45 pp", "1.45", f"{anf.get('abs_diff_pp', 0):.2f}",
-            source="attention_noise_floor.abs_diff_pp")
+    #
+    # The band is the worst same-config retraining difference over the seven
+    # replicate pairs, and it is checked against noise_hierarchy rather than
+    # against attention_noise_floor. The latter is the single r=32 pair, whose
+    # 1.45 pp this caption quoted as "the run-to-run noise floor" long after
+    # Section "Attention noise, decomposed" in the long-form manuscript retracted
+    # that figure as a conflation of sampling and training noise. Two numbers,
+    # each true of something, and the caption used the smaller one.
+    nhh = d.get("noise_hierarchy", {})
+    a.check(sec, "fig:dissociation's caption: the band is the worst same-config "
+                 "retraining difference, 1.95 pp", "1.95",
+            f"{nhh.get('training_run_cot_diff_pp', 0):.2f}",
+            source="noise_hierarchy.training_run_cot_diff_pp, 7 replicate pairs")
+    a.check(sec, "and the between-variant spread it is compared against is "
+                 "2.30 pp", "2.30",
+            f"{nhh.get('cross_variant_spread_pp', 0):.2f}",
+            source="noise_hierarchy.cross_variant_spread_pp")
+    # The relation, not just the two values. The caption said the 2.30 pp spread
+    # was "inside" a 1.45 pp floor for three revisions. Every number in it was
+    # real; the inequality ran backwards, and no check looked at the inequality
+    # -- the same failure as fig:taxonomy's caption naming the wrong red rate.
+    spread = nhh.get("cross_variant_spread_pp") or 0.0
+    band = nhh.get("training_run_cot_diff_pp") or 0.0
+    a.check(sec, "the spread EXCEEDS the band, so the caption may not describe "
+                 "it as contained by it", True,
+            spread > band > 0 and "inside" not in cap_dis,
+            source=f"spread {spread:.2f} pp vs band {band:.2f} pp "
+                   f"({spread / band:.2f}x) -- searched fig:dissociation's "
+                   f"caption for 'inside'")
+    a.check(sec, "and the caption states that ratio, which is below the 3x an "
+                 "ordering would need", "1.2",
+            f"{nhh.get('spread_over_training_run_cot', 0):.1f}",
+            source="noise_hierarchy.spread_over_training_run_cot; "
+                   f"within_family_ordering_supported="
+                   f"{nhh.get('within_family_ordering_supported')}")
     nrm = [mv["F_bar_norm_ceiling"] for mv in d.get("models", {}).values()
            if mv.get("F_bar_norm_ceiling")]
     a.check(sec, "and the ceiling-normalized spread is 1.9x", "1.9",
             f"{max(nrm) / min(nrm):.1f}" if nrm else "n/a",
             source=f"max/min F_bar_norm_ceiling over {len(nrm)} models")
-    for lit in ("$1.45$\\,pp", "$1.9\\times$"):
-        a.check(sec, f"and the caption prints {lit}", True, lit in t,
+    for lit in ("$1.95$\\,pp", "$2.30$\\,pp", "$1.2\\times$", "$1.9\\times$"):
+        a.check(sec, f"and the caption prints {lit}", True, lit in cap_dis,
                 source="cot_faith_arr.tex")
 
     # The figure that made this caption necessary: 797x248pt at \columnwidth

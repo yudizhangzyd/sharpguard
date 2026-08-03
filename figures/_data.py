@@ -21,6 +21,13 @@ ATTN_BASE = D["attention_baselines_noncot"]
 ATTN_DT = D["attention_deepthink"]
 CROSS = D["cross_corpus_n30"]
 NOISE = D["attention_noise_floor"]
+# The noise hierarchy supersedes NOISE for anything a reader compares BETWEEN
+# bars. `attention_noise_floor` is one pair -- r=32 trained twice -- and the
+# submitted version of this paper quoted its 1.45 pp as "the" noise floor; all
+# seven configurations have a replicate now, and the worst of them is 1.95 pp.
+# Prefer NH["training_run_cot_diff_pp"]: a between-model comparison has to clear
+# the widest same-config retraining difference, not an average one.
+NH = D["noise_hierarchy"]
 
 
 def audit():

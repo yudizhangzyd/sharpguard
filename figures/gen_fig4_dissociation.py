@@ -1,8 +1,10 @@
 """Fig 4 -- attention/causation dissociation (F3), with the ceiling-normalized
 panel demanded by R1 item 4.
 
-(a) alpha(m, cot) per model, with the measured run-to-run noise floor drawn as
-    a band so the 2.3 pp cluster spread can be read against it.
+(a) alpha(m, cot) per model, with the worst same-config RETRAINING difference
+    drawn as a band so the cluster spread can be read against it. The spread is
+    the larger of the two -- by 1.2x, far short of the 3x an ordering would
+    need -- and the panel says so rather than claiming containment.
 (b) raw mean magnitude-F over the 7 non-control families.
 (c) the SAME quantity normalized by each model's own cross_task_swap ceiling.
     Under normalization the no-CoT collapse largely disappears -- F2 has to be
@@ -22,7 +24,7 @@ does not move.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
-from _data import MODELS, ATTN, NOISE, ORDER, LABELS, OURS
+from _data import MODELS, ATTN, NH, ORDER, LABELS, OURS
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -58,23 +60,33 @@ for ax in (ax1, ax2, ax3):
     ax.tick_params(axis="y", labelsize=TICK + 0.4, length=2.2, pad=1.5)
     ax.tick_params(axis="x", length=0, pad=1.5)
 
-# ---- (a) attention on CoT + measured noise floor --------------------------
+# ---- (a) attention on CoT + the retraining band ---------------------------
 att = [ATTN[m]["mass"]["cot"] for m in MS]
 astd = [ATTN[m]["mass_std"]["cot"] for m in MS]
 ax1.bar(xs, att, color=COL, edgecolor="black", lw=0.4, yerr=astd, capsize=1.5,
         error_kw={"lw": 0.5})
 mid = float(np.mean(att))
-half = NOISE["abs_diff_pp"] / 200.0          # +/- half of the observed run-to-run gap
+# The band is the WORST same-config retraining difference over the seven
+# replicate pairs (1.95 pp), not the single r=32 pair the submission used
+# (1.45 pp): what a reader compares between two bars is two training runs, so
+# that is the noise the comparison has to clear. The pair estimate also let this
+# panel say the 2.30 pp spread sat "inside" a 1.45 pp floor, which is backwards
+# -- the spread is the LARGER of the two, and the honest reading is that it
+# misses the 3x an ordering needs, not that it vanishes into the band.
+half = NH["training_run_cot_diff_pp"] / 200.0
 ax1.axhspan(mid - half, mid + half, color="gray", alpha=0.22, lw=0)
 # Anchored top-RIGHT. Two earlier placements both collided: bottom-right ran
 # back under the value labels of the final two models, and bottom-left ran
 # across the first bar. The band sits at ~0.35 and the tallest label reaches
 # ~0.39, so everything above that is free -- which is the only region of this
-# axes that is. The leader line carries the reference down to the band.
+# axes that is. Two lines, not three: a third would reach 0.36 and land on the
+# r=8 value label.
 ax1.text(len(MS) - 0.45, 0.495,
-         f"run-to-run noise: {NOISE['abs_diff_pp']:.2f} pp\n"
-         f"({100*NOISE['noise_as_frac_of_spread']:.0f}% of the "
-         f"{NOISE['cluster_spread_pp']:.2f} pp spread)",
+         f"same-config retraining: "
+         f"{NH['training_run_cot_diff_pp']:.2f} pp (band)\n"
+         f"between-variant spread: "
+         f"{NH['cross_variant_spread_pp']:.2f} pp "
+         f"= {NH['spread_over_training_run_cot']:.1f}× it",
          ha="right", va="top", fontsize=NOTE, color="0.25",
          linespacing=1.30)
 # No leader line down to the band. At this size every vertical path from the
@@ -89,7 +101,7 @@ ax1.set_ylabel(r"$\alpha(m,\mathrm{cot})$", fontsize=YLAB, labelpad=1.5)
 ax1.set_ylim(0, 0.50)
 # Two lines rather than one: at 7pt a single line of this claim is wider than
 # the panel, and the claim is the reason the panel is here.
-ax1.set_title("(a) Attention on CoT:\nspread is inside the noise floor",
+ax1.set_title("(a) Attention on CoT:\nspread ≈ retraining noise",
               loc="left", fontsize=TITLE, style="italic", pad=2.5,
               linespacing=1.25)
 ax1.set_axisbelow(True); ax1.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
