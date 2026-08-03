@@ -847,8 +847,30 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
 
     a.check(sec, "12 calibration entries over 11 distinct checkpoints",
             12, len(by), source=f"labels={sorted(by)}")
+    both_tex = "\n".join(
+        p.read_text() for p in (TEX, ROOT / "cot_faith_arr.tex") if p.exists())
     a.check(sec, "they span 2 architecture families (ECoT + DeepThinkVLA)",
             2, su.get("n_architecture_families"))
+    # And "architecture family" has to mean that one thing throughout. The
+    # model census is a 4-way grouping -- OpenVLA non-CoT, ECoT-bridge, our
+    # LoRA variants, DeepThinkVLA -- and it used to be called four
+    # ARCHITECTURE families, in the same abstract that calls DeepThinkVLA "a
+    # second architecture family". Three of the four groups are OpenVLA-7B; the
+    # base architectures are two. The census is "model families" now, and
+    # tab:models says which two bases the phrase refers to, because a reader who
+    # meets 4 and 2 for the same words has no way to resolve them.
+    a.check(sec, "neither document calls the 4-way model census 4 "
+                 "ARCHITECTURE families, which would collide with the 2 the "
+                 "paper compares 'both' of", [], [
+                     s for s in ("4 architecture families",
+                                 "four architecture families")
+                     if s in both_tex],
+            source="cot_faith_iclr.tex + cot_faith_arr.tex")
+    a.check(sec, "and tab:models states which two base architectures the "
+                 "phrase names", True,
+            "which is what ``both architecture families'' refers to"
+            in both_tex,
+            source="cot_faith_iclr.tex, tab:models caption")
     a.check(sec, "every row's set of labels matches the audit table",
             sorted(r[0] for r in CALIB_TABLE), sorted(by))
     for label, floor, bbox, instr, ceil, rng, two, ratio, n_ab in CALIB_TABLE:
