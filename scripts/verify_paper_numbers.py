@@ -4399,6 +4399,90 @@ def audit_arr_submission(a: Audit) -> None:
              for m in dkey.values()},
             source="models[*].families.direction_flip.n_runs")
 
+    # tab:fdirnull promotes the constructive result out of prose. Eleven rows
+    # times five cells retyped by hand is the highest-drift thing in the
+    # document, so every cell is read back out of the .tex and matched against
+    # fdir_null.json -- the same treatment tab:floors gets, for the same reason.
+    fdn_tex = _table_body("tab:fdirnull")
+    a.check(sec, "tab:fdirnull is present in the ARR body", True,
+            bool(fdn_tex), source="cot_faith_arr.tex")
+    if fdn_tex:
+        nice = {"ours_no-cot": "no-CoT", "ours_lora-r8": "r=8",
+                "ours_lora-r16": "r=16", "ours_lora-r32": "r=32",
+                "ours_lora-r64": "r=64", "ours_data-50A": "data-50A",
+                "ours_data-50B": "data-50B", "ecot_bridge": "ECoT-bridge",
+                "deepthink_sft": "DT SFT", "deepthink_rl": "DT RL",
+                "deepthink_base": "DT base"}
+        # The ceiling family is abbreviated in the table to fit the column, so
+        # what is checked is the artifact key -> printed stem mapping rather
+        # than an equality. An abbreviation that names the wrong family is
+        # exactly as wrong as a wrong number, and harder to notice.
+        abbrev = {"cross_task_swap": "cross_task", "verb_swap": "verb_swap",
+                  "negation": "negation", "paraphrase_null": "paraphrase"}
+        got_rows = {}
+        for m in re.finditer(
+                r"\\texttt\{([^}]+)\}\s*&\s*([\d.]+)\s*&\s*(\d+)\s*&\s*"
+                r"([\d.]+)\s*&[^&]*?\\emph\{([A-Za-z\\_]+)\}\}\s*&\s*"
+                r"(?:\\textbf\{)?([\d.]+|-+)", fdn_tex):
+            got_rows[m.group(1)] = (m.group(2), int(m.group(3)), m.group(4),
+                                    m.group(5).replace("\\_", "_"),
+                                    m.group(6))
+        a.check(sec, "all 11 calibrated configurations appear in tab:fdirnull",
+                11, len(got_rows), source=f"parsed: {sorted(got_rows)}")
+        fdn = load(ROOT / "results_v2/canonical_runs/fdir_null/"
+                          "fdir_null.json") or {}
+        for c in (fdn.get("per_config") or []):
+            label = nice.get(c["config"], c["config"])
+            r = c.get("ratio")
+            want = (f"{c['treatment']['F_dir']:.3f}",
+                    int(c["treatment"]["n"]),
+                    f"{c['null_ceiling']:.3f}",
+                    abbrev.get(c["null_ceiling_family"],
+                               c["null_ceiling_family"]),
+                    f"{r:.1f}" if r is not None else "---")
+            a.check(sec, f"tab:fdirnull row {label} matches fdir_null.json "
+                         f"(F_dir, N, ceiling, ceiling family, ratio)",
+                    want, got_rows.get(label), source="fdir_null.json")
+        # The rule inside the table is load-bearing: it separates clears from
+        # fails, so it has to fall exactly where the artifact says. Seven above
+        # it, four below, and the ablation among the four.
+        order = [m.group(1) for m in re.finditer(r"\\texttt\{([^}]+)\}",
+                                                 fdn_tex)]
+        clears = {nice.get(c["config"], c["config"])
+                  for c in (fdn.get("per_config") or []) if c["clears_null"]}
+        a.check(sec, "tab:fdirnull's midrule separates the configurations that "
+                     "clear their null from those that do not, in that order",
+                [True] * len(clears) + [False] * (len(order) - len(clears)),
+                [lab in clears for lab in order],
+                source=f"clears per fdir_null.json: {sorted(clears)}")
+        a.check(sec, "and the caption states that the no-CoT control failing "
+                     "is the designed behaviour rather than missing coverage",
+                True, "is the result, not a gap" in t,
+                source="cot_faith_arr.tex")
+        # The two aggregations differ, and saying so is what stops a reviewer
+        # reading tab:directional's 0.120 against this table's 0.150 as drift.
+        # Assert both that they do differ and that the caption explains why.
+        ecot_pooled = next(
+            (c["treatment"]["F_dir"] for c in (fdn.get("per_config") or [])
+             if c["config"] == "ecot_bridge"), None)
+        ecot_mean = dig(d, "models", "ecot-bridge", "families",
+                        "direction_flip", "F_dir")
+        a.check(sec, "the pooled rate and the 3-seed mean of F_dir really are "
+                     "different numbers for ECoT-bridge, so the caption has to "
+                     "explain the difference rather than leave it to be found",
+                True,
+                ecot_pooled is not None and ecot_mean is not None
+                and f"{ecot_pooled:.3f}" != f"{ecot_mean:.3f}",
+                source=f"pooled {ecot_pooled}, 3-seed mean {ecot_mean}")
+        a.check(sec, "and the caption says N is pooled across the sampling "
+                     "seeds", True,
+                "pooled across the three sampling seeds" in t,
+                source="cot_faith_arr.tex")
+        a.check(sec, "the clearance count the prose states is the count this "
+                     "table shows", (7, 11),
+                (len(clears), len(fdn.get("per_config") or [])),
+                source="fdir_null.json")
+
 
 def audit_rollout_insuite(a: Audit) -> None:
     """Limitation (v)'s 0/40: assert the bound, and assert it stays a bound.
