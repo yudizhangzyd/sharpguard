@@ -6560,6 +6560,114 @@ def audit_rank_correlation(a: Audit, d: dict) -> None:
             unqualified, source="cot_faith_arr.tex")
 
 
+def audit_cross_corpus_edit_figure(a: Audit, d: Optional[dict]) -> None:
+    """Figure 10 put four bars side by side that are not four of the same thing,
+    and dropped a family that was run.
+
+    The LIBERO bar is the 3-seed main sweep over 299/300 records on the corpus's
+    own CoT annotations; the other three are one self-decoded run each. The
+    caption called the LIBERO bar N=100, which is the per-seed sample count.
+
+    And subject_swap was run on all three non-LIBERO corpora, landing on 0
+    samples in each. That is an absent measurement, not a score of 0, and the
+    earlier figure and caption recorded neither.
+    """
+    sec = "Figure 10 (cross-corpus edits): protocol split and the third family"
+    cross = dig(d, "cross_corpus_n30") or {}
+    TAGS = ["bridge_v2", "fractal", "bcz"]
+    a.check(sec, "the three non-LIBERO corpora are in the derivation", TAGS,
+            [t for t in TAGS if t in cross],
+            source="results_v2/derived_metrics.json")
+
+    # Every raw report the figure depends on is released, and its numbers are the
+    # ones the derivation carries -- the `source` field still points at the
+    # scratch path the run wrote from, so the release copy is what a reader has.
+    REL = {"bridge_v2": "cross_corpus_bridge_v2_n100.json",
+           "fractal": "cross_corpus_fractal_n100.json",
+           "bcz": "cross_corpus_bcz_n100.json"}
+    missing, mismatched = [], []
+    for tag, name in REL.items():
+        f = ROOT / "results_v2" / "canonical_runs" / name
+        if not f.exists():
+            missing.append(name); continue
+        raw = json.loads(f.read_text()).get("edit_aggregate") or {}
+        for famname in ("direction_flip", "gripper_flip", "subject_swap"):
+            got, want = raw.get(famname) or {}, dig(cross, tag, "edit", famname) or {}
+            if r3(got.get("faithful_rate")) != r3(want.get("faithful_rate")) \
+                    or got.get("n") != want.get("n"):
+                mismatched.append(f"{tag}/{famname}")
+    a.check(sec, "each corpus's raw report is in the release", [], missing,
+            source="results_v2/canonical_runs/")
+    a.check(sec, "and the derivation's rates and denominators are the raw "
+                 "reports' own, family by family", [], mismatched,
+            source="results_v2/canonical_runs/")
+
+    a.check(sec, "subject_swap was RUN on all three and landed on 0 samples in "
+                 "each -- an absent measurement, not a zero score",
+            [0, 0, 0],
+            [dig(cross, t, "edit", "subject_swap", "n") for t in TAGS],
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and it therefore has no faithful_rate to plot", [None] * 3,
+            [dig(cross, t, "edit", "subject_swap", "faithful_rate")
+             for t in TAGS], source="results_v2/derived_metrics.json")
+
+    # The LIBERO bar: 3 seeds, and a denominator that is not 100.
+    bf = dig(d, "models", "ecot-bridge", "families") or {}
+    a.check(sec, "the LIBERO bar's denominators are 299 and 300 records, not the "
+                 "$N=100$ the earlier caption printed", [299, 300],
+            [dig(bf, "direction_flip", "n_total"),
+             dig(bf, "gripper_flip", "n_total")],
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "because it is a 3-seed mean and 100 is the per-seed count",
+            [3, 100],
+            [len(dig(bf, "direction_flip", "F_mag_per_run") or []),
+             dig(bf, "direction_flip", "n")],
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "the eight heights the figure prints (LIBERO 0.96/0.70, Bridge "
+                 "0.91/0.80, Fractal 0.97/0.77, BC-Z 0.95/0.75)",
+            [0.96, 0.7, 0.91, 0.8, 0.97, 0.77, 0.95, 0.75],
+            [round(dig(bf, "direction_flip", "F_mag") or 0, 2),
+             round(dig(bf, "gripper_flip", "F_mag") or 0, 2)]
+            + [round(dig(cross, t, "edit", f, "faithful_rate") or 0, 2)
+               for t in TAGS for f in ("direction_flip", "gripper_flip")],
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and the non-LIBERO denominators span 51--92 after visibility "
+                 "filtering, as the caption says", [51, 92],
+            [min(_ns), max(_ns)] if (_ns := [
+                dig(cross, t, "edit", f, "n") for t in TAGS
+                for f in ("direction_flip", "gripper_flip")]) else None,
+            source="results_v2/derived_metrics.json")
+
+    gen = ROOT / "figures" / "gen_fig10_cross_corpus_edit.py"
+    gsrc = gen.read_text() if gen.exists() else ""
+    a.check(sec, "the generator asserts subject_swap is still empty, so the day "
+                 "it has samples the figure stops claiming it is absent", True,
+            'set(_SUBJ.values()) == {0}' in gsrc, source=str(gen))
+    a.check(sec, "and prints the protocol split on the figure itself", [1, 1],
+            [gsrc.count("LIBERO bar: 3-seed main sweep on dataset CoT"),
+             gsrc.count("subject_swap was run on all three non-LIBERO corpora")],
+            source=str(gen))
+
+    tex = TEX.read_text()
+    a.check(sec, "the caption states the LIBERO bar is the 3-seed sweep over "
+                 "299/300 records", 1,
+            tex.count(r"over $N{=}299$ and $N{=}300$ records"), source=str(TEX))
+    a.check(sec, "and quotes the wrong N it replaces", 1,
+            tex.count(r"``LIBERO ($N{=}100$)'' was the per-seed sample count"),
+            source=str(TEX))
+    a.check(sec, "and discloses subject_swap landing on 0 samples", 1,
+            tex.count(r"was run on all three non-LIBERO corpora and landed on $0$ "
+                      r"samples in every one"), source=str(TEX))
+    a.check(sec, "and distinguishes that from a score of 0", 1,
+            tex.count(r"is not the same claim as ``not run'', and neither is "
+                      r"$\mathcal{F}{=}0$"), source=str(TEX))
+    a.check(sec, "and no longer advertises $N{=}100$ as the LIBERO denominator", 0,
+            tex.count(r"magnitude response on LIBERO ($N{=}100$)"), source=str(TEX))
+    a.check(sec, "while the released report paths are named", 1,
+            tex.count(r"cross\_corpus\_\{bridge\_v2,fractal,bcz\}\_n100.json"),
+            source=str(TEX))
+
+
 def audit_prompt_ablation_figure(a: Audit, d: Optional[dict]) -> None:
     """Figure 9's caption was one sentence: "truncating any portion of the CoT
     causes >=95% of samples to change action."
@@ -7196,6 +7304,7 @@ def main() -> int:
     audit_edit_heatmap_figure(a, d)
     audit_bridge_figure(a, d)
     audit_prompt_ablation_figure(a, d)
+    audit_cross_corpus_edit_figure(a, d)
     audit_overview_figure(a, d)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
