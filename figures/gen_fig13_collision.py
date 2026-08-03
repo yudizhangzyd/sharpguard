@@ -37,7 +37,11 @@ TAU = D["tau"]
 DIST = D["delta_distribution"]
 CELLS = D["cells"]
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.1, 2.7),
+# 2.59 rather than 2.70: the two-line bin labels below add ~8pt of tight-bbox
+# height, and 8pt of extra float on page 5 is enough to push the last six lines
+# of the Conclusion past the 8-page ARR body limit. The axes keep their size;
+# only the canvas allowance for the labels changes.
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.1, 2.59),
                                gridspec_kw={"wspace": 0.32})
 
 # ---- (a) the Delta_inf distribution ---------------------------------------
