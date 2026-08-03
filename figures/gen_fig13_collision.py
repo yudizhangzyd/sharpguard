@@ -43,11 +43,13 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.1, 2.7),
 # ---- (a) the Delta_inf distribution ---------------------------------------
 # Ordered by the bins the artifact defines, so relabelling a bin upstream
 # cannot silently reorder the bars here.
+# Leading zeros are kept on every decimal: mathtext treats a bare "." as
+# punctuation and inserts a thin space after it, so "$.005$" sets as ". 005".
 BINS = [("exactly_zero",  r"$0$"),
-        ("zero_to_0.005", r"$(0,.005]$"),
-        ("0.005_to_tau",  rf"$(.005,{TAU:g}]$"),
-        ("tau_to_0.10",   rf"$({TAU:g},.10]$"),
-        ("above_0.10",    r"$>.10$")]
+        ("zero_to_0.005", "$(0,$\n$0.005]$"),
+        ("0.005_to_tau",  f"$(0.005,$\n${TAU:.2f}]$"),
+        ("tau_to_0.10",   f"$({TAU:.2f},$\n$0.10]$"),
+        ("above_0.10",    r"$>0.10$")]
 vals = [DIST[k] for k, _ in BINS]
 total = sum(vals)
 xs = np.arange(len(BINS))
