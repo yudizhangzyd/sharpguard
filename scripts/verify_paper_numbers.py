@@ -5333,6 +5333,288 @@ def audit_rollout_insuite(a: Audit) -> None:
             source="results_v2/canonical_runs/rollout_edit_outofsuite_round1/")
 
 
+def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
+    """The one place a rollout carries a measurement, and both halves of it.
+
+    Section sec:deltapath is the paper's only validation of the token-level
+    score against behaviour, and it is a two-sided result, so it is the kind of
+    section where one side can rot away without the other noticing. Both sides
+    are pinned here:
+
+      * the POSITIVE half -- the path-deviation ranking of the 7 families whose
+        edit landed is one adjacent transposition from their F_mag ranking on
+        ours-r32, rho = +0.964. The "one adjacent swap" is not read out of the
+        artifact; it is recomputed here from derived_metrics.json against the
+        artifact's own ranking, so a leaderboard change that reorders those
+        families breaks this check rather than the claim.
+      * the NEGATIVE half -- what that ranking faithfully reproduces INCLUDES
+        the construct-validity failure: both meaning-preserving families
+        outrank two genuinely semantic ones. This is the half a reader would
+        drop if they wanted a clean proxy-validation result, so it gets its own
+        checks, including the 5x paraphrase_null/gripper_flip ratio.
+
+    And the caveats, at the same volume as the manuscript promises: one scene,
+    6 of 13 families excluded because the edit never landed (with cross_task_swap
+    among them, so the maximum-effect control is missing), 80 of 400 steps, and
+    the no-CoT arm's own 29.7 cm -- which is what makes this dissociation rather
+    than error. Each of those is asserted from the artifact, and the exclusions
+    are asserted to be exclusions (edit_landed_frac 0.0) rather than measured
+    zeros: a 0.0 cm arm read as a null result would be the strongest and most
+    wrong claim in the section.
+
+    The readout is path deviation and not SR for the reason audit_rollout_insuite
+    pins: SR is 0 in every arm here too, and that is asserted, so the choice of
+    readout stays a disclosed consequence of the checkpoint rather than a
+    convenience.
+    """
+    sec = "Rollout path deviation vs the token-level score (limitation v, measured)"
+    base = ROOT / "results_v2" / "canonical_runs" / "rollout_deltapath"
+    src = "results_v2/canonical_runs/rollout_deltapath/"
+    rep = load(base / "deltapath_report.json")
+    if not rep:
+        a.check(sec, "the path-deviation analysis is released (Section "
+                     "sec:deltapath quotes every number in it from here)",
+                True, False, source=src + "deltapath_report.json")
+        return
+
+    arms = rep.get("by_arm") or {}
+    cfg = rep.get("config") or {}
+    scene = dig(rep, "per_scene", "task0_ep0") or {}
+
+    # ---- provenance: the raw rollout and the probe travel with the analysis --
+    for name in ("rollout_edit_report.json", "rollout_edit_probe.json",
+                 "deltapath_report.json"):
+        a.check(sec, f"{name} is in the release, not only on the machine that "
+                     f"ran it", True, (base / name).exists(), source=src)
+    a.check(sec, "the derivation script the manuscript names exists", True,
+            (ROOT / "scripts" / "analyze_rollout_deltapath.py").exists(),
+            source="scripts/analyze_rollout_deltapath.py")
+    # The analysis must point at the RELEASED rollout, not at the Bolt artifact
+    # directory it was first computed from -- otherwise the section is derived
+    # from a path no reader has, which is the fig8 defect in another costume.
+    sr = rep.get("source_report") or ""
+    a.check(sec, "and the analysis records a repo-relative source report that "
+                 "resolves in the release", [True, True],
+            [not sr.startswith("/"), (ROOT / sr).exists() if sr else None],
+            source=f"source_report={sr!r}")
+
+    # ---- the run's shape, which is what bounds every claim in the section ---
+    a.check(sec, "ONE scene, as the section's first caveat says", 1,
+            rep.get("n_scenes"), source=src)
+    a.check(sec, "14 arms compared against the clean arm", 14,
+            rep.get("arms_compared"), source=src)
+    a.check(sec, "the arms are paired at step 0 -- without this the deviation "
+                 "is measured from a different initial state and means nothing",
+            True, rep.get("step0_pairing_verified"), source=src)
+    a.check(sec, "the token-level row compared against is ours-r32, the "
+                 "canonical fine-tune", "ours-r32", rep.get("model_row_compared"),
+            source=src)
+    a.check(sec, "the suite is libero_90, the suite the checkpoint was trained "
+                 "on", "libero_90", cfg.get("suite"), source=src)
+    a.check(sec, "80 steps per episode and the CoT regenerated every step, as "
+                 "stated", [80, 1],
+            [cfg.get("max_steps"), cfg.get("cot_refresh_steps")], source=src)
+    a.check(sec, "every arm is compared over the same 80 steps", [80],
+            sorted({v.get("n_steps_compared") for v in arms.values()}),
+            source=src)
+    a.check(sec, "13 families were attempted, so the 6 exclusions are a "
+                 "measurement outcome and not a shorter run", 13,
+            len(str(cfg.get("families", "")).split(",")), source=src)
+
+    # ---- why path deviation and not SR: SR is still 0 everywhere -----------
+    a.check(sec, "no arm succeeds, which is why the readout is deviation "
+                 "rather than SR", [False],
+            sorted({bool(v.get("success")) for v in scene.values()})
+            if scene else None, source=src)
+    a.check(sec, "and the artifact says so itself rather than leaving the "
+                 "choice of readout to the prose", True,
+            "DSR is 0 for every family by construction"
+            in str(rep.get("why_not_success_rate", "")), source=src)
+
+    # ---- the 6 exclusions are exclusions, not zeros ------------------------
+    EXCLUDED = ["adversarial_plausible", "bbox_jitter_null", "cross_task_swap",
+                "instr_random_sub", "selfsplice_control", "subject_swap"]
+    a.check(sec, "the 6 families the section names as excluded are exactly the "
+                 "6 the analysis excluded", EXCLUDED,
+            rep.get("families_excluded_edit_never_landed"), source=src)
+    a.check(sec, "cross_task_swap is among them, so the maximum-effect control "
+                 "is missing from this comparison -- the section says so", True,
+            "cross_task_swap" in (rep.get("families_excluded_edit_never_landed")
+                                  or []), source=src)
+    a.check(sec, "each excluded arm landed its edit on ZERO of the 80 steps, "
+                 "so its 0.0 cm is an absent measurement and not a null result",
+            [0.0] * len(EXCLUDED),
+            [dig(arms, f"cot_{f}", "edit_landed_frac") for f in EXCLUDED],
+            source=src)
+    a.check(sec, "and each of those arms skipped all 80 edits rather than "
+                 "applying an edit that did nothing", [80] * len(EXCLUDED),
+            [dig(arms, f"cot_{f}", "n_edit_skipped") for f in EXCLUDED],
+            source=src)
+
+    # ---- the ranking, and its 7 quoted values ------------------------------
+    RANKED = ["direction_flip", "negation", "verb_swap", "syntactic_scramble",
+              "paraphrase_null", "location_swap", "gripper_flip"]
+    a.check(sec, "the deviation ranking is the order the section prints",
+            RANKED, rep.get("ranking_by_deviation"), source=src)
+    a.check(sec, "every ranked family landed its edit on all 80 steps",
+            [1.0] * len(RANKED),
+            [dig(arms, f"cot_{f}", "edit_landed_frac") for f in RANKED],
+            source=src)
+    a.check(sec, "the 7 per-family deviations the section prints in cm "
+                 "(47.5 / 19.5 / 8.8 / 8.5 / 6.0 / 3.1 / 1.2)",
+            [47.5, 19.5, 8.8, 8.5, 6.0, 3.1, 1.2],
+            [round(float(dig(arms, f"cot_{f}", "mean_cm")), 1) for f in RANKED],
+            source=src)
+    a.check(sec, "the ranking really is sorted by those values", True,
+            all(dig(arms, f"cot_{RANKED[i]}", "mean_cm")
+                >= dig(arms, f"cot_{RANKED[i + 1]}", "mean_cm")
+                for i in range(len(RANKED) - 1)), source=src)
+
+    # ---- the scale the section reads those cm against ----------------------
+    clean = dig(arms, "cot_direction_flip", "clean_path_len_cm")
+    a.check(sec, "the clean arm's total path length is the 54.9 cm the section "
+                 "quotes", 54.9,
+            round(float(clean), 1) if clean else None, source=src)
+    peak = dig(arms, "cot_direction_flip", "peak_cm")
+    a.check(sec, "direction_flip peaks at 89.1 cm", 89.1,
+            round(float(peak), 1) if peak else None, source=src)
+    a.check(sec, "which is FURTHER than the clean arm travels in total -- the "
+                 "comparison the section makes", True,
+            peak is not None and clean is not None and peak > clean, source=src)
+    nocot = dig(arms, "nocot", "mean_cm")
+    a.check(sec, "the no-CoT arm deviates 29.7 cm, which is what makes this "
+                 "dissociation rather than error", 29.7,
+            round(float(nocot), 1) if nocot else None, source=src)
+    a.check(sec, "and it is second only to direction_flip, as the section says",
+            2, 1 + sum(1 for v in arms.values()
+                       if (v.get("mean_cm") or 0.0) > nocot)
+            if nocot is not None else None, source=src)
+
+    # ---- the correlation, exactly as printed -------------------------------
+    fm = dig(rep, "correlation_with_token_score", "F_mag") or {}
+    a.check(sec, "Spearman rho against F_mag is the +0.964 the section quotes",
+            0.964, r3(fm.get("spearman_rho")), source=src)
+    a.check(sec, "with the permutation p, family count, permutation count and "
+                 "seed the section states ($p=0.0027$, $n=7$, 20,000 perms)",
+            [0.0027, 7, 20000, 0],
+            [fm.get("perm_p"), fm.get("n_families"), fm.get("n_perm"),
+             fm.get("perm_seed")], source=src)
+    cx = dig(rep, "correlation_with_token_score", "cos_xyz") or {}
+    a.check(sec, "the signed direction cosine tracks it at rho = -0.929",
+            -0.929, r3(cx.get("spearman_rho")), source=src)
+    a.check(sec, "at the p = 0.0060 the section rounds to", 0.006,
+            r3(cx.get("perm_p")), source=src)
+    a.check(sec, "the correlation is over the 7 landed families and not over "
+                 "all 13 with zeros filled in", 7,
+            len(rep.get("ranking_by_deviation") or []), source=src)
+
+    # ---- "one adjacent swap": recomputed, not read out --------------------
+    # The claim is a comparison between this artifact and the leaderboard, so it
+    # has to be recomputed from both. If a future re-derivation reorders those
+    # seven F_mag cells, this fails -- which is the point.
+    fmag = {f: dig(d, "models", "ours-r32", "families", f, "F_mag")
+            for f in RANKED}
+    if all(v is not None for v in fmag.values()):
+        by_f = sorted(RANKED, key=lambda f: fmag[f], reverse=True)
+        # Count the adjacent transpositions needed to turn one order into the
+        # other (selection-sort distance), which is what "one adjacent swap"
+        # means and what a Spearman rho of 0.964 on n=7 implies.
+        perm, n_swaps = list(rep.get("ranking_by_deviation") or []), 0
+        for i in range(len(perm)):
+            if perm[i] != by_f[i]:
+                j = perm.index(by_f[i])
+                perm[i], perm[j] = perm[j], perm[i]
+                n_swaps += 1
+        a.check(sec, "the deviation order is ONE swap from the same families' "
+                     "F_mag order on ours-r32 -- recomputed from "
+                     "derived_metrics.json, not read out of the rollout",
+                1, n_swaps, source="results_v2/derived_metrics.json")
+        a.check(sec, "and the swap is between the two MEANING-PRESERVING "
+                     "families, which is why it costs the proxy claim nothing "
+                     "and the construct-validity claim nothing either",
+                {"paraphrase_null", "syntactic_scramble"},
+                {f for f, g in zip(rep.get("ranking_by_deviation") or [], by_f)
+                 if f != g}, source=src)
+    else:
+        a.check(sec, "ours-r32 carries F_mag for all 7 ranked families, so the "
+                     "one-swap claim is checkable at all", True, False,
+                source="results_v2/derived_metrics.json")
+
+    # ---- the negative half, which is the half that must not rot -----------
+    NULLS = ["paraphrase_null", "syntactic_scramble"]
+    SEM_BELOW = ["location_swap", "gripper_flip"]
+    a.check(sec, "BOTH meaning-preserving families move the arm further than "
+                 "BOTH of the two semantic families the section names -- the "
+                 "construct-validity failure reproducing in behaviour",
+            4, sum(1 for n in NULLS for s in SEM_BELOW
+                   if (dig(arms, f"cot_{n}", "mean_cm") or -1)
+                   > (dig(arms, f"cot_{s}", "mean_cm") or 1e9)), source=src)
+    pn = dig(arms, "cot_paraphrase_null", "mean_cm")
+    gf = dig(arms, "cot_gripper_flip", "mean_cm")
+    ratio = pn / gf if pn and gf else None
+    a.check(sec, "a meaning-preserving verb substitution moves the end "
+                 "effector at least 5x further than flipping which way the "
+                 "gripper is told to go", 5,
+            int(ratio) if ratio else None, source=f"{pn} / {gf} = {ratio}")
+    a.check(sec, "paraphrase_null's deviation RANK, which is the statistic the "
+                 "section rests on, not its distance from the semantic mean "
+                 "(that mean is dominated by direction_flip and reads the "
+                 "opposite way)", [5, 7],
+            [dig(rep, "nulls_vs_semantic", "paraphrase_null_rank_of"),
+             dig(rep, "nulls_vs_semantic", "n_families_ranked")], source=src)
+
+    # ---- the caveats are carried by the artifact too ----------------------
+    cav = " ".join(rep.get("caveats") or [])
+    a.check(sec, "the artifact itself records the dissociation-not-error "
+                 "caveat, so it cannot be lost in a rewrite of the prose",
+            True, "dissociation, not error" in cav, source=src)
+    a.check(sec, "and the approach-phase caveat", True,
+            "approach phase" in cav, source=src)
+
+    # ---- the manuscript: both halves present, in both files ---------------
+    tex, arr = TEX.read_text(), (ARR.read_text() if ARR.exists() else "")
+    for label, txt, path in (("appendix", tex, str(TEX)),
+                             ("Limitations item", arr, str(ARR))):
+        a.check(sec, f"the {label} quotes the correlation as +0.964", 1,
+                txt.count(r"\rho = +0.964"), source=path)
+        a.check(sec, f"the {label} quotes the permutation p", 1,
+                txt.count("$p = 0.0027$"), source=path)
+        a.check(sec, f"the {label} says the orders are ONE ADJACENT SWAP apart "
+                     f"rather than 'identical'", 1,
+                txt.count("one adjacent swap"), source=path)
+        a.check(sec, f"the {label} states the negative half -- that what the "
+                     f"score reproduces includes the construct-validity "
+                     f"failure", 1,
+                txt.count("includes the construct-validity failure"),
+                source=path)
+        a.check(sec, f"the {label} names the no-CoT arm's own 29.7 cm", 1,
+                txt.count(r"$29.7$\,cm"), source=path)
+        a.check(sec, f"the {label} discloses that 6 of the 13 families were "
+                     f"excluded rather than measured", True,
+                ("$6$ of the $13$ families are excluded" in txt
+                 or "$6$ of $13$ families excluded" in txt), source=path)
+        # Both phrasings, because the appendix writes "not as a validated
+        # proxy" and the Limitations item "not a validated proxy"; the claim is
+        # the negation, not the article.
+        a.check(sec, f"the {label} refuses the phrase 'validated proxy' for "
+                     f"this result", 1,
+                len(re.findall(r"not a(?:s a)? validated proxy", txt)),
+                source=path)
+    a.check(sec, "no version of the section calls the ranking identical to the "
+                 "token-level one", 0,
+            tex.count("reproduces the token-level ranking exactly")
+            + arr.count("reproduces the token-level ranking exactly"),
+            source="both manuscripts")
+    # The readout swap has to stay visible: if the SR sentence is ever cut, the
+    # section reads as if a rollout metric were available and we chose a
+    # different one for interest's sake.
+    a.check(sec, "the appendix still says WHY SR cannot carry this -- that "
+                 "in-suite SR is 0 in every arm", 1,
+            tex.count(r"in-suite SR is $0$ in every arm"), source=str(TEX))
+    a.check(sec, "and the Limitations item says the same of the same run", 1,
+            arr.count(r"Task SR is $0$ in every arm"), source=str(ARR))
+
+
 def audit_rollout_edited_arm(a: Audit) -> None:
     """The one run that executed a CoT-EDITED rollout arm.
 
@@ -6506,6 +6788,7 @@ def main() -> int:
     audit_rank_ablation(a, d)
     audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
+    audit_rollout_deltapath(a, d)
     audit_rollout_edited_arm(a)
     audit_rollout_filmstrip(a)
     audit_arm_pairing_defect(a)

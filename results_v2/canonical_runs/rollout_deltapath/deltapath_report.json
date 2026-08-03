@@ -1,0 +1,458 @@
+{
+  "experiment": "rollout_path_deviation_vs_token_score",
+  "readout": "mean per-step end-effector distance from the cot_clean arm of the same scene, cm",
+  "why_not_success_rate": "cot_clean NEVER succeeds, so DSR is 0 for every family by construction and carries no information about CoT causality. This is reported as an undefined measurement rather than as a null result. Check rollout_edit_probe.json: the usual cause is a missing norm_stats entry for this suite, i.e. a physical-scale error unrelated to any CoT.",
+  "model_row_compared": "ours-r32",
+  "source_report": "results_v2/canonical_runs/rollout_deltapath/rollout_edit_report.json",
+  "config": {
+    "suite": "libero_90",
+    "max_steps": 80,
+    "cot_refresh_steps": 1,
+    "n_tasks": 2,
+    "n_eps_per_task": 1,
+    "capture_episodes": "0:0,1:0",
+    "capture_every": 10,
+    "families": "adversarial_plausible,bbox_jitter_null,cross_task_swap,direction_flip,gripper_flip,instr_random_sub,location_swap,negation,paraphrase_null,selfsplice_control,subject_swap,syntactic_scramble,verb_swap"
+  },
+  "n_scenes": 1,
+  "arms_compared": 14,
+  "families_not_in_derived_metrics": [],
+  "families_excluded_edit_never_landed": [
+    "adversarial_plausible",
+    "bbox_jitter_null",
+    "cross_task_swap",
+    "instr_random_sub",
+    "selfsplice_control",
+    "subject_swap"
+  ],
+  "step0_pairing_verified": true,
+  "by_arm": {
+    "cot_adversarial_plausible": {
+      "family": "adversarial_plausible",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_bbox_jitter_null": {
+      "family": "bbox_jitter_null",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_cross_task_swap": {
+      "family": "cross_task_swap",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_direction_flip": {
+      "family": "direction_flip",
+      "n_scenes": 1,
+      "mean_cm": 47.53836887110908,
+      "peak_cm": 89.13476725722686,
+      "final_cm": 89.13476725722686,
+      "mean_cm_per_scene": [
+        47.538
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_gripper_flip": {
+      "family": "gripper_flip",
+      "n_scenes": 1,
+      "mean_cm": 1.151842136413797,
+      "peak_cm": 4.356146232623507,
+      "final_cm": 0.46896055271205983,
+      "mean_cm_per_scene": [
+        1.152
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_instr_random_sub": {
+      "family": "instr_random_sub",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_location_swap": {
+      "family": "location_swap",
+      "n_scenes": 1,
+      "mean_cm": 3.1151664762084232,
+      "peak_cm": 6.549522348996148,
+      "final_cm": 6.54770570505425,
+      "mean_cm_per_scene": [
+        3.115
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_negation": {
+      "family": "negation",
+      "n_scenes": 1,
+      "mean_cm": 19.505287990833956,
+      "peak_cm": 28.56728371756755,
+      "final_cm": 28.56728371756755,
+      "mean_cm_per_scene": [
+        19.505
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_paraphrase_null": {
+      "family": "paraphrase_null",
+      "n_scenes": 1,
+      "mean_cm": 6.036213209107655,
+      "peak_cm": 15.121570057371686,
+      "final_cm": 3.212484552492049,
+      "mean_cm_per_scene": [
+        6.036
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_selfsplice_control": {
+      "family": "selfsplice_control",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_subject_swap": {
+      "family": "subject_swap",
+      "n_scenes": 1,
+      "mean_cm": 0.0,
+      "peak_cm": 0.0,
+      "final_cm": 0.0,
+      "mean_cm_per_scene": [
+        0.0
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 80,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 0.0
+    },
+    "cot_syntactic_scramble": {
+      "family": "syntactic_scramble",
+      "n_scenes": 1,
+      "mean_cm": 8.505693407830009,
+      "peak_cm": 14.104182854742064,
+      "final_cm": 14.104182854742064,
+      "mean_cm_per_scene": [
+        8.506
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "cot_verb_swap": {
+      "family": "verb_swap",
+      "n_scenes": 1,
+      "mean_cm": 8.798722174751331,
+      "peak_cm": 18.78218892994105,
+      "final_cm": 11.588435873749315,
+      "mean_cm_per_scene": [
+        8.799
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 80,
+      "edit_landed_frac": 1.0
+    },
+    "nocot": {
+      "family": null,
+      "n_scenes": 1,
+      "mean_cm": 29.682973467390507,
+      "peak_cm": 56.26733705268092,
+      "final_cm": 52.19272842072926,
+      "mean_cm_per_scene": [
+        29.683
+      ],
+      "clean_path_len_cm": 54.88215492436651,
+      "n_steps_compared": 80,
+      "n_edit_skipped": 0,
+      "n_cot_generated": 0,
+      "edit_landed_frac": null
+    }
+  },
+  "per_scene": {
+    "task0_ep0": {
+      "nocot": {
+        "n_steps_compared": 80,
+        "mean_cm": 29.682973467390507,
+        "peak_cm": 56.26733705268092,
+        "final_cm": 52.19272842072926,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": null,
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 0
+      },
+      "cot_adversarial_plausible": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "adversarial_plausible",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_bbox_jitter_null": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "bbox_jitter_null",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_cross_task_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "cross_task_swap",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_direction_flip": {
+        "n_steps_compared": 80,
+        "mean_cm": 47.53836887110908,
+        "peak_cm": 89.13476725722686,
+        "final_cm": 89.13476725722686,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "direction_flip",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_gripper_flip": {
+        "n_steps_compared": 80,
+        "mean_cm": 1.151842136413797,
+        "peak_cm": 4.356146232623507,
+        "final_cm": 0.46896055271205983,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "gripper_flip",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_instr_random_sub": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "instr_random_sub",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_location_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 3.1151664762084232,
+        "peak_cm": 6.549522348996148,
+        "final_cm": 6.54770570505425,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "location_swap",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_negation": {
+        "n_steps_compared": 80,
+        "mean_cm": 19.505287990833956,
+        "peak_cm": 28.56728371756755,
+        "final_cm": 28.56728371756755,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "negation",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_paraphrase_null": {
+        "n_steps_compared": 80,
+        "mean_cm": 6.036213209107655,
+        "peak_cm": 15.121570057371686,
+        "final_cm": 3.212484552492049,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "paraphrase_null",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_selfsplice_control": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "selfsplice_control",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_subject_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "subject_swap",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_syntactic_scramble": {
+        "n_steps_compared": 80,
+        "mean_cm": 8.505693407830009,
+        "peak_cm": 14.104182854742064,
+        "final_cm": 14.104182854742064,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "syntactic_scramble",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_verb_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 8.798722174751331,
+        "peak_cm": 18.78218892994105,
+        "final_cm": 11.588435873749315,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 54.88215492436651,
+        "family": "verb_swap",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      }
+    }
+  },
+  "ranking_by_deviation": [
+    "direction_flip",
+    "negation",
+    "verb_swap",
+    "syntactic_scramble",
+    "paraphrase_null",
+    "location_swap",
+    "gripper_flip"
+  ],
+  "correlation_with_token_score": {
+    "F_mag": {
+      "spearman_rho": 0.9643,
+      "perm_p": 0.0027,
+      "n_families": 7,
+      "n_perm": 20000,
+      "perm_seed": 0
+    },
+    "F_diff": {
+      "spearman_rho": 0.9643,
+      "perm_p": 0.0027,
+      "n_families": 7,
+      "n_perm": 20000,
+      "perm_seed": 0
+    },
+    "cos_xyz": {
+      "spearman_rho": -0.9286,
+      "perm_p": 0.00595,
+      "n_families": 7,
+      "n_perm": 20000,
+      "perm_seed": 0
+    }
+  },
+  "nulls_vs_semantic": {
+    "semantic_mean_cm": 14.769,
+    "null_mean_cm": {
+      "paraphrase_null": 6.036
+    },
+    "paraphrase_null_rank_of": 5,
+    "n_families_ranked": 7
+  },
+  "caveats": [
+    "n=1 scene(s). A 13-family rank correlation on this many scenes has an interval wide enough that only a very large rho would be distinguishable from chance; perm_p is reported for exactly that reason.",
+    "Deviation from the clean arm is dissociation, not error: the clean arm does not solve the task either, so no arm here is closer to correct for deviating less.",
+    "80 steps of the episode, which is the approach phase, not the full task."
+  ]
+}
