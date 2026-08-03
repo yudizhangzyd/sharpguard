@@ -1,0 +1,401 @@
+{
+  "generated_by": "scripts/threshold_sweep.py",
+  "note": "one pinned released run per configuration; no /tmp path and no new inference",
+  "taus": [
+    0.01,
+    0.02,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.3
+  ],
+  "tau_default": 0.05,
+  "families": [
+    "direction_flip",
+    "gripper_flip",
+    "verb_swap",
+    "negation",
+    "subject_swap",
+    "location_swap",
+    "adversarial_plausible"
+  ],
+  "n_families": 7,
+  "configurations": [
+    "Ours r=8",
+    "Ours r=16",
+    "Ours r=32",
+    "Ours r=64",
+    "no-CoT",
+    "data-50A",
+    "data-50B",
+    "ECoT-bridge"
+  ],
+  "n_configurations": 8,
+  "sources": {
+    "Ours r=8": "results_v2/canonical_runs/ours_lora-r8_edit_13family_seed0.json",
+    "Ours r=16": "results_v2/canonical_runs/ours_lora-r16_edit_13family_seed0.json",
+    "Ours r=32": "results_v2/canonical_runs/ours_lora-r32_edit_13family_seed0.json",
+    "Ours r=64": "results_v2/canonical_runs/ours_lora-r64_edit_13family_seed0.json",
+    "no-CoT": "results_v2/canonical_runs/ours_no-cot_edit_13family_seed0.json",
+    "data-50A": "results_v2/canonical_runs/ours_data-50A_edit_13family_seed0.json",
+    "data-50B": "results_v2/canonical_runs/ours_data-50B_edit_13family_seed0.json",
+    "ECoT-bridge": "results_v2/canonical_runs/ecot_bridge_edit_seed0.json"
+  },
+  "per_family_n": {
+    "Ours r=8": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "Ours r=16": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "Ours r=32": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "Ours r=64": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "no-CoT": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "data-50A": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "data-50B": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    },
+    "ECoT-bridge": {
+      "direction_flip": 100,
+      "gripper_flip": 100,
+      "verb_swap": 100,
+      "negation": 100,
+      "subject_swap": 60,
+      "location_swap": 70,
+      "adversarial_plausible": 60
+    }
+  },
+  "ordering_at_default": [
+    "ECoT-bridge",
+    "Ours r=64",
+    "Ours r=16",
+    "Ours r=8",
+    "data-50A",
+    "Ours r=32",
+    "data-50B",
+    "no-CoT"
+  ],
+  "by_tau": {
+    "0.01": {
+      "tau": 0.01,
+      "rate": {
+        "Ours r=8": 0.4821768707482993,
+        "Ours r=16": 0.5029251700680272,
+        "Ours r=32": 0.42367346938775513,
+        "Ours r=64": 0.5220408163265307,
+        "no-CoT": 0.16625850340136056,
+        "data-50A": 0.42727891156462583,
+        "data-50B": 0.3923809523809524,
+        "ECoT-bridge": 0.9029251700680272
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=16",
+        "Ours r=8",
+        "data-50A",
+        "Ours r=32",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 1.0,
+      "rank_moves_vs_default": {},
+      "max_rank_move": 0,
+      "min_cot_over_nocot": 2.360065466448445,
+      "identical_to_default_ordering": true
+    },
+    "0.02": {
+      "tau": 0.02,
+      "rate": {
+        "Ours r=8": 0.46979591836734697,
+        "Ours r=16": 0.4834013605442177,
+        "Ours r=32": 0.41986394557823126,
+        "Ours r=64": 0.5196598639455782,
+        "no-CoT": 0.15374149659863945,
+        "data-50A": 0.42727891156462583,
+        "data-50B": 0.38761904761904764,
+        "ECoT-bridge": 0.8946938775510204
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=16",
+        "Ours r=8",
+        "data-50A",
+        "Ours r=32",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 1.0,
+      "rank_moves_vs_default": {},
+      "max_rank_move": 0,
+      "min_cot_over_nocot": 2.5212389380530977,
+      "identical_to_default_ordering": true
+    },
+    "0.05": {
+      "tau": 0.05,
+      "rate": {
+        "Ours r=8": 0.44761904761904764,
+        "Ours r=16": 0.457687074829932,
+        "Ours r=32": 0.4082993197278912,
+        "Ours r=64": 0.5085714285714286,
+        "no-CoT": 0.1389795918367347,
+        "data-50A": 0.4163265306122449,
+        "data-50B": 0.3635374149659864,
+        "ECoT-bridge": 0.8691836734693877
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=16",
+        "Ours r=8",
+        "data-50A",
+        "Ours r=32",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 1.0,
+      "rank_moves_vs_default": {},
+      "max_rank_move": 0,
+      "min_cot_over_nocot": 2.615761135584924,
+      "identical_to_default_ordering": true
+    },
+    "0.1": {
+      "tau": 0.1,
+      "rate": {
+        "Ours r=8": 0.3936734693877551,
+        "Ours r=16": 0.424421768707483,
+        "Ours r=32": 0.38074829931972787,
+        "Ours r=64": 0.4830612244897959,
+        "no-CoT": 0.1326530612244898,
+        "data-50A": 0.39428571428571424,
+        "data-50B": 0.35877551020408166,
+        "ECoT-bridge": 0.7774149659863945
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=16",
+        "data-50A",
+        "Ours r=8",
+        "Ours r=32",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 0.9761904761904762,
+      "rank_moves_vs_default": {
+        "Ours r=8": [
+          4,
+          5
+        ],
+        "data-50A": [
+          5,
+          4
+        ]
+      },
+      "max_rank_move": 1,
+      "min_cot_over_nocot": 2.704615384615385,
+      "identical_to_default_ordering": false
+    },
+    "0.15": {
+      "tau": 0.15,
+      "rate": {
+        "Ours r=8": 0.298843537414966,
+        "Ours r=16": 0.29312925170068027,
+        "Ours r=32": 0.3457142857142857,
+        "Ours r=64": 0.4415646258503401,
+        "no-CoT": 0.1198639455782313,
+        "data-50A": 0.348639455782313,
+        "data-50B": 0.32306122448979596,
+        "ECoT-bridge": 0.6814285714285714
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "data-50A",
+        "Ours r=32",
+        "data-50B",
+        "Ours r=8",
+        "Ours r=16",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 0.6190476190476191,
+      "rank_moves_vs_default": {
+        "Ours r=8": [
+          4,
+          6
+        ],
+        "Ours r=16": [
+          3,
+          7
+        ],
+        "Ours r=32": [
+          6,
+          4
+        ],
+        "data-50A": [
+          5,
+          3
+        ],
+        "data-50B": [
+          7,
+          5
+        ]
+      },
+      "max_rank_move": 4,
+      "min_cot_over_nocot": 2.445516458569807,
+      "identical_to_default_ordering": false
+    },
+    "0.2": {
+      "tau": 0.2,
+      "rate": {
+        "Ours r=8": 0.26789115646258504,
+        "Ours r=16": 0.23537414965986395,
+        "Ours r=32": 0.32306122448979596,
+        "Ours r=64": 0.39197278911564626,
+        "no-CoT": 0.11210884353741497,
+        "data-50A": 0.2994557823129252,
+        "data-50B": 0.22598639455782313,
+        "ECoT-bridge": 0.6265986394557823
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=32",
+        "data-50A",
+        "Ours r=8",
+        "Ours r=16",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 0.7619047619047619,
+      "rank_moves_vs_default": {
+        "Ours r=8": [
+          4,
+          5
+        ],
+        "Ours r=16": [
+          3,
+          6
+        ],
+        "Ours r=32": [
+          6,
+          3
+        ],
+        "data-50A": [
+          5,
+          4
+        ]
+      },
+      "max_rank_move": 3,
+      "min_cot_over_nocot": 2.015776699029126,
+      "identical_to_default_ordering": false
+    },
+    "0.3": {
+      "tau": 0.3,
+      "rate": {
+        "Ours r=8": 0.20904761904761907,
+        "Ours r=16": 0.16666666666666669,
+        "Ours r=32": 0.26163265306122446,
+        "Ours r=64": 0.2870748299319728,
+        "no-CoT": 0.0808843537414966,
+        "data-50A": 0.26108843537414966,
+        "data-50B": 0.15489795918367347,
+        "ECoT-bridge": 0.5065986394557823
+      },
+      "ordering": [
+        "ECoT-bridge",
+        "Ours r=64",
+        "Ours r=32",
+        "data-50A",
+        "Ours r=8",
+        "Ours r=16",
+        "data-50B",
+        "no-CoT"
+      ],
+      "spearman_vs_default": 0.7619047619047619,
+      "rank_moves_vs_default": {
+        "Ours r=8": [
+          4,
+          5
+        ],
+        "Ours r=16": [
+          3,
+          6
+        ],
+        "Ours r=32": [
+          6,
+          3
+        ],
+        "data-50A": [
+          5,
+          4
+        ]
+      },
+      "max_rank_move": 3,
+      "min_cot_over_nocot": 1.9150546677880569,
+      "identical_to_default_ordering": false
+    }
+  },
+  "tau_with_identical_ordering": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "max_tau_with_identical_ordering": 0.05,
+  "min_spearman_vs_default": 0.6190476190476191,
+  "min_cot_over_nocot_any_tau": 1.9150546677880569,
+  "max_rank_move_any_tau": 4,
+  "interpretation": "The magnitude leaderboard's ordering is identical to its tau=0.05 ordering only for tau <= 0.05. Spearman rho against that ordering falls to 0.619 at its worst, where one configuration moves 4 rank positions. The CoT-trained vs no-CoT gap is the only quantity stable over the whole range, and it dips to 1.92x. The earlier claim that rankings are preserved across the full range of tau was wrong, and was computed over a family set that included a Tier-0 control."
+}

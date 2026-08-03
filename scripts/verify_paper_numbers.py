@@ -4050,6 +4050,102 @@ def audit_fdir_null(a: Audit) -> None:
             source="cot_faith_iclr.tex")
 
 
+def audit_threshold_sweep(a: Audit) -> None:
+    """Does the magnitude leaderboard's ORDERING survive tau?
+
+    It does not, and the figure's caption used to say it did. Two defects fed
+    that claim and both are checked here: the claim itself was false above
+    tau=0.10, and the curves it was read off averaged over a family set that
+    dropped location_swap (N=12 in the pre-C5-fix runs the old generator read)
+    and substituted cross_task_swap, a Tier-0 CONTROL, while calling the set
+    "7 non-control families". The sweep is now derived from the released
+    per-sample records by scripts/threshold_sweep.py, so a reader can rerun it.
+    """
+    sec = "threshold sensitivity of the ORDERING (fig:threshold)"
+    src = "results_v2/canonical_runs/threshold_sweep/threshold_sweep.json"
+    root = Path(__file__).resolve().parent.parent
+    r = load(root / src)
+    if r is None:
+        a.check(sec, "the threshold-sweep artifact is readable", True, None,
+                source=src)
+        return
+    tex = TEX.read_text() if TEX.exists() else ""
+    by = r.get("by_tau") or {}
+
+    # Provenance first: the whole point of redoing this was that the old curves
+    # came from /tmp and from the wrong families.
+    a.check(sec, "the sweep covers all 8 leaderboard configurations", 8,
+            r.get("n_configurations"), source=src)
+    a.check(sec, "over the canonical 7 NON-CONTROL families, not a set that "
+                 "smuggles in a Tier-0 control", 7, r.get("n_families"),
+            source=src)
+    a.check(sec, "and cross_task_swap, a control, is NOT among them", False,
+            "cross_task_swap" in (r.get("families") or []), source=src)
+    a.check(sec, "location_swap IS among them, at its post-C5-fix N rather "
+                 "than the N=12 that made the old figure drop it", True,
+            "location_swap" in (r.get("families") or []), source=src)
+    a.check(sec, "every configuration's location_swap carries the full N",
+            [70] * 8,
+            [(r.get("per_family_n") or {}).get(c, {}).get("location_swap")
+             for c in (r.get("configurations") or [])], source=src)
+    a.check(sec, "every source is a released path, so the sweep needs no /tmp "
+                 "run directory", [],
+            [p for p in (r.get("sources") or {}).values()
+             if not (root / p).exists()], source=src)
+
+    # The claim, corrected.
+    a.check(sec, "the ordering is identical to the tau=0.05 ordering only up "
+                 "to tau=0.05 itself", 0.05,
+            r.get("max_tau_with_identical_ordering"), source=src)
+    a.check(sec, "at tau=0.10 it differs by a single adjacent swap", 1,
+            (by.get("0.1") or {}).get("max_rank_move"), source=src)
+    a.check(sec, "with Spearman rho against the default ordering", 0.976,
+            (by.get("0.1") or {}).get("spearman_vs_default"), tol=0.001,
+            source=src)
+    a.check(sec, "and it comes apart at tau=0.15, which is inside the range "
+                 "the old caption called stable", 0.619,
+            (by.get("0.15") or {}).get("spearman_vs_default"), tol=0.001,
+            source=src)
+    a.check(sec, "where one configuration moves 4 rank positions of 8", 4,
+            (by.get("0.15") or {}).get("max_rank_move"), source=src)
+    a.check(sec, "the configuration that moves is Ours r=16, from 3rd to 7th",
+            [3, 7],
+            ((by.get("0.15") or {}).get("rank_moves_vs_default")
+             or {}).get("Ours r=16"), source=src)
+    a.check(sec, "the worst rho over the whole sweep", 0.619,
+            r.get("min_spearman_vs_default"), tol=0.001, source=src)
+
+    # What IS stable, stated as the weak thing it is.
+    a.check(sec, "the coarse CoT-trained vs no-CoT gap holds at every tau",
+            True, (r.get("min_cot_over_nocot_any_tau") or 0) > 1.5, source=src)
+    a.check(sec, "but it dips below 2x, so 'at least 2x at every tau' is not "
+                 "the claim either", 1.92,
+            round(r.get("min_cot_over_nocot_any_tau") or 0, 2), tol=0.005,
+            source=src)
+
+    # And the manuscript has to say so. A corrected artifact with an uncorrected
+    # caption is the exact failure this audit exists to catch.
+    a.check(sec, "the caption states the ordering is stable only up to "
+                 "tau=0.05 rather than across the full range", True,
+            "identical to the $\\tau{=}0.05$ ordering only for "
+            "$\\tau \\leq 0.05$" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "it quotes rho=0.619 at tau=0.15 rather than leaving the "
+                 "break unquantified", True,
+            "$\\rho = 0.619$ at $\\tau{=}0.15$" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "it retracts the earlier claim in the caption a reader is "
+                 "looking at, not only in a changelog", True,
+            "claimed the rankings were preserved across the full range" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "and the retracted claim itself is gone from the manuscript",
+            False, "rankings are preserved across the full range" in tex,
+            source="cot_faith_iclr.tex")
+    a.check(sec, "the caption names the wrong-family-set defect too, since it "
+                 "is the reason the old number looked stable", True,
+            "a Tier-0 control" in tex and "N{=}12" in tex,
+            source="cot_faith_iclr.tex")
+
+
 def audit_collision_decomposition(a: Audit) -> None:
     """How much of F_mag is a decode-collision counter? The paper argued from
     the bimodality of the Delta distribution that F is robust to tau. The same
@@ -6154,6 +6250,7 @@ def main() -> int:
     audit_floor_invariance(a)
     audit_fdir_null(a)
     audit_collision_decomposition(a)
+    audit_threshold_sweep(a)
     audit_dt_decode_equivalence(a)
     audit_rollout_insuite(a)
     audit_rollout_edited_arm(a)
