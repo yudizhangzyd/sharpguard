@@ -29,7 +29,7 @@ the faithful-target rule already carry.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from paper_plot_style import *
-from _data import MODELS, ORDER, LABELS, OURS, fam
+from _data import MODELS, ORDER, LABELS, OURS, NON_CONTROL, fam
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -46,12 +46,12 @@ COL = {m: (C_NO_COT if m == "ours-no-cot" else
 # shrunk. Eight model slots in a 1.9in panel is the binding constraint.
 TITLE, TICK, VAL, YLAB, LEG = 6.6, 5.3, 4.8, 6.0, 5.2
 
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6.28, 2.62))
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6.28, 3.05))
 # Explicit margins rather than the defaults: savefig(bbox_inches="tight") crops
 # to the artists, so default 10% side margins would emit a page narrower than
 # 6.28in and LaTeX would scale it back up -- reintroducing the mismatch this
 # rewrite removes. Filling the canvas makes the crop a no-op.
-fig.subplots_adjust(left=0.070, right=0.998, top=0.845, bottom=0.300,
+fig.subplots_adjust(left=0.070, right=0.998, top=0.867, bottom=0.258,
                     wspace=0.30)
 for ax in (ax1, ax2, ax3):
     ax.tick_params(axis="y", labelsize=TICK + 0.4, length=2.2, pad=1.5)
@@ -99,7 +99,10 @@ ax1.set_title("(a) The flagship edit:\nmagnitude vs direction",
               loc="left", fontsize=TITLE, style="italic", pad=2.5,
               linespacing=1.25)
 ax1.set_axisbelow(True); ax1.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
-ours_bracket(ax1, N_OURS, fontsize=TICK, y=-0.31)
+# y is an axes fraction: this panel grew from 1.43in to 1.86in of axes when
+# panel (c) went horizontal, so the old -0.31 put the bracket 0.45in below
+# the labels instead of 0.34in.
+ours_bracket(ax1, N_OURS, fontsize=TICK, y=-0.205)
 
 # ---- (b) signed cosine ----------------------------------------------------
 cs = [fam(m, "direction_flip", "cos_xyz") for m in MS]
@@ -131,41 +134,87 @@ ax2.set_axisbelow(True); ax2.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 # The bracket hangs off the bottom of the axes, and this axes' bottom is at
 # cos = -1.1 rather than at zero, so it needs the same offset as the others
 # measured in axes fraction -- which is what ours_bracket's y already is.
-ours_bracket(ax2, N_OURS, fontsize=TICK, y=-0.31)
+ours_bracket(ax2, N_OURS, fontsize=TICK, y=-0.205)
 
 # ---- (c) F_diff for the model with a measured paraphrase floor -------------
+# ALL 12 non-reference families, not the 9 semantic-plus-two ones this panel used
+# to draw. The three it dropped are the three that fix the scale: selfsplice
+# (-0.193, the identity null, which is minus the floor by construction),
+# bbox_jitter_null (-0.147), and instr_random_sub (+0.070) -- the random
+# instruction substitution, i.e. the CEILING. Once the ceiling is on the plot,
+# direction_flip's +0.081 is ABOVE it, and the panel's real content is that the
+# whole floor-to-ceiling band is 0.07 wide.
+#
+# Horizontal and sorted: 12 rotated tick labels do not fit in a 1.9in panel, and
+# "differential leaderboard" is a ranking, so a ranked axis is the honest layout.
+# All eight models carry a measured floor, so the selection rule has to be the
+# one the caption states -- lowest floor -- and not HAVE[0], which picked this
+# model only because ORDER happens to list it first.
 HAVE = [m for m in MS if MODELS[m].get("paraphrase_null_floor") is not None]
-FAMS = ["syntactic_scramble", "cross_task_swap", "direction_flip", "gripper_flip",
-        "verb_swap", "negation", "subject_swap", "location_swap",
-        "adversarial_plausible"]
-SHORT = {"syntactic_scramble": "scram", "cross_task_swap": "cross",
-         "direction_flip": "dir", "gripper_flip": "grip", "verb_swap": "verb",
-         "negation": "neg", "subject_swap": "subj", "location_swap": "loc",
-         "adversarial_plausible": "adv"}
-m0 = HAVE[0]
-xs = np.arange(len(FAMS))
-vals = [fam(m0, f, "F_diff") for f in FAMS]
-ax3.bar(xs, vals, 0.62,
-        color=[C_ECOT_BRIDGE if (v or 0) > 0.05 else C_NO_COT for v in vals],
-        edgecolor="black", lw=0.4)
-ax3.axhline(0.0, color="black", lw=0.8)
+FLOORS = sorted(HAVE, key=lambda m: MODELS[m]["paraphrase_null_floor"])
+m0 = FLOORS[0]
+assert MODELS[FLOORS[1]]["paraphrase_null_floor"] \
+    - MODELS[m0]["paraphrase_null_floor"] > 0.2, \
+    "another model's floor is now comparable to this one's; 'the model whose " \
+    "floor is low enough for the differential to be readable' no longer " \
+    "picks out one model"
+REFERENCE = "paraphrase_null"        # F_diff is defined as 0 here
+SHORT = {"syntactic_scramble": "scram", "cross_task_swap": "cross-task",
+         "direction_flip": "dir flip", "gripper_flip": "grip flip",
+         "verb_swap": "verb", "negation": "negation", "subject_swap": "subj",
+         "location_swap": "loc", "adversarial_plausible": "adv plaus",
+         "selfsplice_control": "selfsplice", "bbox_jitter_null": "bbox jitter",
+         "instr_random_sub": "instr random"}
+CEILING = "instr_random_sub"
+_fams = MODELS[m0]["families"]
+FAMS = [f for f in SHORT if f in _fams]
+assert set(FAMS) | {REFERENCE} == set(_fams), \
+    f"this panel is missing a family the release measures: " \
+    f"{set(_fams) - set(FAMS) - {REFERENCE}}"
+assert set(NON_CONTROL) <= set(FAMS), "a semantic family dropped out of panel (c)"
+pairs = sorted(((f, fam(m0, f, "F_diff")) for f in FAMS),
+               key=lambda t: t[1] or 0.0)
+ys = np.arange(len(pairs))
+vals = [v for _, v in pairs]
+# Semantic families in the trained colour, controls and calibrators in grey: the
+# point of drawing all 12 is that they interleave.
+cols = [C_COT_TRAINED if f in NON_CONTROL else C_CTRL for f, _ in pairs]
+ax3.barh(ys, vals, 0.66, color=cols, edgecolor="black", lw=0.4)
+ax3.axvline(0.0, color="black", lw=0.8)
+ceil_v = fam(m0, CEILING, "F_diff")
+ax3.axvline(ceil_v, color="0.15", lw=0.7, ls=(0, (3, 2)))
 for i, v in enumerate(vals):
-    ax3.text(i, v + (0.015 if v >= 0 else -0.045), f"{v:+.2f}", ha="center",
-             va="bottom" if v >= 0 else "top", fontsize=VAL)
-ax3.set_xticks(xs)
-ax3.set_xticklabels([SHORT[f] for f in FAMS], fontsize=TICK, rotation=45,
-                    ha="right", rotation_mode="anchor")
-floor = MODELS[m0]["paraphrase_null_floor"]
-ax3.set_ylabel(r"$\mathcal{F}_{diff}=\mathcal{F}(f)-\mathcal{F}(para)$",
+    ax3.text(v + (0.006 if v >= 0 else -0.006), i, f"{v:+.2f}",
+             ha="left" if v >= 0 else "right", va="center", fontsize=VAL)
+ax3.set_yticks(ys)
+ax3.set_yticklabels([SHORT[f] for f, _ in pairs], fontsize=TICK)
+ax3.tick_params(axis="y", length=0, pad=1.5)
+ax3.set_ylim(-0.7, len(pairs) - 0.3)
+ax3.set_xlim(min(vals) - 0.055, max(max(vals), ceil_v) + 0.062)
+ax3.set_xlabel(r"$\mathcal{F}_{diff}=\mathcal{F}(f)-\mathcal{F}(para)$",
                fontsize=YLAB, labelpad=1.5)
-ax3.set_ylim(min(vals) - 0.14, max(max(vals), 0.05) + 0.10)
-ax3.set_title(f"(c) {m0}: differential\nleaderboard (para. floor $=$ {floor:.2f})",
+floor = MODELS[m0]["paraphrase_null_floor"]
+# Short enough to stay inside the canvas: at 6.6pt the earlier three-clause form
+# ran past the right edge, and savefig's crop then emitted a page WIDER than the
+# canvas, which LaTeX scales back down -- shrinking every label on the figure.
+ax3.set_title(f"(c) {m0}, all {len(pairs)} families\n"
+              f"(floor {floor:.2f}, ceiling {ceil_v:+.2f})",
               loc="left", fontsize=TITLE, style="italic", pad=2.5,
               linespacing=1.25)
-ax3.set_axisbelow(True); ax3.yaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
+ax3.text(ceil_v + 0.004, -0.62, "ceiling", fontsize=VAL, style="italic",
+         color="0.15", ha="left", va="bottom")
+ax3.set_axisbelow(True); ax3.xaxis.grid(True, ls=":", lw=0.4, alpha=0.5)
 
 save(fig, "fig12_directional_inversion")
 
 print(f"[audit] magnitude on direction_flip : {min(mag):.3f}-{max(mag):.3f}")
 print(f"[audit] directional on the same     : {min(dr):.3f}-{max(dr):.3f}")
-print(f"[audit] F_diff for {m0:<16}: {min(vals):+.3f} to {max(vals):+.3f}")
+print(f"[audit] F_diff for {m0:<16}: {min(vals):+.3f} to {max(vals):+.3f}"
+      f"  ({len(pairs)} families)")
+_pos = [(f, v) for f, v in pairs if (v or 0) > 0]
+print(f"[audit] below their own floor      : "
+      f"{sum(1 for _, v in pairs if (v or 0) < 0)} of {len(pairs)}")
+print(f"[audit] above it                   : "
+      f"{[(f, round(v, 3)) for f, v in _pos]}")
+print(f"[audit] ceiling (instr_random_sub) : {ceil_v:+.3f}; families above the "
+      f"ceiling: {[f for f, v in pairs if (v or 0) > ceil_v]}")

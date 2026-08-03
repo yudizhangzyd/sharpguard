@@ -7029,6 +7029,153 @@ def audit_edit_heatmap_figure(a: Audit, d: Optional[dict]) -> None:
                       "columns"), source=str(TEX))
 
 
+def audit_directional_inversion_figure(a: Audit, d: Optional[dict]) -> None:
+    """Figure 12 panel (c) drew 9 of the 12 non-reference families, and the three
+    it dropped were the two lowest controls and the CEILING.
+
+    The panel is a differential leaderboard: F_diff = F(f) - F(paraphrase_null).
+    Dropping instr_random_sub -- the deliberately random instruction substitution
+    -- removed the only number that says how large a differential CAN get on this
+    model. With it drawn, the whole floor-to-ceiling band is 0.07 wide and
+    direction_flip sits ABOVE the ceiling, which is a stronger form of the
+    paper's own argument than the 9-family version carried.
+
+    Also pinned: the panel's model-selection rule. All eight models now have a
+    measured floor, so "the model whose floor is low enough" has to be the lowest
+    floor, not ORDER's first entry.
+    """
+    sec = "Figure 12(c) (differential leaderboard): the dropped ceiling"
+    mods = dig(d, "models") or {}
+    M0 = "ours-no-cot"
+    f0 = dig(mods, M0, "families") or {}
+    REFERENCE = "paraphrase_null"
+
+    floors = sorted(((m, dig(v, "paraphrase_null_floor")) for m, v in mods.items()
+                     if dig(v, "paraphrase_null_floor") is not None),
+                    key=lambda t: t[1])
+    a.check(sec, "every model carries a measured paraphrase floor, so the panel's "
+                 "one-model selection cannot be 'the only one that has a floor'",
+            len(mods), len(floors), source="results_v2/derived_metrics.json")
+    a.check(sec, f"it is the LOWEST floor, and that is {M0} at 0.193 against "
+                 f"0.447 for the next lowest", [M0, 0.193, 0.447],
+            [floors[0][0], r3(floors[0][1]), r3(floors[1][1])],
+            source="results_v2/derived_metrics.json")
+
+    drawn = sorted(set(f0) - {REFERENCE})
+    a.check(sec, "the release measures 12 non-reference families on this model, "
+                 "all of which the panel now draws", 12, len(drawn),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and F_diff is 0 on the reference by construction", 0.0,
+            r3(dig(f0, REFERENCE, "F_diff")),
+            source="results_v2/derived_metrics.json")
+
+    fd = {f: dig(f0, f, "F_diff") for f in drawn}
+    a.check(sec, "no drawn family is missing an F_diff, which would plot as a "
+                 "gap the reader reads as a value", [],
+            sorted(f for f, v in fd.items() if v is None),
+            source="results_v2/derived_metrics.json")
+
+    below = sorted(f for f, v in fd.items() if (v or 0.0) < 0)
+    above = sorted(((f, r3(v)) for f, v in fd.items() if (v or 0.0) > 0),
+                   key=lambda t: t[1])
+    a.check(sec, "8 of the 12 sit BELOW their own floor, as the caption says", 8,
+            len(below), source="results_v2/derived_metrics.json")
+    a.check(sec, "and the four that clear it are negation, cross_task_swap, "
+                 "instr_random_sub and direction_flip, by <= 0.081",
+            [("negation", 0.003), ("cross_task_swap", 0.067),
+             ("instr_random_sub", 0.07), ("direction_flip", 0.081)], above,
+            source="results_v2/derived_metrics.json")
+
+    # The three the earlier panel dropped, which is the whole defect.
+    a.check(sec, "the identity null is minus the floor by construction "
+                 "($-0.193$), which is what makes it the low anchor",
+            [r3(-(floors[0][1] or 0.0)), 0.0],
+            [r3(dig(f0, "selfsplice_control", "F_diff")),
+             r3(dig(f0, "selfsplice_control", "F_mag"))],
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "bbox_jitter_null, the second family the earlier panel dropped, "
+                 "is at $-0.147$", -0.147, r3(dig(f0, "bbox_jitter_null", "F_diff")),
+            source="results_v2/derived_metrics.json")
+    ceil_v = dig(f0, "instr_random_sub", "F_diff")
+    a.check(sec, "and the third is the CEILING: random instruction substitution "
+                 "at $+0.070$", 0.07, r3(ceil_v),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "so the entire floor-to-ceiling band is 0.07 wide", 0.07,
+            r3((ceil_v or 0.0) - r3(dig(f0, REFERENCE, "F_diff"))),
+            source="results_v2/derived_metrics.json")
+    a.check(sec, "and direction_flip is the one family ABOVE that ceiling -- a "
+                 "meaning-changing edit moves this model no further than a "
+                 "random instruction does", ["direction_flip"],
+            sorted(f for f, v in fd.items() if (v or 0.0) > (ceil_v or 0.0)),
+            source="results_v2/derived_metrics.json")
+
+    gen = ROOT / "figures" / "gen_fig12_directional_inversion.py"
+    gsrc = gen.read_text() if gen.exists() else ""
+    # The family list the panel draws, read out of the source rather than
+    # searched for: on Figure 5 a substring check passed even after 8 of 11
+    # families had been dropped, because the names survived in the docstring.
+    short = None
+    try:
+        tree = ast.parse(gsrc)
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and len(node.targets) == 1                     and getattr(node.targets[0], "id", None) == "SHORT":
+                short = list(ast.literal_eval(node.value))
+    except (SyntaxError, ValueError, TypeError):
+        short = None
+    a.check(sec, "the generator's own family list is exactly the 12, with no "
+                 "duplicates", [12, drawn],
+            [len(short), sorted(short)] if short else None, source=str(gen))
+    a.check(sec, "it asserts the release has no family the panel omits, so a new "
+                 "family cannot be silently left out", True,
+            "assert set(FAMS) | {REFERENCE} == set(_fams)" in gsrc,
+            source=str(gen))
+    a.check(sec, "it imports the semantic set from _data rather than retyping it, "
+                 "and asserts none of it dropped out", [1, 1],
+            [1 if re.search(r"^from _data import .*\bNON_CONTROL\b", gsrc,
+                            re.M) else 0,
+             gsrc.count("a semantic family dropped out of panel (c)")],
+            source=str(gen))
+    a.check(sec, "and it asserts the lowest-floor model is still separated from "
+                 "the rest, so the selection rule stays true", True,
+            'MODELS[FLOORS[1]]["paraphrase_null_floor"]' in gsrc, source=str(gen))
+    a.check(sec, "the ceiling line is drawn and labelled on the panel, not left "
+                 "to the caption", [1, 1],
+            [gsrc.count("ax3.axvline(ceil_v"), gsrc.count('"ceiling"')],
+            source=str(gen))
+
+    fig = ROOT / "figures" / "fig12_directional_inversion.pdf"
+    a.check(sec, "the figure is built", True, fig.exists(), source=str(fig))
+    tex = TEX.read_text()
+    a.check(sec, "and the include width matches the page savefig emits (446.1pt "
+                 "of a 455.2pt column)", 1,
+            tex.count(r"\includegraphics[width=0.98\textwidth]"
+                      r"{fig12_directional_inversion.pdf}"), source=str(TEX))
+
+    for claim, needle in [
+        ("the caption says all 12 non-reference families, ranked",
+         r"now all $12$ non-reference families, ranked"),
+        ("it discloses that an earlier version drew 9 of them",
+         r"\emph{An earlier version of this panel drew $9$ of them}"),
+        ("it names the identity null as minus the floor by construction",
+         r"\emph{selfsplice\_control} at $-0.193$ (the identity null, which is "
+         r"minus the floor by construction)"),
+        ("it names bbox_jitter_null at $-0.147$",
+         r"\emph{bbox\_jitter\_null} at $-0.147$"),
+        ("it names instr_random_sub as the ceiling",
+         r"\emph{instr\_random\_sub} at $+0.070$ --- the deliberately random "
+         r"instruction substitution, i.e.\ the \emph{ceiling}"),
+        ("it states the band width and the count below the floor",
+         r"the entire floor-to-ceiling band is $0.07$ wide: $8$ of the $12$ "
+         r"families sit below their own floor"),
+        ("and that direction_flip clears the ceiling",
+         r"\emph{direction\_flip}'s $+0.081$ is \emph{above the ceiling}"),
+        ("the colour rule is stated, including that the two sets interleave",
+         r"Semantic families are drawn in colour and controls/calibrators in "
+         r"grey; they interleave."),
+    ]:
+        a.check(sec, claim, 1, tex.count(needle), source=str(TEX))
+
+
 def audit_overview_figure(a: Audit, d: dict) -> None:
     """Fig 1 says what the instrument does AND what it found, so it is checked.
 
@@ -7305,6 +7452,7 @@ def main() -> int:
     audit_bridge_figure(a, d)
     audit_prompt_ablation_figure(a, d)
     audit_cross_corpus_edit_figure(a, d)
+    audit_directional_inversion_figure(a, d)
     audit_overview_figure(a, d)
     audit_arr_submission(a)
     audit_derived_paths_are_portable(a)
