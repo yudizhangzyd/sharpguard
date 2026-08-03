@@ -48,5 +48,9 @@
     "nocot": 128.84,
     "cot_direction_flip": 139.69
   },
+  "final_cm_from_clean": {
+    "nocot": 73.5,
+    "cot_direction_flip": 139.62
+  },
   "cot_clean_xy_span_cm": 21.76
 }

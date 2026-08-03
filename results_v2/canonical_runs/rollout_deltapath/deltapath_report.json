@@ -14,7 +14,7 @@
     "capture_every": 10,
     "families": "adversarial_plausible,bbox_jitter_null,cross_task_swap,direction_flip,gripper_flip,instr_random_sub,location_swap,negation,paraphrase_null,selfsplice_control,subject_swap,syntactic_scramble,verb_swap"
   },
-  "n_scenes": 1,
+  "n_scenes": 2,
   "arms_compared": 14,
   "families_not_in_derived_metrics": [],
   "families_excluded_edit_never_landed": [
@@ -29,209 +29,223 @@
   "by_arm": {
     "cot_adversarial_plausible": {
       "family": "adversarial_plausible",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_bbox_jitter_null": {
       "family": "bbox_jitter_null",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_cross_task_swap": {
       "family": "cross_task_swap",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_direction_flip": {
       "family": "direction_flip",
-      "n_scenes": 1,
-      "mean_cm": 47.53836887110908,
+      "n_scenes": 2,
+      "mean_cm": 48.95232608169687,
       "peak_cm": 89.13476725722686,
-      "final_cm": 89.13476725722686,
+      "final_cm": 85.06006613730875,
       "mean_cm_per_scene": [
-        47.538
+        47.538,
+        50.366
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_gripper_flip": {
       "family": "gripper_flip",
-      "n_scenes": 1,
-      "mean_cm": 1.151842136413797,
+      "n_scenes": 2,
+      "mean_cm": 1.3213877495326418,
       "peak_cm": 4.356146232623507,
-      "final_cm": 0.46896055271205983,
+      "final_cm": 1.8672535306690716,
       "mean_cm_per_scene": [
-        1.152
+        1.152,
+        1.491
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_instr_random_sub": {
       "family": "instr_random_sub",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_location_swap": {
       "family": "location_swap",
-      "n_scenes": 1,
-      "mean_cm": 3.1151664762084232,
+      "n_scenes": 2,
+      "mean_cm": 2.4957960886498087,
       "peak_cm": 6.549522348996148,
-      "final_cm": 6.54770570505425,
+      "final_cm": 5.574244014916687,
       "mean_cm_per_scene": [
-        3.115
+        3.115,
+        1.876
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_negation": {
       "family": "negation",
-      "n_scenes": 1,
-      "mean_cm": 19.505287990833956,
-      "peak_cm": 28.56728371756755,
-      "final_cm": 28.56728371756755,
+      "n_scenes": 2,
+      "mean_cm": 21.377094257287993,
+      "peak_cm": 37.82182245741208,
+      "final_cm": 33.174872860229925,
       "mean_cm_per_scene": [
-        19.505
+        19.505,
+        23.249
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_paraphrase_null": {
       "family": "paraphrase_null",
-      "n_scenes": 1,
-      "mean_cm": 6.036213209107655,
-      "peak_cm": 15.121570057371686,
-      "final_cm": 3.212484552492049,
+      "n_scenes": 2,
+      "mean_cm": 7.522418151980352,
+      "peak_cm": 17.102474499323193,
+      "final_cm": 7.379804283360869,
       "mean_cm_per_scene": [
-        6.036
+        6.036,
+        9.009
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_selfsplice_control": {
       "family": "selfsplice_control",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_subject_swap": {
       "family": "subject_swap",
-      "n_scenes": 1,
+      "n_scenes": 2,
       "mean_cm": 0.0,
       "peak_cm": 0.0,
       "final_cm": 0.0,
       "mean_cm_per_scene": [
+        0.0,
         0.0
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
-      "n_edit_skipped": 80,
-      "n_cot_generated": 80,
+      "n_edit_skipped": 160,
+      "n_cot_generated": 160,
       "edit_landed_frac": 0.0
     },
     "cot_syntactic_scramble": {
       "family": "syntactic_scramble",
-      "n_scenes": 1,
-      "mean_cm": 8.505693407830009,
+      "n_scenes": 2,
+      "mean_cm": 7.511489724410303,
       "peak_cm": 14.104182854742064,
-      "final_cm": 14.104182854742064,
+      "final_cm": 11.231966066639536,
       "mean_cm_per_scene": [
-        8.506
+        8.506,
+        6.517
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "cot_verb_swap": {
       "family": "verb_swap",
-      "n_scenes": 1,
-      "mean_cm": 8.798722174751331,
-      "peak_cm": 18.78218892994105,
-      "final_cm": 11.588435873749315,
+      "n_scenes": 2,
+      "mean_cm": 16.02381134924668,
+      "peak_cm": 37.82182245741208,
+      "final_cm": 24.68544893832081,
       "mean_cm_per_scene": [
-        8.799
+        8.799,
+        23.249
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
-      "n_cot_generated": 80,
+      "n_cot_generated": 160,
       "edit_landed_frac": 1.0
     },
     "nocot": {
       "family": null,
-      "n_scenes": 1,
-      "mean_cm": 29.682973467390507,
+      "n_scenes": 2,
+      "mean_cm": 24.024976706329028,
       "peak_cm": 56.26733705268092,
-      "final_cm": 52.19272842072926,
+      "final_cm": 45.339167443002026,
       "mean_cm_per_scene": [
-        29.683
+        29.683,
+        18.367
       ],
-      "clean_path_len_cm": 54.88215492436651,
+      "clean_path_len_cm": 51.42315284265259,
       "n_steps_compared": 80,
       "n_edit_skipped": 0,
       "n_cot_generated": 0,
@@ -408,50 +422,220 @@
         "n_edit_skipped": 0,
         "n_cot_generated": 80
       }
+    },
+    "task1_ep0": {
+      "nocot": {
+        "n_steps_compared": 80,
+        "mean_cm": 18.366979945267552,
+        "peak_cm": 38.485606465274785,
+        "final_cm": 38.485606465274785,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": null,
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 0
+      },
+      "cot_adversarial_plausible": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "adversarial_plausible",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_bbox_jitter_null": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "bbox_jitter_null",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_cross_task_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "cross_task_swap",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_direction_flip": {
+        "n_steps_compared": 80,
+        "mean_cm": 50.36628329228466,
+        "peak_cm": 80.98536501739065,
+        "final_cm": 80.98536501739065,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "direction_flip",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_gripper_flip": {
+        "n_steps_compared": 80,
+        "mean_cm": 1.490933362651487,
+        "peak_cm": 3.758928836783168,
+        "final_cm": 3.2655465086260835,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "gripper_flip",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_instr_random_sub": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "instr_random_sub",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_location_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 1.8764257010911938,
+        "peak_cm": 4.628586609322545,
+        "final_cm": 4.600782324779123,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "location_swap",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_negation": {
+        "n_steps_compared": 80,
+        "mean_cm": 23.24890052374203,
+        "peak_cm": 37.82182245741208,
+        "final_cm": 37.7824620028923,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "negation",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_paraphrase_null": {
+        "n_steps_compared": 80,
+        "mean_cm": 9.00862309485305,
+        "peak_cm": 17.102474499323193,
+        "final_cm": 11.54712401422969,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "paraphrase_null",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_selfsplice_control": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "selfsplice_control",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_subject_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 0.0,
+        "peak_cm": 0.0,
+        "final_cm": 0.0,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "subject_swap",
+        "success": false,
+        "n_edit_skipped": 80,
+        "n_cot_generated": 80
+      },
+      "cot_syntactic_scramble": {
+        "n_steps_compared": 80,
+        "mean_cm": 6.517286040990598,
+        "peak_cm": 11.11733538218579,
+        "final_cm": 8.359749278537008,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "syntactic_scramble",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      },
+      "cot_verb_swap": {
+        "n_steps_compared": 80,
+        "mean_cm": 23.24890052374203,
+        "peak_cm": 37.82182245741208,
+        "final_cm": 37.7824620028923,
+        "step0_cm": 0.0,
+        "clean_path_len_cm": 47.96415076093867,
+        "family": "verb_swap",
+        "success": false,
+        "n_edit_skipped": 0,
+        "n_cot_generated": 80
+      }
     }
   },
   "ranking_by_deviation": [
     "direction_flip",
     "negation",
     "verb_swap",
-    "syntactic_scramble",
     "paraphrase_null",
+    "syntactic_scramble",
     "location_swap",
     "gripper_flip"
   ],
   "correlation_with_token_score": {
     "F_mag": {
-      "spearman_rho": 0.9643,
-      "perm_p": 0.0027,
+      "spearman_rho": 1.0,
+      "perm_p": 0.00045,
       "n_families": 7,
       "n_perm": 20000,
       "perm_seed": 0
     },
     "F_diff": {
-      "spearman_rho": 0.9643,
-      "perm_p": 0.0027,
+      "spearman_rho": 1.0,
+      "perm_p": 0.00045,
       "n_families": 7,
       "n_perm": 20000,
       "perm_seed": 0
     },
     "cos_xyz": {
-      "spearman_rho": -0.9286,
-      "perm_p": 0.00595,
+      "spearman_rho": -0.9643,
+      "perm_p": 0.00265,
       "n_families": 7,
       "n_perm": 20000,
       "perm_seed": 0
     }
   },
   "nulls_vs_semantic": {
-    "semantic_mean_cm": 14.769,
+    "semantic_mean_cm": 16.28,
     "null_mean_cm": {
-      "paraphrase_null": 6.036
+      "paraphrase_null": 7.522
     },
-    "paraphrase_null_rank_of": 5,
+    "paraphrase_null_rank_of": 4,
     "n_families_ranked": 7
   },
   "caveats": [
-    "n=1 scene(s). A 13-family rank correlation on this many scenes has an interval wide enough that only a very large rho would be distinguishable from chance; perm_p is reported for exactly that reason.",
+    "n=2 scene(s). A 13-family rank correlation on this many scenes has an interval wide enough that only a very large rho would be distinguishable from chance; perm_p is reported for exactly that reason.",
     "Deviation from the clean arm is dissociation, not error: the clean arm does not solve the task either, so no arm here is closer to correct for deviating less.",
     "80 steps of the episode, which is the approach phase, not the full task."
   ]

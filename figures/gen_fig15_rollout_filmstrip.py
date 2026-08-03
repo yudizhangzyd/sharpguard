@@ -298,11 +298,18 @@ def main() -> int:
     W = 6.14
     cell = (W - 0.62) / len(steps)         # 0.62in of row labels on the left
     strip_h = 3 * (cell + 0.20) + 0.16     # +0.20 per row for the MOVE caption
-    # 0.44in for (b)/(c)'s tick labels and axis labels, 0.86in of axes, 0.11in
+    # 0.44in for (b)/(c)'s tick labels and axis labels, PLOT_H of axes, 0.11in
     # of air under the last MOVE caption. The first version left 0.38in of dead
     # band between the strip and the plots and gave the plots 0.80in, which read
     # as two unrelated figures stacked rather than one figure's three panels.
-    bot_h = (0.44 + 0.86 + 0.11) if have_eef else 0.16
+    #
+    # PLOT_H was 0.86in until panel (b) was put on an EQUAL aspect, which it has
+    # to be: it is a map of where the gripper went, and at 0.86in the two axes
+    # were scaled differently, so the path's shape was a property of the axes box
+    # and the "21.8 cm box" annotation could not be checked against the ticks.
+    # 1.93in x 1.21in is the box the tracks' own extent asks for (see below).
+    PLOT_H = 1.21
+    bot_h = (0.44 + PLOT_H + 0.11) if have_eef else 0.16
     H = strip_h + bot_h
     fig = plt.figure(figsize=(W, H))
 
@@ -341,14 +348,23 @@ def main() -> int:
     # Panels (b) and (c) exist only if poses were logged. `peak` stays empty in
     # that case rather than being filled with a stand-in, so the facts file says
     # "no measurement" instead of reporting one that was never taken.
-    peak = {}
+    peak, final = {}, {}
     clean_span_cm = None
     if have_eef:
         # ---- (b) top-down end-effector path -----------------------------
         # Top-down, i.e. the (x, y) plane, because that is the plane a
         # left/right word acts in: a direction edit that lands has to show up
         # here. Which sign is "left" is a camera convention we do not assert.
-        axb = fig.add_axes([0.62 / W, 0.44 / H, 1.93 / W, 0.86 / H])
+        #
+        # Drawn with y across and x up, which is the transpose of the usual
+        # convention and is here for a measurable reason: these three tracks span
+        # 1.66m in y against 1.01m in x, so on an equal aspect they are a
+        # PORTRAIT shape, and a portrait panel 1.93in wide would be 0.74in of
+        # drawable width -- narrower than the annotation it has to carry. Laid on
+        # its side the same tracks fill a landscape box at true scale. No claim
+        # here depends on which axis is horizontal; the panel asserts no left or
+        # right, only how far.
+        axb = fig.add_axes([0.62 / W, 0.44 / H, 1.93 / W, PLOT_H / H])
         # cot_clean drawn LAST and on top. It is the reference the other two
         # panels are measured against, and it is also the smallest track by two
         # orders of magnitude, so in ARMS order it vanished underneath the arm
@@ -356,11 +372,33 @@ def main() -> int:
         # caption promised three.
         for arm, label, colour in sorted(ARMS, key=lambda a: a[0] == "cot_clean"):
             _, xyz = tracks[arm]
-            axb.plot(xyz[:, 0], xyz[:, 1], color=colour, lw=1.1,
+            axb.plot(xyz[:, 1], xyz[:, 0], color=colour, lw=1.1,
                      zorder=3 if arm == "cot_clean" else 2,
                      label=label.replace("\n", " "))
-            axb.plot(xyz[0, 0], xyz[0, 1], "o", color=colour, ms=3.0, mew=0,
+            # Where the track ENDS, and an arrowhead at the midpoint of its
+            # longest single-step move so the direction of travel is readable.
+            # Without these, a track that leaves and returns is indistinguishable
+            # from one that never left, and this panel exists to say which.
+            axb.plot(xyz[-1, 1], xyz[-1, 0], "s", color=colour, ms=2.6, mew=0,
                      zorder=4)
+            if arm != "cot_clean" and len(xyz) > 4:
+                # Three arrowheads at even fractions of the record, each drawn
+                # along its own local tangent. Both of these tracks loop, and a
+                # loop read without a direction is two different rollouts: an
+                # arm that swung out and came back, and one that is still going.
+                for f in (0.25, 0.5, 0.75):
+                    k = max(1, int(round(f * (len(xyz) - 1))))
+                    axb.annotate("", xy=(xyz[k, 1], xyz[k, 0]),
+                                 xytext=(xyz[k - 1, 1], xyz[k - 1, 0]),
+                                 arrowprops=dict(arrowstyle="-|>", lw=0.0,
+                                                 color=colour, mutation_scale=7,
+                                                 shrinkA=0, shrinkB=0), zorder=5)
+        # The shared start, once: all three arms are at the same pose there, so
+        # three markers would be one marker drawn three times and the reader
+        # could not tell that from three that happen to coincide.
+        _, xyz0 = tracks["cot_clean"]
+        axb.plot(xyz0[0, 1], xyz0[0, 0], "o", color="black", ms=3.4,
+                 mew=0.0, zorder=6)
         # Labelled in place rather than left to the colour key, and labelled
         # with its measured extent: that the arm reading its OWN reasoning is
         # the one that barely travels is the panel's least expected reading, and
@@ -372,28 +410,60 @@ def main() -> int:
         clean_span_cm = float(np.hypot(xyz_c[:, 0].max() - xyz_c[:, 0].min(),
                                        xyz_c[:, 1].max() - xyz_c[:, 1].min())
                               ) * 100.0
+        # The box itself, drawn. On an equal aspect a reader can now compare it
+        # against the axes and against the other two tracks directly, which is
+        # the whole reason the aspect was fixed.
+        axb.add_patch(Rectangle(
+            (xyz_c[:, 1].min(), xyz_c[:, 0].min()),
+            max(float(np.ptp(xyz_c[:, 1])), 1e-3),
+            max(float(np.ptp(xyz_c[:, 0])), 1e-3),
+            fill=False, ec=C_COT_TRAINED, lw=0.5, ls=(0, (2, 1.6)), zorder=3))
         axb.annotate(f"own CoT: whole path\nin a {clean_span_cm:.0f} cm box",
-                     xy=(xyz_c[:, 0].mean(), xyz_c[:, 1].mean()),
-                     xytext=(0.46, 0.11), textcoords="axes fraction",
+                     xy=(xyz_c[:, 1].max(), xyz_c[:, 0].mean()),
+                     xytext=(0.82, 0.99), textcoords="axes fraction",
                      fontsize=FONT_SIZE - 4.2, color=C_COT_TRAINED,
-                     ha="center", va="bottom", linespacing=1.15,
+                     ha="center", va="top", linespacing=1.15,
                      arrowprops=dict(arrowstyle="-", lw=0.6,
                                      color=C_COT_TRAINED, shrinkA=1.0,
                                      shrinkB=1.5))
-        axb.set_xlabel("gripper $x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
-        axb.set_ylabel("$y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        # The colour key goes in the middle of the panel, which is empty because
+        # the no-CoT arm's excursion encloses it: an endpoint label on each track
+        # ran off the axes on the arm that ends nearest a corner, and a corner
+        # legend sits on top of a track in every corner this panel has.
+        # ARMS order, not draw order: cot_clean is drawn last so it lands on
+        # top, and letting the legend inherit that put "own CoT" third, which
+        # is the one reading order this figure is built to prevent.
+        from matplotlib.lines import Line2D
+        axb.legend(handles=[Line2D([], [], color=c, lw=1.1,
+                                   label=l.replace("\n", " "))
+                            for _, l, c in ARMS],
+                   loc="center", fontsize=FONT_SIZE - 4.2, frameon=False,
+                   handlelength=1.2, borderaxespad=0.1, labelspacing=0.3,
+                   handletextpad=0.5)
+        axb.set_xlabel("gripper $y$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
+        axb.set_ylabel("$x$ (m)", fontsize=FONT_SIZE - 2, labelpad=1.5)
         axb.tick_params(labelsize=FONT_SIZE - 4, pad=1.5)
+        # Limits before the aspect, so the pad is a pad and not a rescale:
+        # adjustable="datalim" then grows whichever axis the 1.93 x PLOT_H box
+        # needs, keeping every centimetre the same length in both directions.
+        allxyz = np.vstack([tracks[a][1] for a, _, _ in ARMS])
+        py = 0.04 * max(float(np.ptp(allxyz[:, 1])), 1e-3)
+        px = 0.04 * max(float(np.ptp(allxyz[:, 0])), 1e-3)
+        axb.set_xlim(allxyz[:, 1].min() - py, allxyz[:, 1].max() + py)
+        axb.set_ylim(allxyz[:, 0].min() - px, allxyz[:, 0].max() + px)
+        axb.set_aspect("equal", adjustable="datalim")
         # matplotlib here is mathtext, not LaTeX (text.usetex is False in
         # paper_plot_style), so a "\," thin space prints its own backslash.
-        axb.set_title("top-down path ($\\bullet$ = shared start)",
+        axb.set_title("top-down path, true scale "
+                      "($\\bullet$ = shared start, $\\blacksquare$ = end)",
                       fontsize=FONT_SIZE - 2, pad=2.5)
-        fig.text(0.02 / W, (0.44 + 0.86) / H, "(b)", fontsize=FONT_SIZE - 1,
+        fig.text(0.02 / W, (0.44 + PLOT_H) / H, "(b)", fontsize=FONT_SIZE - 1,
                  fontweight="bold", va="bottom")
 
         # ---- (c) distance from the clean-CoT arm -------------------------
         # Defined at every step whether or not any arm succeeds, which is the
         # point: DSR is undefined here (SR(cot_clean) = 0), and this is not.
-        axc = fig.add_axes([(0.62 + 2.43) / W, 0.44 / H, 2.99 / W, 0.86 / H])
+        axc = fig.add_axes([(0.62 + 2.43) / W, 0.44 / H, 2.99 / W, PLOT_H / H])
         s_cl, xyz_cl = tracks["cot_clean"]
         for arm, label, colour in ARMS:
             if arm == "cot_clean":
@@ -408,6 +478,11 @@ def main() -> int:
             axc.plot(common, d * 100.0, color=colour, lw=1.1,
                      label=label.replace("\n", " "))
             peak[arm] = float(d.max()) * 100.0
+            # The LAST value as well as the largest. On this episode the no-CoT
+            # arm's peak is not its end -- it loops back toward the clean arm --
+            # and a caption that quoted only the peak would let a reader read a
+            # monotone divergence off a curve that turns around.
+            final[arm] = float(d[-1]) * 100.0
         axc.axhline(0.0, color="0.7", lw=0.6, zorder=0)
         # Where the strip's columns fall on this curve. Without these the two
         # halves of the figure are two unrelated pictures, and a reader cannot
@@ -425,7 +500,7 @@ def main() -> int:
         # hide the divergence this panel exists to show.
         axc.legend(loc="best", fontsize=FONT_SIZE - 4, frameon=False,
                    handlelength=1.3, borderaxespad=0.2, labelspacing=0.25)
-        fig.text((0.62 + 2.38) / W, (0.44 + 0.86) / H, "(c)",
+        fig.text((0.62 + 2.38) / W, (0.44 + PLOT_H) / H, "(c)",
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
     save(fig, "fig15_rollout_filmstrip")
@@ -461,6 +536,7 @@ def main() -> int:
         "column_change_mean_abs_pixel": {
             a: column_motion(cap_dir, key, a, steps, eps) for a, _, _ in ARMS},
         "peak_cm_from_clean": {k: round(v, 2) for k, v in peak.items()},
+        "final_cm_from_clean": {k: round(v, 2) for k, v in final.items()},
         # The reference arm's own top-down extent, which panel (b) annotates.
         # Quoted in the caption because "the edited arms diverge" means nothing
         # without it: they diverge from an arm that is nearly stationary in the

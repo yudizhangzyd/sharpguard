@@ -5381,21 +5381,34 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
     are pinned here:
 
       * the POSITIVE half -- the path-deviation ranking of the 7 families whose
-        edit landed is one adjacent transposition from their F_mag ranking on
-        ours-r32, rho = +0.964. The "one adjacent swap" is not read out of the
-        artifact; it is recomputed here from derived_metrics.json against the
-        artifact's own ranking, so a leaderboard change that reorders those
-        families breaks this check rather than the claim.
+        edit landed is, over both scenes, EXACTLY their F_mag ranking on
+        ours-r32 (rho = +1.000), and the section quotes +0.964 instead. That
+        discount is itself a claim and is pinned: the coefficient is recomputed
+        here from derived_metrics.json against the artifact's own ranking, the
+        two-scene gap between the tied pair is asserted to be the 0.011 cm the
+        section quotes, the per-scene order of that pair is asserted to FLIP,
+        and 0.964 is recomputed as the coefficient the ranking scores with that
+        pair swapped. A leaderboard change that reorders those families, or a
+        re-derivation that resolves the tie, breaks these checks rather than
+        the claim.
       * the NEGATIVE half -- what that ranking faithfully reproduces INCLUDES
         the construct-validity failure: both meaning-preserving families
         outrank two genuinely semantic ones. This is the half a reader would
         drop if they wanted a clean proxy-validation result, so it gets its own
-        checks, including the 5x paraphrase_null/gripper_flip ratio.
+        checks, including the 5.7x paraphrase_null/gripper_flip ratio.
+      * the BEHAVIOURAL ARGMAX COLLISION on scene t1 -- negation and verb_swap
+        carry different edited CoT at every one of the 80 steps and produce
+        bit-identical actions and poses at all 80, while both differ from the
+        clean arm. This is recomputed from the raw per-step trajectories in
+        rollout_edit_report.json, not read out of a summary, because it is the
+        section's strongest claim about the readout and the artifact does not
+        summarise it anywhere.
 
-    And the caveats, at the same volume as the manuscript promises: one scene,
+    And the caveats, at the same volume as the manuscript promises: two scenes
+    whose magnitudes disagree by 2.6x on verb_swap even where the ranking holds,
     6 of 13 families excluded because the edit never landed (with cross_task_swap
     among them, so the maximum-effect control is missing), 80 of 400 steps, and
-    the no-CoT arm's own 29.7 cm -- which is what makes this dissociation rather
+    the no-CoT arm's own 24.0 cm -- which is what makes this dissociation rather
     than error. Each of those is asserted from the artifact, and the exclusions
     are asserted to be exclusions (edit_landed_frac 0.0) rather than measured
     zeros: a 0.0 cm arm read as a null result would be the strongest and most
@@ -5418,7 +5431,8 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
 
     arms = rep.get("by_arm") or {}
     cfg = rep.get("config") or {}
-    scene = dig(rep, "per_scene", "task0_ep0") or {}
+    per_scene = rep.get("per_scene") or {}
+    scene = per_scene.get("task0_ep0") or {}
 
     # ---- provenance: the raw rollout and the probe travel with the analysis --
     for name in ("rollout_edit_report.json", "rollout_edit_probe.json",
@@ -5438,8 +5452,27 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             source=f"source_report={sr!r}")
 
     # ---- the run's shape, which is what bounds every claim in the section ---
-    a.check(sec, "ONE scene, as the section's first caveat says", 1,
-            rep.get("n_scenes"), source=src)
+    a.check(sec, "TWO scenes, as the section's first caveat says, and the "
+                 "per-scene block carries both", [2, 2],
+            [rep.get("n_scenes"), len(per_scene)], source=src)
+    raw = load(base / "rollout_edit_report.json") or {}
+    eps = raw.get("episodes") or []
+    a.check(sec, "and they are the two libero_90 tasks the section names by "
+                 "instruction, one episode each",
+            [(0, "close the top drawer of the cabinet"),
+             (1, "close the top drawer of the cabinet and put the black bowl "
+                 "on top of it")],
+            sorted({(e.get("task_idx"), e.get("task")) for e in eps})
+            if eps else None, source=src + "rollout_edit_report.json")
+    a.check(sec, "the run is 15 arms on each of the 2 scenes, so no arm is "
+                 "averaged over a different number of scenes than another",
+            [30, {15}],
+            [len(eps), {sum(1 for e in eps if e.get("task_idx") == t)
+                        for t in {e.get("task_idx") for e in eps}}]
+            if eps else None, source=src + "rollout_edit_report.json")
+    a.check(sec, "and the raw report says it finished, so this is not a "
+                 "mid-run snapshot", "complete", raw.get("status"),
+            source=src + "rollout_edit_report.json")
     a.check(sec, "14 arms compared against the clean arm", 14,
             rep.get("arms_compared"), source=src)
     a.check(sec, "the arms are paired at step 0 -- without this the deviation "
@@ -5461,10 +5494,10 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             len(str(cfg.get("families", "")).split(",")), source=src)
 
     # ---- why path deviation and not SR: SR is still 0 everywhere -----------
-    a.check(sec, "no arm succeeds, which is why the readout is deviation "
-                 "rather than SR", [False],
-            sorted({bool(v.get("success")) for v in scene.values()})
-            if scene else None, source=src)
+    a.check(sec, "no arm succeeds on EITHER scene, which is why the readout "
+                 "is deviation rather than SR", [False],
+            sorted({bool(v.get("success")) for sc in per_scene.values()
+                    for v in sc.values()}) if per_scene else None, source=src)
     a.check(sec, "and the artifact says so itself rather than leaving the "
                  "choice of readout to the prose", True,
             "DSR is 0 for every family by construction"
@@ -5485,25 +5518,32 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             [0.0] * len(EXCLUDED),
             [dig(arms, f"cot_{f}", "edit_landed_frac") for f in EXCLUDED],
             source=src)
-    a.check(sec, "and each of those arms skipped all 80 edits rather than "
-                 "applying an edit that did nothing", [80] * len(EXCLUDED),
+    a.check(sec, "and each of those arms skipped all 160 edits -- 80 steps on "
+                 "each of the two scenes -- rather than applying an edit that "
+                 "did nothing", [160] * len(EXCLUDED),
             [dig(arms, f"cot_{f}", "n_edit_skipped") for f in EXCLUDED],
             source=src)
 
     # ---- the ranking, and its 7 quoted values ------------------------------
-    RANKED = ["direction_flip", "negation", "verb_swap", "syntactic_scramble",
-              "paraphrase_null", "location_swap", "gripper_flip"]
+    RANKED = ["direction_flip", "negation", "verb_swap", "paraphrase_null",
+              "syntactic_scramble", "location_swap", "gripper_flip"]
     a.check(sec, "the deviation ranking is the order the section prints",
             RANKED, rep.get("ranking_by_deviation"), source=src)
-    a.check(sec, "every ranked family landed its edit on all 80 steps",
-            [1.0] * len(RANKED),
+    a.check(sec, "every ranked family landed its edit on all 80 steps of both "
+                 "scenes", [1.0] * len(RANKED),
             [dig(arms, f"cot_{f}", "edit_landed_frac") for f in RANKED],
             source=src)
-    a.check(sec, "the 7 per-family deviations the section prints in cm "
-                 "(47.5 / 19.5 / 8.8 / 8.5 / 6.0 / 3.1 / 1.2)",
-            [47.5, 19.5, 8.8, 8.5, 6.0, 3.1, 1.2],
-            [round(float(dig(arms, f"cot_{f}", "mean_cm")), 1) for f in RANKED],
-            source=src)
+    a.check(sec, "and each of them was measured on both scenes, so the mean "
+                 "the section prints is a two-scene mean on every row",
+            [2] * len(RANKED),
+            [len(dig(arms, f"cot_{f}", "mean_cm_per_scene") or [])
+             for f in RANKED], source=src)
+    a.check(sec, "the 7 two-scene per-family deviations the section prints in "
+                 "cm (49.0 / 21.4 / 16.0 / 7.52 / 7.51 / 2.5 / 1.3)",
+            [49.0, 21.4, 16.0, 7.52, 7.51, 2.5, 1.3],
+            [round(float(dig(arms, f"cot_{f}", "mean_cm")),
+                   2 if f in ("paraphrase_null", "syntactic_scramble") else 1)
+             for f in RANKED], source=src)
     a.check(sec, "the ranking really is sorted by those values", True,
             all(dig(arms, f"cot_{RANKED[i]}", "mean_cm")
                 >= dig(arms, f"cot_{RANKED[i + 1]}", "mean_cm")
@@ -5511,8 +5551,8 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
 
     # ---- the scale the section reads those cm against ----------------------
     clean = dig(arms, "cot_direction_flip", "clean_path_len_cm")
-    a.check(sec, "the clean arm's total path length is the 54.9 cm the section "
-                 "quotes", 54.9,
+    a.check(sec, "the clean arm's total path length is the 51.4 cm the section "
+                 "quotes", 51.4,
             round(float(clean), 1) if clean else None, source=src)
     peak = dig(arms, "cot_direction_flip", "peak_cm")
     a.check(sec, "direction_flip peaks at 89.1 cm", 89.1,
@@ -5521,33 +5561,68 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
                  "comparison the section makes", True,
             peak is not None and clean is not None and peak > clean, source=src)
     nocot = dig(arms, "nocot", "mean_cm")
-    a.check(sec, "the no-CoT arm deviates 29.7 cm, which is what makes this "
-                 "dissociation rather than error", 29.7,
+    a.check(sec, "the no-CoT arm deviates 24.0 cm, which is what makes this "
+                 "dissociation rather than error", 24.0,
             round(float(nocot), 1) if nocot else None, source=src)
     a.check(sec, "and it is second only to direction_flip, as the section says",
             2, 1 + sum(1 for v in arms.values()
                        if (v.get("mean_cm") or 0.0) > nocot)
             if nocot is not None else None, source=src)
+    # The section's own disclaimer about magnitude: the ranking transfers
+    # between the two scenes and the centimetres do not, and verb_swap is the
+    # instance it quotes. If a future run tightened that, the honest thing is to
+    # stop hedging -- so the hedge is pinned to the spread that motivates it.
+    vs = dig(arms, "cot_verb_swap", "mean_cm_per_scene") or []
+    a.check(sec, "verb_swap reads the 8.8 cm and 23.2 cm the section quotes on "
+                 "the two scenes, which is the 2.6x magnitude spread it uses to "
+                 "refuse a centimetre-level reading", [8.8, 23.2],
+            [round(float(x), 1) for x in vs] if len(vs) == 2 else None,
+            source=src)
 
-    # ---- the correlation, exactly as printed -------------------------------
+    # ---- the correlation, and the discount the section applies to it -------
     fm = dig(rep, "correlation_with_token_score", "F_mag") or {}
-    a.check(sec, "Spearman rho against F_mag is the +0.964 the section quotes",
-            0.964, r3(fm.get("spearman_rho")), source=src)
+    a.check(sec, "Spearman rho against F_mag is the +1.000 the section reports "
+                 "as measured", 1.0, r3(fm.get("spearman_rho")), source=src)
     a.check(sec, "with the permutation p, family count, permutation count and "
-                 "seed the section states ($p=0.0027$, $n=7$, 20,000 perms)",
-            [0.0027, 7, 20000, 0],
+                 "seed the section states ($p=0.00045$, $n=7$, 20,000 perms)",
+            [0.00045, 7, 20000, 0],
             [fm.get("perm_p"), fm.get("n_families"), fm.get("n_perm"),
              fm.get("perm_seed")], source=src)
     cx = dig(rep, "correlation_with_token_score", "cos_xyz") or {}
-    a.check(sec, "the signed direction cosine tracks it at rho = -0.929",
-            -0.929, r3(cx.get("spearman_rho")), source=src)
-    a.check(sec, "at the p = 0.0060 the section rounds to", 0.006,
-            r3(cx.get("perm_p")), source=src)
+    a.check(sec, "the signed direction cosine tracks it at rho = -0.964",
+            -0.964, r3(cx.get("spearman_rho")), source=src)
+    a.check(sec, "at the p = 0.0027 the section rounds to", 0.0027,
+            round(float(cx.get("perm_p")), 4) if cx.get("perm_p") is not None
+            else None, source=src)
     a.check(sec, "the correlation is over the 7 landed families and not over "
                  "all 13 with zeros filled in", 7,
             len(rep.get("ranking_by_deviation") or []), source=src)
 
-    # ---- "one adjacent swap": recomputed, not read out --------------------
+    # ---- WHY the section quotes 0.964 rather than the 1.000 it measured ----
+    # This is the one place in the paper where we report a WEAKER number than
+    # the artifact carries, so the reason has to be checkable or it reads as
+    # false modesty. Three checks: the two tied families are 0.011 cm apart,
+    # their order flips between the scenes, and 0.964 is what the ranking scores
+    # once they are swapped. A re-derivation that separates them cleanly breaks
+    # all three, which is the correct outcome -- the hedge would no longer be
+    # honest.
+    TIED = ("paraphrase_null", "syntactic_scramble")
+    t0 = [dig(arms, f"cot_{f}", "mean_cm") for f in TIED]
+    a.check(sec, "the two families the section calls unresolved are 0.011 cm "
+                 "apart in the two-scene mean", 0.011,
+            round(abs(t0[0] - t0[1]), 3) if all(x is not None for x in t0)
+            else None, source=src)
+    ps = [dig(arms, f"cot_{f}", "mean_cm_per_scene") or [] for f in TIED]
+    a.check(sec, "and their order FLIPS between the scenes -- 6.0 vs 8.5 cm on "
+                 "the first and 9.0 vs 6.5 on the second, which is why the "
+                 "mean does not resolve them",
+            [[6.0, 9.0], [8.5, 6.5], True],
+            [[round(float(x), 1) for x in ps[0]],
+             [round(float(x), 1) for x in ps[1]],
+             (ps[0][0] < ps[1][0]) != (ps[0][1] < ps[1][1])]
+            if all(len(x) == 2 for x in ps) else None, source=src)
+
+    # ---- the quoted 0.964, recomputed from BOTH sides ---------------------
     # The claim is a comparison between this artifact and the leaderboard, so it
     # has to be recomputed from both. If a future re-derivation reorders those
     # seven F_mag cells, this fails -- which is the point.
@@ -5555,28 +5630,36 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             for f in RANKED}
     if all(v is not None for v in fmag.values()):
         by_f = sorted(RANKED, key=lambda f: fmag[f], reverse=True)
-        # Count the adjacent transpositions needed to turn one order into the
-        # other (selection-sort distance), which is what "one adjacent swap"
-        # means and what a Spearman rho of 0.964 on n=7 implies.
-        perm, n_swaps = list(rep.get("ranking_by_deviation") or []), 0
-        for i in range(len(perm)):
-            if perm[i] != by_f[i]:
-                j = perm.index(by_f[i])
-                perm[i], perm[j] = perm[j], perm[i]
-                n_swaps += 1
-        a.check(sec, "the deviation order is ONE swap from the same families' "
-                     "F_mag order on ours-r32 -- recomputed from "
-                     "derived_metrics.json, not read out of the rollout",
-                1, n_swaps, source="results_v2/derived_metrics.json")
-        a.check(sec, "and the swap is between the two MEANING-PRESERVING "
-                     "families, which is why it costs the proxy claim nothing "
-                     "and the construct-validity claim nothing either",
-                {"paraphrase_null", "syntactic_scramble"},
-                {f for f, g in zip(rep.get("ranking_by_deviation") or [], by_f)
-                 if f != g}, source=src)
+        order = list(rep.get("ranking_by_deviation") or [])
+        a.check(sec, "the deviation order IS the same families' F_mag order on "
+                     "ours-r32 -- recomputed from derived_metrics.json, not "
+                     "read out of the rollout", by_f, order,
+                source="results_v2/derived_metrics.json")
+        # Spearman on ranks, computed directly: with the unresolved pair swapped
+        # the two orders differ by one adjacent transposition, and 1 - 6*2/(n^3-n)
+        # is 0.9643 at n=7. Computed rather than asserted so that a change in
+        # which pair is tied, or in n, moves the number the section may quote.
+        swapped = list(order)
+        if all(f in swapped for f in TIED):
+            i0, i1 = swapped.index(TIED[0]), swapped.index(TIED[1])
+            swapped[i0], swapped[i1] = swapped[i1], swapped[i0]
+            rank_f = {f: i for i, f in enumerate(by_f)}
+            dsq = sum((rank_f[f] - i) ** 2 for i, f in enumerate(swapped))
+            n = len(swapped)
+            rho_swapped = 1.0 - 6.0 * dsq / (n * (n * n - 1))
+            a.check(sec, "and the 0.964 the section quotes instead is exactly "
+                         "what that ranking scores with the unresolved pair "
+                         "swapped -- one adjacent transposition at n=7", 0.964,
+                    r3(rho_swapped), source="Spearman on ranks, n=7")
+            a.check(sec, "the swap is between the two MEANING-PRESERVING "
+                         "families, which is why the discount costs the proxy "
+                         "claim nothing and the construct-validity claim "
+                         "nothing either", set(TIED),
+                    {f for f, g in zip(swapped, order) if f != g},
+                    source=src)
     else:
         a.check(sec, "ours-r32 carries F_mag for all 7 ranked families, so the "
-                     "one-swap claim is checkable at all", True, False,
+                     "quoted correlation is checkable at all", True, False,
                 source="results_v2/derived_metrics.json")
 
     # ---- the negative half, which is the half that must not rot -----------
@@ -5585,22 +5668,75 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
     a.check(sec, "BOTH meaning-preserving families move the arm further than "
                  "BOTH of the two semantic families the section names -- the "
                  "construct-validity failure reproducing in behaviour",
-            4, sum(1 for n in NULLS for s in SEM_BELOW
+            4, sum(1 for n in NULLS for s2 in SEM_BELOW
                    if (dig(arms, f"cot_{n}", "mean_cm") or -1)
-                   > (dig(arms, f"cot_{s}", "mean_cm") or 1e9)), source=src)
+                   > (dig(arms, f"cot_{s2}", "mean_cm") or 1e9)), source=src)
     pn = dig(arms, "cot_paraphrase_null", "mean_cm")
     gf = dig(arms, "cot_gripper_flip", "mean_cm")
     ratio = pn / gf if pn and gf else None
-    a.check(sec, "a meaning-preserving verb substitution moves the end "
-                 "effector at least 5x further than flipping which way the "
-                 "gripper is told to go", 5,
-            int(ratio) if ratio else None, source=f"{pn} / {gf} = {ratio}")
+    a.check(sec, "a meaning-preserving instruction paraphrase moves the end "
+                 "effector the 5.7x further than flipping which way the "
+                 "gripper is told to go that the section quotes", 5.7,
+            round(ratio, 1) if ratio else None,
+            source=f"{pn} / {gf} = {ratio}")
     a.check(sec, "paraphrase_null's deviation RANK, which is the statistic the "
                  "section rests on, not its distance from the semantic mean "
                  "(that mean is dominated by direction_flip and reads the "
-                 "opposite way)", [5, 7],
+                 "opposite way)", [4, 7],
             [dig(rep, "nulls_vs_semantic", "paraphrase_null_rank_of"),
              dig(rep, "nulls_vs_semantic", "n_families_ranked")], source=src)
+
+    # ---- the behavioural argmax collision, recomputed from the trajectories -
+    # The section's strongest claim about the readout, and the artifact does not
+    # summarise it anywhere -- so it is recomputed here from the raw per-step
+    # records. Two arms whose edited CoT differs at every step, whose actions
+    # and poses are identical at every step, and which both differ from the
+    # clean arm: that is Table tab:collision's phenomenon over a trajectory.
+    def _traj(arm, t):
+        e = next((e for e in eps if e.get("arm") == arm
+                  and e.get("task_idx") == t), None)
+        return (e or {}).get("trajectory") or []
+    same = {}
+    for t in (0, 1):
+        A, B, C = (_traj("cot_negation", t), _traj("cot_verb_swap", t),
+                   _traj("cot_clean", t))
+        if not (len(A) == len(B) == len(C) == 80):
+            same = {}
+            break
+        same[t] = {
+            k: sum(1 for x, y in zip(A, B) if x.get(k) == y.get(k))
+            for k in ("action", "eef", "move")}
+        same[t]["vs_clean"] = max(
+            sum(1 for x, y in zip(A, C) if x.get("action") == y.get("action")),
+            sum(1 for x, y in zip(B, C) if x.get("action") == y.get("action")))
+    a.check(sec, "on the second scene negation and verb_swap produce IDENTICAL "
+                 "actions and IDENTICAL end-effector poses at all 80 steps, "
+                 "while their edited MOVE phrase agrees at NONE of them",
+            [80, 80, 0],
+            [same[1]["action"], same[1]["eef"], same[1]["move"]] if same
+            else None, source=src + "rollout_edit_report.json")
+    a.check(sec, "and both of them differ from the clean arm's action at all "
+                 "80, so this is two edits colliding with each other and not "
+                 "two edits failing to land", 0,
+            same[1]["vs_clean"] if same else None,
+            source=src + "rollout_edit_report.json")
+    a.check(sec, "on the FIRST scene the same pair agrees on 1 of 80 steps, so "
+                 "the collision is a property of the scene rather than of the "
+                 "pair -- which is what the section claims", 1,
+            same[0]["action"] if same else None,
+            source=src + "rollout_edit_report.json")
+    a.check(sec, "the two colliding arms therefore read the same 23.2 cm on "
+                 "that scene, and the section quotes it", [23.2, 23.2],
+            [round(float((dig(arms, "cot_negation", "mean_cm_per_scene")
+                          or [0, 0])[1]), 1),
+             round(float((dig(arms, "cot_verb_swap", "mean_cm_per_scene")
+                          or [0, 0])[1]), 1)] if arms else None, source=src)
+    a.check(sec, "the edited phrases the section quotes are the ones the "
+                 "records carry",
+            ["do not move right and down", "hold right and down"],
+            [_traj("cot_negation", 1)[0].get("move"),
+             _traj("cot_verb_swap", 1)[0].get("move")] if same else None,
+            source=src + "rollout_edit_report.json")
 
     # ---- the caveats are carried by the artifact too ----------------------
     cav = " ".join(rep.get("caveats") or [])
@@ -5614,20 +5750,34 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
     tex, arr = TEX.read_text(), (ARR.read_text() if ARR.exists() else "")
     for label, txt, path in (("appendix", tex, str(TEX)),
                              ("Limitations item", arr, str(ARR))):
-        a.check(sec, f"the {label} quotes the correlation as +0.964", 1,
-                txt.count(r"\rho = +0.964"), source=path)
+        a.check(sec, f"the {label} quotes the correlation as the discounted "
+                     f"+0.964 and not the measured +1.000", [1, 0],
+                [txt.count(r"\rho = +0.964"), txt.count(r"\rho = +1.000$)")],
+                source=path)
         a.check(sec, f"the {label} quotes the permutation p", 1,
                 txt.count("$p = 0.0027$"), source=path)
-        a.check(sec, f"the {label} says the orders are ONE ADJACENT SWAP apart "
-                     f"rather than 'identical'", 1,
-                txt.count("one adjacent swap"), source=path)
+        a.check(sec, f"the {label} says WHY 0.964 rather than 1.000 -- the "
+                     f"0.011 cm gap and the order that flips between scenes",
+                [1, 1], [txt.count(r"$0.011$\,cm apart"),
+                         len(re.findall(r"flips? between", txt))], source=path)
+        a.check(sec, f"the {label} no longer describes the two orders as one "
+                     f"adjacent swap apart, which was the one-scene reading",
+                0, txt.count("one adjacent swap"), source=path)
+        a.check(sec, f"the {label} says the run is TWO scenes", True,
+                ("on two scenes" in txt or "Two scenes" in txt
+                 or r"\textbf{Two scenes.}" in txt), source=path)
+        a.check(sec, f"and no version of the {label} still says one scene", 0,
+                len(re.findall(r"[Oo]n one scene|One scene,", txt)),
+                source=path)
         a.check(sec, f"the {label} states the negative half -- that what the "
                      f"score reproduces includes the construct-validity "
                      f"failure", 1,
                 txt.count("includes the construct-validity failure"),
                 source=path)
-        a.check(sec, f"the {label} names the no-CoT arm's own 29.7 cm", 1,
-                txt.count(r"$29.7$\,cm"), source=path)
+        a.check(sec, f"the {label} names the no-CoT arm's own 24.0 cm, and no "
+                     f"longer the one-scene 29.7", [1, 0],
+                [txt.count(r"$24.0$\,cm"), txt.count(r"$29.7$\,cm")],
+                source=path)
         a.check(sec, f"the {label} discloses that 6 of the 13 families were "
                      f"excluded rather than measured", True,
                 ("$6$ of the $13$ families are excluded" in txt
@@ -6032,6 +6182,71 @@ def audit_rollout_filmstrip(a: Audit) -> None:
                      f"absolute pixel levels)",
                 True, f"${lo:.2f}$" in t and f"${hi:.1f}$" in t,
                 source="fig15_facts.json: column_change_mean_abs_pixel")
+
+    # ---- Panel (b): the caption now makes claims about the DRAWING, not only
+    # about the numbers behind it, and those are the claims a reader checks by
+    # looking. The first revision of this panel drew the path on an
+    # aspect-free axes, so a 22 cm box and a 1.4 m loop occupied comparable
+    # screen area and the panel's whole argument was invisible; the caption
+    # promising "true scale" is only true while the generator asks for it.
+    # Checked as an equivalence, so dropping the caption clause without fixing
+    # the axes fails here too, rather than making the check vacuous.
+    equal_aspect = 'set_aspect("equal"' in body
+    a.check(sec, "panel (b) promises true scale exactly when it is drawn on an "
+                 "equal aspect", equal_aspect, "at true scale" in t,
+            source=f"{gen}: equal aspect={equal_aspect}")
+    # ... and the same clause says WHICH way it is laid out. The generator puts
+    # the y coordinate on the horizontal axis; if that ever flips back, the
+    # caption's "($y$ across, $x$ up)" sends the reader to the wrong axis.
+    a.check(sec, "and it is laid on its side as the caption says ($y$ across, "
+                 "$x$ up): the horizontal is the gripper's $y$", True,
+            "axb.plot(xyz[:, 1], xyz[:, 0]" in body
+            and 'axb.set_xlabel("gripper $y$ (m)"' in body, source=str(gen))
+    # The three marks the caption tells the reader to read the panel by. Each is
+    # a separate artist, so each is checked separately -- a caption naming a
+    # legend the figure does not draw is the same defect class as a wrong number.
+    for lit, what in ((r'arrowstyle="-|>"', "arrowheads for direction of travel"),
+                      ('"s", color=colour', "a filled square at each arm's last "
+                                            "recorded pose"),
+                      ('"o", color="black"', "a black dot at the shared start")):
+        a.check(sec, f"and it draws {what}, as the caption instructs the reader "
+                     f"to read", True, lit in body, source=str(gen))
+
+    # ---- Panel (c): "the peak is not the end" is a NEW claim, and it is the one
+    # that stops a reader taking the two peaks as final displacements. It needs
+    # both endpoints in the release, so the generator now records them.
+    final = facts.get("final_cm_from_clean") or {}
+    a.check(sec, "the fact sheet records each arm's FINAL distance and not only "
+                 "its peak, since the caption now contrasts the two",
+            ["cot_direction_flip", "nocot"], sorted(final),
+            source="fig15_facts.json: final_cm_from_clean")
+    for arm, what in (("nocot", "the no-CoT arm's final distance, in cm"),
+                      ("cot_direction_flip", "the flipped arm's final distance, "
+                                             "in cm")):
+        v = final.get(arm)
+        a.check(sec, f"the caption prints {what} as the artifact has it "
+                     f"({v if v is None else round(v, 1)})",
+                True, v is not None and f"${v:.1f}$" in t,
+                source="fig15_facts.json: final_cm_from_clean")
+    # And the direction of the contrast, recomputed rather than read off the
+    # caption: the no-CoT arm must genuinely come back (final well below its own
+    # peak) while the flipped arm must genuinely finish at its furthest. If a
+    # future capture reverses that, the sentence is wrong even with both digits
+    # right. 5 cm is the loosest reading of "finishes at its furthest" -- 3.6%
+    # of this arm's peak.
+    if final and peak:
+        nc_p, nc_f = peak.get("nocot"), final.get("nocot")
+        fl_p, fl_f = (peak.get("cot_direction_flip"),
+                      final.get("cot_direction_flip"))
+        if None not in (nc_p, nc_f, fl_p, fl_f):
+            a.check(sec, "the no-CoT arm loops back, i.e. it ends at least "
+                         "$25$\\,cm inside its own peak", True,
+                    nc_p - nc_f >= 25.0,
+                    source=f"peak {nc_p} cm, final {nc_f} cm")
+            a.check(sec, "while the flipped arm finishes at its furthest, i.e. "
+                         "within $5$\\,cm of its own peak", True,
+                    fl_p - fl_f <= 5.0,
+                    source=f"peak {fl_p} cm, final {fl_f} cm")
 
 
 def audit_arm_pairing_defect(a: Audit) -> None:
