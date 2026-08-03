@@ -5987,6 +5987,38 @@ def audit_rollout_filmstrip(a: Audit) -> None:
         a.check(sec, f"the caption prints {what} as the artifact has it ({val})",
                 True, f"${val}$" in t, source="fig15_facts.json")
 
+    # The columns. "Six evenly spaced steps" is what the caption used to say and
+    # is not what the strip draws: the capture stores a frame every 10 steps, so
+    # the columns are the stored frames NEAREST to even spacing and the middle
+    # gap is 70 steps where the others are 80. The figure prints the step numbers
+    # above the columns, so a reader can see the discrepancy the old wording
+    # denied; the caption now states the grid instead.
+    steps = facts.get("columns_at_steps") or []
+    n_steps = (facts.get("steps_per_arm") or {}).get("cot_clean")
+    a.check(sec, "the caption prints the six column steps the artifact records, "
+                 "so the strip's own axis is checkable",
+            True,
+            bool(steps) and f"$t = {', '.join(str(x) for x in steps)}$" in t,
+            source=f"fig15_facts.json: columns_at_steps={steps}")
+    a.check(sec, "every column lands on the 10-step capture grid the caption "
+                 "quotes", [],
+            [x for x in steps if x % 10], source="fig15_facts.json")
+    # ... and they are the nearest such frames to even spacing, which is the
+    # weaker claim the caption makes now. 4 steps is 0.4 of one capture interval,
+    # i.e. the most rounding to the grid can cost.
+    if steps and n_steps:
+        ideal = [i * (steps[-1] - steps[0]) / (len(steps) - 1) + steps[0]
+                 for i in range(len(steps))]
+        a.check(sec, "and no column is further than half a capture interval from "
+                     "exactly even, which is what 'nearest to even spacing' "
+                     "means", True,
+                max(abs(x - y) for x, y in zip(steps, ideal)) <= 5,
+                source=f"columns {steps} vs even {[round(x, 1) for x in ideal]}")
+        a.check(sec, "the strip spans the whole rollout rather than its first "
+                     "steps: the last column is the last captured frame",
+                True, steps[-1] >= n_steps - 10,
+                source=f"last column {steps[-1]} of {n_steps} steps")
+
     # The stall. Two near-identical adjacent cells have two readings -- a policy
     # that stopped moving, and a figure that repeated a frame -- and only this
     # range distinguishes them, so the caption is required to carry it.
