@@ -871,6 +871,20 @@ def audit_calibration_nine_models(a: Audit, d: Optional[dict]) -> None:
             "which is what ``both architecture families'' refers to"
             in both_tex,
             source="cot_faith_iclr.tex, tab:models caption")
+    # The per-family N bound both documents disclose, recomputed rather than
+    # trusted. It read "60 to 100" and was correct until the DeepThinkVLA rows
+    # landed: location_swap's visibility gate admits 58 on all three of them,
+    # so the honest bound moved down and the disclosure did not. A bound written
+    # against a smaller model set is the same stale-by-growth defect as a panel
+    # count restated in prose.
+    fns = sorted({n for v in by.values()
+                  for fv in (v.get("families") or {}).values()
+                  for n in [fv.get("n") or fv.get("n_samples")] if n})
+    a.check(sec, "the per-family N bound the Limitations disclose is the "
+                 "artifact's own, on both the low and the high end", True,
+            bool(fns) and f"from ${fns[0]}$ to ${fns[-1]}$" in both_tex
+            and f"from {fns[0]} to {fns[-1]}" in both_tex,
+            source=f"calibration_by_model per-family n: {fns}")
     a.check(sec, "every row's set of labels matches the audit table",
             sorted(r[0] for r in CALIB_TABLE), sorted(by))
     for label, floor, bbox, instr, ceil, rng, two, ratio, n_ab in CALIB_TABLE:
