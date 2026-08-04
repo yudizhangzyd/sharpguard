@@ -504,6 +504,42 @@ def audit_calibration_floors(a: Audit, d: Optional[dict]) -> None:
                  "ceiling - floor = 0.010", 0.010, denom, tol=0.0015,
             source="paper must not report (F_bar - floor)/(ceiling - floor) here")
 
+    # ECoT-bridge carries two floor/F_bar pairs, and both are correct. This
+    # block's 0.869/0.960 is the single-seed 13-family calibration run;
+    # tab:per_task's 0.860/0.947 is the 3-seed 11-family sweep. Same model,
+    # same protocol, different runs and different family sets, so a reader
+    # who meets the second pair after the first has no way to tell a
+    # convention change from an inconsistency. The appendix caption says
+    # which is which; nothing asserted that it still does, so deleting the
+    # sentence would have left two conflicting pairs and a green audit. Both
+    # pairs are pinned here against their own artifacts, and so is the
+    # sentence that reconciles them.
+    eb = dig(d, "models", "ecot-bridge") or {}
+    apx = (ROOT / "arr_appendix.tex").read_text() \
+        if (ROOT / "arr_appendix.tex").exists() else ""
+    a.check(sec, "the other convention's F_bar is the 3-seed 11-family "
+                 "sweep's, and it is a different number, not a restatement",
+            0.860, r3(eb.get("F_bar_mag")), tol=0.0015,
+            source="derived_metrics.json models['ecot-bridge'].F_bar_mag")
+    a.check(sec, "and so is the floor that pairs with it",
+            0.947, r3(eb.get("paraphrase_null_floor")), tol=0.0015,
+            source="derived_metrics.json "
+                   "models['ecot-bridge'].paraphrase_null_floor")
+    recon = (r"ECoT-bridge's $0.869$/$0.960$ therefore differ from the "
+             r"$0.860$/$0.947$ in Table~\ref{tab:per_task}: same model and "
+             r"protocol, this row's single $13$-family run against that "
+             r"table's 3-seed 11-family sweep")
+    a.check(sec, "and the appendix caption reconciles the two pairs by "
+                 "naming the run and the family count behind each", True,
+            recon in apx, source="arr_appendix.tex tab:calibration caption")
+    a.check(sec, "and it holds the conclusion the two pairs share, so the "
+                 "convention gap cannot be read as changing the result", True,
+            r"$\bar{\mathcal{F}}$ sits below the floor in both" in apx,
+            source=f"13-family {r3(cf.get('F_bar_non_control'))} < "
+                   f"{r3(cf.get('paraphrase_null'))}, 11-family "
+                   f"{r3(eb.get('F_bar_mag'))} < "
+                   f"{r3(eb.get('paraphrase_null_floor'))}")
+
     # --- floor 2: bbox jitter (the metric does discriminate) ---
     a.check(sec, "bbox_jitter_null = 0.46", 0.46,
             r3(dig(fams, "bbox_jitter_null", "F_mag")), tol=0.0015)
