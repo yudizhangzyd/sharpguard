@@ -5131,17 +5131,39 @@ def audit_arr_submission(a: Audit) -> None:
         # carrying a \label the re-homed \refs pointed at. The list is gone: it
         # spent most of a column telling the reader what they were not reading,
         # and it did so by naming internal section titles and filenames, which
-        # is release bookkeeping rather than argument. What must survive the
-        # deletion is the reader's recourse -- a sentence that says where the
-        # missing sections are, so "selection" does not mean "withheld". Every
-        # pointer that used to reach the list is now spent on the name of the
-        # document, and this asserts that name is actually stated.
-        a.check(sec, "and it says where the sections it does not reproduce are, "
-                     "so a reader can tell what is missing and where to read it",
+        # is release bookkeeping rather than argument.
+        #
+        # It then said the missing sections were in the full-length manuscript,
+        # which is a recourse only for a reader who has that manuscript. A
+        # reviewer has this PDF. So the disclosure no longer sends anyone
+        # anywhere: it says the appendix reproduces what the body leans on and
+        # not all of it, and every sentence that used to cite a missing section
+        # now states its fact instead. What must survive is the admission that
+        # this is a selection at all, which the check above holds, and the
+        # promise that nothing in these pages points outside them, which is
+        # what this one now checks.
+        a.check(sec, "and it promises every cross-reference in these pages "
+                     "lands inside this PDF, so a selection cannot quietly "
+                     "become a paper that cites a document nobody has",
                 True,
-                "the sections it does not reproduce are in the full-length "
-                "manuscript" in " ".join(ap_sel.split()),
+                "Every cross-reference in these pages lands on something "
+                "inside this PDF" in " ".join(ap_sel.split()),
                 source="arr_appendix.tex: the selection disclosure")
+        # And the promise has to be true. Both printed files are swept for the
+        # name of the other document: the whole point of the rewrite above is
+        # that the submission stands on its own, and one surviving pointer is
+        # the reviewer being told to go read something they were not sent.
+        outside = {n: (root / n).read_text().count("full-length manuscript")
+                   for n in ("cot_faith_arr.tex", "arr_appendix.tex")
+                   if (root / n).exists()}
+        outside = {n: c for n, c in outside.items()
+                   if c > sum(1 for ln in (root / n).read_text().splitlines()
+                              if ln.lstrip().startswith("%")
+                              and "full-length manuscript" in ln)}
+        a.check(sec, "and no printed line in either file names the full-length "
+                     "manuscript, so the submission cites no document the "
+                     "reviewer does not have", {}, outside,
+                source="cot_faith_arr.tex + arr_appendix.tex, comments excluded")
         # Every \ref in the submission must resolve inside the submission. This
         # is the failure a page cut actually causes: deferring a section takes
         # its \label with it, and LaTeX prints "??" while exiting 0.
@@ -6516,11 +6538,13 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             source="cot_faith_arr.tex, Limitations")
     # The second is losing it entirely: the Limitations item still has to say
     # a rollout-level readout exists and where to find it, or the deferral reads
-    # as work never done.
+    # as work never done. It used to name the full-length manuscript; the
+    # submission no longer cites that document anywhere, so the recourse it
+    # names is the release, which the reviewer can actually download.
     a.check(sec, "and the submission still points at where the rollout work "
                  "is, so deferring it is not the same as hiding it", True,
             "trajectory-level readout we substituted for SR are in the "
-            "full-length manuscript" in arr,
+            "release" in arr,
             source="cot_faith_arr.tex, Limitations")
     # The readout swap has to stay visible: if the SR sentence is ever cut, the
     # section reads as if a rollout metric were available and we chose a
@@ -6811,13 +6835,20 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # that has to hold either way is that a reader meeting these distances in
     # prose can find out what produced them, so `deferred` is now a claim to
     # check rather than a switch to obey.
-    a.check(sec, "the submission either draws the pose panels or sends the "
-                 "reader to the document that does, so a reader who meets the "
-                 "distances in prose can find out what drew them",
-            True,
-            drawn or "the motion figure deferred to the full-length manuscript"
-            in t,
-            source=f"drawn={drawn}, deferred-note={deferred}")
+    #
+    # The second half of the disjunction used to be a pointer at the document
+    # that draws the panels. That is not something a reviewer can act on -- they
+    # have this PDF and nothing else -- so the submission now QUOTES the three
+    # distances the panels exist to show instead of naming an exhibit nobody
+    # can open. Same invariant, discharged in prose: the reader who meets the
+    # distances gets the distances.
+    quoted = all(lit in t for lit in (r"$21.8$\,cm box",
+                                      r"$139.7$\,cm", r"$128.8$\,cm"))
+    a.check(sec, "the submission either draws the pose panels or quotes the "
+                 "distances they plot, so a reader who meets them in prose is "
+                 "not sent outside this PDF for the measurement",
+            True, drawn or quoted,
+            source=f"drawn={drawn}, distances-quoted={quoted}")
 
     gen = root / "figures" / "gen_fig15_rollout_filmstrip.py"
     body = gen.read_text() if gen.exists() else ""
@@ -7445,21 +7476,22 @@ def audit_body_frames_figure(a: Audit) -> None:
     # earlier, so with no pointer the submission says what this figure is not
     # and never says where the measurement is.
     # Either form is still required; only the second one's target changed.
-    # With the deferred list deleted there is no float to \ref, so the caption
-    # names the document that carries the distances instead. The invariant is
-    # unchanged: the sentence may not simply go away, because the caption
-    # disclaims the distances two lines earlier and with no pointer the
-    # submission says what this figure is not and never says where the
-    # measurement is.
+    # With the panels deferred there is no float to \ref, and pointing at the
+    # document that draws them is no help to a reviewer who has only this PDF.
+    # So the caption quotes the distances themselves, from the same fact sheet
+    # the panels are drawn from. The invariant is unchanged: the sentence may
+    # not simply go away, because the caption disclaims the distances two lines
+    # earlier and with no pointer the submission says what this figure is not
+    # and never says where the measurement is.
     paths_drawn = "fig15_rollout_paths" in t
-    a.check(sec, "and it sends the reader to the distances -- to the pose figure "
-                 "where the submission draws it, to the full-length manuscript "
-                 "where it does not -- so dropping the panels does not drop the "
-                 "evidence",
+    a.check(sec, "and it gives the reader the distances -- the pose figure "
+                 "where the submission draws it, the measured spans in prose "
+                 "where it does not -- so dropping the panels does not drop "
+                 "the evidence",
             True,
             (r"\ref{fig:paths}" in cap_txt) if paths_drawn
-            else ("the motion figure deferred to the full-length manuscript, "
-                  "whose distances are quoted there in full" in cap_txt),
+            else (r"its whole path inside a $21.8$\,cm box" in cap_txt
+                  and r"$139.7$\,cm and $128.8$\,cm from it" in cap_txt),
             source=f"the fig:frames caption, in whichever half carries it "
                    f"(pose panels drawn: {paths_drawn})")
     # The anti-duplication invariant, from the two fact sheets rather than from

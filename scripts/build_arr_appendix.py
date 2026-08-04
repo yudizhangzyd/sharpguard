@@ -455,14 +455,13 @@ DEFERRED = (
 )
 
 NOTE = r"""
-This appendix carries the evidence the eight-page body cites, copied from the
-full-length manuscript rather than rewritten for it, so no number here is
-retyped. It is a selection: the submitted PDF is capped at $20$ pages, and the
-sections it does not reproduce are in the full-length manuscript. Where a
-sentence would have cited one of those sections it names that document instead
-of a number, and where one pointed at a dropped float the pointer is dropped
-too, so every cross-reference in these pages lands on something the reader can
-turn to.
+This appendix carries the evidence the eight-page body cites, copied rather
+than rewritten for it, so no number here is retyped. It is a selection: the
+submitted PDF is capped at $20$ pages, and it reproduces the sections the body
+leans on rather than all of them. Every cross-reference in these pages lands on
+something inside this PDF: where a sentence would have cited a section that is
+not reproduced it states the fact instead, and where one pointed at a dropped
+float the pointer is dropped with it.
 
 """
 
@@ -807,24 +806,100 @@ REWORDED = (
      r"The body answers five questions about manipulation CoT-VLAs with "
      r"CoT-Faith: F1--F3 under controlled comparisons, O4 as an uncontrolled "
      r"observation because two axes are confounded, and F5 on cross-corpus "
-     r"transfer at $N{=}100$. It argues four of the five in the "
-     r"full-length manuscript; this section adds F5 in full, the per-task "
+     r"transfer at $N{=}100$. This appendix does not reproduce four of the "
+     r"five; it adds F5 in full, the per-task "
      r"decomposition behind the below-floor result, and the judge validation "
      r"of the edit generators all five are scored with.",
      "F1--F3 and O4 are deferred, so the source's 'we now answer' opener "
      "promises four arguments this document does not print"),
     # The strip's caption closes by sending the reader to the panels that plot
-    # the same capture as motion. Deleting the sentence would drop the pointer
-    # to where the distances live, so it is repointed at the document that
-    # still draws them. The audit requires this sentence to exist in whichever
-    # form the document supports, so that deferring the panels cannot quietly
-    # turn into deferring the evidence.
+    # the same capture as motion. The panels are deferred, so the pointer has
+    # nowhere in this PDF to land. It used to be repointed at the document that
+    # still draws them, which is worse than useless to a reviewer who does not
+    # have that document: it names an exhibit they cannot open in place of a
+    # measurement we can simply state. So the two distances the panels exist to
+    # show are quoted in prose instead, from the same fact sheet the panels are
+    # drawn from. The audit requires this sentence to exist in whichever form
+    # the document supports, so deferring the panels cannot quietly turn into
+    # deferring the evidence.
     (r"Where the three arms went, and how far apart: "
      r"Figure~\ref{fig:paths}.",
-     r"Where the three arms went, and how far apart, is the motion figure "
-     r"deferred to " + UNPOINT + r", whose distances are quoted there in "
-     r"full.",
+     r"Where the three arms went, and how far apart: the arm reading its "
+     r"\emph{own} reasoning is the one that barely travels, its whole path "
+     r"inside a $21.8$\,cm box, while the flipped and no-CoT arms reach "
+     r"$139.7$\,cm and $128.8$\,cm from it.",
      "fig:paths is deferred here, so the source's \\ref would print '??'"),
+
+    # ---- pointers into deferred sections, rewritten one site at a time -----
+    # unpoint() below is the blanket fallback: it turns a \ref into the name of
+    # the document that has the section. That is the right answer for a
+    # reference and the wrong answer for a sentence, and the difference was
+    # visible in the built PDF. Two failure shapes, eleven sites:
+    #
+    #   (a) a section NUMBER swallowed inside a parenthetical, leaving prose
+    #       that is not English -- "preserves the instruction's meaning (the
+    #       full-length manuscript)", "(para, the full-length manuscript)",
+    #       "(F6, the full-length manuscript)";
+    #   (b) a finding of THIS paper attributed to another document -- "the
+    #       central negative result of the sections deferred to the full-length
+    #       manuscript", "it is the magnitude score that the full-length
+    #       manuscript shows is uninterpretable without its floor".
+    #
+    # (b) is the serious one. A reviewer has this PDF and nothing else, so a
+    # sentence that credits our own 12/12 result to a manuscript they cannot
+    # read is asking them to take the paper's centre on trust. In every case the
+    # body argues the point under its own label, so the fix is to point THERE:
+    # sec:floors carries both floors and tab:floors, sec:variance carries the
+    # retraining bound, and where neither applies the parenthetical is dropped
+    # because it was a locator and nothing else.
+    #
+    # These run before defer(), so they are ordinary source sentences by the
+    # time the label goes; the guards downstream still check the \ref they
+    # introduce lands on something. unpoint() stays as the net for a reference
+    # nobody has rewritten yet -- it is a no-op while this list is complete.
+    (r"preserves the instruction's meaning (\S~\ref{sec:paraphrase_null})",
+     r"preserves the instruction's meaning",
+     "a locator for the family's own section, which is deferred; the judged "
+     "meaning-preservation rate it pointed at is in the body's tab:floors"),
+    (r"no perturbation reached the model (\S~\ref{sec:f2_calib})",
+     r"no perturbation reached the model",
+     "same: a locator, and the sentence states the guard's behaviour in full"),
+    (r"(the three DeepThinkVLA runs of Section~\ref{sec:cross_family})",
+     r"(the three DeepThinkVLA runs)",
+     "the rows are in this appendix's own tab:calibration; the deferred "
+     "section is where their prose discussion is, not where the runs are"),
+    (r"(\emph{para}, Section~\ref{sec:paraphrase_null})",
+     r"(\emph{para})",
+     "column gloss; the column is named in the header directly above it"),
+    (r"(F6, Section~\ref{sec:paraphrase_null})",
+     r"(F6, \S\ref{sec:floors})",
+     "the unmeasured-floor finding is the body's headline, argued under "
+     "sec:floors with tab:floors, so the pointer stays inside the PDF"),
+    (r"$-0.179$; Section~\ref{sec:paraphrase_null})",
+     r"$-0.179$; \S\ref{sec:floors})",
+     "same finding, same body section"),
+    (r" (limitation~(viii) of Section~\ref{sec:limitations})",
+     r" (\S\ref{sec:variance})",
+     "the retraining-moves-a-family-more-than-the-seed-bar bound is the "
+     "body's own section, not a deferred limitation"),
+    (r"it is the magnitude score that Section~\ref{sec:f2_calib} shows",
+     r"it is the magnitude score that \S\ref{sec:floors} shows",
+     "attributing the paper's central negative result to a document the "
+     "reviewer does not have"),
+    (r"so it needs new rollouts and is deferred with the rest of the "
+     r"rollout-level work in Section~\ref{sec:limitations}",
+     r"so it needs new rollouts, which this submission does not have",
+     "the body's Limitations says the same thing and carries no label to "
+     "point at, so the sentence states the fact rather than locating it"),
+    (r"the central negative result of Sections~\ref{sec:f2_calib} "
+     r"and~\ref{sec:paraphrase_null}",
+     r"the central negative result of \S\ref{sec:floors}",
+     "both deferred sections argue what sec:floors argues in the body; this "
+     "is also the site the doubled-phrase guard below was written for"),
+    (r"strengthens rather than weakens Section~\ref{sec:paraphrase_null}",
+     r"strengthens rather than weakens the below-floor result",
+     "naming the result rather than a section number, since the section is "
+     "deferred and the result is the body's"),
 )
 
 # Floats moved earlier in the appendix, as (label, the literal string to put it
