@@ -1,5 +1,5 @@
 {
-  "n_entries": 15,
+  "n_entries": 51,
   "entries": [
     {
       "key": "datasheets",
@@ -1121,10 +1121,3502 @@
         }
       ],
       "errors": {}
+    },
+    {
+      "key": "wei2022cot",
+      "label": "Wei et~al.(2022)",
+      "year": 2022,
+      "authors": [
+        "J.~Wei",
+        "X.~Wang",
+        "D.~Schuurmans",
+        "M.~Bosma",
+        "B.~Ichter",
+        "F.~Xia"
+      ],
+      "authors_truncated": true,
+      "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+      "arxiv_id": "2201.11903",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+              "registry": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "wei",
+                "wang",
+                "schuurmans",
+                "bosma",
+                "ichter",
+                "xia"
+              ],
+              "registry": [
+                "wei",
+                "wang",
+                "schuurmans",
+                "bosma",
+                "ichter",
+                "xia",
+                "chi",
+                "le",
+                "zhou"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2022,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+            "authors": [
+              "Jason Wei",
+              "Xuezhi Wang",
+              "Dale Schuurmans",
+              "Maarten Bosma",
+              "Brian Ichter",
+              "Fei Xia",
+              "Ed Chi",
+              "Quoc Le",
+              "Denny Zhou"
+            ],
+            "published": "2022-01-28T02:33:07Z",
+            "updated": "2023-01-10T23:07:57Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "openvla",
+      "label": "Kim et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "M.~J.~Kim",
+        "K.~Pertsch",
+        "S.~Karamcheti",
+        "T.~Xiao",
+        "A.~Balakrishna",
+        "S.~Nair"
+      ],
+      "authors_truncated": true,
+      "title": "OpenVLA: An Open-Source Vision-Language-Action Model",
+      "arxiv_id": "2406.09246",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "OpenVLA: An Open-Source Vision-Language-Action Model",
+              "registry": "OpenVLA: An Open-Source Vision-Language-Action Model"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "kim",
+                "pertsch",
+                "karamcheti",
+                "xiao",
+                "balakrishna",
+                "nair"
+              ],
+              "registry": [
+                "kim",
+                "pertsch",
+                "karamcheti",
+                "xiao",
+                "balakrishna",
+                "nair",
+                "rafailov",
+                "foster",
+                "lam",
+                "sanketi",
+                "vuong",
+                "kollar",
+                "burchfiel",
+                "tedrake",
+                "sadigh",
+                "levine",
+                "liang",
+                "finn"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "OpenVLA: An Open-Source Vision-Language-Action Model",
+            "authors": [
+              "Moo Jin Kim",
+              "Karl Pertsch",
+              "Siddharth Karamcheti",
+              "Ted Xiao",
+              "Ashwin Balakrishna",
+              "Suraj Nair",
+              "Rafael Rafailov",
+              "Ethan Foster",
+              "Grace Lam",
+              "Pannag Sanketi",
+              "Quan Vuong",
+              "Thomas Kollar",
+              "Benjamin Burchfiel",
+              "Russ Tedrake",
+              "Dorsa Sadigh",
+              "Sergey Levine",
+              "Percy Liang",
+              "Chelsea Finn"
+            ],
+            "published": "2024-06-13T15:46:55Z",
+            "updated": "2024-09-05T19:46:34Z",
+            "comment": "Website: https://openvla.github.io/",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "rt2",
+      "label": "Brohan et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "A.~Brohan",
+        "N.~Brown",
+        "J.~Carbajal",
+        "Y.~Chebotar",
+        "X.~Chen",
+        "K.~Choromanski"
+      ],
+      "authors_truncated": true,
+      "title": "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control",
+      "arxiv_id": "2307.15818",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control",
+              "registry": "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "brohan",
+                "brown",
+                "carbajal",
+                "chebotar",
+                "chen",
+                "choromanski"
+              ],
+              "registry": [
+                "brohan",
+                "brown",
+                "carbajal",
+                "chebotar",
+                "chen",
+                "choromanski",
+                "ding",
+                "driess",
+                "dubey",
+                "finn",
+                "florence",
+                "fu",
+                "arenas",
+                "gopalakrishnan",
+                "han",
+                "hausman",
+                "herzog",
+                "hsu",
+                "ichter",
+                "irpan",
+                "joshi",
+                "julian",
+                "kalashnikov",
+                "kuang",
+                "leal",
+                "lee",
+                "lee",
+                "levine",
+                "lu",
+                "michalewski",
+                "mordatch",
+                "pertsch",
+                "rao",
+                "reymann",
+                "ryoo",
+                "salazar",
+                "sanketi",
+                "sermanet",
+                "singh",
+                "singh",
+                "soricut",
+                "tran",
+                "vanhoucke",
+                "vuong",
+                "wahid",
+                "welker",
+                "wohlhart",
+                "wu",
+                "xia",
+                "xiao",
+                "xu",
+                "xu",
+                "yu",
+                "zitkovich"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control",
+            "authors": [
+              "Anthony Brohan",
+              "Noah Brown",
+              "Justice Carbajal",
+              "Yevgen Chebotar",
+              "Xi Chen",
+              "Krzysztof Choromanski",
+              "Tianli Ding",
+              "Danny Driess",
+              "Avinava Dubey",
+              "Chelsea Finn",
+              "Pete Florence",
+              "Chuyuan Fu",
+              "Montse Gonzalez Arenas",
+              "Keerthana Gopalakrishnan",
+              "Kehang Han",
+              "Karol Hausman",
+              "Alexander Herzog",
+              "Jasmine Hsu",
+              "Brian Ichter",
+              "Alex Irpan",
+              "Nikhil Joshi",
+              "Ryan Julian",
+              "Dmitry Kalashnikov",
+              "Yuheng Kuang",
+              "Isabel Leal",
+              "Lisa Lee",
+              "Tsang-Wei Edward Lee",
+              "Sergey Levine",
+              "Yao Lu",
+              "Henryk Michalewski",
+              "Igor Mordatch",
+              "Karl Pertsch",
+              "Kanishka Rao",
+              "Krista Reymann",
+              "Michael Ryoo",
+              "Grecia Salazar",
+              "Pannag Sanketi",
+              "Pierre Sermanet",
+              "Jaspiar Singh",
+              "Anikait Singh",
+              "Radu Soricut",
+              "Huong Tran",
+              "Vincent Vanhoucke",
+              "Quan Vuong",
+              "Ayzaan Wahid",
+              "Stefan Welker",
+              "Paul Wohlhart",
+              "Jialin Wu",
+              "Fei Xia",
+              "Ted Xiao",
+              "Peng Xu",
+              "Sichun Xu",
+              "Tianhe Yu",
+              "Brianna Zitkovich"
+            ],
+            "published": "2023-07-28T21:18:02Z",
+            "updated": "2023-07-28T21:18:02Z",
+            "comment": "Website: https://robotics-transformer.github.io/",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "rt1",
+      "label": "Brohan et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "A.~Brohan",
+        "N.~Brown",
+        "J.~Carbajal",
+        "Y.~Chebotar",
+        "J.~Dabis",
+        "C.~Finn"
+      ],
+      "authors_truncated": true,
+      "title": "RT-1: Robotics Transformer for Real-World Control at Scale",
+      "arxiv_id": "2212.06817",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "RT-1: Robotics Transformer for Real-World Control at Scale",
+              "registry": "RT-1: Robotics Transformer for Real-World Control at Scale"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "brohan",
+                "brown",
+                "carbajal",
+                "chebotar",
+                "dabis",
+                "finn"
+              ],
+              "registry": [
+                "brohan",
+                "brown",
+                "carbajal",
+                "chebotar",
+                "dabis",
+                "finn",
+                "gopalakrishnan",
+                "hausman",
+                "herzog",
+                "hsu",
+                "ibarz",
+                "ichter",
+                "irpan",
+                "jackson",
+                "jesmonth",
+                "joshi",
+                "julian",
+                "kalashnikov",
+                "kuang",
+                "leal",
+                "lee",
+                "levine",
+                "lu",
+                "malla",
+                "manjunath",
+                "mordatch",
+                "nachum",
+                "parada",
+                "peralta",
+                "perez",
+                "pertsch",
+                "quiambao",
+                "rao",
+                "ryoo",
+                "salazar",
+                "sanketi",
+                "sayed",
+                "singh",
+                "sontakke",
+                "stone",
+                "tan",
+                "tran",
+                "vanhoucke",
+                "vega",
+                "vuong",
+                "xia",
+                "xiao",
+                "xu",
+                "xu",
+                "yu",
+                "zitkovich"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "RT-1: Robotics Transformer for Real-World Control at Scale",
+            "authors": [
+              "Anthony Brohan",
+              "Noah Brown",
+              "Justice Carbajal",
+              "Yevgen Chebotar",
+              "Joseph Dabis",
+              "Chelsea Finn",
+              "Keerthana Gopalakrishnan",
+              "Karol Hausman",
+              "Alex Herzog",
+              "Jasmine Hsu",
+              "Julian Ibarz",
+              "Brian Ichter",
+              "Alex Irpan",
+              "Tomas Jackson",
+              "Sally Jesmonth",
+              "Nikhil J Joshi",
+              "Ryan Julian",
+              "Dmitry Kalashnikov",
+              "Yuheng Kuang",
+              "Isabel Leal",
+              "Kuang-Huei Lee",
+              "Sergey Levine",
+              "Yao Lu",
+              "Utsav Malla",
+              "Deeksha Manjunath",
+              "Igor Mordatch",
+              "Ofir Nachum",
+              "Carolina Parada",
+              "Jodilyn Peralta",
+              "Emily Perez",
+              "Karl Pertsch",
+              "Jornell Quiambao",
+              "Kanishka Rao",
+              "Michael Ryoo",
+              "Grecia Salazar",
+              "Pannag Sanketi",
+              "Kevin Sayed",
+              "Jaspiar Singh",
+              "Sumedh Sontakke",
+              "Austin Stone",
+              "Clayton Tan",
+              "Huong Tran",
+              "Vincent Vanhoucke",
+              "Steve Vega",
+              "Quan Vuong",
+              "Fei Xia",
+              "Ted Xiao",
+              "Peng Xu",
+              "Sichun Xu",
+              "Tianhe Yu",
+              "Brianna Zitkovich"
+            ],
+            "published": "2022-12-13T18:55:15Z",
+            "updated": "2023-08-11T17:45:27Z",
+            "comment": "See website at robotics-transformer1.github.io",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "openx",
+      "label": "Collaboration et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "O.~X.~Collaboration",
+        "A.~O'Neill",
+        "A.~Rehman",
+        "A.~Gupta",
+        "A.~Maddukuri",
+        "A.~Gupta"
+      ],
+      "authors_truncated": true,
+      "title": "Open X-Embodiment: Robotic Learning Datasets and RT-X Models",
+      "arxiv_id": "2310.08864",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Open X-Embodiment: Robotic Learning Datasets and RT-X Models",
+              "registry": "Open X-Embodiment: Robotic Learning Datasets and RT-X Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "collaboration",
+                "o'neill",
+                "rehman",
+                "gupta",
+                "maddukuri",
+                "gupta"
+              ],
+              "registry": [
+                "collaboration",
+                "o'neill",
+                "rehman",
+                "gupta",
+                "maddukuri",
+                "gupta",
+                "padalkar",
+                "lee",
+                "pooley",
+                "gupta",
+                "mandlekar",
+                "jain",
+                "tung",
+                "bewley",
+                "herzog",
+                "irpan",
+                "khazatsky",
+                "rai",
+                "gupta",
+                "wang",
+                "kolobov",
+                "singh",
+                "garg",
+                "kembhavi",
+                "xie",
+                "brohan",
+                "raffin",
+                "sharma",
+                "yavary",
+                "jain",
+                "balakrishna",
+                "wahid",
+                "burgess-limerick",
+                "kim",
+                "scholkopf",
+                "wulfe",
+                "ichter",
+                "lu",
+                "xu",
+                "le",
+                "finn",
+                "wang",
+                "xu",
+                "chi",
+                "huang",
+                "chan",
+                "agia",
+                "pan",
+                "fu",
+                "devin",
+                "xu",
+                "morton",
+                "driess",
+                "chen",
+                "pathak",
+                "shah",
+                "buchler",
+                "jayaraman",
+                "kalashnikov",
+                "sadigh",
+                "johns",
+                "foster",
+                "liu",
+                "ceola",
+                "xia",
+                "zhao",
+                "frujeri",
+                "stulp",
+                "zhou",
+                "sukhatme",
+                "salhotra",
+                "yan",
+                "feng",
+                "schiavi",
+                "berseth",
+                "kahn",
+                "yang",
+                "wang",
+                "su",
+                "fang",
+                "shi",
+                "bao",
+                "amor",
+                "christensen",
+                "furuta",
+                "bharadhwaj",
+                "walke",
+                "fang",
+                "ha",
+                "mordatch",
+                "radosavovic",
+                "leal",
+                "liang",
+                "abou-chakra",
+                "kim",
+                "drake",
+                "peters",
+                "schneider",
+                "hsu",
+                "vakil",
+                "bohg",
+                "bingham",
+                "wu",
+                "gao",
+                "hu",
+                "wu",
+                "wu",
+                "sun",
+                "luo",
+                "gu",
+                "tan",
+                "oh",
+                "wu",
+                "lu",
+                "yang",
+                "malik",
+                "silverio",
+                "hejna",
+                "booher",
+                "tompson",
+                "yang",
+                "salvador",
+                "lim",
+                "han",
+                "wang",
+                "rao",
+                "pertsch",
+                "hausman",
+                "go",
+                "gopalakrishnan",
+                "goldberg",
+                "byrne",
+                "oslund",
+                "kawaharazuka",
+                "black",
+                "lin",
+                "zhang",
+                "ehsani",
+                "lekkala",
+                "ellis",
+                "rana",
+                "srinivasan",
+                "fang",
+                "singh",
+                "zeng",
+                "hatch",
+                "hsu",
+                "itti",
+                "chen",
+                "pinto",
+                "fei-fei",
+                "tan",
+                "fan",
+                "ott",
+                "lee",
+                "weihs",
+                "chen",
+                "lepert",
+                "memmel",
+                "tomizuka",
+                "itkina",
+                "castro",
+                "spero",
+                "du",
+                "ahn",
+                "yip",
+                "zhang",
+                "ding",
+                "heo",
+                "srirama",
+                "sharma",
+                "kim",
+                "irshad",
+                "kanazawa",
+                "hansen",
+                "heess",
+                "joshi",
+                "suenderhauf",
+                "liu",
+                "palo",
+                "shafiullah",
+                "mees",
+                "kroemer",
+                "bastani",
+                "sanketi",
+                "miller",
+                "yin",
+                "wohlhart",
+                "xu",
+                "fagan",
+                "mitrano",
+                "sermanet",
+                "abbeel",
+                "sundaresan",
+                "chen",
+                "vuong",
+                "rafailov",
+                "tian",
+                "doshi",
+                "martin-martin",
+                "baijal",
+                "scalise",
+                "hendrix",
+                "lin",
+                "qian",
+                "zhang",
+                "mendonca",
+                "shah",
+                "hoque",
+                "julian",
+                "bustamante",
+                "kirmani",
+                "levine",
+                "lin",
+                "moore",
+                "bahl",
+                "dass",
+                "sonawani",
+                "tulsiani",
+                "song",
+                "xu",
+                "haldar",
+                "karamcheti",
+                "adebola",
+                "guist",
+                "nasiriany",
+                "schaal",
+                "welker",
+                "tian",
+                "ramamoorthy",
+                "dasari",
+                "belkhale",
+                "park",
+                "nair",
+                "mirchandani",
+                "osa",
+                "gupta",
+                "harada",
+                "matsushima",
+                "xiao",
+                "kollar",
+                "yu",
+                "ding",
+                "davchev",
+                "zhao",
+                "armstrong",
+                "darrell",
+                "chung",
+                "jain",
+                "kumar",
+                "vanhoucke",
+                "guizilini",
+                "zhan",
+                "zhou",
+                "burgard",
+                "chen",
+                "chen",
+                "wang",
+                "zhu",
+                "geng",
+                "liu",
+                "liangwei",
+                "li",
+                "pang",
+                "lu",
+                "ma",
+                "kim",
+                "chebotar",
+                "zhou",
+                "zhu",
+                "wu",
+                "xu",
+                "wang",
+                "bisk",
+                "dou",
+                "cho",
+                "lee",
+                "cui",
+                "cao",
+                "wu",
+                "tang",
+                "zhu",
+                "zhang",
+                "jiang",
+                "li",
+                "li",
+                "iwasawa",
+                "matsuo",
+                "ma",
+                "xu",
+                "cui",
+                "zhang",
+                "fu",
+                "lin"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Open X-Embodiment: Robotic Learning Datasets and RT-X Models",
+            "authors": [
+              "Open X-Embodiment Collaboration",
+              "Abby O'Neill",
+              "Abdul Rehman",
+              "Abhinav Gupta",
+              "Abhiram Maddukuri",
+              "Abhishek Gupta",
+              "Abhishek Padalkar",
+              "Abraham Lee",
+              "Acorn Pooley",
+              "Agrim Gupta",
+              "Ajay Mandlekar",
+              "Ajinkya Jain",
+              "Albert Tung",
+              "Alex Bewley",
+              "Alex Herzog",
+              "Alex Irpan",
+              "Alexander Khazatsky",
+              "Anant Rai",
+              "Anchit Gupta",
+              "Andrew Wang",
+              "Andrey Kolobov",
+              "Anikait Singh",
+              "Animesh Garg",
+              "Aniruddha Kembhavi",
+              "Annie Xie",
+              "Anthony Brohan",
+              "Antonin Raffin",
+              "Archit Sharma",
+              "Arefeh Yavary",
+              "Arhan Jain",
+              "Ashwin Balakrishna",
+              "Ayzaan Wahid",
+              "Ben Burgess-Limerick",
+              "Beomjoon Kim",
+              "Bernhard Sch\u00f6lkopf",
+              "Blake Wulfe",
+              "Brian Ichter",
+              "Cewu Lu",
+              "Charles Xu",
+              "Charlotte Le",
+              "Chelsea Finn",
+              "Chen Wang",
+              "Chenfeng Xu",
+              "Cheng Chi",
+              "Chenguang Huang",
+              "Christine Chan",
+              "Christopher Agia",
+              "Chuer Pan",
+              "Chuyuan Fu",
+              "Coline Devin",
+              "Danfei Xu",
+              "Daniel Morton",
+              "Danny Driess",
+              "Daphne Chen",
+              "Deepak Pathak",
+              "Dhruv Shah",
+              "Dieter B\u00fcchler",
+              "Dinesh Jayaraman",
+              "Dmitry Kalashnikov",
+              "Dorsa Sadigh",
+              "Edward Johns",
+              "Ethan Foster",
+              "Fangchen Liu",
+              "Federico Ceola",
+              "Fei Xia",
+              "Feiyu Zhao",
+              "Felipe Vieira Frujeri",
+              "Freek Stulp",
+              "Gaoyue Zhou",
+              "Gaurav S. Sukhatme",
+              "Gautam Salhotra",
+              "Ge Yan",
+              "Gilbert Feng",
+              "Giulio Schiavi",
+              "Glen Berseth",
+              "Gregory Kahn",
+              "Guangwen Yang",
+              "Guanzhi Wang",
+              "Hao Su",
+              "Hao-Shu Fang",
+              "Haochen Shi",
+              "Henghui Bao",
+              "Heni Ben Amor",
+              "Henrik I Christensen",
+              "Hiroki Furuta",
+              "Homanga Bharadhwaj",
+              "Homer Walke",
+              "Hongjie Fang",
+              "Huy Ha",
+              "Igor Mordatch",
+              "Ilija Radosavovic",
+              "Isabel Leal",
+              "Jacky Liang",
+              "Jad Abou-Chakra",
+              "Jaehyung Kim",
+              "Jaimyn Drake",
+              "Jan Peters",
+              "Jan Schneider",
+              "Jasmine Hsu",
+              "Jay Vakil",
+              "Jeannette Bohg",
+              "Jeffrey Bingham",
+              "Jeffrey Wu",
+              "Jensen Gao",
+              "Jiaheng Hu",
+              "Jiajun Wu",
+              "Jialin Wu",
+              "Jiankai Sun",
+              "Jianlan Luo",
+              "Jiayuan Gu",
+              "Jie Tan",
+              "Jihoon Oh",
+              "Jimmy Wu",
+              "Jingpei Lu",
+              "Jingyun Yang",
+              "Jitendra Malik",
+              "Jo\u00e3o Silv\u00e9rio",
+              "Joey Hejna",
+              "Jonathan Booher",
+              "Jonathan Tompson",
+              "Jonathan Yang",
+              "Jordi Salvador",
+              "Joseph J. Lim",
+              "Junhyek Han",
+              "Kaiyuan Wang",
+              "Kanishka Rao",
+              "Karl Pertsch",
+              "Karol Hausman",
+              "Keegan Go",
+              "Keerthana Gopalakrishnan",
+              "Ken Goldberg",
+              "Kendra Byrne",
+              "Kenneth Oslund",
+              "Kento Kawaharazuka",
+              "Kevin Black",
+              "Kevin Lin",
+              "Kevin Zhang",
+              "Kiana Ehsani",
+              "Kiran Lekkala",
+              "Kirsty Ellis",
+              "Krishan Rana",
+              "Krishnan Srinivasan",
+              "Kuan Fang",
+              "Kunal Pratap Singh",
+              "Kuo-Hao Zeng",
+              "Kyle Hatch",
+              "Kyle Hsu",
+              "Laurent Itti",
+              "Lawrence Yunliang Chen",
+              "Lerrel Pinto",
+              "Li Fei-Fei",
+              "Liam Tan",
+              "Linxi \"Jim\" Fan",
+              "Lionel Ott",
+              "Lisa Lee",
+              "Luca Weihs",
+              "Magnum Chen",
+              "Marion Lepert",
+              "Marius Memmel",
+              "Masayoshi Tomizuka",
+              "Masha Itkina",
+              "Mateo Guaman Castro",
+              "Max Spero",
+              "Maximilian Du",
+              "Michael Ahn",
+              "Michael C. Yip",
+              "Mingtong Zhang",
+              "Mingyu Ding",
+              "Minho Heo",
+              "Mohan Kumar Srirama",
+              "Mohit Sharma",
+              "Moo Jin Kim",
+              "Muhammad Zubair Irshad",
+              "Naoaki Kanazawa",
+              "Nicklas Hansen",
+              "Nicolas Heess",
+              "Nikhil J Joshi",
+              "Niko Suenderhauf",
+              "Ning Liu",
+              "Norman Di Palo",
+              "Nur Muhammad Mahi Shafiullah",
+              "Oier Mees",
+              "Oliver Kroemer",
+              "Osbert Bastani",
+              "Pannag R Sanketi",
+              "Patrick \"Tree\" Miller",
+              "Patrick Yin",
+              "Paul Wohlhart",
+              "Peng Xu",
+              "Peter David Fagan",
+              "Peter Mitrano",
+              "Pierre Sermanet",
+              "Pieter Abbeel",
+              "Priya Sundaresan",
+              "Qiuyu Chen",
+              "Quan Vuong",
+              "Rafael Rafailov",
+              "Ran Tian",
+              "Ria Doshi",
+              "Roberto Mart\u00edn-Mart\u00edn",
+              "Rohan Baijal",
+              "Rosario Scalise",
+              "Rose Hendrix",
+              "Roy Lin",
+              "Runjia Qian",
+              "Ruohan Zhang",
+              "Russell Mendonca",
+              "Rutav Shah",
+              "Ryan Hoque",
+              "Ryan Julian",
+              "Samuel Bustamante",
+              "Sean Kirmani",
+              "Sergey Levine",
+              "Shan Lin",
+              "Sherry Moore",
+              "Shikhar Bahl",
+              "Shivin Dass",
+              "Shubham Sonawani",
+              "Shubham Tulsiani",
+              "Shuran Song",
+              "Sichun Xu",
+              "Siddhant Haldar",
+              "Siddharth Karamcheti",
+              "Simeon Adebola",
+              "Simon Guist",
+              "Soroush Nasiriany",
+              "Stefan Schaal",
+              "Stefan Welker",
+              "Stephen Tian",
+              "Subramanian Ramamoorthy",
+              "Sudeep Dasari",
+              "Suneel Belkhale",
+              "Sungjae Park",
+              "Suraj Nair",
+              "Suvir Mirchandani",
+              "Takayuki Osa",
+              "Tanmay Gupta",
+              "Tatsuya Harada",
+              "Tatsuya Matsushima",
+              "Ted Xiao",
+              "Thomas Kollar",
+              "Tianhe Yu",
+              "Tianli Ding",
+              "Todor Davchev",
+              "Tony Z. Zhao",
+              "Travis Armstrong",
+              "Trevor Darrell",
+              "Trinity Chung",
+              "Vidhi Jain",
+              "Vikash Kumar",
+              "Vincent Vanhoucke",
+              "Vitor Guizilini",
+              "Wei Zhan",
+              "Wenxuan Zhou",
+              "Wolfram Burgard",
+              "Xi Chen",
+              "Xiangyu Chen",
+              "Xiaolong Wang",
+              "Xinghao Zhu",
+              "Xinyang Geng",
+              "Xiyuan Liu",
+              "Xu Liangwei",
+              "Xuanlin Li",
+              "Yansong Pang",
+              "Yao Lu",
+              "Yecheng Jason Ma",
+              "Yejin Kim",
+              "Yevgen Chebotar",
+              "Yifan Zhou",
+              "Yifeng Zhu",
+              "Yilin Wu",
+              "Ying Xu",
+              "Yixuan Wang",
+              "Yonatan Bisk",
+              "Yongqiang Dou",
+              "Yoonyoung Cho",
+              "Youngwoon Lee",
+              "Yuchen Cui",
+              "Yue Cao",
+              "Yueh-Hua Wu",
+              "Yujin Tang",
+              "Yuke Zhu",
+              "Yunchu Zhang",
+              "Yunfan Jiang",
+              "Yunshuang Li",
+              "Yunzhu Li",
+              "Yusuke Iwasawa",
+              "Yutaka Matsuo",
+              "Zehan Ma",
+              "Zhuo Xu",
+              "Zichen Jeff Cui",
+              "Zichen Zhang",
+              "Zipeng Fu",
+              "Zipeng Lin"
+            ],
+            "published": "2023-10-13T05:20:40Z",
+            "updated": "2025-05-14T15:22:36Z",
+            "comment": "Project website: https://robotics-transformer-x.github.io",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "bridgev2",
+      "label": "Walke et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "H.~Walke",
+        "K.~Black",
+        "A.~Lee",
+        "M.~J.~Kim",
+        "M.~Du",
+        "C.~Zheng"
+      ],
+      "authors_truncated": true,
+      "title": "BridgeData V2: A Dataset for Robot Learning at Scale",
+      "arxiv_id": "2308.12952",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "BridgeData V2: A Dataset for Robot Learning at Scale",
+              "registry": "BridgeData V2: A Dataset for Robot Learning at Scale"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "walke",
+                "black",
+                "lee",
+                "kim",
+                "du",
+                "zheng"
+              ],
+              "registry": [
+                "walke",
+                "black",
+                "lee",
+                "kim",
+                "du",
+                "zheng",
+                "zhao",
+                "hansen-estruch",
+                "vuong",
+                "he",
+                "myers",
+                "fang",
+                "finn",
+                "levine"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "BridgeData V2: A Dataset for Robot Learning at Scale",
+            "authors": [
+              "Homer Walke",
+              "Kevin Black",
+              "Abraham Lee",
+              "Moo Jin Kim",
+              "Max Du",
+              "Chongyi Zheng",
+              "Tony Zhao",
+              "Philippe Hansen-Estruch",
+              "Quan Vuong",
+              "Andre He",
+              "Vivek Myers",
+              "Kuan Fang",
+              "Chelsea Finn",
+              "Sergey Levine"
+            ],
+            "published": "2023-08-24T17:41:20Z",
+            "updated": "2024-01-17T22:41:29Z",
+            "comment": "9 pages",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "bcz",
+      "label": "Jang et~al.(2022)",
+      "year": 2022,
+      "authors": [
+        "E.~Jang",
+        "A.~Irpan",
+        "M.~Khansari",
+        "D.~Kappler",
+        "F.~Ebert",
+        "C.~Lynch"
+      ],
+      "authors_truncated": true,
+      "title": "BC-Z: Zero-Shot Task Generalization with Robotic Imitation Learning",
+      "arxiv_id": "2202.02005",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "BC-Z: Zero-Shot Task Generalization with Robotic Imitation Learning",
+              "registry": "BC-Z: Zero-Shot Task Generalization with Robotic Imitation Learning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "jang",
+                "irpan",
+                "khansari",
+                "kappler",
+                "ebert",
+                "lynch"
+              ],
+              "registry": [
+                "jang",
+                "irpan",
+                "khansari",
+                "kappler",
+                "ebert",
+                "lynch",
+                "levine",
+                "finn"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2022,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "BC-Z: Zero-Shot Task Generalization with Robotic Imitation Learning",
+            "authors": [
+              "Eric Jang",
+              "Alex Irpan",
+              "Mohi Khansari",
+              "Daniel Kappler",
+              "Frederik Ebert",
+              "Corey Lynch",
+              "Sergey Levine",
+              "Chelsea Finn"
+            ],
+            "published": "2022-02-04T07:30:48Z",
+            "updated": "2022-02-04T07:30:48Z",
+            "comment": "Conference on Robot Learning (pp. 991-1002). 2022 Jan 11",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "octo",
+      "label": "Team et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "O.~M.~Team",
+        "D.~Ghosh",
+        "H.~Walke",
+        "K.~Pertsch",
+        "K.~Black",
+        "O.~Mees"
+      ],
+      "authors_truncated": true,
+      "title": "Octo: An Open-Source Generalist Robot Policy",
+      "arxiv_id": "2405.12213",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Octo: An Open-Source Generalist Robot Policy",
+              "registry": "Octo: An Open-Source Generalist Robot Policy"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "team",
+                "ghosh",
+                "walke",
+                "pertsch",
+                "black",
+                "mees"
+              ],
+              "registry": [
+                "team",
+                "ghosh",
+                "walke",
+                "pertsch",
+                "black",
+                "mees",
+                "dasari",
+                "hejna",
+                "kreiman",
+                "xu",
+                "luo",
+                "tan",
+                "chen",
+                "sanketi",
+                "vuong",
+                "xiao",
+                "sadigh",
+                "finn",
+                "levine"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Octo: An Open-Source Generalist Robot Policy",
+            "authors": [
+              " Octo Model Team",
+              "Dibya Ghosh",
+              "Homer Walke",
+              "Karl Pertsch",
+              "Kevin Black",
+              "Oier Mees",
+              "Sudeep Dasari",
+              "Joey Hejna",
+              "Tobias Kreiman",
+              "Charles Xu",
+              "Jianlan Luo",
+              "You Liang Tan",
+              "Lawrence Yunliang Chen",
+              "Pannag Sanketi",
+              "Quan Vuong",
+              "Ted Xiao",
+              "Dorsa Sadigh",
+              "Chelsea Finn",
+              "Sergey Levine"
+            ],
+            "published": "2024-05-20T17:57:01Z",
+            "updated": "2024-05-26T19:55:26Z",
+            "comment": "Project website: https://octo-models.github.io",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "simplerenv",
+      "label": "Li et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "X.~Li",
+        "K.~Hsu",
+        "J.~Gu",
+        "K.~Pertsch",
+        "O.~Mees",
+        "H.~R.~Walke"
+      ],
+      "authors_truncated": true,
+      "title": "Evaluating Real-World Robot Manipulation Policies in Simulation",
+      "arxiv_id": "2405.05941",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Evaluating Real-World Robot Manipulation Policies in Simulation",
+              "registry": "Evaluating Real-World Robot Manipulation Policies in Simulation"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "li",
+                "hsu",
+                "gu",
+                "pertsch",
+                "mees",
+                "walke"
+              ],
+              "registry": [
+                "li",
+                "hsu",
+                "gu",
+                "pertsch",
+                "mees",
+                "walke",
+                "fu",
+                "lunawat",
+                "sieh",
+                "kirmani",
+                "levine",
+                "wu",
+                "finn",
+                "su",
+                "vuong",
+                "xiao"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Evaluating Real-World Robot Manipulation Policies in Simulation",
+            "authors": [
+              "Xuanlin Li",
+              "Kyle Hsu",
+              "Jiayuan Gu",
+              "Karl Pertsch",
+              "Oier Mees",
+              "Homer Rich Walke",
+              "Chuyuan Fu",
+              "Ishikaa Lunawat",
+              "Isabel Sieh",
+              "Sean Kirmani",
+              "Sergey Levine",
+              "Jiajun Wu",
+              "Chelsea Finn",
+              "Hao Su",
+              "Quan Vuong",
+              "Ted Xiao"
+            ],
+            "published": "2024-05-09T17:30:16Z",
+            "updated": "2024-05-09T17:30:16Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "radhakrishnan2023",
+      "label": "Radhakrishnan et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "A.~Radhakrishnan",
+        "K.~Nguyen",
+        "A.~Chen",
+        "C.~Chen",
+        "C.~Denison",
+        "D.~Hernandez"
+      ],
+      "authors_truncated": true,
+      "title": "Question Decomposition Improves the Faithfulness of Model-Generated Reasoning",
+      "arxiv_id": "2307.11768",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Question Decomposition Improves the Faithfulness of Model-Generated Reasoning",
+              "registry": "Question Decomposition Improves the Faithfulness of Model-Generated Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "radhakrishnan",
+                "nguyen",
+                "chen",
+                "chen",
+                "denison",
+                "hernandez"
+              ],
+              "registry": [
+                "radhakrishnan",
+                "nguyen",
+                "chen",
+                "chen",
+                "denison",
+                "hernandez",
+                "durmus",
+                "hubinger",
+                "kernion",
+                "lukosiute",
+                "cheng",
+                "joseph",
+                "schiefer",
+                "rausch",
+                "mccandlish",
+                "showk",
+                "lanham",
+                "maxwell",
+                "chandrasekaran",
+                "hatfield-dodds",
+                "kaplan",
+                "brauner",
+                "bowman",
+                "perez"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Question Decomposition Improves the Faithfulness of Model-Generated Reasoning",
+            "authors": [
+              "Ansh Radhakrishnan",
+              "Karina Nguyen",
+              "Anna Chen",
+              "Carol Chen",
+              "Carson Denison",
+              "Danny Hernandez",
+              "Esin Durmus",
+              "Evan Hubinger",
+              "Jackson Kernion",
+              "Kamil\u0117 Luko\u0161i\u016bt\u0117",
+              "Newton Cheng",
+              "Nicholas Joseph",
+              "Nicholas Schiefer",
+              "Oliver Rausch",
+              "Sam McCandlish",
+              "Sheer El Showk",
+              "Tamera Lanham",
+              "Tim Maxwell",
+              "Venkatesa Chandrasekaran",
+              "Zac Hatfield-Dodds",
+              "Jared Kaplan",
+              "Jan Brauner",
+              "Samuel R. Bowman",
+              "Ethan Perez"
+            ],
+            "published": "2023-07-17T00:54:10Z",
+            "updated": "2023-07-25T04:01:43Z",
+            "comment": "For few-shot examples and prompts, see https://github.com/anthropics/DecompositionFaithfulnessPaper",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "chen2025reasoning",
+      "label": "Chen et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "Y.~Chen",
+        "J.~Benton",
+        "A.~Radhakrishnan",
+        "J.~Uesato",
+        "C.~Denison",
+        "J.~Schulman"
+      ],
+      "authors_truncated": true,
+      "title": "Reasoning Models Don't Always Say What They Think",
+      "arxiv_id": "2505.05410",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Reasoning Models Don't Always Say What They Think",
+              "registry": "Reasoning Models Don't Always Say What They Think"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "chen",
+                "benton",
+                "radhakrishnan",
+                "uesato",
+                "denison",
+                "schulman"
+              ],
+              "registry": [
+                "chen",
+                "benton",
+                "radhakrishnan",
+                "uesato",
+                "denison",
+                "schulman",
+                "somani",
+                "hase",
+                "wagner",
+                "roger",
+                "mikulik",
+                "bowman",
+                "leike",
+                "kaplan",
+                "perez"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2025,
+              "registry": 2025,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Reasoning Models Don't Always Say What They Think",
+            "authors": [
+              "Yanda Chen",
+              "Joe Benton",
+              "Ansh Radhakrishnan",
+              "Jonathan Uesato",
+              "Carson Denison",
+              "John Schulman",
+              "Arushi Somani",
+              "Peter Hase",
+              "Misha Wagner",
+              "Fabien Roger",
+              "Vlad Mikulik",
+              "Samuel R. Bowman",
+              "Jan Leike",
+              "Jared Kaplan",
+              "Ethan Perez"
+            ],
+            "published": "2025-05-08T16:51:43Z",
+            "updated": "2025-05-08T16:51:43Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "arcuschin2025",
+      "label": "Arcuschin et~al.(2025)",
+      "year": 2025,
+      "authors": [
+        "I.~Arcuschin",
+        "J.~Janiak",
+        "R.~Krzyzanowski",
+        "S.~Rajamanoharan",
+        "N.~Nanda",
+        "and A.~Conmy"
+      ],
+      "authors_truncated": false,
+      "title": "Chain-of-Thought Reasoning In The Wild Is Not Always Faithful",
+      "arxiv_id": "2503.08679",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Chain-of-Thought Reasoning In The Wild Is Not Always Faithful",
+              "registry": "Chain-of-Thought Reasoning In The Wild Is Not Always Faithful"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "arcuschin",
+                "janiak",
+                "krzyzanowski",
+                "rajamanoharan",
+                "nanda",
+                "conmy"
+              ],
+              "registry": [
+                "arcuschin",
+                "janiak",
+                "krzyzanowski",
+                "rajamanoharan",
+                "nanda",
+                "conmy"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2025,
+              "registry": 2025,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Chain-of-Thought Reasoning In The Wild Is Not Always Faithful",
+            "authors": [
+              "Iv\u00e1n Arcuschin",
+              "Jett Janiak",
+              "Robert Krzyzanowski",
+              "Senthooran Rajamanoharan",
+              "Neel Nanda",
+              "Arthur Conmy"
+            ],
+            "published": "2025-03-11T17:56:30Z",
+            "updated": "2026-06-16T17:36:22Z",
+            "comment": "Published at the 43rd International Conference on Machine Learning (ICML 2026)",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "lyu2023faithful",
+      "label": "Lyu et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "Q.~Lyu",
+        "S.~Havaldar",
+        "A.~Stein",
+        "L.~Zhang",
+        "D.~Rao",
+        "E.~Wong"
+      ],
+      "authors_truncated": true,
+      "title": "Faithful Chain-of-Thought Reasoning",
+      "arxiv_id": "2301.13379",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Faithful Chain-of-Thought Reasoning",
+              "registry": "Faithful Chain-of-Thought Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "lyu",
+                "havaldar",
+                "stein",
+                "zhang",
+                "rao",
+                "wong"
+              ],
+              "registry": [
+                "lyu",
+                "havaldar",
+                "stein",
+                "zhang",
+                "rao",
+                "wong",
+                "apidianaki",
+                "callison-burch"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Faithful Chain-of-Thought Reasoning",
+            "authors": [
+              "Qing Lyu",
+              "Shreya Havaldar",
+              "Adam Stein",
+              "Li Zhang",
+              "Delip Rao",
+              "Eric Wong",
+              "Marianna Apidianaki",
+              "Chris Callison-Burch"
+            ],
+            "published": "2023-01-31T03:04:26Z",
+            "updated": "2023-09-20T22:19:30Z",
+            "comment": "IJCNLP-AACL 2023 camera-ready version",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "ye2022unreliability",
+      "label": "Ye and Durrett(2022)",
+      "year": 2022,
+      "authors": [
+        "X.~Ye",
+        "and G.~Durrett"
+      ],
+      "authors_truncated": false,
+      "title": "The Unreliability of Explanations in Few-shot Prompting for Textual Reasoning",
+      "arxiv_id": "2205.03401",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "The Unreliability of Explanations in Few-shot Prompting for Textual Reasoning",
+              "registry": "The Unreliability of Explanations in Few-shot Prompting for Textual Reasoning"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "ye",
+                "durrett"
+              ],
+              "registry": [
+                "ye",
+                "durrett"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2022,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "The Unreliability of Explanations in Few-shot Prompting for Textual Reasoning",
+            "authors": [
+              "Xi Ye",
+              "Greg Durrett"
+            ],
+            "published": "2022-05-06T17:57:58Z",
+            "updated": "2022-10-13T03:07:01Z",
+            "comment": "NeurIPS 2022",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "atanasova2023",
+      "label": "Atanasova et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "P.~Atanasova",
+        "O.~Camburu",
+        "C.~Lioma",
+        "T.~Lukasiewicz",
+        "J.~G.~Simonsen",
+        "and I.~Augenstein"
+      ],
+      "authors_truncated": false,
+      "title": "Faithfulness Tests for Natural Language Explanations",
+      "arxiv_id": "2305.18029",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Faithfulness Tests for Natural Language Explanations",
+              "registry": "Faithfulness Tests for Natural Language Explanations"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "atanasova",
+                "camburu",
+                "lioma",
+                "lukasiewicz",
+                "simonsen",
+                "augenstein"
+              ],
+              "registry": [
+                "atanasova",
+                "camburu",
+                "lioma",
+                "lukasiewicz",
+                "simonsen",
+                "augenstein"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Faithfulness Tests for Natural Language Explanations",
+            "authors": [
+              "Pepa Atanasova",
+              "Oana-Maria Camburu",
+              "Christina Lioma",
+              "Thomas Lukasiewicz",
+              "Jakob Grue Simonsen",
+              "Isabelle Augenstein"
+            ],
+            "published": "2023-05-29T11:40:37Z",
+            "updated": "2023-06-30T15:41:47Z",
+            "comment": "The 61st Annual Meeting of the Association for Computational Linguistics (ACL 2023)",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "parcalabescu2024",
+      "label": "Parcalabescu and Frank(2024)",
+      "year": 2024,
+      "authors": [
+        "L.~Parcalabescu",
+        "and A.~Frank"
+      ],
+      "authors_truncated": false,
+      "title": "On Measuring Faithfulness or Self-consistency of Natural Language Explanations",
+      "arxiv_id": "2311.07466",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "On Measuring Faithfulness or Self-consistency of Natural Language Explanations",
+              "registry": "On Measuring Faithfulness or Self-consistency of Natural Language Explanations"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "parcalabescu",
+                "frank"
+              ],
+              "registry": [
+                "parcalabescu",
+                "frank"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "On Measuring Faithfulness or Self-consistency of Natural Language Explanations",
+            "authors": [
+              "Letitia Parcalabescu",
+              "Anette Frank"
+            ],
+            "published": "2023-11-13T16:53:51Z",
+            "updated": "2024-09-18T18:45:32Z",
+            "comment": "Paper accepted for publication at ACL 2024 Main (Bangkok, Thailand); 10 main paper pages, 30 appendix pages",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "lyu2024survey",
+      "label": "Lyu et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "Q.~Lyu",
+        "M.~Apidianaki",
+        "and C.~Callison-Burch"
+      ],
+      "authors_truncated": false,
+      "title": "Towards Faithful Model Explanation in NLP: A Survey",
+      "arxiv_id": "2209.11326",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Towards Faithful Model Explanation in NLP: A Survey",
+              "registry": "Towards Faithful Model Explanation in NLP: A Survey"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "lyu",
+                "apidianaki",
+                "callison-burch"
+              ],
+              "registry": [
+                "lyu",
+                "apidianaki",
+                "callison-burch"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Towards Faithful Model Explanation in NLP: A Survey",
+            "authors": [
+              "Qing Lyu",
+              "Marianna Apidianaki",
+              "Chris Callison-Burch"
+            ],
+            "published": "2022-09-22T21:40:51Z",
+            "updated": "2024-01-12T20:19:20Z",
+            "comment": "Added acknowledgements; Accepted to the Computational Linguistics Journal (June 2024 issue)",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "jain2019attention",
+      "label": "Jain and Wallace(2019)",
+      "year": 2019,
+      "authors": [
+        "S.~Jain",
+        "and B.~C.~Wallace"
+      ],
+      "authors_truncated": false,
+      "title": "Attention is not Explanation",
+      "arxiv_id": "1902.10186",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Attention is not Explanation",
+              "registry": "Attention is not Explanation"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "jain",
+                "wallace"
+              ],
+              "registry": [
+                "jain",
+                "wallace"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2019,
+              "registry": 2019,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Attention is not Explanation",
+            "authors": [
+              "Sarthak Jain",
+              "Byron C. Wallace"
+            ],
+            "published": "2019-02-26T19:59:15Z",
+            "updated": "2019-05-08T18:05:56Z",
+            "comment": "Accepted as NAACL 2019 Long Paper",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "wiegreffe2019",
+      "label": "Wiegreffe and Pinter(2019)",
+      "year": 2019,
+      "authors": [
+        "S.~Wiegreffe",
+        "and Y.~Pinter"
+      ],
+      "authors_truncated": false,
+      "title": "Attention is not not Explanation",
+      "arxiv_id": "1908.04626",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Attention is not not Explanation",
+              "registry": "Attention is not not Explanation"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "wiegreffe",
+                "pinter"
+              ],
+              "registry": [
+                "wiegreffe",
+                "pinter"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2019,
+              "registry": 2019,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Attention is not not Explanation",
+            "authors": [
+              "Sarah Wiegreffe",
+              "Yuval Pinter"
+            ],
+            "published": "2019-08-13T13:15:04Z",
+            "updated": "2019-09-05T14:11:27Z",
+            "comment": "Accepted to EMNLP 2019; related blog post at https://medium.com/@yuvalpinter/attention-is-not-not-explanation-dbc25b534017",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "serrano2019",
+      "label": "Serrano and Smith(2019)",
+      "year": 2019,
+      "authors": [
+        "S.~Serrano",
+        "and N.~A.~Smith"
+      ],
+      "authors_truncated": false,
+      "title": "Is Attention Interpretable?",
+      "arxiv_id": "1906.03731",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Is Attention Interpretable?",
+              "registry": "Is Attention Interpretable?"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "serrano",
+                "smith"
+              ],
+              "registry": [
+                "serrano",
+                "smith"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2019,
+              "registry": 2019,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Is Attention Interpretable?",
+            "authors": [
+              "Sofia Serrano",
+              "Noah A. Smith"
+            ],
+            "published": "2019-06-09T22:46:12Z",
+            "updated": "2019-06-09T22:46:12Z",
+            "comment": "To appear at ACL 2019",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "adebayo2018",
+      "label": "Adebayo et~al.(2018)",
+      "year": 2018,
+      "authors": [
+        "J.~Adebayo",
+        "J.~Gilmer",
+        "M.~Muelly",
+        "I.~Goodfellow",
+        "M.~Hardt",
+        "and B.~Kim"
+      ],
+      "authors_truncated": false,
+      "title": "Sanity Checks for Saliency Maps",
+      "arxiv_id": "1810.03292",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Sanity Checks for Saliency Maps",
+              "registry": "Sanity Checks for Saliency Maps"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "adebayo",
+                "gilmer",
+                "muelly",
+                "goodfellow",
+                "hardt",
+                "kim"
+              ],
+              "registry": [
+                "adebayo",
+                "gilmer",
+                "muelly",
+                "goodfellow",
+                "hardt",
+                "kim"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2018,
+              "registry": 2018,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Sanity Checks for Saliency Maps",
+            "authors": [
+              "Julius Adebayo",
+              "Justin Gilmer",
+              "Michael Muelly",
+              "Ian Goodfellow",
+              "Moritz Hardt",
+              "Been Kim"
+            ],
+            "published": "2018-10-08T07:27:11Z",
+            "updated": "2020-11-06T13:40:14Z",
+            "comment": "Updating Guided Backprop experiments due to bug. The results and conclusions remain the same",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "lipton2016",
+      "label": "Lipton(2016)",
+      "year": 2016,
+      "authors": [
+        "Z.~C.~Lipton"
+      ],
+      "authors_truncated": false,
+      "title": "The Mythos of Model Interpretability",
+      "arxiv_id": "1606.03490",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "The Mythos of Model Interpretability",
+              "registry": "The Mythos of Model Interpretability"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "lipton"
+              ],
+              "registry": [
+                "lipton"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2016,
+              "registry": 2016,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "The Mythos of Model Interpretability",
+            "authors": [
+              "Zachary C. Lipton"
+            ],
+            "published": "2016-06-10T21:28:47Z",
+            "updated": "2017-03-06T08:51:10Z",
+            "comment": "presented at 2016 ICML Workshop on Human Interpretability in Machine Learning (WHI 2016), New York, NY",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "jacobs2021",
+      "label": "Jacobs and Wallach(2021)",
+      "year": 2021,
+      "authors": [
+        "A.~Z.~Jacobs",
+        "and H.~Wallach"
+      ],
+      "authors_truncated": false,
+      "title": "Measurement and Fairness",
+      "arxiv_id": "1912.05511",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Measurement and Fairness",
+              "registry": "Measurement and Fairness"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "jacobs",
+                "wallach"
+              ],
+              "registry": [
+                "jacobs",
+                "wallach"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2021,
+              "registry": 2019,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Measurement and Fairness",
+            "authors": [
+              "Abigail Z. Jacobs",
+              "Hanna Wallach"
+            ],
+            "published": "2019-12-11T18:21:38Z",
+            "updated": "2021-03-12T21:26:55Z",
+            "comment": "11 pages, 1 figure. To be published in the proceedings of the ACM Conference on Fairness, Accountability, and Transparency (FAccT '21)",
+            "doi": "10.1145/3442188.3445901"
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "dehghani2021",
+      "label": "Dehghani et~al.(2021)",
+      "year": 2021,
+      "authors": [
+        "M.~Dehghani",
+        "Y.~Tay",
+        "A.~A.~Gritsenko",
+        "Z.~Zhao",
+        "N.~Houlsby",
+        "F.~Diaz"
+      ],
+      "authors_truncated": true,
+      "title": "The Benchmark Lottery",
+      "arxiv_id": "2107.07002",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "The Benchmark Lottery",
+              "registry": "The Benchmark Lottery"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "dehghani",
+                "tay",
+                "gritsenko",
+                "zhao",
+                "houlsby",
+                "diaz"
+              ],
+              "registry": [
+                "dehghani",
+                "tay",
+                "gritsenko",
+                "zhao",
+                "houlsby",
+                "diaz",
+                "metzler",
+                "vinyals"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2021,
+              "registry": 2021,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "The Benchmark Lottery",
+            "authors": [
+              "Mostafa Dehghani",
+              "Yi Tay",
+              "Alexey A. Gritsenko",
+              "Zhe Zhao",
+              "Neil Houlsby",
+              "Fernando Diaz",
+              "Donald Metzler",
+              "Oriol Vinyals"
+            ],
+            "published": "2021-07-14T21:08:30Z",
+            "updated": "2021-07-14T21:08:30Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "raji2021",
+      "label": "Raji et~al.(2021)",
+      "year": 2021,
+      "authors": [
+        "I.~D.~Raji",
+        "E.~M.~Bender",
+        "A.~Paullada",
+        "E.~Denton",
+        "and A.~Hanna"
+      ],
+      "authors_truncated": false,
+      "title": "AI and the Everything in the Whole Wide World Benchmark",
+      "arxiv_id": "2111.15366",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "AI and the Everything in the Whole Wide World Benchmark",
+              "registry": "AI and the Everything in the Whole Wide World Benchmark"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "raji",
+                "bender",
+                "paullada",
+                "denton",
+                "hanna"
+              ],
+              "registry": [
+                "raji",
+                "bender",
+                "paullada",
+                "denton",
+                "hanna"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2021,
+              "registry": 2021,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "AI and the Everything in the Whole Wide World Benchmark",
+            "authors": [
+              "Inioluwa Deborah Raji",
+              "Emily M. Bender",
+              "Amandalynne Paullada",
+              "Emily Denton",
+              "Alex Hanna"
+            ],
+            "published": "2021-11-26T19:39:34Z",
+            "updated": "2021-11-26T19:39:34Z",
+            "comment": "Accepted in NeurIPS 2021 Benchmarks and Datasets track",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "dodge2019",
+      "label": "Dodge et~al.(2019)",
+      "year": 2019,
+      "authors": [
+        "J.~Dodge",
+        "S.~Gururangan",
+        "D.~Card",
+        "R.~Schwartz",
+        "and N.~A.~Smith"
+      ],
+      "authors_truncated": false,
+      "title": "Show Your Work: Improved Reporting of Experimental Results",
+      "arxiv_id": "1909.03004",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Show Your Work: Improved Reporting of Experimental Results",
+              "registry": "Show Your Work: Improved Reporting of Experimental Results"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "dodge",
+                "gururangan",
+                "card",
+                "schwartz",
+                "smith"
+              ],
+              "registry": [
+                "dodge",
+                "gururangan",
+                "card",
+                "schwartz",
+                "smith"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2019,
+              "registry": 2019,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Show Your Work: Improved Reporting of Experimental Results",
+            "authors": [
+              "Jesse Dodge",
+              "Suchin Gururangan",
+              "Dallas Card",
+              "Roy Schwartz",
+              "Noah A. Smith"
+            ],
+            "published": "2019-09-06T16:40:42Z",
+            "updated": "2019-09-06T16:40:42Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "henderson2018",
+      "label": "Henderson et~al.(2018)",
+      "year": 2018,
+      "authors": [
+        "P.~Henderson",
+        "R.~Islam",
+        "P.~Bachman",
+        "J.~Pineau",
+        "D.~Precup",
+        "and D.~Meger"
+      ],
+      "authors_truncated": false,
+      "title": "Deep Reinforcement Learning that Matters",
+      "arxiv_id": "1709.06560",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Deep Reinforcement Learning that Matters",
+              "registry": "Deep Reinforcement Learning that Matters"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "henderson",
+                "islam",
+                "bachman",
+                "pineau",
+                "precup",
+                "meger"
+              ],
+              "registry": [
+                "henderson",
+                "islam",
+                "bachman",
+                "pineau",
+                "precup",
+                "meger"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2018,
+              "registry": 2017,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Deep Reinforcement Learning that Matters",
+            "authors": [
+              "Peter Henderson",
+              "Riashat Islam",
+              "Philip Bachman",
+              "Joelle Pineau",
+              "Doina Precup",
+              "David Meger"
+            ],
+            "published": "2017-09-19T06:09:47Z",
+            "updated": "2019-01-30T04:21:41Z",
+            "comment": "Accepted to the Thirthy-Second AAAI Conference On Artificial Intelligence (AAAI), 2018",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "pineau2021",
+      "label": "Pineau et~al.(2021)",
+      "year": 2021,
+      "authors": [
+        "J.~Pineau",
+        "P.~Vincent-Lamarre",
+        "K.~Sinha",
+        "V.~Larivi\u00e8re",
+        "A.~Beygelzimer",
+        "F.~d'Alch\u00e9-Buc"
+      ],
+      "authors_truncated": true,
+      "title": "Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program)",
+      "arxiv_id": "2003.12206",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program)",
+              "registry": "Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program)"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "pineau",
+                "vincent-lamarre",
+                "sinha",
+                "lariviere",
+                "beygelzimer",
+                "d'alche-buc"
+              ],
+              "registry": [
+                "pineau",
+                "vincent-lamarre",
+                "sinha",
+                "lariviere",
+                "beygelzimer",
+                "d'alche-buc",
+                "fox",
+                "larochelle"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2021,
+              "registry": 2020,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program)",
+            "authors": [
+              "Joelle Pineau",
+              "Philippe Vincent-Lamarre",
+              "Koustuv Sinha",
+              "Vincent Larivi\u00e8re",
+              "Alina Beygelzimer",
+              "Florence d'Alch\u00e9-Buc",
+              "Emily Fox",
+              "Hugo Larochelle"
+            ],
+            "published": "2020-03-27T02:16:25Z",
+            "updated": "2020-12-30T21:32:34Z",
+            "comment": "To appear at JMLR, 16 pages + Appendix",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "schaeffer2023",
+      "label": "Schaeffer et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "R.~Schaeffer",
+        "B.~Miranda",
+        "and S.~Koyejo"
+      ],
+      "authors_truncated": false,
+      "title": "Are Emergent Abilities of Large Language Models a Mirage?",
+      "arxiv_id": "2304.15004",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Are Emergent Abilities of Large Language Models a Mirage?",
+              "registry": "Are Emergent Abilities of Large Language Models a Mirage?"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "schaeffer",
+                "miranda",
+                "koyejo"
+              ],
+              "registry": [
+                "schaeffer",
+                "miranda",
+                "koyejo"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Are Emergent Abilities of Large Language Models a Mirage?",
+            "authors": [
+              "Rylan Schaeffer",
+              "Brando Miranda",
+              "Sanmi Koyejo"
+            ],
+            "published": "2023-04-28T17:52:11Z",
+            "updated": "2023-05-22T15:56:25Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "lora",
+      "label": "Hu et~al.(2022)",
+      "year": 2022,
+      "authors": [
+        "E.~J.~Hu",
+        "Y.~Shen",
+        "P.~Wallis",
+        "Z.~Allen-Zhu",
+        "Y.~Li",
+        "S.~Wang"
+      ],
+      "authors_truncated": true,
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "arxiv_id": "2106.09685",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "LoRA: Low-Rank Adaptation of Large Language Models",
+              "registry": "LoRA: Low-Rank Adaptation of Large Language Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "hu",
+                "shen",
+                "wallis",
+                "allen-zhu",
+                "li",
+                "wang"
+              ],
+              "registry": [
+                "hu",
+                "shen",
+                "wallis",
+                "allen-zhu",
+                "li",
+                "wang",
+                "wang",
+                "chen"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2022,
+              "registry": 2021,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+            "authors": [
+              "Edward J. Hu",
+              "Yelong Shen",
+              "Phillip Wallis",
+              "Zeyuan Allen-Zhu",
+              "Yuanzhi Li",
+              "Shean Wang",
+              "Lu Wang",
+              "Weizhu Chen"
+            ],
+            "published": "2021-06-17T17:37:18Z",
+            "updated": "2021-10-16T18:40:34Z",
+            "comment": "Draft V2 includes better baselines, experiments on GLUE, and more on adapter latency",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "qwen25",
+      "label": "Qwen et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "Qwen",
+        ":",
+        "A.~Yang",
+        "B.~Yang",
+        "B.~Zhang",
+        "B.~Hui"
+      ],
+      "authors_truncated": true,
+      "title": "Qwen2.5 Technical Report",
+      "arxiv_id": "2412.15115",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Qwen2.5 Technical Report",
+              "registry": "Qwen2.5 Technical Report"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "qwen",
+                ":",
+                "yang",
+                "yang",
+                "zhang",
+                "hui"
+              ],
+              "registry": [
+                "qwen",
+                ":",
+                "yang",
+                "yang",
+                "zhang",
+                "hui",
+                "zheng",
+                "yu",
+                "li",
+                "liu",
+                "huang",
+                "wei",
+                "lin",
+                "yang",
+                "tu",
+                "zhang",
+                "yang",
+                "yang",
+                "zhou",
+                "lin",
+                "dang",
+                "lu",
+                "bao",
+                "yang",
+                "yu",
+                "li",
+                "xue",
+                "zhang",
+                "zhu",
+                "men",
+                "lin",
+                "li",
+                "tang",
+                "xia",
+                "ren",
+                "ren",
+                "fan",
+                "su",
+                "zhang",
+                "wan",
+                "liu",
+                "cui",
+                "zhang",
+                "qiu"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Qwen2.5 Technical Report",
+            "authors": [
+              " Qwen",
+              " :",
+              "An Yang",
+              "Baosong Yang",
+              "Beichen Zhang",
+              "Binyuan Hui",
+              "Bo Zheng",
+              "Bowen Yu",
+              "Chengyuan Li",
+              "Dayiheng Liu",
+              "Fei Huang",
+              "Haoran Wei",
+              "Huan Lin",
+              "Jian Yang",
+              "Jianhong Tu",
+              "Jianwei Zhang",
+              "Jianxin Yang",
+              "Jiaxi Yang",
+              "Jingren Zhou",
+              "Junyang Lin",
+              "Kai Dang",
+              "Keming Lu",
+              "Keqin Bao",
+              "Kexin Yang",
+              "Le Yu",
+              "Mei Li",
+              "Mingfeng Xue",
+              "Pei Zhang",
+              "Qin Zhu",
+              "Rui Men",
+              "Runji Lin",
+              "Tianhao Li",
+              "Tianyi Tang",
+              "Tingyu Xia",
+              "Xingzhang Ren",
+              "Xuancheng Ren",
+              "Yang Fan",
+              "Yang Su",
+              "Yichang Zhang",
+              "Yu Wan",
+              "Yuqiong Liu",
+              "Zeyu Cui",
+              "Zhenru Zhang",
+              "Zihan Qiu"
+            ],
+            "published": "2024-12-19T17:56:09Z",
+            "updated": "2025-01-03T02:18:21Z",
+            "comment": null,
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "paligemma",
+      "label": "Beyer et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "L.~Beyer",
+        "A.~Steiner",
+        "A.~S.~Pinto",
+        "A.~Kolesnikov",
+        "X.~Wang",
+        "D.~Salz"
+      ],
+      "authors_truncated": true,
+      "title": "PaliGemma: A versatile 3B VLM for transfer",
+      "arxiv_id": "2407.07726",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "PaliGemma: A versatile 3B VLM for transfer",
+              "registry": "PaliGemma: A versatile 3B VLM for transfer"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "beyer",
+                "steiner",
+                "pinto",
+                "kolesnikov",
+                "wang",
+                "salz"
+              ],
+              "registry": [
+                "beyer",
+                "steiner",
+                "pinto",
+                "kolesnikov",
+                "wang",
+                "salz",
+                "neumann",
+                "alabdulmohsin",
+                "tschannen",
+                "bugliarello",
+                "unterthiner",
+                "keysers",
+                "koppula",
+                "liu",
+                "grycner",
+                "gritsenko",
+                "houlsby",
+                "kumar",
+                "rong",
+                "eisenschlos",
+                "kabra",
+                "bauer",
+                "bosnjak",
+                "chen",
+                "minderer",
+                "voigtlaender",
+                "bica",
+                "balazevic",
+                "puigcerver",
+                "papalampidi",
+                "henaff",
+                "xiong",
+                "soricut",
+                "harmsen",
+                "zhai"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2024,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "PaliGemma: A versatile 3B VLM for transfer",
+            "authors": [
+              "Lucas Beyer",
+              "Andreas Steiner",
+              "Andr\u00e9 Susano Pinto",
+              "Alexander Kolesnikov",
+              "Xiao Wang",
+              "Daniel Salz",
+              "Maxim Neumann",
+              "Ibrahim Alabdulmohsin",
+              "Michael Tschannen",
+              "Emanuele Bugliarello",
+              "Thomas Unterthiner",
+              "Daniel Keysers",
+              "Skanda Koppula",
+              "Fangyu Liu",
+              "Adam Grycner",
+              "Alexey Gritsenko",
+              "Neil Houlsby",
+              "Manoj Kumar",
+              "Keran Rong",
+              "Julian Eisenschlos",
+              "Rishabh Kabra",
+              "Matthias Bauer",
+              "Matko Bo\u0161njak",
+              "Xi Chen",
+              "Matthias Minderer",
+              "Paul Voigtlaender",
+              "Ioana Bica",
+              "Ivana Balazevic",
+              "Joan Puigcerver",
+              "Pinelopi Papalampidi",
+              "Olivier Henaff",
+              "Xi Xiong",
+              "Radu Soricut",
+              "Jeremiah Harmsen",
+              "Xiaohua Zhai"
+            ],
+            "published": "2024-07-10T14:57:46Z",
+            "updated": "2024-10-10T17:28:23Z",
+            "comment": "v2 adds Appendix H and I and a few citations",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "mtbench",
+      "label": "Zheng et~al.(2023)",
+      "year": 2023,
+      "authors": [
+        "L.~Zheng",
+        "W.~Chiang",
+        "Y.~Sheng",
+        "S.~Zhuang",
+        "Z.~Wu",
+        "Y.~Zhuang"
+      ],
+      "authors_truncated": true,
+      "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+      "arxiv_id": "2306.05685",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+              "registry": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "zheng",
+                "chiang",
+                "sheng",
+                "zhuang",
+                "wu",
+                "zhuang"
+              ],
+              "registry": [
+                "zheng",
+                "chiang",
+                "sheng",
+                "zhuang",
+                "wu",
+                "zhuang",
+                "lin",
+                "li",
+                "li",
+                "xing",
+                "zhang",
+                "gonzalez",
+                "stoica"
+              ],
+              "compared_as_prefix": true
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2023,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+            "authors": [
+              "Lianmin Zheng",
+              "Wei-Lin Chiang",
+              "Ying Sheng",
+              "Siyuan Zhuang",
+              "Zhanghao Wu",
+              "Yonghao Zhuang",
+              "Zi Lin",
+              "Zhuohan Li",
+              "Dacheng Li",
+              "Eric P. Xing",
+              "Hao Zhang",
+              "Joseph E. Gonzalez",
+              "Ion Stoica"
+            ],
+            "published": "2023-06-09T05:55:52Z",
+            "updated": "2023-12-24T02:01:34Z",
+            "comment": "NeurIPS 2023 Datasets and Benchmarks Track",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "rome",
+      "label": "Meng et~al.(2022)",
+      "year": 2022,
+      "authors": [
+        "K.~Meng",
+        "D.~Bau",
+        "A.~Andonian",
+        "and Y.~Belinkov"
+      ],
+      "authors_truncated": false,
+      "title": "Locating and Editing Factual Associations in GPT",
+      "arxiv_id": "2202.05262",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Locating and Editing Factual Associations in GPT",
+              "registry": "Locating and Editing Factual Associations in GPT"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "meng",
+                "bau",
+                "andonian",
+                "belinkov"
+              ],
+              "registry": [
+                "meng",
+                "bau",
+                "andonian",
+                "belinkov"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2022,
+              "registry": 2022,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Locating and Editing Factual Associations in GPT",
+            "authors": [
+              "Kevin Meng",
+              "David Bau",
+              "Alex Andonian",
+              "Yonatan Belinkov"
+            ],
+            "published": "2022-02-10T18:59:54Z",
+            "updated": "2023-01-13T15:16:16Z",
+            "comment": "NeurIPS 2022. 35 pages, 30 figures. Code and data at https://rome.baulab.info/",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "zhang2024patching",
+      "label": "Zhang and Nanda(2024)",
+      "year": 2024,
+      "authors": [
+        "F.~Zhang",
+        "and N.~Nanda"
+      ],
+      "authors_truncated": false,
+      "title": "Towards Best Practices of Activation Patching in Language Models: Metrics and Methods",
+      "arxiv_id": "2309.16042",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Towards Best Practices of Activation Patching in Language Models: Metrics and Methods",
+              "registry": "Towards Best Practices of Activation Patching in Language Models: Metrics and Methods"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "zhang",
+                "nanda"
+              ],
+              "registry": [
+                "zhang",
+                "nanda"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Towards Best Practices of Activation Patching in Language Models: Metrics and Methods",
+            "authors": [
+              "Fred Zhang",
+              "Neel Nanda"
+            ],
+            "published": "2023-09-27T21:53:56Z",
+            "updated": "2024-01-17T04:07:06Z",
+            "comment": "27 pages. ICLR 2024",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
+    },
+    {
+      "key": "friedman2024",
+      "label": "Friedman et~al.(2024)",
+      "year": 2024,
+      "authors": [
+        "D.~Friedman",
+        "A.~Lampinen",
+        "L.~Dixon",
+        "D.~Chen",
+        "and A.~Ghandeharioun"
+      ],
+      "authors_truncated": false,
+      "title": "Interpretability Illusions in the Generalization of Simplified Models",
+      "arxiv_id": "2312.03656",
+      "doi": null,
+      "status": "CONFIRMED",
+      "checks": [
+        {
+          "registry": "arxiv",
+          "fields": {
+            "title": {
+              "verdict": "CONFIRMED",
+              "manuscript": "Interpretability Illusions in the Generalization of Simplified Models",
+              "registry": "Interpretability Illusions in the Generalization of Simplified Models"
+            },
+            "authors": {
+              "verdict": "CONFIRMED",
+              "manuscript": [
+                "friedman",
+                "lampinen",
+                "dixon",
+                "chen",
+                "ghandeharioun"
+              ],
+              "registry": [
+                "friedman",
+                "lampinen",
+                "dixon",
+                "chen",
+                "ghandeharioun"
+              ],
+              "compared_as_prefix": false
+            },
+            "year": {
+              "verdict": "CONFIRMED",
+              "manuscript": 2024,
+              "registry": 2023,
+              "note": "manuscript year may postdate the preprint"
+            }
+          },
+          "record": {
+            "title": "Interpretability Illusions in the Generalization of Simplified Models",
+            "authors": [
+              "Dan Friedman",
+              "Andrew Lampinen",
+              "Lucas Dixon",
+              "Danqi Chen",
+              "Asma Ghandeharioun"
+            ],
+            "published": "2023-12-06T18:25:53Z",
+            "updated": "2024-06-05T15:03:37Z",
+            "comment": "ICML 2024",
+            "doi": null
+          }
+        }
+      ],
+      "errors": {}
     }
   ],
   "status_counts": {
-    "CONFIRMED": 15
+    "CONFIRMED": 51
   },
   "registry_reachability": {
     "arxiv": "reachable"

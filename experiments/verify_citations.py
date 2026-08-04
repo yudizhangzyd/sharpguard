@@ -36,6 +36,7 @@ import json
 import os
 import re
 import sys
+import time
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -49,6 +50,20 @@ CROSSREF_API = "https://api.crossref.org/works/"
 DBLP_API = "https://dblp.org/search/publ/api"
 
 TIMEOUT = 30
+
+# arXiv asks callers for one request every three seconds and answers HTTP 429
+# when they do not wait. That limit is per caller, not per host, so it did not
+# bite while the bibliography was 15 entries and two lookups each: the script
+# finished inside the window. At 51 entries it hit 429 on everything after the
+# first few, and because the reachability line below counts any HTTP status as
+# "reachable", the report said arXiv was up while 26 entries went UNVERIFIED.
+# That is the failure mode this audit exists to prevent -- an entry unchecked
+# for an environmental reason, recorded as if the registry had been asked and
+# had nothing to say. So the delay is honoured here rather than worked around,
+# and a 429 is retried rather than recorded as an answer.
+ARXIV_MIN_INTERVAL = 3.1
+ARXIV_RETRIES = 6
+_last_arxiv_call = [0.0]
 
 
 # ---------------------------------------------------------------------------
@@ -188,9 +203,28 @@ def fetch(url: str, accept: str | None = None) -> tuple[str | None, str]:
         return None, f"{type(e).__name__}: {e}"
 
 
+def fetch_arxiv(url: str) -> tuple[str | None, str]:
+    """fetch(), rate-limited to arXiv's published one-per-three-seconds and
+    retried on 429. A throttled request is a request that was never answered,
+    so returning its 429 to the caller would record "asked, no match" for an
+    entry nobody asked about."""
+    for attempt in range(ARXIV_RETRIES):
+        wait = ARXIV_MIN_INTERVAL - (time.monotonic() - _last_arxiv_call[0])
+        if wait > 0:
+            time.sleep(wait)
+        body, err = fetch(url)
+        _last_arxiv_call[0] = time.monotonic()
+        if err != "HTTP 429":
+            return body, err
+        # Back off past the window rather than retrying into the same wall.
+        time.sleep(ARXIV_MIN_INTERVAL * (attempt + 1) * 2)
+        _last_arxiv_call[0] = time.monotonic()
+    return None, f"HTTP 429 after {ARXIV_RETRIES} attempts (rate-limited)"
+
+
 def arxiv_lookup(arxiv_id: str) -> tuple[dict | None, str]:
     q = f"{ARXIV_API}?id_list={urllib.parse.quote(arxiv_id)}&max_results=1"
-    body, err = fetch(q)
+    body, err = fetch_arxiv(q)
     if body is None:
         return None, err
     entries = re.findall(r"<entry>(.*?)</entry>", body, re.S)
@@ -249,7 +283,8 @@ def arxiv_title_search(title: str) -> tuple[dict | None, str]:
 
     errs = []
     for query in queries:
-        body, err = fetch(f"{ARXIV_API}?search_query={query}&max_results=20")
+        body, err = fetch_arxiv(
+            f"{ARXIV_API}?search_query={query}&max_results=20")
         if body is None:
             return None, err
         entries = re.findall(r"<entry>(.*?)</entry>", body, re.S)
@@ -391,8 +426,16 @@ def main() -> int:
         results, errors = [], {}
         if e["arxiv_id"]:
             rec, err = arxiv_lookup(e["arxiv_id"])
-            reachability["arxiv"] = "reachable" if (rec or "HTTP" in err) \
-                else err or "reachable"
+            # An HTTP status means the registry answered, and "answered" is
+            # what reachable means here -- except 429, which is the registry
+            # declining to answer. Folding that into "reachable" is what let a
+            # run report arXiv up while it had told us nothing about 26
+            # entries, so it is spelled out rather than counted as a status.
+            reachability["arxiv"] = (
+                "rate-limited" if reachability.get("arxiv") == "rate-limited"
+                else "reachable" if rec else
+                "rate-limited" if "429" in err else
+                "reachable" if "HTTP" in err else err or "reachable")
             if rec:
                 results.append(compare(e, rec, "arxiv"))
             else:
@@ -412,9 +455,12 @@ def main() -> int:
             # entry with no preprint has nowhere else to go.
             rec, err = arxiv_title_search(e["title"])
             if rec:
-                reachability["arxiv"] = "reachable"
+                if reachability.get("arxiv") != "rate-limited":
+                    reachability["arxiv"] = "reachable"
                 results.append(compare(e, rec, "arxiv_title_search"))
             else:
+                if "429" in err:
+                    reachability["arxiv"] = "rate-limited"
                 errors["arxiv_title_search"] = err
         if not results:
             rec, err = dblp_lookup(e["title"])

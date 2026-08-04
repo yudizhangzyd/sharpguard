@@ -2945,23 +2945,62 @@ def audit_citations(a):
             [], sorted(keys_tex - keys_rep), source=src)
     a.check(sec, "and the report contains no entry the manuscript dropped", [],
             sorted(keys_rep - keys_tex), source=src)
-    a.check(sec, "the manuscript's 15 entries are all accounted for", 15,
+    a.check(sec, "the manuscript's 51 entries are all accounted for", 51,
             len(keys_tex), source="cot_faith_iclr.tex")
 
-    # The confirmed/unverified split. All 15 now resolve, which took removing an
-    # accidental precondition rather than finding a new registry: the check only
-    # queried arXiv when the bibitem itself printed an id, so the five venue-only
-    # entries were unverifiable because of OUR formatting, not because of theirs.
-    # DBLP was never the answer -- it times out from the authoring network and
+    # The submission has its own copy of the bibliography (arr_bib.tex, which
+    # the eight-page body \inputs) because it is a separate document from the
+    # full-length source this report is generated against. Two copies is two
+    # chances to drift, and only one of them is checked, so they are asserted
+    # identical rather than assumed: an entry added to the submission alone
+    # would otherwise print unverified with the report still green.
+    arr_bib = ROOT / "arr_bib.tex"
+    keys_arr = set(re.findall(r"\\bibitem\[[^\]]*\]\{(\w+)\}",
+                              arr_bib.read_text() if arr_bib.exists() else ""))
+    a.check(sec, "the submission's bibliography carries exactly the entries "
+                 "this report checked, so the checked copy and the printed "
+                 "copy are the same bibliography", [[], []],
+            [sorted(keys_arr - keys_tex), sorted(keys_tex - keys_arr)],
+            source="arr_bib.tex vs cot_faith_iclr.tex")
+
+    # Both directions of cite/bibitem parity, over the printed submission. An
+    # uncited \bibitem is the residue of a citation that was edited away, and
+    # it is not harmless here: it prints in the reference list, so a reader
+    # sees a work the paper never engages with. A \cite with no \bibitem is the
+    # opposite failure and prints a bare "?".
+    printed = ""
+    for n in ("cot_faith_arr.tex", "arr_appendix.tex"):
+        if (ROOT / n).exists():
+            printed += (ROOT / n).read_text()
+    cited = {k.strip()
+             for grp in re.findall(r"\\cite[a-z]*\{([^}]*)\}", printed)
+             for k in grp.split(",") if k.strip()}
+    a.check(sec, "every work in the reference list is cited somewhere in the "
+                 "submission, so the list is the paper's own bibliography and "
+                 "not a superset of it", [], sorted(keys_arr - cited),
+            source="cot_faith_arr.tex + arr_appendix.tex vs arr_bib.tex")
+    a.check(sec, "and every citation resolves to an entry, so none prints as a "
+                 "bare marker", [], sorted(cited - keys_arr),
+            source="cot_faith_arr.tex + arr_appendix.tex vs arr_bib.tex")
+
+    # The confirmed/unverified split. All 51 resolve, which took two fixes
+    # rather than a new registry. First, the check only queried arXiv when the
+    # bibitem itself printed an id, so venue-only entries were unverifiable
+    # because of OUR formatting; title search removed that. Second, arXiv
+    # answers HTTP 429 above one request per three seconds, and at 51 entries
+    # the unthrottled run tripped it on 26 of them while still recording the
+    # registry as reachable -- an entry nobody managed to ask about, filed as
+    # if it had been asked. The client now waits and retries. DBLP was never
+    # the answer: it is 403 from the authoring network's proxy and times out
     # from bolt qrpd3f8z58 alike.
-    a.check(sec, "all 15 entries confirm against a reachable registry",
-            [15, None], [(r.get("status_counts") or {}).get("CONFIRMED"),
+    a.check(sec, "all 51 entries confirm against a reachable registry",
+            [51, None], [(r.get("status_counts") or {}).get("CONFIRMED"),
                          (r.get("status_counts") or {}).get("UNVERIFIED")],
             source=src)
     a.check(sec, "nothing is left unverified, so 'unverified' is not a parking "
                  "space for an inconvenient entry", [],
             r.get("unverified_keys"), source=src)
-    a.check(sec, "the five venue-only entries were resolved by title search, "
+    a.check(sec, "the venue-only entries were resolved by title search, "
                  "not by an id the manuscript does not print", True,
             all(any(c.get("registry") == "arxiv_title_search"
                     for c in (e.get("checks") or []))
@@ -2977,6 +3016,15 @@ def audit_citations(a):
     a.check(sec, "the report records that arXiv was reachable, so a CONFIRMED "
                  "is a real lookup rather than an absent registry", "reachable",
             dig(r, "registry_reachability", "arxiv"), source=src)
+    # Distinct from the line above, and the reason that line can be trusted:
+    # "reachable" used to be recorded for any HTTP status, 429 included, so a
+    # wholly rate-limited run reported a reachable registry. The report now
+    # spells rate-limiting out, and this asserts the run was not one.
+    a.check(sec, "and it was not merely rate-limiting the report recorded as an "
+                 "answer, which is how 26 entries once went unchecked under a "
+                 "green registry", True,
+            dig(r, "registry_reachability", "arxiv") != "rate-limited",
+            source=src)
 
     # And the manuscript has to disclose all of this where a reader looks.
     a.check(sec, "the bibliography carries the provenance note naming the "
@@ -5050,12 +5098,25 @@ def audit_arr_submission(a: Audit) -> None:
 
     # \clearpage before the bibliography is the backstop: if a float is still
     # queued when the body ends, this is what keeps it out of the appendix.
+    #
+    # This used to look for \clearpage within 400 characters of
+    # \bibliographystyle, which conflated the invariant with one placement of
+    # it. The flush now sits at \section*{Limitations}, where it also starts
+    # the back matter on a fresh page, and the proximity test failed a
+    # submission whose floats were in fact flushed. What actually has to hold
+    # is ordering: a \clearpage after the last body float and before the
+    # bibliography. That is what is asserted, so the flush can be moved for
+    # layout reasons without either weakening the guard or tripping it.
     bib = vis.find(r"\bibliographystyle")
-    a.check(sec, "\\clearpage precedes \\bibliographystyle, so any float still "
-                 "queued at the end of the body flushes before the appendix "
-                 "rather than into it", True,
-            bib > 0 and r"\clearpage" in vis[max(0, bib - 400):bib],
-            source="cot_faith_arr.tex")
+    last_float = max(vis.rfind(r"\end{figure*}"), vis.rfind(r"\end{figure}"),
+                     vis.rfind(r"\end{table*}"), vis.rfind(r"\end{table}"))
+    flush = vis.rfind(r"\clearpage", 0, bib) if bib > 0 else -1
+    a.check(sec, "a \\clearpage separates the last body float from "
+                 "\\bibliographystyle, so any float still queued at the end of "
+                 "the body flushes before the appendix rather than into it",
+            True, bib > 0 and last_float > 0 and flush > last_float,
+            source=f"cot_faith_arr.tex: last float at {last_float}, "
+                   f"clearpage at {flush}, bibliography at {bib}")
 
     # Each body float must be small enough to be placeable at all. A figure*
     # taller than \dbltopfraction x \textheight can never be set as a top
