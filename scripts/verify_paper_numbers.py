@@ -690,6 +690,37 @@ def audit_f5(a: Audit, d: Optional[dict]) -> None:
                 source=None if not gaps
                 else f"largest gap is {w} at {gaps[w]:.2f} pp")
 
+    # The submission promotes this sweep into the body (Sec. 7), which is the
+    # only place a reader meets it without opening the appendix. Everything
+    # above pins the artifacts; these pin the body prose against them, so a
+    # later edit that rounds 2.1 down or drops the "nulls were not run there"
+    # caveat fails here rather than shipping.
+    arr = ARR.read_text() if ARR.exists() else ""
+    for lit in (r"within $2.1$\,pp of its LIBERO value",
+                r"all but BC-Z's CoT bucket within $0.9$\,pp",
+                r"a $0.06$ range on \emph{direction\_flip}"):
+        a.check(sec, f"the submission's body states it: {lit!r}", True,
+                lit in arr, source=str(ARR))
+    dflips = [dig(cc, t, "edit", "direction_flip", "faithful_rate")
+              for t in ("bridge_v2", "fractal", "bcz")]
+    dflips = [v for v in dflips if v is not None]
+    lib_dflip = dig(d, "models", "ecot-bridge", "families",
+                    "direction_flip", "F_mag")
+    if lib_dflip is not None:
+        dflips.append(lib_dflip)
+    a.check(sec, "and that $0.06$ is the LIBERO-included spread of "
+                 "direction_flip F, rounded as printed", 0.06,
+            None if len(dflips) != 4 else round(max(dflips) - min(dflips), 2),
+            source=f"max-min over {sorted(round(v, 3) for v in dflips)}")
+    a.check(sec, "the body keeps the caveat that no null was run off LIBERO, "
+                 "so the sweep is not read as evidence about those corpora",
+            True, "portability of the pipeline, not evidence about those "
+                  "corpora" in arr, source=str(ARR))
+    a.check(sec, "and it says the off-LIBERO CoT is self-generated rather "
+                 "than annotated", True,
+            "with the CoT self-generated because none ships annotations" in arr,
+            source=str(ARR))
+
 
 def audit_f6_directional(a: Audit, d: Optional[dict]) -> None:
     sec = "F6 - direction-aware scoring inverts the leaderboard"
@@ -6321,10 +6352,19 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
     a.check(sec, "and the approach-phase caveat", True,
             "approach phase" in cav, source=src)
 
-    # ---- the manuscript: both halves present, in both files ---------------
+    # ---- the manuscript ----------------------------------------------------
+    # This measurement lives in the full-length manuscript only. The ARR
+    # submission used to carry a compressed copy of it inside Limitations, and
+    # that copy was the single largest thing in the section: seven caveats, four
+    # centimetre figures and a discounted correlation, for a result that is a
+    # direction of evidence rather than a claim the paper leans on. It is
+    # deferred with the rest of the rollout work now. So the prose checks below
+    # run against the appendix source, and the submission is checked for the
+    # only two ways a deferral can go wrong: keeping the flattering half of the
+    # result without its caveats, or dropping the pointer so a reader cannot
+    # tell the measurement exists.
     tex, arr = TEX.read_text(), (ARR.read_text() if ARR.exists() else "")
-    for label, txt, path in (("appendix", tex, str(TEX)),
-                             ("Limitations item", arr, str(ARR))):
+    for label, txt, path in (("appendix", tex, str(TEX)),):
         a.check(sec, f"the {label} quotes the correlation as the discounted "
                      f"+0.964 and not the measured +1.000", [1, 0],
                 [txt.count(r"\rho = +0.964"), txt.count(r"\rho = +1.000$)")],
@@ -6369,14 +6409,46 @@ def audit_rollout_deltapath(a: Audit, d: Optional[dict]) -> None:
             tex.count("reproduces the token-level ranking exactly")
             + arr.count("reproduces the token-level ranking exactly"),
             source="both manuscripts")
+    # The submission deferred this measurement, and a deferral has exactly two
+    # failure modes worth checking. The first is a partial one: keeping the
+    # agreeable half -- that the one-step score predicts where the arm goes --
+    # while leaving behind the two scenes, the six excluded families and the
+    # no-CoT arm that deviates further than most edits do. Any centimetre figure
+    # from this run appearing in the submission means that happened.
+    lifted = [lit for lit in (r"$24.0$\,cm", r"$0.011$\,cm apart",
+                              r"\rho = +0.964", r"\rho = +1.000",
+                              "path deviation", "end-effector path")
+              if lit in arr]
+    a.check(sec, "the submission does not quote this measurement's numbers "
+                 "at all, so the deferral cannot have kept its conclusion "
+                 "without its caveats", [], lifted,
+            source="cot_faith_arr.tex, Limitations")
+    # The second is losing it entirely: the Limitations item still has to say
+    # a rollout-level readout exists and where to find it, or the deferral reads
+    # as work never done.
+    a.check(sec, "and the submission still points at where the rollout work "
+                 "is, so deferring it is not the same as hiding it", True,
+            "trajectory-level readout we substituted for SR are in the "
+            "full-length manuscript" in arr,
+            source="cot_faith_arr.tex, Limitations")
     # The readout swap has to stay visible: if the SR sentence is ever cut, the
     # section reads as if a rollout metric were available and we chose a
     # different one for interest's sake.
     a.check(sec, "the appendix still says WHY SR cannot carry this -- that "
                  "in-suite SR is 0 in every arm", 1,
             tex.count(r"in-suite SR is $0$ in every arm"), source=str(TEX))
-    a.check(sec, "and the Limitations item says the same of the same run", 1,
-            arr.count(r"Task SR is $0$ in every arm"), source=str(ARR))
+    # And the submission, which no longer carries the substitute readout, still
+    # has to say why no DeltaSR is reported. "0/40 in both arms" alone reads as
+    # a measured null; the word that makes it a precondition failure is the one
+    # checked here. Scoped to Limitations: S9 states the same thing about the
+    # same run, and counting over the whole file would pass on that copy alone
+    # even if the Limitations item stopped saying it.
+    lim = arr[arr.find(r"\section*{Limitations}"):
+              arr.find(r"\section*{Ethics Statement}")]
+    a.check(sec, "and the submission's Limitations calls the missing DeltaSR "
+                 "undefined rather than reporting it as zero", 1,
+            len(re.findall(r"\$\\Delta\$SR is undefined", lim)),
+            source=str(ARR))
 
 
 def audit_rollout_edited_arm(a: Audit) -> None:
@@ -7557,16 +7629,23 @@ def audit_arm_pairing_defect(a: Audit) -> None:
                 "198"):
         a.check(sec, f"the manuscript quotes ${val}$ from this artifact",
                 True, val in at, source=str(TEX))
-    # ... and the submission, which has room for the conclusion but not the
-    # walk-through, still names the defect count and the pixel figure that
-    # makes the last one a defect rather than a rounding difference.
-    for lit, what in (("four arm-pairing defects", "the count"),
-                      ("$116$ pixel levels", "the pixel difference")):
-        a.check(sec, f"the submitted body states {what} of the pairing "
-                     f"defects, which is what a reader of the 20-page PDF "
-                     f"meets", True, lit in arrt,
-                source="cot_faith_arr.tex, Limitations")
-
+    # ... and the submission, which no longer has room even for the conclusion,
+    # defers the whole walk-through. What it may not do is defer it silently:
+    # the four defects are ours, they were found after the run they invalidated,
+    # and a submission that mentions the rollout at all has to say the harness
+    # diagnostics exist and where. So the count and the pixel figure are no
+    # longer required in the body, but the pointer is -- and the body must not
+    # describe the harness as clean.
+    a.check(sec, "the submitted body sends its reader to the arm-pairing "
+                 "diagnostics rather than omitting that they exist", True,
+            "arm-pairing diagnostics" in arrt,
+            source="cot_faith_arr.tex, Limitations")
+    a.check(sec, "and it makes no claim that the pairing was correct, which "
+                 "the deferred walk-through is precisely the record of it not "
+                 "having been", [],
+            [s for s in ("arms were correctly paired", "pairing was verified",
+                         "no pairing defects") if s in arrt],
+            source="cot_faith_arr.tex")
 
     # --- defect 4: identical state, different frame ------------------------
     # The one this release is least entitled to have missed, because every

@@ -37,11 +37,16 @@ TAU = D["tau"]
 DIST = D["delta_distribution"]
 CELLS = D["cells"]
 
-# 2.59 rather than 2.70: the two-line bin labels below add ~8pt of tight-bbox
-# height, and 8pt of extra float on page 5 is enough to push the last six lines
-# of the Conclusion past the 8-page ARR body limit. The axes keep their size;
-# only the canvas allowance for the labels changes.
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.1, 2.59),
+# 2.02 rather than 2.59, and the reason is page height rather than taste. At
+# width=\textwidth in the two-column body a 7.1x2.59 canvas renders 205pt tall,
+# and with its caption the float took just under half of page 5 -- for two
+# panels that carry one number each. Height is the only free axis: the canvas
+# is scaled to \textwidth whatever its width, so narrowing it would shrink the
+# type without buying a single point of page. 2.02 renders ~166pt, and the
+# axes stay legible because nothing was removed from them; the panels are
+# shorter, not smaller. The two-line bin labels below still get their ~8pt of
+# tight-bbox allowance, which is why this is 2.02 and not 1.90.
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.1, 2.02),
                                gridspec_kw={"wspace": 0.32})
 
 # ---- (a) the Delta_inf distribution ---------------------------------------

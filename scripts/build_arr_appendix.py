@@ -689,11 +689,12 @@ DEFERRED_FLOATS = (
      r"is printed with its own $N$ in the paragraph above it, including the "
      r"two protocol disclosures from its caption"),
     # And the fifth, which is the plainest duplicate in the submission: its own
-    # caption opens "This is Table 6", and the 88 cells it colours are the 88
-    # cells of the leaderboard three pages earlier, printed there with the
-    # error bars the heatmap cannot show. The colour ramp is the only thing it
-    # adds, and it adds it to a table the paper explicitly says is not a
-    # ranking. The generator, its 13-family coverage and the group split all
+    # caption opens "This is Table~\ref{tab:leaderboard}" -- Table 6 in the
+    # full-length manuscript's numbering, Table 5 in the submission's -- and the
+    # 88 cells it colours are that table's 88 cells, printed three pages earlier
+    # with the error bars the heatmap cannot show. The colour ramp is the only
+    # thing it adds, and it adds it to a table the paper explicitly says is not
+    # a ranking. The generator, its 13-family coverage and the group split all
     # stay under audit against cot_faith_iclr.tex, where the figure prints.
     ("fig:edit_heatmap",
      r"``The same magnitude scores as a heatmap, all 13 families'', whose 88 "
