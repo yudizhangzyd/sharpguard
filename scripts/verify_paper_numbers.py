@@ -4364,7 +4364,7 @@ def audit_fdir_null(a: Audit) -> None:
     # The margins the paper quotes.
     for cfg, treat, ceil in (("ours_lora-r64", 0.779, 0.070),
                              ("ours_lora-r32", 0.589, 0.077),
-                             ("ecot_bridge", 0.150, 0.040)):
+                             ("ecot_bridge", 0.120, 0.040)):
         blk = per.get(cfg) or {}
         a.check(sec, f"{cfg}: the F_dir the manuscript quotes", treat,
                 (blk.get("treatment") or {}).get("F_dir"), tol=0.0015,
@@ -5820,21 +5820,37 @@ def audit_arr_submission(a: Audit) -> None:
                      "is the designed behaviour rather than missing coverage",
                 True, "is the result, not a gap" in t,
                 source="cot_faith_arr.tex")
-        # The two aggregations differ, and saying so is what stops a reviewer
-        # reading tab:directional's 0.120 against this table's 0.150 as drift.
-        # Assert both that they do differ and that the caption explains why.
+        # This check used to assert the OPPOSITE: that the pooled rate and the
+        # 3-seed mean differ for ECoT-bridge, on the theory that a reader
+        # comparing tab:directional's 0.120 to this table's 0.150 would need
+        # the caption to explain it. They differed because of a defect, not a
+        # convention. fdir_null.py globbed {config}_edit_13family_seed*, and
+        # the ecot_bridge seed files are named ecot_bridge_edit_seed* -- no
+        # match, so that row alone fell back to the single-run calibration
+        # file and reported seed 0 (0.150) out of [0.15, 0.14, 0.071], in a
+        # table whose caption says every N is pooled over three seeds. The
+        # flattering direction, on the one strong policy in the cohort: 3.8x
+        # rather than 3.0x. The old check made the discrepancy a requirement
+        # and so could never have caught it. Now every row is pooled and the
+        # two aggregations must AGREE to three places.
         ecot_pooled = next(
             (c["treatment"]["F_dir"] for c in (fdn.get("per_config") or [])
              if c["config"] == "ecot_bridge"), None)
         ecot_mean = dig(d, "models", "ecot-bridge", "families",
                         "direction_flip", "F_dir")
-        a.check(sec, "the pooled rate and the 3-seed mean of F_dir really are "
-                     "different numbers for ECoT-bridge, so the caption has to "
-                     "explain the difference rather than leave it to be found",
-                True,
-                ecot_pooled is not None and ecot_mean is not None
-                and f"{ecot_pooled:.3f}" != f"{ecot_mean:.3f}",
+        a.check(sec, "ECoT-bridge's null row is the same 3-seed quantity "
+                     "tab:directional prints, not a single-seed estimate",
+                f"{ecot_mean:.3f}" if ecot_mean is not None else None,
+                f"{ecot_pooled:.3f}" if ecot_pooled is not None else None,
                 source=f"pooled {ecot_pooled}, 3-seed mean {ecot_mean}")
+        a.check(sec, "and every row of tab:fdirnull is pooled over the same "
+                     "three sampling seeds, so the N column is comparable "
+                     "down the table", [299] * 8,
+                [int(c["treatment"]["n"]) for c in (fdn.get("per_config") or [])
+                 if c["config"].startswith("ours_")
+                 or c["config"] == "ecot_bridge"],
+                source="the DeepThinkVLA rows are single-run by construction "
+                       "and are excluded here")
         a.check(sec, "and the caption says N is pooled across the sampling "
                      "seeds", True,
                 "pooled across the three sampling seeds" in t,
@@ -5862,16 +5878,16 @@ def audit_arr_submission(a: Audit) -> None:
                 (6, ["ecot_bridge"]), (len(inside), outside),
                 source="fdir_null.json per_config[*].ratio, clears_null only")
         a.check(sec, "ECoT-bridge's ratio really is outside that range, which "
-                     "is why the range cannot be quoted for all 7", "3.8",
+                     "is why the range cannot be quoted for all 7", "3.0",
                 f"{ratios.get('ecot_bridge'):.1f}", source="fdir_null.json")
         unscoped = []
         for m in re.finditer(r"\$6\.2\$?--\$?\\?mathbf\{?11\.1|6\.2.{0,12}11\.1",
                              t):
             near = t[m.start():m.end() + 260]
-            if "3.8" not in near:
+            if "3.0" not in near:
                 unscoped.append(t[max(0, m.start() - 60):m.end() + 60])
         a.check(sec, "every sentence that quotes 6.2--11.1x also gives "
-                     "ECoT-bridge's 3.8x, so the range is never read as "
+                     "ECoT-bridge's 3.0x, so the range is never read as "
                      "covering all 7 clearing configurations", [], unscoped,
                 source="cot_faith_arr.tex")
 

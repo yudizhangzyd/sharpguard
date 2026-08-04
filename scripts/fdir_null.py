@@ -73,14 +73,41 @@ def f_dir(records, family):
 
 
 def load_ours(config):
-    files = sorted(glob.glob(
+    """All scored records for a config, preferring the 3-seed sweep.
+
+    The seed files are named two ways in the release. The seven "ours" rows
+    carry the family count in the stem (ours_lora-r64_edit_13family_seed0),
+    ecot_bridge does not (ecot_bridge_edit_seed0) -- it was scored by an
+    earlier harness. A single glob on the first pattern therefore matched
+    nothing for ecot_bridge and fell through to the single-run calibration
+    file, so that row alone was a one-seed estimate sitting in a table whose
+    caption says every N is pooled over three. It landed on the highest of the
+    three seeds (0.15 against 0.14 and 0.071), which turned a 3.0x clearance
+    into a 3.8x one. Both stems are matched here, and the calibration run is
+    now a SUPPLEMENT rather than a fallback: it carries bbox_jitter_null and
+    instr_random_sub, which the ecot_bridge seed files do not, and dropping
+    them would lower a ceiling that is a max over families. A family present
+    in both is taken from the seed sweep, which is the larger sample.
+    """
+    seeded = sorted(glob.glob(
         f"results_v2/canonical_runs/{config}_edit_13family_seed*.json"))
-    if not files:
-        files = sorted(glob.glob(
-            f"results_v2/canonical_runs/{config}_edit_13family_calibration.json"))
+    seeded += sorted(glob.glob(
+        f"results_v2/canonical_runs/{config}_edit_seed*.json"))
     records = []
-    for f in files:
+    for f in seeded:
         records += json.load(open(f))["per_sample"]
+
+    calib = sorted(glob.glob(
+        f"results_v2/canonical_runs/{config}_edit_13family_calibration.json"))
+    have = {r.get("family") for r in records if not r.get("skipped")}
+    for f in calib:
+        extra = [r for r in json.load(open(f))["per_sample"]
+                 if r.get("family") not in have]
+        records += extra
+        if seeded and extra:
+            print(f"[fdir] {config}: {len(seeded)} seed file(s) plus "
+                  f"{sorted({r.get('family') for r in extra})} from the "
+                  f"single-run calibration, which the seed sweep omits")
     return records
 
 
