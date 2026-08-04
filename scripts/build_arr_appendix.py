@@ -41,9 +41,9 @@ HEADER = r"""% ============================================================
 %
 % This is the evidence for the 8-page body in cot_faith_arr.tex. ARR excludes
 % the appendix from the 8-page limit but caps the whole PDF at 20 pages, so
-% this is a selection: the sections it leaves out are named in the deferred
-% list it generates, no \label the body \ref's into is ever dropped, and every
-% number carried over is the source's own.
+% this is a selection: a sentence that would have cited a section left out
+% names the full-length manuscript instead, no \label the body \ref's into is
+% ever dropped, and every number carried over is the source's own.
 % ============================================================
 """
 
@@ -250,6 +250,12 @@ def transform(src: str) -> str:
     deferred_labels |= {lab for lab, _ in DEFERRED_FLOATS}
     body, empty_heads = drop_empty_heads(body)
     deferred_labels |= {l for _, secs in empty_heads for l in secs}
+    # These used to reach main()'s no-label-may-be-lost guard by surviving in
+    # the printed list of deferred sections, which carried a \label per entry.
+    # That list is gone, so an emptied heading's label now leaves the document
+    # for real and the guard has to be told it was deliberate -- otherwise
+    # deleting the list reads as losing sec:limitations.
+    DEFERRED_LABELS.update(l for _, secs in empty_heads for l in secs)
     deferred_entries += empty_heads
 
     # --- namespace every surviving label ------------------------------------
@@ -279,13 +285,16 @@ def transform(src: str) -> str:
     # missing label prints "??" and pdflatex only warns, so this is asserted
     # here rather than left to be found in the PDF by a reader.
     #
-    # Section labels are the exception, and they are re-homed rather than left
-    # to dangle: deferred_list() re-attaches each one to the entry that names
-    # its section, so a sentence saying "see \S~\ref{sec:f2_calib}" lands on the
-    # list, which tells the reader that section is in the released full-length
-    # version. A float label cannot be treated that way -- \label outside a
-    # float picks up the section counter, so \ref{tab:x} would print a section
-    # number and read as a table that does not exist -- so those still fail.
+    # Section labels are the exception, and their refs are SPENT rather than
+    # left to dangle: unpoint() rewrites each one into the name of the document
+    # that has the section, so "see \S~\ref{sec:f2_calib}" becomes "see the
+    # full-length manuscript" and no label needs to exist for it. This used to
+    # be a re-homing onto a printed list of deferred sections; that list is
+    # gone (see deferred_list), so the rewrite is now the whole mechanism and
+    # the circular-reference guard below is what proves no ref survived. A
+    # float label cannot be treated that way -- \label outside a float picks up
+    # the section counter, so \ref{tab:x} would print a section number and read
+    # as a table that does not exist -- so those still fail.
     # LaTeX comments are excluded, and that distinction is load-bearing rather
     # than cosmetic: both manuscripts carry preamble comments explaining what a
     # float is and why its placement was tuned, and those sentences cite it by
@@ -449,11 +458,11 @@ NOTE = r"""
 This appendix carries the evidence the eight-page body cites, copied from the
 full-length manuscript rather than rewritten for it, so no number here is
 retyped. It is a selection: the submitted PDF is capped at $20$ pages, and the
-sections it does not reproduce are named in \S\ref{sec:deferred}, which says
-where to read them. Where a sentence would have cited one of those sections it
-names that document instead of a number, and where one pointed at a dropped
-float the pointer is dropped too, so every cross-reference in these pages lands
-on something the reader can turn to.
+sections it does not reproduce are in the full-length manuscript. Where a
+sentence would have cited one of those sections it names that document instead
+of a number, and where one pointed at a dropped float the pointer is dropped
+too, so every cross-reference in these pages lands on something the reader can
+turn to.
 
 """
 
@@ -595,24 +604,24 @@ def braced(span: str):
 
 
 def deferred_list(entries) -> str:
-    # Run together rather than itemized. 27 one-line \items spend a third of a
-    # column on bullets and inter-item leading, and this list is a pointer
-    # rather than something a reader works down; the \labels that were re-homed
-    # onto the items ride along in the same order, so a \ref still lands here.
-    items = "; ".join(t.strip().rstrip(".")
-                      + "".join(r"\label{" + l + "}" for l in secs)
-                      for t, secs in entries)
-    return (r"""
-\subsection{Sections deferred to the full-length manuscript}
-\label{sec:deferred}
-The submitted PDF is capped at $20$ pages, so these sections of the full-length
-manuscript are not reproduced above. They are in the released source
-(\texttt{cot\_faith\_iclr.tex}), which the audit checks claim by claim and which
-every line above was copied from; they are named here so a reader can tell what
-exists from what was cut. Where the pages above draw on one, the sentence names
-that document rather than a section number, so no reference above resolves to
-this list:
-""" + items + ".\n" + floats_note())
+    """Nothing. The list of deferred sections is not printed.
+
+    It used to be: a run-together paragraph naming every section of the
+    full-length manuscript this document does not reproduce, plus the floats
+    deferred out of sections that did survive. Two things were wrong with it.
+    It spent most of a column telling the reader what they were not reading,
+    which is the least useful page in a 20-page cap. And it did so by listing
+    internal filenames and section titles, which is release bookkeeping rather
+    than an argument -- a paper cites work, not its own repository layout.
+
+    The entries are still computed and still checked. `entries` is what
+    survives the deferral pass, and main() asserts against it that no label was
+    lost silently; dropping the list changes what is printed, not what the
+    build verifies. The re-homing that pointed a deferred \\ref at this list is
+    gone too: unpoint() now spends every such reference on the name of the
+    document, which is what a reader can act on.
+    """
+    return ""
 
 
 def floats_note() -> str:
@@ -798,8 +807,8 @@ REWORDED = (
      r"The body answers five questions about manipulation CoT-VLAs with "
      r"CoT-Faith: F1--F3 under controlled comparisons, O4 as an uncontrolled "
      r"observation because two axes are confounded, and F5 on cross-corpus "
-     r"transfer at $N{=}100$. It argues four of the five in place "
-     r"(\S\ref{sec:deferred}); this section adds F5 in full, the per-task "
+     r"transfer at $N{=}100$. It argues four of the five in the "
+     r"full-length manuscript; this section adds F5 in full, the per-task "
      r"decomposition behind the below-floor result, and the judge validation "
      r"of the edit generators all five are scored with.",
      "F1--F3 and O4 are deferred, so the source's 'we now answer' opener "
@@ -813,8 +822,8 @@ REWORDED = (
     (r"Where the three arms went, and how far apart: "
      r"Figure~\ref{fig:paths}.",
      r"Where the three arms went, and how far apart, is the motion figure "
-     r"deferred to " + UNPOINT + r" (\S\ref{sec:deferred}), whose distances "
-     r"are quoted there in full.",
+     r"deferred to " + UNPOINT + r", whose distances are quoted there in "
+     r"full.",
      "fig:paths is deferred here, so the source's \\ref would print '??'"),
 )
 

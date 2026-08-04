@@ -2539,9 +2539,16 @@ def audit_normstats_probe(a: Audit) -> None:
         tex = TEX.read_text()
     except Exception:
         return
+    # The third fragment used to be the artifact directory name. The paper no
+    # longer prints repository paths -- it is a paper, not a code reference --
+    # so what stands in for it is the sentence that carries the same fact: the
+    # probe is a released, identified run rather than something we ran once and
+    # describe from memory. Dropping the check entirely would have left the
+    # released-probe claim unpinned, which is how the two silent rollout
+    # defects survived in the first place.
     for frag in (r"\texttt{bridge\_orig}, and no LIBERO key at all",
                  "Five identically-zero arms are not a null result",
-                 r"rollout\_probe\_ecot\_bridge"):
+                 "The probe is released with its compute-platform task id"):
         a.check(sec, f"the manuscript states the probe result ({frag!r})", True,
                 frag in tex, source=str(TEX))
 
@@ -2766,7 +2773,11 @@ def audit_dequant_convention(a: Audit, d: Optional[dict]) -> None:
         ("15.6\\%", "the skew as a fraction of tau"),
         ("36{,}688", "the number of records replayed"),
         ("exactly invariant", "the F_mag invariance claim"),
-        ("p2\\_dequant\\_recompute", "the derivation script"),
+        # Was the script filename. The claim it stood for is that both
+        # conventions are printed side by side rather than one being asserted,
+        # and that sentence is what the reader can act on.
+        ("prints both conventions side by side", "that the derivation shows "
+         "both conventions rather than asserting one"),
     ]:
         a.check(sec, f"the manuscript states {what}", True, needle in tex,
                 source="the convention paragraph in the gate section")
@@ -3492,8 +3503,10 @@ def audit_gripper_ab_null(a):
                  "difference being absent", True,
             "not that it is a non-difference" in tex,
             source="cot_faith_iclr.tex")
-    a.check(sec, "Section 6 points at the released artifact", True,
-            r"gripper\_ab\_null" in tex, source="cot_faith_iclr.tex")
+    a.check(sec, "Section 6 says the null is released verbatim, caveats "
+                 "included, rather than summarised for us", True,
+            "The artifact is released verbatim, including its own caveats"
+            in tex, source="cot_faith_iclr.tex")
     a.check(sec, "limitation (v) carries the null too, since that is where a "
                  "reader checks what the gate does and does not license", True,
             "leaves SR at $0/10$ under all four conventions" in tex,
@@ -3720,10 +3733,16 @@ def audit_gate_factorial(a):
     a.check(sec, "Section 6 says which measurement closed the investigation "
                  "rather than stopping at the null", True,
             "replacing it is what closed the gate" in tex
-            and r"p2\_decode\_equivalence" in tex,
+            and "Token selection: measured, and it is identical" in tex,
             source="cot_faith_iclr.tex")
-    a.check(sec, "Section 6 points at the released artifact", True,
-            r"gate\_factorial\_pil" in tex, source="cot_faith_iclr.tex")
+    # This used to pin the factorial's artifact directory. What it was really
+    # asserting is that the preprocessing arm is disclosed as measured and NOT
+    # part of the fix -- the fact a reader needs, and the one a tightening edit
+    # would drop, since it is the arm we spent the most GPU-hours on.
+    a.check(sec, "Section 6 keeps the preprocessing arm in the record as "
+                 "measured and not part of the fix", True,
+            "It stays in the harness as a configurable arm; it is not part of "
+            "the fix." in tex, source="cot_faith_iclr.tex")
     a.check(sec, "limitation (v) carries the factorial null too", True,
             "scores $0/10$ in every cell including the one that applies both "
             "corrections" in tex, source="cot_faith_iclr.tex")
@@ -5108,10 +5127,21 @@ def audit_arr_submission(a: Audit) -> None:
         a.check(sec, "the appendix discloses that it is a selection, since the "
                      "20-page cap means it is not the full evidence", True,
                 "It is a selection" in ap_sel, source="arr_appendix.tex")
-        a.check(sec, "and it names the sections it does not reproduce, so a "
-                     "reader can tell what is missing and where to read it",
-                True, r"\label{sec:deferred}" in ap_sel,
-                source="arr_appendix.tex: the generated deferred list")
+        # This used to require a printed list of every deferred section,
+        # carrying a \label the re-homed \refs pointed at. The list is gone: it
+        # spent most of a column telling the reader what they were not reading,
+        # and it did so by naming internal section titles and filenames, which
+        # is release bookkeeping rather than argument. What must survive the
+        # deletion is the reader's recourse -- a sentence that says where the
+        # missing sections are, so "selection" does not mean "withheld". Every
+        # pointer that used to reach the list is now spent on the name of the
+        # document, and this asserts that name is actually stated.
+        a.check(sec, "and it says where the sections it does not reproduce are, "
+                     "so a reader can tell what is missing and where to read it",
+                True,
+                "the sections it does not reproduce are in the full-length "
+                "manuscript" in " ".join(ap_sel.split()),
+                source="arr_appendix.tex: the selection disclosure")
         # Every \ref in the submission must resolve inside the submission. This
         # is the failure a page cut actually causes: deferring a section takes
         # its \label with it, and LaTeX prints "??" while exiting 0.
@@ -5480,13 +5510,22 @@ def audit_arr_submission(a: Audit) -> None:
     # submission, or named in its deferred-float list -- so putting the figure
     # back does not leave the list claiming it is absent, and cutting it does
     # not leave the reader uninformed.
+    # The invariant, restated for a submission with no deferred-float list.
+    # It used to be "printed here, or named in the list, exactly one" -- the
+    # list being what stopped a deferred figure from reading as a figure that
+    # was never drawn. With the list deleted the recourse is different and the
+    # danger is narrower: what a reader can actually detect is a \ref with no
+    # float behind it, which LaTeX prints as "??" while exiting 0. So either
+    # the figure is drawn, or nothing in the submission points at it.
     drawn = "fig1_task_examples.pdf" in subm
-    listed = "the taxonomy figure" in appx
-    a.check(sec, "the submission either prints the taxonomy figure or tells the "
-                 "reader where it went, and does not do both",
-            [True, True], [drawn != listed, drawn or listed],
-            source=f"drawn in submission={drawn}, named in the deferred-float "
-                   f"list={listed}")
+    pointed = bool(re.search(r"\\(?:page)?ref\{(?:app:)?fig:taxonomy\}",
+                             re.sub(r"(?<!\\)%.*", "", subm)))
+    a.check(sec, "the submission either prints the taxonomy figure or does not "
+                 "reference it, so no cross-reference lands on a float that was "
+                 "deferred for space",
+            True, drawn or not pointed,
+            source=f"drawn in submission={drawn}, \\ref'd in "
+                   f"submission={pointed}")
     for fam, rate in sorted((flag or {}).items()):
         a.check(sec, f"fig:taxonomy's caption names {fam}, whose rate the "
                      f"figure draws red", True,
@@ -6750,15 +6789,35 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # checks, silently, on a submission that still quotes every number they were
     # checking. So the gate is the disjunction, and the handful of checks that
     # are about the DRAWING rather than the capture are gated on `drawn` below.
+    # Where this figure's CAPTION lives, as opposed to where the submission is.
+    # The two came apart when the panels were deferred: the caption is now only
+    # in the full-length manuscript, so a check that looks for its digits in the
+    # submission is asking the wrong document. Checks about the caption's
+    # content use this; checks about what the SUBMISSION says use `t`.
+    both15 = t + (ROOT / "cot_faith_iclr.tex").read_text()
     drawn = "fig15_rollout_paths" in t
     deferred = "The same three arms as motion rather than as frames" in t
-    if not (drawn or deferred):
-        return
-    a.check(sec, "the submission either draws the pose panels or names them in "
-                 "its deferred-float list, so a reader who meets the distances "
-                 "in prose can find out what drew them",
-            True, drawn or deferred,
-            source=f"drawn={drawn}, deferred-with-numbers={deferred}")
+    # The gate used to be `if not (drawn or deferred): return`, and it fired.
+    # Deleting the printed list of deferred floats took the note with it, so
+    # both flags went False and this whole section -- forty checks, including
+    # every digit the filmstrip caption still quotes -- switched itself off in
+    # silence, on a green audit. That is the second time the same shape of hole
+    # opened here, and the comment above already warned about the first.
+    #
+    # So there is no early return any more. The capture, the generator and the
+    # numbers are checked unconditionally, because they are properties of the
+    # release rather than of which document prints the float; only the handful
+    # of checks that are about the DRAWING stay gated on `drawn`. The one thing
+    # that has to hold either way is that a reader meeting these distances in
+    # prose can find out what produced them, so `deferred` is now a claim to
+    # check rather than a switch to obey.
+    a.check(sec, "the submission either draws the pose panels or sends the "
+                 "reader to the document that does, so a reader who meets the "
+                 "distances in prose can find out what drew them",
+            True,
+            drawn or "the motion figure deferred to the full-length manuscript"
+            in t,
+            source=f"drawn={drawn}, deferred-note={deferred}")
 
     gen = root / "figures" / "gen_fig15_rollout_filmstrip.py"
     body = gen.read_text() if gen.exists() else ""
@@ -6844,8 +6903,8 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     for lit, what in (("per-step distance", "panel (b)'s distance curve"),
                       ("top-down", "panel (a)'s path")):
         a.check(sec, f"the caption describes {what} exactly when a pose was "
-                     f"logged (eef_logged={eef})", eef, lit in t,
-                source=f"the manuscript mentions {lit!r}: {lit in t}")
+                     f"logged (eef_logged={eef})", eef, lit in both15,
+                source=f"the manuscript mentions {lit!r}: {lit in both15}")
 
     # A released fact sheet should not record whose filesystem rendered the
     # figure, and an absolute path here is also the tell that the committed PDF
@@ -6873,7 +6932,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
             (f"{(facts.get('steps_per_arm') or {}).get('cot_clean')}",
              "the rollout length in steps")):
         a.check(sec, f"the caption prints {what} as the artifact has it ({val})",
-                True, f"${val}$" in t, source="fig15_facts.json")
+                True, f"${val}$" in both15, source="fig15_facts.json")
 
     # The columns. "Six evenly spaced steps" is what the caption used to say and
     # is not what the strip draws: the capture stores a frame every 10 steps, so
@@ -6973,7 +7032,7 @@ def audit_rollout_filmstrip(a: Audit) -> None:
         v = final.get(arm)
         a.check(sec, f"the caption prints {what} as the artifact has it "
                      f"({v if v is None else round(v, 1)})",
-                True, v is not None and f"${v:.1f}$" in t,
+                True, v is not None and f"${v:.1f}$" in both15,
                 source="fig15_facts.json: final_cm_from_clean")
     # Every check above asks whether the number appears in the SUBMISSION, which
     # is the concatenation of both released documents. That is the right question
@@ -6985,7 +7044,6 @@ def audit_rollout_filmstrip(a: Audit) -> None:
     # above is the submission only. So each caption is now located by its own
     # \includegraphics, across every released document, and required to carry the
     # numbers on its own -- which is also the reader's view: nobody reads both.
-    both15 = t + (ROOT / "cot_faith_iclr.tex").read_text()
     caps = re.findall(r"\\includegraphics(?:\[[^\]]*\])?"
                       r"\{fig15_rollout_paths\.pdf\}.*?\\caption\{(.*?)\}\s*"
                       r"\\label\{(?:app:)?fig:paths\}", both15, re.S)
@@ -7386,13 +7444,22 @@ def audit_body_frames_figure(a: Audit) -> None:
     # sentence going away: the strip's caption disclaims the distances two lines
     # earlier, so with no pointer the submission says what this figure is not
     # and never says where the measurement is.
+    # Either form is still required; only the second one's target changed.
+    # With the deferred list deleted there is no float to \ref, so the caption
+    # names the document that carries the distances instead. The invariant is
+    # unchanged: the sentence may not simply go away, because the caption
+    # disclaims the distances two lines earlier and with no pointer the
+    # submission says what this figure is not and never says where the
+    # measurement is.
     paths_drawn = "fig15_rollout_paths" in t
     a.check(sec, "and it sends the reader to the distances -- to the pose figure "
-                 "where the submission draws it, to the deferred list where it "
-                 "does not -- so dropping the panels does not drop the evidence",
+                 "where the submission draws it, to the full-length manuscript "
+                 "where it does not -- so dropping the panels does not drop the "
+                 "evidence",
             True,
             (r"\ref{fig:paths}" in cap_txt) if paths_drawn
-            else (r"\ref{sec:deferred}" in cap_txt),
+            else ("the motion figure deferred to the full-length manuscript, "
+                  "whose distances are quoted there in full" in cap_txt),
             source=f"the fig:frames caption, in whichever half carries it "
                    f"(pose panels drawn: {paths_drawn})")
     # The anti-duplication invariant, from the two fact sheets rather than from
@@ -8119,8 +8186,17 @@ def audit_cross_corpus_edit_figure(a: Audit, d: Optional[dict]) -> None:
                       r"$\mathcal{F}{=}0$"), source=str(TEX))
     a.check(sec, "and no longer advertises $N{=}100$ as the LIBERO denominator", 0,
             tex.count(r"magnitude response on LIBERO ($N{=}100$)"), source=str(TEX))
-    a.check(sec, "while the released report paths are named", 1,
-            tex.count(r"cross\_corpus\_\{bridge\_v2,fractal,bcz\}\_n100.json"),
+    # This used to require the caption to name the three report files. The
+    # paper no longer prints repository paths, so what it pins instead is the
+    # scope disclaimer that sat beside them: the nulls were not run on these
+    # corpora, which is the one sentence stopping a reader from reading these
+    # magnitude bars as floor-corrected. That is the load-bearing half of the
+    # clause -- a filename told them where to look, this tells them what they
+    # are looking at.
+    a.check(sec, "while the caption still refuses a floor-corrected reading of "
+                 "the three non-LIBERO corpora", 1,
+            tex.count(r"the calibration nulls were not run on these corpora, so "
+                      r"no floor-corrected statement is available for them"),
             source=str(TEX))
 
 
