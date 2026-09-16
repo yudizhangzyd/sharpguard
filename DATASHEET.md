@@ -36,7 +36,10 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
 1. **Edit records** (52,338 released; 45,989 scored), for one image/instruction/CoT triple
    and one edit family: the original 7-DoF action `a_orig`, the action after
    the CoT edit `a_edit`, the per-dimension delta, `delta_linf`, and the
-   boolean `faithful = delta_linf > tau`. Each record also names the LIBERO
+   boolean `faithful = delta_linf > tau`. **The edited CoT text itself is not
+   included** -- only `edit_meta`, which names the family and the specific
+   substitution applied, so the edited text is regenerable from the released
+   generator scripts but is not shipped verbatim. Each record also names the LIBERO
    episode file it came from in `file_base`, which is what makes the records
    regroupable by task rather than only by family: `scripts/derive_per_task.py`
    uses it to recompute F within each of the 85 tasks the 3-seed runs cover and
@@ -60,7 +63,7 @@ Three kinds of record, all keyed to a (model, observation, edit family) triple:
    the manuscript quotes, with its source file path recorded inline.
 
 **How many instances?**
-56,311 records in 54.1 MB of JSON across 15 models: 52,338 edit records, 3,620
+56,311 records in 77.4 MB of JSON across 15 models: 52,338 edit records, 3,620
 attention records, and 353 records behind the P3 probe (200 from the withdrawn
 cross-domain run, retained so the withdrawal is checkable rather than asserted,
 plus the 153 of the in-domain re-run that replaced it). The edit release is 45
@@ -166,7 +169,7 @@ deliberately incomplete in ways the paper states as limitations:
   entire family. Both are asserted against now. (A separate
   empty-report path had the same shape: jobs scheduled on a B200 pool whose
   PyTorch lacked sm_100 kernels failed every sample, were caught per-sample, and
-  exited 0. `bolt/preflight_gpu.py` now fails such a job at setup.)
+  exited 0. A preflight GPU-kernel check now fails such a job at setup.)
 - **RETRACTED: an earlier release reported `visual` as identically 0.0 for all
   three DeepThinkVLA rows.** The cause was a prompt-format error on our side,
   not a property of those models. An even earlier version of this datasheet
@@ -211,8 +214,8 @@ deliberately incomplete in ways the paper states as limitations:
   `g -> -sign(2g-1)` gripper convention, the gate passes at upstream's own
   per-suite step budgets **on all four suites**: 0.74 / 0.90 / 0.74 / 0.46 on
   libero_spatial / libero_object / libero_goal / libero_10 against published
-  0.844 / 0.881 / 0.794 / 0.539 (0.877 to 1.022 of published, weakest cell
-  0.853), all 50/50 on canonical init states
+  0.847 / 0.884 / 0.792 / 0.537 (0.857 to 1.018 of published, weakest cell
+  0.857), all 50/50 on canonical init states
   (`results_v2/canonical_runs/gate_foursuite_winning/`). libero_10 was the one
   suite the pre-fix baseline had to exclude as uninterpretable (we ran a flat
   400 steps where upstream allots 520), and it now runs at 520 and scores 23/50,
@@ -227,7 +230,7 @@ deliberately incomplete in ways the paper states as limitations:
   not turn the leaderboard into a rollout metric.
 - **Norm-stats provenance is now measured, and it rules the public CoT
   checkpoint out of the rollout-level protocol.**
-  `results_v2/canonical_runs/rollout_probe_ecot_bridge/` (bolt `phenc9ygb4`)
+  `results_v2/canonical_runs/rollout_probe_ecot_bridge/`
   records that `Embodied-CoT/ecot-openvla-7b-bridge` ships `norm_stats` for
   `bridge_orig` **only**; requesting `libero_spatial_no_noops` raises upstream's
   own `ValueError` rather than degrading. Without LIBERO percentiles the policy's
@@ -293,9 +296,9 @@ original corpus's license.
 |---|---|---|
 | `openvla/modified_libero_rlds` | LIBERO-90, primary evaluation suite | MIT |
 | `Embodied-CoT/embodied_features_and_demos_libero` | CoT traces; our edited-CoT strings are derivative of this | MIT |
-| `IPEC-COMMUNITY/bridge_orig_lerobot` | cross-corpus transfer, Bridge V2 (N=30) | Apache-2.0 |
-| `IPEC-COMMUNITY/fractal20220817_data_lerobot` | cross-corpus transfer, RT-1/Fractal (N=30) | Apache-2.0 |
-| `IPEC-COMMUNITY/bc_z_lerobot` | cross-corpus transfer, BC-Z (N=30) | Apache-2.0 |
+| `IPEC-COMMUNITY/bridge_orig_lerobot` | cross-corpus transfer, Bridge V2 (N=100) | Apache-2.0 |
+| `IPEC-COMMUNITY/fractal20220817_data_lerobot` | cross-corpus transfer, RT-1/Fractal (N=100) | Apache-2.0 |
+| `IPEC-COMMUNITY/bc_z_lerobot` | cross-corpus transfer, BC-Z (N=100) | Apache-2.0 |
 | `Embodied-CoT/embodied_features_bridge` | Bridge CoT annotations for the F4-deconfound subset training (scaffolded; no reported number depends on it) | MIT |
 
 An earlier revision of this table listed Bridge V2 and BC-Z as CC-BY 4.0 and
@@ -362,8 +365,8 @@ meaning-preserving family; and `verb_swap` changes meaning on only 0.575, which
 is also the family with the largest same-config retraining movement in the
 benchmark (max |ΔF| = 0.260). This validates the *generators* over the same
 corpus and demo files, **not** the specific scored pairs: the released records
-store actions only. `results_v2/canonical_runs/judge_edit_families/` (bolt
-`jhcgnqbmf2`) carries the report, all 437 judged pairs with both traces verbatim,
+store actions only. `results_v2/canonical_runs/judge_edit_families/`
+carries the report, all 437 judged pairs with both traces verbatim,
 and a README.
 
 **The two public Bridge V2 exports cannot be joined per episode, and we measured
@@ -372,7 +375,7 @@ that rather than assuming it.** The O4 observation asks for a same-data ablation
 annotations (`Embodied-CoT/embodied_features_bridge`, 60,062 annotated episodes)
 joined to the trajectories (`IPEC-COMMUNITY/bridge_orig_lerobot`, 53,192 episodes)
 per episode. No shared key exists. All three candidates were measured on the full
-exports (bolt `754ru9usqe`): the annotations' `episode_id` matches only 1,111 of
+exports: the annotations' `episode_id` matches only 1,111 of
 53,192 LeRobot episodes (2.1%), ranges over `[0,1110]` against 60,062 annotated
 episodes (per-shard, not global), collides 879 times, and on the pairs it does
 match **the two sides' instructions agree only 0.280 of the time**. That is the
@@ -455,7 +458,7 @@ python3 scripts/derive_metrics.py        # raw reports -> derived_metrics.json
 python3 scripts/verify_paper_numbers.py  # asserts every quoted number; exit 1 on mismatch
 ```
 
-The audit script currently checks 787 claims, one of which is that this
+The audit script currently checks 1,632 claims, one of which is that this
 number itself is not stale. It is designed to fail: a claim
 whose supporting artifact is missing is recorded as a failure, not skipped.
 

@@ -46,7 +46,7 @@ export BSTINPUTS=".:./acl-style:${BSTINPUTS}"
 # That is how the inconsolata failure cost a whole job. Resolve the preamble
 # first and name what is missing on one line, before anything compiles.
 MISSING=""
-for pkg in $(grep -o '\\usepackage\(\[[^]]*\]\)\?{[^}]*}' cot_faith_arr.tex \
+for pkg in $(grep -o '\\usepackage\(\[[^]]*\]\)\?{[^}]*}' cot_faith.tex \
              | sed 's/.*{//; s/}//' | tr ',' '\n' | tr -d ' '); do
     kpsewhich "${pkg}.sty" >/dev/null 2>&1 || MISSING="$MISSING $pkg"
 done
@@ -58,15 +58,15 @@ else
 fi
 
 # ---- Stage 2: regenerate the appendix, and fail if it was hand-edited ----
-# arr_appendix.tex is generated from the full-length source. Building a stale
+# appendix.tex is generated from the full-length source. Building a stale
 # copy would submit numbers that no longer match the manuscript, which is the
 # exact failure the audit script exists to prevent, so it is checked here too.
 python3 scripts/build_arr_appendix.py || FAILED="$FAILED appendix"
 python3 scripts/build_arr_appendix.py --check || FAILED="$FAILED appendix-stale"
 
 # ---- Stage 3: the full submission PDF ----
-latexmk -pdf -interaction=nonstopmode -outdir="$OUT" cot_faith_arr.tex
-[ -f "$OUT/cot_faith_arr.pdf" ] || FAILED="$FAILED build"
+latexmk -pdf -interaction=nonstopmode -outdir="$OUT" cot_faith.tex
+[ -f "$OUT/cot_faith.pdf" ] || FAILED="$FAILED build"
 
 # ---- Stage 4: the body alone, which is what the 8-page limit applies to ----
 # \includeonly will not do this (the appendix is \input, not \include), and
@@ -74,7 +74,7 @@ latexmk -pdf -interaction=nonstopmode -outdir="$OUT" cot_faith_arr.tex
 # same preamble, same body, appendix and bibliography stubbed out.
 python3 - <<'PY'
 import re, pathlib
-src = pathlib.Path("cot_faith_arr.tex").read_text()
+src = pathlib.Path("cot_faith.tex").read_text()
 # Cut everything from \bibliographystyle onward -- that is References,
 # Appendix and nothing else. Limitations and Ethics come BEFORE it and are
 # also uncounted, so they are dropped separately, by their starred headers.
@@ -132,7 +132,7 @@ def pages(pdf: pathlib.Path, log: pathlib.Path):
     return n_log if n_log is not None else n_scan
 
 
-full = pages(out / "cot_faith_arr.pdf", out / "cot_faith_arr.log")
+full = pages(out / "cot_faith.pdf", out / "cot_faith.log")
 body = pages(out / "_arr_bodyonly.pdf", out / "_arr_bodyonly.log")
 print(f"[arr] full submission: {full} pages")
 print(f"[arr] CONTENT pages:   {body}  (ARR limit: 8)")
@@ -156,8 +156,8 @@ if body is not None:
 # and no text scraping. Which labels belong to the body is read from the body
 # source, so adding a float to the paper extends the check automatically.
 body_labels = set(re.findall(r'\\label\{((?:fig|tab):[^}]+)\}',
-                            pathlib.Path("cot_faith_arr.tex").read_text()))
-aux = out / "cot_faith_arr.aux"
+                            pathlib.Path("cot_faith.tex").read_text()))
+aux = out / "cot_faith.aux"
 placed, stray = {}, []
 if aux.exists() and body_labels:
     limit = (body if body else 8) + 1     # a float pushed to the next page is fine
@@ -193,7 +193,7 @@ else:
     print(f"[arr] float placement: NOT CHECKED "
           f"(aux={aux.exists()}, body labels={len(body_labels)})")
 
-log = out / "cot_faith_arr.log"
+log = out / "cot_faith.log"
 if log.exists():
     t = log.read_text(errors="replace")
     over = re.findall(r'^Overfull.*$', t, re.M)
@@ -233,7 +233,7 @@ PY
 [ -f "$OUT/FLOATS_STRAY" ] && FAILED="$FAILED float-placement"
 [ -f "$OUT/OVERFULL_BAD" ] && FAILED="$FAILED overfull"
 
-cp -v cot_faith_arr.tex arr_appendix.tex arr_bib.tex "$OUT/" 2>/dev/null
+cp -v cot_faith.tex appendix.tex bibliography.tex "$OUT/" 2>/dev/null
 
 if [ -n "$FAILED" ]; then
     echo "[arr] stages failed:$FAILED"

@@ -1,0 +1,42 @@
+{
+  "outcome": "tv_mean",
+  "n_total": 236,
+  "by_family": {
+    "paraphrase_null": {
+      "n": 85,
+      "r2_fluent_alone": 2.225364742269864e-05,
+      "beta_fluent_alone": -0.001354185996039752,
+      "r2_dist_alone": 0.11631793757891062,
+      "r2_struct_only": 0.14640819775294533,
+      "r2_full": 0.14851001071675807,
+      "partial_r2_fluent": 0.002462316247976812,
+      "beta_full_fluent": 0.013929254750140155,
+      "beta_full_dist": 0.0231898386236095,
+      "beta_full_lend": -0.02585096023743759
+    },
+    "syntactic_scramble": {
+      "n": 77,
+      "r2_fluent_alone": 0.06632073931101534,
+      "beta_fluent_alone": -0.02883837871166071,
+      "r2_dist_alone": 0.16016693571856677,
+      "r2_struct_only": 0.16016693571856677,
+      "r2_full": 0.17327982520352847,
+      "partial_r2_fluent": 0.01561368567476106,
+      "beta_full_fluent": -0.013854869926539445,
+      "beta_full_dist": 0.012645814249552582,
+      "beta_full_lend": 0.0
+    }
+  },
+  "pooled": {
+    "n": 236,
+    "r2_fluent_alone": 0.005891905953400944,
+    "beta_fluent_alone": -0.012752649876650469,
+    "r2_dist_alone": 0.037582104009107664,
+    "r2_struct_only": 0.3943391889709187,
+    "r2_full": 0.42798879906463394,
+    "partial_r2_fluent": 0.0555585064791315,
+    "beta_full_fluent": -0.03626931796050091,
+    "beta_full_dist": -0.0016124313685178372,
+    "beta_full_lend": 0.04708046813928867
+  }
+}

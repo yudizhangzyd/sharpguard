@@ -125,7 +125,7 @@ def _cell_text_colour(rgba):
     return "white" if lstar < 50.0 else "black"
 
 
-fig, ax = plt.subplots(figsize=(6.28, 2.55))
+fig, ax = plt.subplots(figsize=(5.51, 2.24))
 # Explicit margins, and the colorbar in an axes of its own: fig.colorbar(ax=ax)
 # steals width from the heatmap AFTER subplots_adjust has run, so the emitted
 # page came out narrower than the canvas and LaTeX scaled it back up.

@@ -1,6 +1,6 @@
 # LLM-judge validation of the edit-family generators
 
-Bolt task `jhcgnqbmf2`. Produced by `experiments/judge_edit_families.py`; runner
+Bolt task `ye8xuxdbjx`. Produced by `experiments/judge_edit_families.py`; runner
 `bolt/run_judge_edits.sh`, config `bolt/boltconfig-cotfaith-judge-edits.yaml`.
 Arguments as run are in `args.json`.
 
@@ -89,11 +89,16 @@ with the referent held at 1.000 and direction changed on all 40.
 
 * `judge_report.json` --- gates, per-family rates, declared-premise verdicts,
   skip accounting. This is the file `scripts/verify_paper_numbers.py` audits.
-* `judge_pairs.json` --- all 437 judged pairs with the original and edited
-  reasoning, the judge's raw answer and its parse. Included so every rate above
-  can be recomputed, and so a disputed verdict can be read rather than argued.
+* `judge_pairs.json` --- all 437 judged pairs with the full original and edited
+  reasoning text (no truncation -- an earlier version of this run stored only a
+  400-character head of each side, which left 124 of 397 non-identity pairs,
+  including 39 of 40 `syntactic_scramble` pairs, byte-identical in the release
+  even though the judge itself read the full trace; fixed in
+  `experiments/cotfaith_judge_edits.py` and re-run as this task), the judge's
+  raw answer and its parse. Included so every rate above can be recomputed,
+  and so a disputed verdict can be read rather than argued.
 * `args.json`, `bolt_task_id.txt` --- provenance.
 
 Judge model: `Qwen/Qwen2.5-7B-Instruct` (first of two candidates tried;
 `mistralai/Mistral-7B-Instruct-v0.2` was the fallback and was not needed).
-Elapsed 1503 s.
+Elapsed 1582 s.

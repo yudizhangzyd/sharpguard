@@ -1,0 +1,31 @@
+name: 'CoT-Faith judge validation: paraphrase_null_lenexact (4th null, retry w/ neg control)'
+description: 'Retry of dmsf8jkww8, which withheld its verdicts: FAMILIES there was paraphrase_null_lenexact alone, so there was no negative control to pool and negative_gate_pass was false by construction, not from a judge malfunction. Adding one negative-control family (direction_flip) so the run gate can actually pass, same convention as the other validated families. Otherwise unchanged: paraphrase_null_lenexact is paraphrase_null with release->free instead of release->"let go of", so every substitution is single-word-to-single-word, decoupling length from the fluency question the two existing floors leave confounded. N=40.'
+tags: ['cotfaith', 'judge', 'paraphrase_null_lenexact', 'floors', '4th-null']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 256
+  timeout: 6h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  N_SAMPLES: '40'
+  FAMILIES: 'paraphrase_null_lenexact,direction_flip'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_cotfaith_judge_edits.sh

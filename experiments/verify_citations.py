@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check every bibliography entry in cot_faith_iclr.tex against a live registry.
+"""Check every bibliography entry in bibliography.tex against a live registry.
 
 Why this exists. A fabricated reference is not a small error in a benchmark
 paper -- it is grounds for rejection on its own, and it is the single easiest
@@ -43,7 +43,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEX = os.path.join(ROOT, "cot_faith_iclr.tex")
+TEX = os.path.join(ROOT, "bibliography.tex")
 
 ARXIV_API = "http://export.arxiv.org/api/query"
 CROSSREF_API = "https://api.crossref.org/works/"
@@ -132,7 +132,13 @@ def parse_bibliography(tex: str) -> list[dict]:
                         "could not split \\bibitem label from body"})
             continue
         label, key, body = m.groups()
-        year = re.search(r"\((\d{4})\)", label)
+        # A trailing disambiguation letter ("2023a", "2023b") breaks two
+        # entries into distinct \cite labels when the same author-year would
+        # otherwise collide (Brohan et al. 2023 names both RT-1 and RT-2).
+        # The letter is presentational, not part of the year, so it is
+        # matched and discarded rather than left to make \d{4} miss the
+        # whole label and silently drop these entries from the year check.
+        year = re.search(r"\((\d{4})[a-z]?\)", label)
 
         # Split author list from title. An explicit "et~al." ends the author
         # list outright, and has to be handled before the general rule: the
@@ -163,6 +169,19 @@ def parse_bibliography(tex: str) -> list[dict]:
             authors_raw, rest = body[:cut.start()], body[cut.end():]
 
         # Title runs to the next period that ends a sentence, by the same rule.
+        #
+        # A title that is itself a question ("Is Attention Interpretable?")
+        # has no period after its "?" in three entries below, which used to
+        # make this swallow the venue and year into the title. Matching "?"
+        # or "!" as an alternative boundary fixes those three but breaks
+        # titles that contain an embedded "?" followed by a subtitle
+        # ("State of What Art? A Call for Multi-Prompt LLM Evaluation.",
+        # "...Mean What They Say? On the Role of Faithfulness..."), which
+        # both have a real period at the true end and lost the subtitle to
+        # a premature match on the internal "?". Period-only is right for
+        # every entry except the bare-question-title ones, which are kept
+        # parseable in bibliography.tex itself by ending them "?." instead --
+        # visually a doubled mark, but the source is what this script reads.
         tm = re.search(r"\.(\s|$)", rest)
         title = rest[:tm.start()] if tm else rest
 
@@ -379,8 +398,16 @@ def compare(entry: dict, reg: dict, reg_name: str) -> dict:
             "manuscript": entry["title"], "registry": reg["title"],
         }
     if reg.get("authors"):
-        ours = [surname(a) for a in entry["authors"]]
-        theirs = [surname(a) for a in reg["authors"]]
+        # Some registries (arXiv's metadata for team-authored reports, e.g.
+        # Qwen2.5's "Qwen: A. Yang, ...") list a bare separator as its own
+        # author entry. A surname with no letters in it is never a real
+        # surname on either side, so it is dropped before the positional
+        # comparison rather than forcing the printed reference list to carry
+        # the registry's punctuation artifact just to stay aligned with it.
+        ours = [s for s in (surname(a) for a in entry["authors"])
+                if any(c.isalpha() for c in s)]
+        theirs = [s for s in (surname(a) for a in reg["authors"])
+                  if any(c.isalpha() for c in s)]
         # "et al." licenses a prefix comparison; a full list must match in full.
         cmp_theirs = theirs[:len(ours)] if entry["authors_truncated"] else theirs
         same = ours == cmp_theirs

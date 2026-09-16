@@ -1,0 +1,33 @@
+name: 'CoT-Faith: ECoT-bridge direction_flip vs direction_flip_geom_consistent, seed 1'
+description: 'The W1-confound follow-up, complement of direction_flip_no_geom (which removes the contradicting bbox/gripper anchor and finds F_dir FALLS to 0.090 from 0.117, evidence against geometric grounding as the explanation for low F_dir). This variant instead MIRRORS the bbox/gripper geometry to AGREE with the flipped direction (see sharpguard/attacks/cot_edit.py direction_flip_geom_consistent), so the CoT text and the rendered scene tell the same story. Paired with plain direction_flip on the identical samples (same applicability condition minus forward/back-only cases, which have no 2D mirror axis and are excluded). If F_dir does not rise here relative to direction_flip, the model is not using this geometry at all, in either direction.'
+tags: ['cotfaith', 'edit', 'ecot-bridge', 'direction-flip', 'geom-consistent', 'w1-confound']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  SEED: '1'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+  FAMILIES: 'direction_flip,direction_flip_geom_consistent'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_only.sh

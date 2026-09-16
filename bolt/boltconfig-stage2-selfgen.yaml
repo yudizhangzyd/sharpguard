@@ -1,0 +1,87 @@
+name: 'CoT-Faith Stage 2: score edits against the model''s own self-generated CoT'
+description: 'Re-runs the edit-and-measure protocol on CoT the checkpoint self-generates online from the LIBERO frame, replacing the teacher-forced ground-truth annotation every existing table uses -- the construct-validity fix a reviewer flagged. 13 families x 3 checkpoints (ECoT-bridge, our LoRA r=32, our no-CoT ablation), run ONE AT A TIME on a single GPU rather than concurrently: two concurrent 3-GPU attempts (cbe2xdc9qt, 76twybafqw) both died silently with no Python traceback, while an isolated single-checkpoint run (p6vdguz85g) completed cleanly. Same total compute, ~3x the wall clock, but this is the one configuration confirmed to work. ~100 samples/checkpoint at t=0, plus a timestep add-on on 3 headline families over ~40 episodes. Records both the existing thresholded delta_linf/faithful metric and Stage 1''s continuous TV/KL/expected-action-L2 metric via direct import. DeepThinkVLA excluded (different decode format). Budget ~10-11 A100-h; timeout 18h.'
+tags: ['cotfaith', 'stage2', 'self-generated-cot', 'construct-validity', 'reviewer-priority', 'sequential']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu                # sequential now (see description) -- one checkpoint
+                                  # at a time needs one GPU, not eight idling
+  disk_gb: 1024                  # LIBERO dataset snapshot (~17GB, fetched once) +
+                                  # up to 3 checkpoints' weights cached at once
+  timeout: 18h                   # ~10-11 A100-h estimate, now run sequentially on 1
+                                  # GPU instead of 3-way parallel (was 6h @ ~3.5-4h
+                                  # wall parallel; ~1.5x margin applied to the ~11h
+                                  # wall estimate this implies serialized)
+  cluster: aws_2                 # A100. Tried aws_10/B200 once (kt46u8i3uc) and its own
+                                  # preflight caught a definitive, confirmed incompatibility:
+                                  # "no kernel image is available for execution on the
+                                  # device" -- this docker image's torch (2.4.1+cu118)
+                                  # supports sm_50-sm_90 only, B200 is sm_100. Not a guess
+                                  # anymore; back to A100 until this image ships a newer
+                                  # torch build. The preflight this config's run script
+                                  # does stays in either way, cheap insurance.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+  N_SAMPLES: '100'
+  N_SAMPLES_ADDON: '40'
+  SEED: '0'
+  FAMILIES: 'subject_swap,direction_flip,gripper_flip,location_swap,verb_swap,negation,adversarial_plausible,selfsplice_control,syntactic_scramble,cross_task_swap,paraphrase_null,bbox_jitter_null,instr_random_sub'
+  TIMESTEP_FAMILIES: 'paraphrase_null,syntactic_scramble,direction_flip'
+  TIMESTEP_FRACS: '0.333333,0.666667'
+  DTYPE: 'bfloat16'
+  KL_EPS: '1e-6'
+  THRESHOLD: '0.05'
+  MAX_NEW_TOKENS: '320'
+
+  # ECoT-bridge is a public HF checkpoint; confirmed at
+  # bolt/boltconfig-cotfaith-edit-ecot-bridge.yaml, same identifier
+  # experiments/cotfaith_stage1_continuous.py's ecot-bridge row uses.
+  ECOT_BRIDGE_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+
+  # LoRA r=32 is this project's OWN fine-tune, fetched from the S3 artifacts of
+  # its original training task -- not an HF repo. Task id confirmed from
+  # bolt/boltconfig-cotfaith-edit13-r32.yaml (CKPT_TASK_ID: bcihypv3gu); same
+  # mapping as bolt/submit_edit13.sh's ROWS array, and the SAME checkpoint
+  # experiments/cotfaith_stage1_continuous.py's lora-r32 row already uses -- so
+  # these two env var names deliberately match bolt/boltconfig-stage1-continuous.yaml's,
+  # letting bolt/submit_stage1.sh's credential-rendering pattern be reused
+  # for this pair (see bolt/submit_stage2_selfgen.sh, which does so directly).
+  LORA_R32_CKPT_TASK_ID: 'bcihypv3gu'
+  LORA_R32_AWS_ACCESS_KEY_ID: ${LORA_R32_AWS_ACCESS_KEY_ID}
+  LORA_R32_AWS_SECRET_ACCESS_KEY: ${LORA_R32_AWS_SECRET_ACCESS_KEY}
+
+  # no-cot is this project's no-CoT-supervision ablation -- ALSO an S3 fetch,
+  # NOT one of Stage 1's 6 checkpoints, so this credential pair is new to this
+  # job (Stage 1's own credentials cover only bcihypv3gu / 26whnbbrmb). Task id
+  # confirmed from bolt/boltconfig-cotfaith-edit13-no-cot.yaml (CKPT_TASK_ID:
+  # a8eegzcg4r); same mapping as bolt/submit_edit13.sh's ROWS 'no-cot:a8eegzcg4r'.
+  #
+  # Each token is scoped to ONE task prefix (a token for one task gets
+  # AccessDenied on the other -- see bolt/submit_edit13.sh), so this job needs
+  # TWO credential pairs total. Bolt does NOT expand ${VAR} placeholders from
+  # the submitting shell, so all four of these MUST be rendered to real values
+  # before `bolt task submit` -- do not submit this config with the literal
+  # placeholders below still in place; see bolt/submit_stage2_selfgen.sh.
+  NOCOT_CKPT_TASK_ID: 'a8eegzcg4r'
+  NOCOT_AWS_ACCESS_KEY_ID: ${NOCOT_AWS_ACCESS_KEY_ID}
+  NOCOT_AWS_SECRET_ACCESS_KEY: ${NOCOT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_stage2_selfgen.sh

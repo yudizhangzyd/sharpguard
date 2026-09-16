@@ -122,7 +122,7 @@ for e in D["examples"]:
 # fitting THAT to \textwidth would have shrunk 6pt code to about 4pt.
 # save() adds pad_inches on every side, so the canvas is authored that much
 # narrower and the emitted PAGE lands on \textwidth exactly.
-FIG_W = 6.30 - 2 * 0.05   # \textwidth in the ACL style (16.0cm), less padding
+FIG_W = 5.5006 - 2 * 0.05  # \textwidth under the ICLR style (397.485pt), less padding
 HDR_H = 0.24              # tier header bar
 PANEL_H = 0.95
 GAP_X, GAP_Y = 0.17, 0.13
@@ -243,7 +243,7 @@ for tier_name, tier_color, fams in TIERS:
                 # Top-right badge rather than a line under the edit: the count
                 # is a caveat on the excerpt, so it belongs beside the family
                 # name, and the panel has no spare line below in any case.
-                ax.text(x0 + pw - PAD, top - Y_NAME, f"span 1 of {len(ops)}",
+                ax.text(x0 + pw - PAD, top - Y_NAME, f"1/{len(ops)}",
                         fontsize=FS_META, va="center", ha="right",
                         color="0.55", style="italic")
 

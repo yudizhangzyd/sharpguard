@@ -1,0 +1,23 @@
+{
+  "lora-r32": {
+    "n": 71,
+    "n_faithful": 54,
+    "f_dir_selfgen": 0.7605633802816901,
+    "mean_cos": -0.49067611824527807,
+    "f_dir_teacher_forced": 0.579
+  },
+  "ecot-bridge": {
+    "n": 53,
+    "n_faithful": 8,
+    "f_dir_selfgen": 0.1509433962264151,
+    "mean_cos": 0.4028664827928572,
+    "f_dir_teacher_forced": 0.12
+  },
+  "no-cot": {
+    "n": 38,
+    "n_faithful": 8,
+    "f_dir_selfgen": 0.21052631578947367,
+    "mean_cos": 0.60017452905903,
+    "f_dir_teacher_forced": 0.087
+  }
+}

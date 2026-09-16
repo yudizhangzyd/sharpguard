@@ -1,0 +1,32 @@
+name: 'CoT-Faith: ECoT-bridge direction_flip re-run under corrected DIRECTION_PAIRS'
+description: 'direction_flip-only re-run for ECoT-bridge seed 0: DIRECTION_PAIRS in/out pair removed (found 100% idiom/position-reference noise, 0 genuine spatial reversals, in all 633 real occurrences enumerated from libero_reasonings.json). Every other family is unaffected and not re-run here.'
+tags: ['cotfaith', 'edit', 'ecot-bridge', 'direction-flip-fix']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+  FAMILIES: 'direction_flip'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_only.sh

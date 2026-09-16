@@ -1,0 +1,61 @@
+{
+  "judge_model": "Qwen/Qwen2.5-7B-Instruct",
+  "judge_models_tried": "Qwen/Qwen2.5-7B-Instruct",
+  "n_samples": 40,
+  "families": [
+    "paraphrase_null_lenexact",
+    "direction_flip"
+  ],
+  "seed": 0,
+  "corpus": "Embodied-CoT/embodied_features_and_demos_libero/libero_reasonings.json",
+  "restricted_to_scored_demo_files": false,
+  "n_pairs_total": 120,
+  "n_pairs_judged": 119,
+  "n_skipped": 1,
+  "skipped_reasons": {
+    "direction_flip::no plausible edit": 1
+  },
+  "order_pairs_compared": 119,
+  "order_disagreements": 6,
+  "gates": {
+    "identity_control_preserved_rate": 1.0,
+    "identity_gate_pass": true,
+    "negative_control_pooled_preserved_rate": 0.154,
+    "negative_gate_pass": true,
+    "order_agreement": 0.95,
+    "order_gate_pass": true,
+    "judge_valid": true
+  },
+  "per_family": {
+    "direction_flip": {
+      "n_judged": 39,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 0.154,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.0,
+      "plausible_rate": 1.0,
+      "mean_fluency": 3.18
+    },
+    "identity_control": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 1.0,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 1.0,
+      "plausible_rate": 1.0,
+      "mean_fluency": 5.0
+    },
+    "paraphrase_null_lenexact": {
+      "n_judged": 40,
+      "n_unparsed": 0,
+      "meaning_preserved_rate": 1.0,
+      "same_referent_rate": 1.0,
+      "same_direction_rate": 0.975,
+      "plausible_rate": 1.0,
+      "mean_fluency": 4.92
+    }
+  },
+  "verdicts": {},
+  "record_level_correspondence": "NO. Validates the generators on the same reasoning corpus (restricted to the scored demo files when --file-base-from is given), not the exact scored pairs: the released records store actions only, and demo/step identity is not recoverable without re-iterating the 17GB tfds shards.",
+  "elapsed_s": 403.6
+}

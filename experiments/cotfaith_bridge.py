@@ -345,7 +345,8 @@ def run(args):
                                    f"{ECOT_SYSTEM_PROMPT} USER: What action should the robot take to {instr.lower()}? ASSISTANT: {build_target_text(gen_reasoning)} ACTION:",
                                    img, device, dtype)
             if a_orig is None: continue
-            for fname in ["subject_swap", "direction_flip", "gripper_flip"]:
+            for fname in ["subject_swap", "direction_flip", "gripper_flip",
+                          "paraphrase_null", "syntactic_scramble"]:
                 fedit = EDIT_FAMILIES[fname]
                 # subject_swap needs bboxes; if empty, skip
                 edited = fedit(gen_reasoning)
@@ -381,7 +382,8 @@ def run(args):
     attn_agg = _agg(per_attn, ["action->cot", "action->visual",
                                   "action->instr", "action->action_prev"])
     edit_agg = {}
-    for fam in ["subject_swap", "direction_flip", "gripper_flip"]:
+    for fam in ["subject_swap", "direction_flip", "gripper_flip",
+                "paraphrase_null", "syntactic_scramble"]:
         rows = [r for r in per_edit if r["family"] == fam]
         if not rows: edit_agg[fam] = {"n": 0}; continue
         edit_agg[fam] = {

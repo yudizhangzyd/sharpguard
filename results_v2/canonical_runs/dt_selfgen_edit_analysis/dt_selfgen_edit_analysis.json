@@ -1,0 +1,45 @@
+{
+  "source": "results_v2/canonical_runs/dt_selfgen_edit/dt_selfgen_edit_report.json",
+  "model": "yinchenghust/deepthinkvla_libero_cot_rl",
+  "n_samples_loaded": 1000,
+  "n_no_movement_cot": 3,
+  "n_selfgen_decode_fail": 0,
+  "direction_flip_text": {
+    "n": 43,
+    "n_skipped": 954,
+    "delta_l1_mean": 0.01943526978522509,
+    "delta_linf_mean": 0.12985498549183272,
+    "delta_linf_median": 0.0,
+    "faithful_rate": 0.23255813953488372
+  },
+  "paraphrase_null_text": {
+    "n": 997,
+    "n_skipped": 0,
+    "delta_l1_mean": 0.019160722502678286,
+    "delta_linf_mean": 0.1252343141778166,
+    "delta_linf_median": 0.013739618954567767,
+    "faithful_rate": 0.3630892678034102
+  },
+  "faithful_rate_gap": -0.1305311282685265,
+  "paraphrase_at_least_semantic": true,
+  "semantic_clears_floor": false,
+  "delta_linf_gap": 0.0046206713140161115,
+  "paired_bootstrap_faithful_rate": {
+    "n_paired": 43,
+    "point_estimate": -0.23255813953488372,
+    "ci95": [
+      -0.41860465116279066,
+      -0.04651162790697677
+    ],
+    "significant": true
+  },
+  "paired_bootstrap_delta_linf": {
+    "n_paired": 43,
+    "point_estimate": -0.04950333239943597,
+    "ci95": [
+      -0.09167730998811982,
+      -0.00795266198767397
+    ],
+    "significant": true
+  }
+}

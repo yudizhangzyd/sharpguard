@@ -254,42 +254,41 @@ CALIB_RUN_NO_COT = os.path.join(CANON, "ours_no-cot_edit_13family_calibration.js
 TRAIN_REPLICATE_PAIRS = [
     {"label": "ours-no-cot",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, no_cot, seed 0",
-     "rvis": ("ours_no-cot_rvis.json", "ours_no-cot_rvis_retrain.json"),
-     "edit": ("ours_no-cot_edit.json",
-              "ours_no-cot_edit_13family_calibration.json")},
+     "rvis": ("ours_no-cot_rvis.json", "ours_no-cot_rvis_retrain.json")},
+    # no-cot has no "edit" entry: its only released 13-family retrain-side
+    # artifact is ours_no-cot_edit_13family_calibration.json, a calibration
+    # run, not a byte-identical retrain of the trained config -- pairing it
+    # against the single pre-annotation-fix ours_no-cot_edit.json would not
+    # be a training-replicate comparison at all. per_family_retrain_movement.py
+    # excludes no-cot for the same reason; this makes six pairs, not seven,
+    # for every "edit"/F_bar retraining-noise number below.
     {"label": "ours-r32",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
      "rvis": ("ours_lora-r32_rvis.json", "ours_lora-r32_rvis_REPLICATE.json"),
      # The edit half of this pair was left uncomputed while the attention half
      # was published, which understated the error bar by an order of magnitude:
-     # attention moves 1.45pp between these two trainings, F moves up to 0.180.
-     "edit": ("ours_lora-r32_edit.json",
-              "ours_lora-r32_edit_13family_RETRAIN.json")},
+     # attention moves 1.45pp between these two trainings, F moves up to 0.193.
+     "edit": ("ours_lora-r32", "ours_lora-r32_edit_13family_RETRAIN.json")},
     {"label": "ours-r8",
      "config": "r=8, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
      "rvis": ("ours_lora-r8_rvis.json", "ours_lora-r8_rvis_RETRAIN.json"),
-     "edit": ("ours_lora-r8_edit.json",
-              "ours_lora-r8_edit_13family_RETRAIN.json")},
+     "edit": ("ours_lora-r8", "ours_lora-r8_edit_13family_RETRAIN.json")},
     {"label": "ours-r16",
      "config": "r=16, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
      "rvis": ("ours_lora-r16_rvis.json", "ours_lora-r16_rvis_RETRAIN.json"),
-     "edit": ("ours_lora-r16_edit.json",
-              "ours_lora-r16_edit_13family_RETRAIN.json")},
+     "edit": ("ours_lora-r16", "ours_lora-r16_edit_13family_RETRAIN.json")},
     {"label": "ours-r64",
      "config": "r=64, alpha=16, lr=2e-5, 15k steps, full CoT, seed 0",
      "rvis": ("ours_lora-r64_rvis.json", "ours_lora-r64_rvis_RETRAIN.json"),
-     "edit": ("ours_lora-r64_edit.json",
-              "ours_lora-r64_edit_13family_RETRAIN.json")},
+     "edit": ("ours_lora-r64", "ours_lora-r64_edit_13family_RETRAIN.json")},
     {"label": "ours-data50A",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 100",
      "rvis": ("ours_data-50A_rvis.json", "ours_data-50A_rvis_RETRAIN.json"),
-     "edit": ("ours_data-50A_edit.json",
-              "ours_data-50A_edit_13family_RETRAIN.json")},
+     "edit": ("ours_data-50A", "ours_data-50A_edit_13family_RETRAIN.json")},
     {"label": "ours-data50B",
      "config": "r=32, alpha=16, lr=2e-5, 15k steps, full CoT, 50% data seed 200",
      "rvis": ("ours_data-50B_rvis.json", "ours_data-50B_rvis_RETRAIN.json"),
-     "edit": ("ours_data-50B_edit.json",
-              "ours_data-50B_edit_13family_RETRAIN.json")},
+     "edit": ("ours_data-50B", "ours_data-50B_edit_13family_RETRAIN.json")},
 ]
 
 # 3 sampling seeds x 5 layer sets on the frozen public ECoT-bridge checkpoint.
@@ -439,7 +438,7 @@ def wilson(k, n, z=1.96):
 def directional_predicate(family, a_orig, a_edit):
     """Returns (applicable, faithful_bool)."""
     xo, xe = a_orig[:3], a_edit[:3]
-    if family == "direction_flip":
+    if family in ("direction_flip", "direction_flip_no_geom"):
         c = cos(xo, xe)
         return (c is not None, (c is not None and c < -0.5))
     if family == "gripper_flip":
@@ -451,7 +450,8 @@ def directional_predicate(family, a_orig, a_edit):
     return (False, False)
 
 
-DIRECTIONAL_FAMILIES = ["direction_flip", "gripper_flip", "negation"]
+DIRECTIONAL_FAMILIES = ["direction_flip", "direction_flip_no_geom",
+                         "gripper_flip", "negation"]
 
 
 def per_run_stats(rep):
@@ -493,6 +493,31 @@ def _canon(fname):
         return None
     with open(fp) as fh:
         return json.load(fh)
+
+
+def _pooled_edit_rate(cfg_prefix):
+    """3-seed pooled per-family faithful_rate/n for one config's edit run --
+    the same convention the leaderboard, the appendix's retrain-median/max
+    row and per_family_retrain_movement.py already use. The training-replicate
+    comparison used to pair the RETRAIN report against a single pre-seed,
+    pre-annotation-fix {cfg}_edit.json run instead (location_swap at n=12
+    there vs n>=50 across all three seed files here), which is why its
+    max-movement figures (0.260, 0.092) came out lower than the number the
+    leaderboard's own unit implies (0.317, 0.106) -- not an anomaly, a
+    different and stale "run A"."""
+    totals = {}
+    for seed in range(3):
+        fp = os.path.join(CANON, f"{cfg_prefix}_edit_13family_seed{seed}.json")
+        if not os.path.exists(fp):
+            return None
+        with open(fp) as fh:
+            d = json.load(fh)
+        for fam, v in d["aggregate"].items():
+            n = v.get("n") or v.get("n_samples") or 0
+            c, tot_n = totals.get(fam, (0.0, 0))
+            totals[fam] = (c + v.get("faithful_rate", 0) * n, tot_n + n)
+    return {fam: {"faithful_rate": (c / n if n else None), "n": n}
+            for fam, (c, n) in totals.items()}
 
 
 def derive_attention_seed_repeats():
@@ -621,21 +646,20 @@ def derive_training_replicate():
                 "cot_abs_diff_pp": (deltas.get("cot") or {}).get("abs_diff_pp"),
             }
         if spec.get("edit"):
-            ea, eb = (_canon(f) for f in spec["edit"])
-            if ea and eb:
-                aa, ab = ea["aggregate"], eb["aggregate"]
+            aa = _pooled_edit_rate(spec["edit"][0])
+            eb = _canon(spec["edit"][1])
+            if aa and eb:
+                ab = eb["aggregate"]
                 fams, per = sorted(set(aa) & set(ab)), {}
                 for f in fams:
                     va, vb = aa[f]["faithful_rate"], ab[f]["faithful_rate"]
                     per[f] = {"run_A": va, "run_B": vb, "abs_diff": abs(vb - va),
                               "n_A": aa[f]["n"], "n_B": ab[f]["n"]}
-                # location_swap is excluded from the headline spread: run A
-                # predates the annotation fix and has n=12, so its gap measures
-                # the fix, not training-run variation.
                 cmp_fams = [f for f in fams
                             if min(per[f]["n_A"], per[f]["n_B"]) >= 50]
                 entry["F_per_family"] = {
-                    "runs": list(spec["edit"]),
+                    "runs": [spec["edit"][0] + "_edit_13family_seed{0,1,2}.json",
+                             spec["edit"][1]],
                     "n_families_compared": len(cmp_fams), "families": per,
                     "excluded_low_n": [f for f in fams if f not in cmp_fams],
                     "max_abs_diff": max((per[f]["abs_diff"] for f in cmp_fams),

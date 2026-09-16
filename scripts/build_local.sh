@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
-# Build the ARR submission locally and drop both PDFs in build/.
+# Build the ICLR submission locally and drop it in build/.
 #
-# Two PDFs, because neither alone is what you want:
-#
-#   build/cot_faith_arr.pdf        the submission, exactly as ARR receives it,
-#                                  line numbers and all.
-#   build/cot_faith_arr_proof.pdf  the same document with line numbers off,
-#                                  for reading.
-#
-# The proof copy exists because of a toolchain difference, not a preference.
-# lineno v5.7 (TeX Live 2026) places [switch]-mode numbers over the body text
-# instead of in the margin; v4.41, which the Bolt build image carries and which
-# ARR compiles against, puts them where they belong. The defect is the
-# package's and it is local-only -- both builds paginate identically -- but it
-# makes the submission copy unreadable on this machine, and a PDF you cannot
-# read is a PDF you will not proofread.
-#
-# Both are built from the same source in the same run, so they cannot drift.
+# Used to build two PDFs (submission + a line-numbers-suppressed "proof"
+# copy), because ACL's [review] mode loaded the lineno package and TeX Live
+# 2026's lineno v5.7 rendered its [switch]-mode numbers over the body text
+# instead of in the margin, making the submission copy unreadable on this
+# machine. Since the ARR->ICLR migration, iclr2027_conference.sty draws its
+# own review-mode ruler directly (\AddToShipoutPicture + \iclrruler, gated on
+# \ificlrfinal) rather than through lineno, so that defect no longer applies
+# and there is nothing left to suppress -- both filenames are now the same
+# build, kept only so nothing that references build/cot_faith_proof.pdf breaks.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -31,17 +24,11 @@ trap 'rm -rf "$TMP"' EXIT
 
 echo "[local] submission copy..."
 latexmk -pdf -interaction=nonstopmode -outdir="$TMP/sub" \
-    cot_faith_arr.tex > "$TMP/sub.log" 2>&1 \
+    cot_faith.tex > "$TMP/sub.log" 2>&1 \
     || { echo "[local] FAILED -- last 25 lines:"; tail -25 "$TMP/sub.log"; exit 1; }
 
-echo "[local] proof copy (line numbers suppressed)..."
-latexmk -pdf -interaction=nonstopmode -outdir="$TMP/proof" -jobname=proof \
-    -pdflatex='pdflatex %O "\AtBeginDocument{\nolinenumbers}\input{%S}"' \
-    cot_faith_arr.tex > "$TMP/proof.log" 2>&1 \
-    || { echo "[local] proof FAILED -- last 25 lines:"; tail -25 "$TMP/proof.log"; exit 1; }
-
-cp "$TMP/sub/cot_faith_arr.pdf"  build/cot_faith_arr.pdf
-cp "$TMP/proof/proof.pdf"        build/cot_faith_arr_proof.pdf
+cp "$TMP/sub/cot_faith.pdf"  build/cot_faith.pdf
+cp "$TMP/sub/cot_faith.pdf"  build/cot_faith_proof.pdf
 
 # The page geometry acl.sty ends up with, recorded where the audit can read it.
 # scripts/verify_paper_numbers.py checks each body figure's height against the
@@ -53,7 +40,7 @@ cp "$TMP/proof/proof.pdf"        build/cot_faith_arr_proof.pdf
 # they stopped existing, and the only trace was the audit's claim count dropping
 # by ten. An artifact under version control is the difference between a value
 # that is measured and a value that is nearby.
-python3 - "$TMP/sub/cot_faith_arr.log" <<'PY'
+python3 - "$TMP/sub/cot_faith.log" <<'PY'
 import json, pathlib, re, sys
 log = pathlib.Path(sys.argv[1]).read_text(errors="replace")
 geo = {}
@@ -73,7 +60,7 @@ if "textheight_pt" not in geo:
 ovf = [float(x) for x in re.findall(r"Overfull \\hbox \(([\d.]+)pt too wide", log)]
 geo["overfull_hbox_pt_max"] = max(ovf) if ovf else 0.0
 geo["overfull_hbox_count"] = len(ovf)
-geo["source"] = "pdflatex log for cot_faith_arr.tex, scripts/build_local.sh"
+geo["source"] = "pdflatex log for cot_faith.tex, scripts/build_local.sh"
 dest = pathlib.Path("results_v2/canonical_runs/arr_build")
 dest.mkdir(parents=True, exist_ok=True)
 (dest / "geometry.json").write_text(json.dumps(geo, indent=2) + "\n")
@@ -85,11 +72,11 @@ PY
 # caught the figures-on-page-41 defect, and it is cheap enough to run on every
 # local build rather than only in CI: \newlabel already records the page each
 # label resolved to, so it needs nothing but the .aux.
-python3 - "$TMP/sub/cot_faith_arr.aux" <<'PY'
+python3 - "$TMP/sub/cot_faith.aux" <<'PY'
 import pathlib, re, sys
 aux = pathlib.Path(sys.argv[1]).read_text()
 body = set(re.findall(r"\\label\{((?:fig|tab):[^}]+)\}",
-                      pathlib.Path("cot_faith_arr.tex").read_text()))
+                      pathlib.Path("cot_faith.tex").read_text()))
 placed = {l: int(p) for l, _, p in
           re.findall(r"\\newlabel\{([^}]+)\}\{\{([^}]*)\}\{(\d+)\}", aux)
           if l in body}
@@ -100,7 +87,8 @@ if missing:
     print(f"[local]   UNRESOLVED: {', '.join(missing)}")
 PY
 
-# Where the body actually ends. ARR's 8-page limit counts body pages only:
+# Where the body actually ends. ICLR's 9-page initial-submission limit counts
+# body pages only:
 # Limitations, Ethics, references and appendix are unlimited and follow it, so
 # the budget is "the last page carrying numbered-section text". That page was
 # checked by hand until a two-line prose fix pushed a float from page 7 to
@@ -116,7 +104,7 @@ PY
 # than reporting page 8. Reading order puts the heading on its own line
 # wherever it is, and "is there body text before it on this page" is exactly
 # the question the 8-page limit asks.
-pdftotext build/cot_faith_arr_proof.pdf "$TMP/proof.txt"
+pdftotext build/cot_faith_proof.pdf "$TMP/proof.txt"
 python3 - "$TMP/proof.txt" <<'PY'
 import json, pathlib, sys
 pages = pathlib.Path(sys.argv[1]).read_text(errors="replace").split("\f")
@@ -124,14 +112,29 @@ hit = []
 for i, page_txt in enumerate(pages):
     lines = page_txt.splitlines()
     for j, ln in enumerate(lines):
-        if ln.strip() == "Limitations":
-            hit.append((i + 1, not any(x.strip() for x in lines[:j])))
+        # iclr2027_conference.sty renders \section* headings with the first
+        # letter a size up, which pdftotext reads back with a space after it
+        # ("L IMITATIONS") -- collapse spaces and case before comparing so the
+        # match survives that rather than needing the exact glyph run.
+        if ln.strip().replace(" ", "").upper() == "AIUSESTATEMENT":
+            # Two things precede real content on every page and are not real
+            # content: "Under review as a conference paper at ICLR 2027" (the
+            # running header) and the review-mode line-ruler's own numbers
+            # (bare digits, one beside every text line) -- both excluded here,
+            # or "at the top of the page" could never be true (the header
+            # alone defeats it on every page) and body_last_page would always
+            # read one page high, exactly the case this run hit.
+            before = [x for x in lines[:j] if x.strip()
+                      and "Under review as a conference paper" not in x
+                      and not x.strip().isdigit()]
+            hit.append((i + 1, not before))
             break
     if hit:
         break
 if not hit:
-    raise SystemExit("[local] FAILED: the Limitations heading is not in the "
-                     "rendered text, so the body page count cannot be measured")
+    raise SystemExit("[local] FAILED: the AI use statement heading is not "
+                     "in the rendered text, so the body page count cannot "
+                     "be measured")
 page, at_top = hit[0]
 # If the heading starts the page, the body ended on the page before it;
 # if it starts partway down, the body ran to that page and the page counts.
@@ -139,15 +142,16 @@ last = page - 1 if at_top else page
 geop = pathlib.Path("results_v2/canonical_runs/arr_build/geometry.json")
 geo = json.loads(geop.read_text())
 geo["body_last_page"] = last
-geo["limitations_starts_page"] = page
+geo["ai_use_statement_starts_page"] = page
 geo["n_pages"] = sum(1 for p in pages if p.strip())
 geop.write_text(json.dumps(geo, indent=2) + "\n")
-flag = "" if last <= 8 else "  <-- OVER the ARR 8-page body limit"
-print(f"[local] body ends page {last} (Limitations starts page {page}"
+flag = "" if last <= 9 else "  <-- OVER the ICLR 9-page body limit (10 accepted for fig:collision/fig:dissociation)"
+print(f"[local] body (through Conclusion) ends page {last} "
+      f"(AI use statement starts page {page}"
       f"{', mid-page' if not at_top else ''}){flag}")
 PY
 
-for f in build/cot_faith_arr.pdf build/cot_faith_arr_proof.pdf; do
+for f in build/cot_faith.pdf build/cot_faith_proof.pdf; do
     printf '[local] %-34s %s pages\n' "$f" "$(pdfinfo "$f" 2>/dev/null \
         | awk '/^Pages:/{print $2}')"
 done

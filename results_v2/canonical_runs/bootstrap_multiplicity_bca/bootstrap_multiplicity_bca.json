@@ -1,0 +1,424 @@
+{
+  "alpha": 0.05,
+  "n_boot": 20000,
+  "families": {
+    "table1_floors": {
+      "m_tests": 22,
+      "n_significant_percentile_uncorrected": 12,
+      "n_significant_bca_uncorrected": 12,
+      "n_significant_holm_corrected": 8,
+      "by_floor": {
+        "paraphrase_null": {
+          "n_percentile": 9,
+          "n_bca": 9,
+          "n_holm": 7,
+          "n_total": 11
+        },
+        "syntactic_scramble": {
+          "n_percentile": 3,
+          "n_bca": 3,
+          "n_holm": 1,
+          "n_total": 11
+        }
+      },
+      "tests": [
+        {
+          "config": "ours_no-cot",
+          "floor": "paraphrase_null",
+          "point": -0.027158846004226272,
+          "p_boot": 0.1274,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": -0.002631962727060346,
+          "a_hat": -0.009744360166401553
+        },
+        {
+          "config": "ours_no-cot",
+          "floor": "syntactic_scramble",
+          "point": 0.012328333482953202,
+          "p_boot": 0.4506,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": -0.007645290715444382,
+          "a_hat": -0.006354811286122423
+        },
+        {
+          "config": "ours_lora-r8",
+          "floor": "paraphrase_null",
+          "point": -0.18049158449625263,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.002882626508035087,
+          "a_hat": 0.004211304315623833
+        },
+        {
+          "config": "ours_lora-r8",
+          "floor": "syntactic_scramble",
+          "point": -0.0018516736824287783,
+          "p_boot": 0.9433,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": -0.003258622524024037,
+          "a_hat": 0.0008532350124397748
+        },
+        {
+          "config": "ours_lora-r16",
+          "floor": "paraphrase_null",
+          "point": -0.10012689311201961,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.012032106029748819,
+          "a_hat": 0.0051758510074042495
+        },
+        {
+          "config": "ours_lora-r16",
+          "floor": "syntactic_scramble",
+          "point": 0.008412683253643694,
+          "p_boot": 0.7261,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.010528033237178182,
+          "a_hat": 0.002312199122518354
+        },
+        {
+          "config": "ours_lora-r32",
+          "floor": "paraphrase_null",
+          "point": -0.17190973164925938,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.01328552067213306,
+          "a_hat": 0.003977534288985698
+        },
+        {
+          "config": "ours_lora-r32",
+          "floor": "syntactic_scramble",
+          "point": 0.046930848060885544,
+          "p_boot": 0.0288,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": 0.020555799371180003,
+          "a_hat": 0.0034905767297243708
+        },
+        {
+          "config": "ours_lora-r64",
+          "floor": "paraphrase_null",
+          "point": -0.14212642306005097,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.014664300962395592,
+          "a_hat": 0.006757799505782324
+        },
+        {
+          "config": "ours_lora-r64",
+          "floor": "syntactic_scramble",
+          "point": 0.042968337252100586,
+          "p_boot": 0.098,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.0036346190006941274,
+          "a_hat": 0.001120094701215772
+        },
+        {
+          "config": "ours_data-50A",
+          "floor": "paraphrase_null",
+          "point": -0.14382332521929764,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.0030079584654592465,
+          "a_hat": 0.0027538066271356144
+        },
+        {
+          "config": "ours_data-50A",
+          "floor": "syntactic_scramble",
+          "point": 0.0015389936212820143,
+          "p_boot": 0.9446,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.005890610511874542,
+          "a_hat": 0.0020779328056206685
+        },
+        {
+          "config": "ours_data-50B",
+          "floor": "paraphrase_null",
+          "point": -0.09464718406763944,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.005138610577345675,
+          "a_hat": 0.001427998932919748
+        },
+        {
+          "config": "ours_data-50B",
+          "floor": "syntactic_scramble",
+          "point": 0.004193395642505482,
+          "p_boot": 0.8114,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": -0.0067679480089274605,
+          "a_hat": -0.000497079305053125
+        },
+        {
+          "config": "ecot_bridge",
+          "floor": "paraphrase_null",
+          "point": -0.08761211144197256,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.015792414544589684,
+          "a_hat": 0.018559858319644077
+        },
+        {
+          "config": "ecot_bridge",
+          "floor": "syntactic_scramble",
+          "point": 0.002867264254794444,
+          "p_boot": 0.8944,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.0006266571096721571,
+          "a_hat": 0.014840572402229276
+        },
+        {
+          "config": "deepthink_base",
+          "floor": "paraphrase_null",
+          "point": -0.013431855500821044,
+          "p_boot": 0.4456,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.06421378651467965,
+          "a_hat": 0.051151152725648186
+        },
+        {
+          "config": "deepthink_base",
+          "floor": "syntactic_scramble",
+          "point": 0.03656814449917889,
+          "p_boot": 0.1919,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.04588739616386345,
+          "a_hat": 0.03767641062702351
+        },
+        {
+          "config": "deepthink_sft",
+          "floor": "paraphrase_null",
+          "point": -0.10921182266009866,
+          "p_boot": 0.0061,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": 0.007519955698540385,
+          "a_hat": 0.006499817845607366
+        },
+        {
+          "config": "deepthink_sft",
+          "floor": "syntactic_scramble",
+          "point": 0.11078817733990143,
+          "p_boot": 0.0183,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": -0.006141277875977704,
+          "a_hat": 0.004404847241925083
+        },
+        {
+          "config": "deepthink_rl",
+          "floor": "paraphrase_null",
+          "point": -0.09546798029556647,
+          "p_boot": 0.0138,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": 0.010778710290105954,
+          "a_hat": 0.01294574339553784
+        },
+        {
+          "config": "deepthink_rl",
+          "floor": "syntactic_scramble",
+          "point": 0.17453201970443344,
+          "p_boot": 0.0002,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.01742194779921146,
+          "a_hat": 0.003281270336900521
+        }
+      ]
+    },
+    "tab_tvfloors": {
+      "m_tests": 12,
+      "n_significant_percentile_uncorrected": 11,
+      "n_significant_bca_uncorrected": 11,
+      "n_significant_holm_corrected": 7,
+      "by_floor": {
+        "paraphrase_null": {
+          "n_percentile": 6,
+          "n_bca": 6,
+          "n_holm": 2,
+          "n_total": 6
+        },
+        "syntactic_scramble": {
+          "n_percentile": 5,
+          "n_bca": 5,
+          "n_holm": 5,
+          "n_total": 6
+        }
+      },
+      "tests": [
+        {
+          "config": "ecot-bridge",
+          "floor": "paraphrase_null",
+          "point": -0.07238096444802222,
+          "p_boot": 0.0104,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": -0.02958252781394901,
+          "a_hat": -0.02128864158206385
+        },
+        {
+          "config": "ecot-bridge",
+          "floor": "syntactic_scramble",
+          "point": 0.05184578109082383,
+          "p_boot": 0.3679,
+          "percentile_significant": false,
+          "bca_significant": false,
+          "holm_significant": false,
+          "z0": 0.013912235697409969,
+          "a_hat": 0.020161741375828025
+        },
+        {
+          "config": "lora-r32",
+          "floor": "paraphrase_null",
+          "point": -0.03089223516845628,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.0007519885532623371,
+          "a_hat": -0.009810068409975925
+        },
+        {
+          "config": "lora-r32",
+          "floor": "syntactic_scramble",
+          "point": 0.0426832745783185,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.004511946203065664,
+          "a_hat": -0.016071658740092087
+        },
+        {
+          "config": "lora-r64",
+          "floor": "paraphrase_null",
+          "point": -0.013774632365511408,
+          "p_boot": 0.0379,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": -0.004511946203065874,
+          "a_hat": -0.01557434438019753
+        },
+        {
+          "config": "lora-r64",
+          "floor": "syntactic_scramble",
+          "point": 0.04711985352362488,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.013160178301133661,
+          "a_hat": -0.01764719799228174
+        },
+        {
+          "config": "deepthink-base",
+          "floor": "paraphrase_null",
+          "point": -0.031726815210263104,
+          "p_boot": 0.0025,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": 0.002005303963673326,
+          "a_hat": 0.0036072213108907024
+        },
+        {
+          "config": "deepthink-base",
+          "floor": "syntactic_scramble",
+          "point": 0.0978559576988684,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.0038852836006595453,
+          "a_hat": 0.00023013845770643358
+        },
+        {
+          "config": "deepthink-sft",
+          "floor": "paraphrase_null",
+          "point": -0.017684918326283106,
+          "p_boot": 0.0208,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": -0.006141277875977704,
+          "a_hat": -0.008648238833311629
+        },
+        {
+          "config": "deepthink-sft",
+          "floor": "syntactic_scramble",
+          "point": 0.10045915102477596,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.004261280963260292,
+          "a_hat": -0.0010916331495457064
+        },
+        {
+          "config": "deepthink-rl",
+          "floor": "paraphrase_null",
+          "point": -0.020934949973747063,
+          "p_boot": 0.0125,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": false,
+          "z0": 0.0043866135487099,
+          "a_hat": 0.001077030352282723
+        },
+        {
+          "config": "deepthink-rl",
+          "floor": "syntactic_scramble",
+          "point": 0.10076218299846396,
+          "p_boot": 0.0,
+          "percentile_significant": true,
+          "bca_significant": true,
+          "holm_significant": true,
+          "z0": -0.010152018893305335,
+          "a_hat": -0.006978826900007468
+        }
+      ]
+    }
+  }
+}

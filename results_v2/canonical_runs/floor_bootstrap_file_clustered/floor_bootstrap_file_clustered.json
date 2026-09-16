@@ -1,0 +1,274 @@
+{
+  "n_boot": 20000,
+  "seed": 12345,
+  "per_config": {
+    "ours_no-cot": {
+      "paraphrase_null": {
+        "point": -0.027158846004226272,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.06425209555409228,
+          0.008285904613113876
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.1281
+      },
+      "syntactic_scramble": {
+        "point": 0.012328333482953202,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.02333204143304185,
+          0.046888202118725714
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.4937
+      }
+    },
+    "ours_lora-r8": {
+      "paraphrase_null": {
+        "point": -0.18049158449625263,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.22332594344214257,
+          -0.1382000251070583
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0
+      },
+      "syntactic_scramble": {
+        "point": -0.0018516736824287783,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.055924893286915356,
+          0.05750748665223482
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.9161
+      }
+    },
+    "ours_lora-r16": {
+      "paraphrase_null": {
+        "point": -0.10012689311201961,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.15742087604776023,
+          -0.042807836037445646
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0006
+      },
+      "syntactic_scramble": {
+        "point": 0.008412683253643694,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.040984028920719506,
+          0.05803460102178526
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.7677
+      }
+    },
+    "ours_lora-r32": {
+      "paraphrase_null": {
+        "point": -0.17190973164925938,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.21139181871523233,
+          -0.13217623468378886
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0
+      },
+      "syntactic_scramble": {
+        "point": 0.046930848060885544,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          0.0016520967196935188,
+          0.09194972440632898
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0423
+      }
+    },
+    "ours_lora-r64": {
+      "paraphrase_null": {
+        "point": -0.14212642306005097,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.1893135472596852,
+          -0.09459959875807628
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0
+      },
+      "syntactic_scramble": {
+        "point": 0.042968337252100586,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.016174320795439345,
+          0.10124542272061338
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.1584
+      }
+    },
+    "ours_data-50A": {
+      "paraphrase_null": {
+        "point": -0.14382332521929764,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.18370845451238532,
+          -0.10108458060283093
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0
+      },
+      "syntactic_scramble": {
+        "point": 0.0015389936212820143,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.04520463358641241,
+          0.04923685933009753
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.9549
+      }
+    },
+    "ours_data-50B": {
+      "paraphrase_null": {
+        "point": -0.09512496715411817,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.13959655727720655,
+          -0.05205025580868483
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0001
+      },
+      "syntactic_scramble": {
+        "point": 0.0037156125560267594,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.035951467877930576,
+          0.044384557005012426
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.8501
+      }
+    },
+    "ecot_bridge": {
+      "paraphrase_null": {
+        "point": -0.08761211144197256,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.11336780790424894,
+          -0.06053437462576239
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0
+      },
+      "syntactic_scramble": {
+        "point": 0.002867264254794444,
+        "n_files": 85,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.0373876139560847,
+          0.0462159057296081
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.9033
+      }
+    },
+    "deepthink_base": {
+      "paraphrase_null": {
+        "point": -0.013431855500821044,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.04586459876690718,
+          0.02628555771298202
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.4564
+      },
+      "syntactic_scramble": {
+        "point": 0.03656814449917889,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.018438068296625643,
+          0.0979952587095444
+        ],
+        "excludes_zero": false,
+        "p_boot": 0.218
+      }
+    },
+    "deepthink_sft": {
+      "paraphrase_null": {
+        "point": -0.10921182266009866,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.18809322772171078,
+          -0.032479658530078837
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0063
+      },
+      "syntactic_scramble": {
+        "point": 0.11078817733990143,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          0.02264756834410786,
+          0.19726207314609012
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0142
+      }
+    },
+    "deepthink_rl": {
+      "paraphrase_null": {
+        "point": -0.09546798029556647,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          -0.16699658448713672,
+          -0.02336253650396325
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0113
+      },
+      "syntactic_scramble": {
+        "point": 0.17453201970443344,
+        "n_files": 61,
+        "n_boot_used": 20000,
+        "ci95": [
+          0.09197296955917644,
+          0.2578745465241689
+        ],
+        "excludes_zero": true,
+        "p_boot": 0.0001
+      }
+    }
+  },
+  "n_negative_vs_paraphrase": 11,
+  "n_significant_vs_paraphrase_file_clustered": 9,
+  "n_positive_vs_scramble": 10,
+  "n_significant_vs_scramble_file_clustered": 3
+}

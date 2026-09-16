@@ -38,6 +38,21 @@ pip install \
     "huggingface_hub>=0.20,<1.0" "safetensors>=0.4" \
     "sentencepiece>=0.1.99" "Pillow>=9.5"
 
+# --force-reinstall on transformers alone, --no-deps so it does not drag the
+# rest of the bundle above along with it. Two Stage-1 Bolt runs (tur9u9jr5g,
+# 6ksmrs4uyf) both failed identically with `ImportError: cannot import name
+# 'is_hqq_available' from transformers.utils` -- a cache_utils.py from one
+# release sitting next to a utils/__init__.py from another -- even though
+# `transformers.__version__` correctly reported 4.40.1 immediately
+# beforehand, in the same process, right before the crash. That combination
+# only makes sense if the plain install two lines up is a no-op against
+# whatever this docker image already had on disk (pip skips reinstalling a
+# package it believes already satisfies the request, so a base image with
+# stale or mismatched files under that same reported version number is never
+# corrected). --force-reinstall bypasses that skip and rewrites every file
+# regardless of what pip thinks is already there.
+pip install --force-reinstall --no-deps "transformers==4.40.1"
+
 # 4) Sim deps. Real LIBERO RLDS parsing (TFRecords) is off by default; the
 #    runner falls back to synthetic-shape training data and relies on LIBERO
 #    simulator rollouts (which only need mujoco/robosuite/libero) for the
@@ -113,7 +128,15 @@ echo 'export PYOPENGL_PLATFORM=egl' >> /tmp/sharpguard.env
 # this line means the next script that forgets one still runs.
 echo "export PYTHONPATH=$PWD\${PYTHONPATH:+:\$PYTHONPATH}" >> /tmp/sharpguard.env
 
-# Verify the OpenVLA-required pins survived all of the above.
+# Verify the OpenVLA-required pins survived all of the above. Checking
+# __version__ alone is not enough -- tur9u9jr5g and 6ksmrs4uyf both reported
+# "transformers=4.40.1" from exactly this kind of check and then failed
+# minutes later on `ImportError: cannot import name 'is_hqq_available' from
+# transformers.utils`, from a cache_utils.py that does not match the
+# version string. Actually importing the specific chain OpenVLA's
+# modeling_prismatic.py needs (transformers.modeling_utils, by way of
+# transformers.generation and transformers.cache_utils) is the only check
+# that would have caught that, so that is what this does now.
 python - <<'PY'
 import sys
 import transformers, peft
@@ -122,7 +145,15 @@ if not transformers.__version__.startswith(expected_tf):
     print(f"[FATAL] transformers={transformers.__version__}, expected {expected_tf}.x — "
           "something downgraded it (LIBERO deps?). Aborting setup.")
     sys.exit(2)
-print(f"[ok] transformers={transformers.__version__} | peft={peft.__version__}")
+try:
+    import transformers.modeling_utils  # noqa: F401
+except Exception as e:
+    print(f"[FATAL] transformers.__version__={transformers.__version__} but "
+          f"`import transformers.modeling_utils` raised {type(e).__name__}: {e} "
+          "-- version string and on-disk files disagree. Aborting setup.")
+    sys.exit(2)
+print(f"[ok] transformers={transformers.__version__} | peft={peft.__version__} "
+      "| modeling_utils import OK")
 PY
 
 # Re-pin numpy<2 if anything bumped it.

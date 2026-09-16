@@ -1,0 +1,28 @@
+name: 'CoT-Faith: DeepThinkVLA-RL self-gen CoT edit sensitivity (N=1000, DIRECTION_PAIRS in/out fix)'
+description: 'Second withdrawal of this check. The N=100 run (93b9dgrs2e) had a phrasal-verb collision (pick up -> pick down, fixed) and a capitalization bug (fixed); the resulting N=1000 run (94ciwifusi) was integrated then withdrawn again: it reused the shared DIRECTION_PAIRS table, which had an in/out pair that collides with idioms ("in order to" -> "out order to", "the robot is in the center" -> "out the center") rather than ever expressing a real spatial reversal in this corpus -- enumerated exhaustively (633 real occurrences, 190 distinct contexts, 0 genuine spatial uses) before removing the pair from sharpguard/attacks/cot_edit.py entirely, rather than patching individual idioms. This resubmit is the same N=1000 protocol against that corrected table -- no other change.'
+tags: ['cotfaith', 'deepthink', 'selfgen', 'edit-sensitivity']
+
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 6h
+  cluster: aws_6
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'yinchenghust/deepthinkvla_libero_cot_rl'
+  N_SAMPLES: '1000'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+  SETUP_RETRY_MAX_ATTEMPTS: '4'
+  SETUP_RETRY_TIMEOUT_S: '2700'
+setup_command: bash bolt/setup-openvla-retry.sh
+command: bash bolt/run_cotfaith_dt_selfgen_edit.sh

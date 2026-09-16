@@ -1,0 +1,26 @@
+name: 'CoT-Faith: DeepThinkVLA-RL rollout-edit PROBE (self-generated CoT)'
+description: 'Feasibility probe for a rollout-level causal-edit test on DeepThinkVLA-RL (yinchenghust/deepthinkvla_libero_cot_rl), the one checkpoint in this cohort independently reported at 97.0% LIBERO success (arXiv 2511.15669) and LIBERO-COT-RL-native, unlike ECoT-bridge. Checks generate_action_verl() self-generated-CoT decoding, the {plan,subtask,movement,move} parse round-trip, and edit-family applicability on a real LIBERO frame -- before any full rollout is attempted. First attempt (task uymfi7pmjz) timed out at 1h mid-checkpoint-download (35m58s for shard 1 of 2 alone); the probe logic itself is minutes once loaded, the download is not.'
+tags: ['cotfaith', 'deepthink', 'rollout', 'probe']
+
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 3h
+  cluster: aws_2
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'yinchenghust/deepthinkvla_libero_cot_rl'
+  SUITE: 'libero_90'
+  FAMILIES: 'direction_flip,gripper_flip,paraphrase_null'
+  DTYPE: 'bfloat16'
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_rollout_deepthink_probe.sh

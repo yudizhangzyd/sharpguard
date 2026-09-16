@@ -1,0 +1,32 @@
+name: 'CoT-Faith Stage 5 (optional): text-only replication of the two-floors pathology'
+description: 'Reviewer Stage 5. Does a meaning-preserving edit to a plain LMs own chain-of-thought move its next-token distribution as much as the paper reports for VLA actions? Qwen2.5-7B-Instruct, GSM8K test split (teacher-forced gold rationale, same protocol choice as the papers primary VLA results), 2 families (paraphrase_null via hand-built synonym table, syntactic_scramble via reordering the newline-separated computation lines when there are 2+), TV distance over the next-token softmax at the position the model commits to its final answer -- literally Stage 1s tv_mean formula, applied to token-vocabulary space instead of a 256-bin action grid. No VLA, no images, light setup. If it reproduces: reframes the contribution from a VLA-specific problem to a general CoT-faithfulness metrology one. If not: a legitimate scoping finding. Optional / lowest priority in the reviewers own plan; simpler and less validated than the VLA studys LLM-judged generators, reported as such.'
+tags: ['cotfaith', 'stage5', 'text-only-replication', 'reviewer-priority', 'optional']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 256
+  timeout: 4h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  TEXTONLY_MODEL: 'Qwen/Qwen2.5-7B-Instruct'
+  N_SAMPLES: '500'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_textonly_replication.sh

@@ -59,7 +59,7 @@ x = np.arange(len(labels)); w = 0.35
 # is measured at at 4.6pt.
 TICK, LAB, VAL, LEG, TITLE, NOTE = 6.5, 8.6, 6.5, 6.5, 7.0, 6.5
 
-fig, ax = plt.subplots(1, 1, figsize=(5.18, 2.62))
+fig, ax = plt.subplots(1, 1, figsize=(5.73, 2.90))
 # Explicit margins: savefig crops to the artists, so default margins emit a page
 # narrower than the canvas and LaTeX scales it back up.
 fig.subplots_adjust(left=0.108, right=0.995, top=0.855, bottom=0.150)

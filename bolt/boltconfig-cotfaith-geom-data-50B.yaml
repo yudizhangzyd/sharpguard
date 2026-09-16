@@ -1,0 +1,36 @@
+name: 'CoT-Faith geometry-condition extension: ours-data-50B (direction_flip vs no_geom vs geom_consistent)'
+description: 'Extends the W1 geometric-grounding confound check (currently ECoT-bridge only) to the data-50B row. direction_flip_no_geom blanks VISIBLE OBJECTS/GRIPPER POSITION so no contradicting anchor remains; direction_flip_geom_consistent instead mirrors that geometry to agree with the flipped direction. Same three-condition design (contradicting/absent/agreeing) as the ECoT-bridge check already in the appendix, run here on the same checkpoint (training task 9ay2rt3ra5) and seeds as the standard 13-family sweep so the comparison is apples-to-apples with that row leaderboard entry.'
+tags: ['cotfaith', 'edit', 'geometry-confound', 'ours-data-50B']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 6h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_TASK_ID: '9ay2rt3ra5'
+  SEEDS: '0 1 2'
+  N_SAMPLES: '100'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+  FAMILIES: 'direction_flip,direction_flip_no_geom,direction_flip_geom_consistent'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_edit_s3ckpt.sh

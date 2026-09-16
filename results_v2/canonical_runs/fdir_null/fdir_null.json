@@ -32,7 +32,7 @@
           "n": 299
         },
         "bbox_jitter_null": {
-          "F_dir": 0.016666666666666666,
+          "F_dir": 0.013333333333333334,
           "n": 300
         },
         "cross_task_swap": {
@@ -44,7 +44,7 @@
           "n": 300
         },
         "negation": {
-          "F_dir": 0.05,
+          "F_dir": 0.04666666666666667,
           "n": 300
         },
         "subject_swap": {
@@ -66,59 +66,59 @@
       "config": "ours_lora-r8",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.6655518394648829,
+        "F_dir": 0.6488294314381271,
         "n": 299
       },
       "nulls": {
         "paraphrase_null": {
-          "F_dir": 0.03333333333333333,
+          "F_dir": 0.016666666666666666,
           "n": 300
         },
         "syntactic_scramble": {
-          "F_dir": 0.030100334448160536,
+          "F_dir": 0.013377926421404682,
           "n": 299
         },
         "bbox_jitter_null": {
-          "F_dir": 0.0033333333333333335,
+          "F_dir": 0.0,
           "n": 300
         },
         "cross_task_swap": {
-          "F_dir": 0.09333333333333334,
+          "F_dir": 0.07666666666666666,
           "n": 300
         },
         "verb_swap": {
-          "F_dir": 0.06,
+          "F_dir": 0.043333333333333335,
           "n": 300
         },
         "negation": {
-          "F_dir": 0.05,
+          "F_dir": 0.023333333333333334,
           "n": 300
         },
         "subject_swap": {
-          "F_dir": 0.0048543689320388345,
+          "F_dir": 0.0,
           "n": 206
         },
         "instr_random_sub": {
-          "F_dir": 0.02,
+          "F_dir": 0.006666666666666667,
           "n": 300
         }
       },
-      "null_ceiling": 0.09333333333333334,
+      "null_ceiling": 0.07666666666666666,
       "null_ceiling_family": "cross_task_swap",
-      "margin": 0.5722185061315496,
-      "ratio": 7.130912565695174,
+      "margin": 0.5721627647714604,
+      "ratio": 8.462992583975572,
       "clears_null": true
     },
     {
       "config": "ours_lora-r16",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.6722408026755853,
+        "F_dir": 0.6588628762541806,
         "n": 299
       },
       "nulls": {
         "paraphrase_null": {
-          "F_dir": 0.013333333333333334,
+          "F_dir": 0.01,
           "n": 300
         },
         "syntactic_scramble": {
@@ -130,46 +130,46 @@
           "n": 300
         },
         "cross_task_swap": {
-          "F_dir": 0.09333333333333334,
+          "F_dir": 0.09,
           "n": 300
         },
         "verb_swap": {
-          "F_dir": 0.09666666666666666,
+          "F_dir": 0.09333333333333334,
           "n": 300
         },
         "negation": {
-          "F_dir": 0.07666666666666666,
+          "F_dir": 0.07,
           "n": 300
         },
         "subject_swap": {
-          "F_dir": 0.043689320388349516,
+          "F_dir": 0.03398058252427184,
           "n": 206
         },
         "instr_random_sub": {
-          "F_dir": 0.01,
+          "F_dir": 0.006666666666666667,
           "n": 300
         }
       },
-      "null_ceiling": 0.09666666666666666,
+      "null_ceiling": 0.09333333333333334,
       "null_ceiling_family": "verb_swap",
-      "margin": 0.5755741360089186,
-      "ratio": 6.9542152000922615,
+      "margin": 0.5655295429208472,
+      "ratio": 7.059245102723363,
       "clears_null": true
     },
     {
       "config": "ours_lora-r32",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.5886287625418061,
+        "F_dir": 0.5819397993311036,
         "n": 299
       },
       "nulls": {
         "paraphrase_null": {
-          "F_dir": 0.05,
+          "F_dir": 0.04666666666666667,
           "n": 300
         },
         "syntactic_scramble": {
-          "F_dir": 0.016722408026755852,
+          "F_dir": 0.013377926421404682,
           "n": 299
         },
         "bbox_jitter_null": {
@@ -181,26 +181,26 @@
           "n": 300
         },
         "verb_swap": {
-          "F_dir": 0.06333333333333334,
+          "F_dir": 0.06,
           "n": 300
         },
         "negation": {
-          "F_dir": 0.07666666666666666,
+          "F_dir": 0.07333333333333333,
           "n": 300
         },
         "subject_swap": {
-          "F_dir": 0.009708737864077669,
+          "F_dir": 0.0048543689320388345,
           "n": 206
         },
         "instr_random_sub": {
-          "F_dir": 0.02666666666666667,
+          "F_dir": 0.02,
           "n": 300
         }
       },
-      "null_ceiling": 0.07666666666666666,
-      "null_ceiling_family": "negation",
-      "margin": 0.5119620958751394,
-      "ratio": 7.677766467936602,
+      "null_ceiling": 0.07333333333333333,
+      "null_ceiling_family": "cross_task_swap",
+      "margin": 0.5086064659977703,
+      "ratio": 7.935542718151413,
       "clears_null": true
     },
     {
@@ -224,7 +224,7 @@
           "n": 300
         },
         "cross_task_swap": {
-          "F_dir": 0.07,
+          "F_dir": 0.06666666666666667,
           "n": 300
         },
         "verb_swap": {
@@ -245,7 +245,7 @@
         }
       },
       "null_ceiling": 0.07,
-      "null_ceiling_family": "cross_task_swap",
+      "null_ceiling_family": "verb_swap",
       "margin": 0.7092642140468228,
       "ratio": 11.13234591495461,
       "clears_null": true
@@ -254,16 +254,16 @@
       "config": "ours_data-50A",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.6588628762541806,
+        "F_dir": 0.6421404682274248,
         "n": 299
       },
       "nulls": {
         "paraphrase_null": {
-          "F_dir": 0.043333333333333335,
+          "F_dir": 0.03,
           "n": 300
         },
         "syntactic_scramble": {
-          "F_dir": 0.026755852842809364,
+          "F_dir": 0.020066889632107024,
           "n": 299
         },
         "bbox_jitter_null": {
@@ -271,37 +271,37 @@
           "n": 300
         },
         "cross_task_swap": {
-          "F_dir": 0.10666666666666667,
+          "F_dir": 0.09666666666666666,
           "n": 300
         },
         "verb_swap": {
-          "F_dir": 0.07,
+          "F_dir": 0.06333333333333334,
           "n": 300
         },
         "negation": {
-          "F_dir": 0.09,
+          "F_dir": 0.07666666666666666,
           "n": 300
         },
         "subject_swap": {
-          "F_dir": 0.014563106796116505,
+          "F_dir": 0.009708737864077669,
           "n": 206
         },
         "instr_random_sub": {
-          "F_dir": 0.02,
+          "F_dir": 0.013333333333333334,
           "n": 300
         }
       },
-      "null_ceiling": 0.10666666666666667,
+      "null_ceiling": 0.09666666666666666,
       "null_ceiling_family": "cross_task_swap",
-      "margin": 0.5521962095875139,
-      "ratio": 6.176839464882943,
+      "margin": 0.5454738015607581,
+      "ratio": 6.642832429938877,
       "clears_null": true
     },
     {
       "config": "ours_data-50B",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.5819397993311036,
+        "F_dir": 0.5317725752508361,
         "n": 299
       },
       "nulls": {
@@ -340,20 +340,20 @@
       },
       "null_ceiling": 0.056666666666666664,
       "null_ceiling_family": "cross_task_swap",
-      "margin": 0.525273132664437,
-      "ratio": 10.269525870548888,
+      "margin": 0.47510590858416946,
+      "ratio": 9.384221916191226,
       "clears_null": true
     },
     {
       "config": "ecot_bridge",
       "treatment": {
         "family": "direction_flip",
-        "F_dir": 0.12040133779264214,
+        "F_dir": 0.11705685618729098,
         "n": 299
       },
       "nulls": {
         "paraphrase_null": {
-          "F_dir": 0.016666666666666666,
+          "F_dir": 0.02,
           "n": 300
         },
         "syntactic_scramble": {
@@ -365,7 +365,7 @@
           "n": 100
         },
         "cross_task_swap": {
-          "F_dir": 0.04,
+          "F_dir": 0.04666666666666667,
           "n": 300
         },
         "verb_swap": {
@@ -385,10 +385,10 @@
           "n": 99
         }
       },
-      "null_ceiling": 0.04,
+      "null_ceiling": 0.04666666666666667,
       "null_ceiling_family": "cross_task_swap",
-      "margin": 0.08040133779264214,
-      "ratio": 3.0100334448160537,
+      "margin": 0.07039018952062431,
+      "ratio": 2.508361204013378,
       "clears_null": true
     },
     {

@@ -1,0 +1,28 @@
+name: 'CoT-Faith: DeepThinkVLA-base self-gen CoT edit sensitivity (N=1000)'
+description: 'Same protocol as the DeepThinkVLA-RL self-generated-CoT check (bolt run against CKPT_HF_ID=yinchenghust/deepthinkvla_libero_cot_rl, integrated into appendix.tex Limitations), pointed at the pretrain-only base checkpoint instead. Extends the self-generated-CoT robustness check to the third DeepThinkVLA stage (no reasoning-target training at all), completing the self-generated-CoT cohort for the second architecture family. Uses the same corrected DIRECTION_PAIRS table (the in/out-idiom collision found and removed for the RL run) since sharpguard/attacks/cot_edit.py is shared code, not per-checkpoint.'
+tags: ['cotfaith', 'deepthink', 'selfgen', 'edit-sensitivity', 'base']
+
+project_id: ads_algo_signal_qucacheoffline
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+priority: 1
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 6h
+  cluster: aws_6
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'yinchenghust/deepthinkvla_base'
+  N_SAMPLES: '1000'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+  SETUP_RETRY_MAX_ATTEMPTS: '4'
+  SETUP_RETRY_TIMEOUT_S: '2700'
+setup_command: bash bolt/setup-openvla-retry.sh
+command: bash bolt/run_cotfaith_dt_selfgen_edit.sh

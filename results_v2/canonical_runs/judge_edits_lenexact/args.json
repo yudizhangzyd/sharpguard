@@ -1,0 +1,13 @@
+{
+  "out": "/mnt/task_wrapper/user_output/artifacts/cotfaith-judge-edits",
+  "judge_models": "Qwen/Qwen2.5-7B-Instruct",
+  "reasoning_repo": "Embodied-CoT/embodied_features_and_demos_libero",
+  "reasoning_file": "libero_reasonings.json",
+  "file_base_from": "",
+  "n_samples": 40,
+  "families": "paraphrase_null_lenexact,direction_flip",
+  "seed": 0,
+  "dtype": "bfloat16",
+  "max_new_tokens": 160,
+  "time_budget_h": 0.0
+}

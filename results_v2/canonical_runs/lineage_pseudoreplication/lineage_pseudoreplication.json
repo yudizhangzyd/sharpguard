@@ -1,0 +1,84 @@
+{
+  "ecot": {
+    "rows": [
+      {
+        "config": "ours_no-cot",
+        "diff_B_para": -0.027158846004226272,
+        "significant": false,
+        "negative": true
+      },
+      {
+        "config": "ours_lora-r8",
+        "diff_B_para": -0.18049158449625263,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ours_lora-r16",
+        "diff_B_para": -0.10012689311201961,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ours_lora-r32",
+        "diff_B_para": -0.17190973164925938,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ours_lora-r64",
+        "diff_B_para": -0.14212642306005097,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ours_data-50A",
+        "diff_B_para": -0.14382332521929764,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ours_data-50B",
+        "diff_B_para": -0.09464718406763944,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "ecot_bridge",
+        "diff_B_para": -0.08761211144197256,
+        "significant": true,
+        "negative": true
+      }
+    ],
+    "n": 8,
+    "n_significant": 7,
+    "n_negative": 8
+  },
+  "deepthink": {
+    "rows": [
+      {
+        "config": "deepthink_base",
+        "diff_B_para": -0.013431855500821044,
+        "significant": false,
+        "negative": true
+      },
+      {
+        "config": "deepthink_sft",
+        "diff_B_para": -0.10921182266009866,
+        "significant": true,
+        "negative": true
+      },
+      {
+        "config": "deepthink_rl",
+        "diff_B_para": -0.09546798029556647,
+        "significant": true,
+        "negative": true
+      }
+    ],
+    "n": 3,
+    "n_significant": 2,
+    "n_negative": 3
+  },
+  "pooled_9_of_11": 9,
+  "n_independent_lineages": 2
+}

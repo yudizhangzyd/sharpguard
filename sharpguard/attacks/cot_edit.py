@@ -55,9 +55,38 @@ DIRECTION_PAIRS = [
     ("down",     "up"),
     ("above",    "below"),
     ("below",    "above"),
-    ("in",       "out"),      # careful: "in" is very common; scope to MOVE only
-    ("out",      "in"),
 ]
+# in/out removed (found by an ICLR reviewer running the released
+# libero_reasonings.json through this table and reading real before/after
+# text, not by inspecting the code): in this dataset's movement/
+# movement_reasoning fields, "in"/"out" is a false friend for a spatial
+# direction. Every distinct 7-word context around "in" or "out" across all
+# 3475 step-0 reasoning records was enumerated (633 occurrences, 190
+# distinct contexts, 0 in the terser movement/move field) and read by hand:
+# 100% are either a fixed idiom ("in order to", "in front of", "in the
+# way", "in a controlled manner", "slipping out of its grasp") or a static
+# position/location reference of an object or the robot itself ("the robot
+# is in the center", "positioned in the upper-left corner", "in the
+# background") -- never the actual commanded movement, which this corpus
+# always phrases with left/right/up/down/back/forward instead. Firing the
+# substitution anyway produced edits like "in order to" -> "out order to"
+# and "the robot is in the center" -> "the robot is out the center":
+# ungrammatical, and not a semantic reversal of anything the sentence
+# claims the robot will do. This was not a rare edge case: it was already
+# present, unflagged, in 5 of the 40 pairs this project's own LLM-judge
+# validation examined (judge_edit_families/judge_pairs.json), at a fluency
+# rating (3.00) indistinguishable from the other 35 (3.14) -- the judge's
+# rubric had no question aimed at this failure mode, which is why it
+# shipped once already. The in/out entries were previously flagged in this
+# same file as risky ("careful: 'in' is very common; scope to MOVE only"),
+# but that comment was about over-triggering elsewhere in a CoT, not about
+# whether the substitution is a real reversal once scoped correctly; scoping
+# to MOVE (as already done) does not fix it, because MOVE REASONING's prose
+# is exactly where these idioms and position references live. Every
+# direction_flip number computed with the old 10-pair table is affected to
+# an unknown degree and is being re-run against this corrected table rather
+# than corrected in place, per this project's practice of never editing a
+# scored number without re-deriving it.
 
 # Symmetric substitution table for gripper events. Order matters: match
 # longer phrases first to avoid partial rewrites.
@@ -82,9 +111,18 @@ LOCATION_PAIRS = [
     ("bottom shelf",      "top shelf"),
     ("front of",          "back of"),
     ("back of",           "front of"),
-    ("side of",           "top of"),
-    ("top of",            "side of"),
 ]
+# ("side of", "top of") removed: "on top of" is a fixed compound
+# preposition, "side of" is not (it needs an article -- "on the side of" or
+# "beside"), so this pair is not two grammatically interchangeable phrases.
+# Every real occurrence (found the same way the direction_flip in/out bug
+# was: running this table against the real dataset and reading the output,
+# not inspecting the code) reads "on top of the cabinet" -> "on side of the
+# cabinet" -- always missing the article, never a clean alternative. The
+# single-word top/bottom pair below already covers the genuine cases
+# ("move to the top drawer" -> "...bottom drawer" is clean), making this
+# 2-word pair both broken and redundant.
+#
 # Single-word spatial adjectives (regex \b word-boundary matched). Kept in
 # a SEPARATE list to avoid re.escape() clobbering the \b escapes.
 LOCATION_WORD_PAIRS = [
@@ -96,11 +134,16 @@ LOCATION_WORD_PAIRS = [
     ("lower",   "upper"),
     ("front",   "back"),
     ("back",    "front"),
-    ("near",    "far"),
-    ("far",     "near"),
     ("inside",  "outside"),
     ("outside", "inside"),
 ]
+# ("near", "far") / ("far", "near") removed for the same reason: "near" and
+# "far" are not symmetric in this corpus's phrasing -- "far" pairs with
+# "away"/"from" ("positioned far away", "far from it"), "near" pairs with a
+# bare noun ("not near the cabinet"). Swapping the adjective alone produces
+# "near away" and "not far the cabinet" on every one of the (536-diff
+# enumeration's) real occurrences checked, 0 clean. Same false-friend
+# pattern, same fix: remove the pair rather than patch each collocation.
 
 # Verb replacements (asymmetric — keep primary action word swap).
 VERB_REPLACEMENTS = [
@@ -221,6 +264,151 @@ def direction_flip(reasoning: dict) -> Optional[dict]:
     return edited
 
 
+def direction_flip_no_geom(reasoning: dict) -> Optional[dict]:
+    """direction_flip, plus blanking VISIBLE OBJECTS (bboxes) and GRIPPER
+    POSITION -- the W1 reviewer confound check.
+
+    direction_flip edits only the MOVE / MOVE REASONING text; every other
+    rendered field, including the object bounding boxes and the gripper's
+    own pixel position, is left exactly as it was. A policy that grounds its
+    action in that unedited geometry rather than in the MOVE sentence would
+    correctly ignore a flipped instruction that now contradicts the visible
+    scene -- a real example, pulled from judge_edit_families/judge_pairs.json
+    rather than hypothesized: gripper at x=109, target bbox centered at
+    x=189.5 (clearly to its right, matching the ORIGINAL "move ... right"),
+    edited MOVE says "move ... left" while the bbox/gripper numbers in the
+    same prompt still show the mug on the right. Low F_dir in that case would
+    be a geometry-grounded policy behaving correctly, not an unfaithful CoT.
+
+    This variant asks the question a direction-only edit cannot: with the
+    contradicting geometric anchor removed rather than left dangling, does
+    F_dir change? Same applicability as direction_flip (returns None under
+    the identical condition) so the two are a paired comparison on the exact
+    same samples, not two differently-scoped families."""
+    edited = direction_flip(reasoning)
+    if edited is None:
+        return None
+    if "bboxes" in edited:
+        edited["bboxes"] = {}
+    for key in ("gripper", "gripper_position"):
+        if key in edited:
+            edited[key] = None
+    edited["__edit_meta__"] = {"family": "direction_flip_no_geom"}
+    return edited
+
+
+# 224x224: the same fixed LIBERO input resolution bbox_jitter_null already
+# documents and relies on.
+_IMG_RES = 224
+
+
+def _mirror_point(xy, axis: str) -> list:
+    """Reflect a 2D pixel point about the image center along one axis."""
+    x, y = xy[0], xy[1]
+    if axis == "x":
+        x = (_IMG_RES - 1) - x
+    else:
+        y = (_IMG_RES - 1) - y
+    return [x, y]
+
+
+def _direction_axes(text: str) -> set:
+    """Which 2D-image mirror axes (a subset of {'x', 'y'}) the direction
+    words present in `text` correspond to, checked the same word-boundary
+    way direction_flip's own _replace_word_pairs matches them, on the
+    ORIGINAL (pre-edit) text -- not re-derived from a diff of the edited
+    text, so "did this pair fire" is asked identically to how
+    direction_flip itself decides it. 'forward'/'back' has no axis on a 2D
+    image and is reported as the sentinel 'z' so callers can refuse to
+    mirror a scene that direction implies rather than mirror only what they
+    can and leave the rest silently unedited."""
+    axes = set()
+    lower = text.lower()
+
+    def _has(w: str) -> bool:
+        return re.search(rf"\b{re.escape(w)}\b", lower) is not None
+
+    if _has("left") or _has("right"):
+        axes.add("x")
+    if _has("up") or _has("down") or _has("above") or _has("below"):
+        axes.add("y")
+    if _has("forward") or _has("back"):
+        axes.add("z")
+    return axes
+
+
+def direction_flip_geom_consistent(reasoning: dict) -> Optional[dict]:
+    """direction_flip, plus mirroring VISIBLE OBJECTS bboxes and GRIPPER
+    POSITION along the same image axis the flipped word(s) reverse, so the
+    edited MOVE text and the rendered geometry AGREE on the new direction
+    instead of contradicting it (direction_flip's own default) or removing
+    the anchor (direction_flip_no_geom).
+
+    The complement of direction_flip_no_geom's question. That check removes
+    a CONTRADICTING geometric anchor and finds F_dir FALLS on ECoT-bridge
+    (0.117 -> 0.090): evidence against "the model is correctly grounding in
+    unedited geometry instead of an unfaithful CoT", since removing the
+    contradiction should have RAISED F_dir under that story and did not.
+    This variant asks the same question from the other side: if the
+    geometry is edited to AGREE with the new direction instead of removed,
+    does F_dir rise relative to plain direction_flip? If it does not, the
+    model is not using the bbox/gripper geometry at all, in either
+    direction, which is the more direct version of the claim the no-geom
+    result already points at rather than a new, independent one.
+
+    Scoped to left<->right and up<->down/above<->below only, the two pairs
+    with an unambiguous mirror axis on the 224x224 LIBERO frame
+    (bbox_jitter_null); forward<->back has no such axis. Returns None
+    whenever a forward/back word is among the ones that fired on this
+    sample: mirroring only the axes that DO have one would leave a
+    partially-consistent scene, which answers a murkier question than
+    either direction_flip's fully-contradicted geometry or this family's
+    fully-consistent one, so this family is a strict subset of
+    direction_flip's applicable samples rather than a same-N variant."""
+    edited = direction_flip(reasoning)
+    if edited is None:
+        return None
+    orig_text = " ".join(str(reasoning.get(k, "")) for k in
+                          ("movement", "move", "movement_reasoning",
+                           "move_reasoning", "move_reason")
+                          if isinstance(reasoning.get(k), str))
+    axes = _direction_axes(orig_text)
+    if "z" in axes or not axes:
+        return None
+
+    bb = edited.get("bboxes")
+    if isinstance(bb, dict):
+        new_bb = {}
+        for name, coords in bb.items():
+            if (isinstance(coords, (list, tuple)) and len(coords) == 2
+                    and all(isinstance(p, (list, tuple)) and len(p) == 2
+                            for p in coords)):
+                pts = [list(p) for p in coords]
+                for ax in axes:
+                    pts = [_mirror_point(p, ax) for p in pts]
+                # Mirroring a corner pair can swap which one is the
+                # top-left corner on the mirrored axis; re-sort so
+                # [x1,y1]/[x2,y2] keeps that convention, matching every
+                # other bbox in this release.
+                xs = sorted(p[0] for p in pts)
+                ys = sorted(p[1] for p in pts)
+                new_bb[name] = [[xs[0], ys[0]], [xs[1], ys[1]]]
+            else:
+                new_bb[name] = coords
+        edited["bboxes"] = new_bb
+    for key in ("gripper", "gripper_position"):
+        v = edited.get(key)
+        if isinstance(v, (list, tuple)) and len(v) == 2:
+            p = list(v)
+            for ax in axes:
+                p = _mirror_point(p, ax)
+            edited[key] = p
+
+    edited["__edit_meta__"] = {"family": "direction_flip_geom_consistent",
+                                "mirrored_axes": sorted(axes)}
+    return edited
+
+
 # ------------- edit family 3: gripper-event flip -------------
 
 def gripper_flip(reasoning: dict) -> Optional[dict]:
@@ -258,11 +446,29 @@ def gripper_flip(reasoning: dict) -> Optional[dict]:
 
 # ------------- edit family 4: location swap -------------
 
+_ON_TOP_OF_RE = re.compile(r"\bon top of\b", re.IGNORECASE)
+
+
 def location_swap(reasoning: dict) -> Optional[dict]:
     """Swap 2-word location phrases + single-word spatial adjectives in
     PLAN / SUBTASK / TASK (skip MOVE which direction_flip covers). Uses
     literal string match for phrases and regex \\b word-boundary match
-    for single words."""
+    for single words.
+
+    "on top of" is masked before the single-word top/bottom substitution
+    and restored after: it is a fixed compound preposition ("on top of the
+    cabinet" = "above/atop the cabinet"), and the bare noun-phrase reading
+    the top/bottom pair is built for ("the top of the cabinet", "move to
+    the bottom of the cabinet" -- both grammatical, confirmed clean in the
+    same enumeration below) is a different construction that happens to
+    share the word "top". Without masking, "on top of X" -> "on bottom of
+    X", missing an article ("on THE bottom of") the same way "on top of"
+    itself has none -- not a clean reversal, just a different broken
+    preposition. Found and fixed the same way as direction_flip's in/out
+    bug: enumerating every distinct diff this table produces on the real
+    dataset (536 distinct diffs) and reading the output, not the code.
+    "near"/"far" is not masked -- it is removed from LOCATION_WORD_PAIRS
+    entirely, since 0 of its real occurrences were clean either way."""
     edited = copy.deepcopy(reasoning)
     changed = False
     def _apply(v):
@@ -273,6 +479,10 @@ def location_swap(reasoning: dict) -> Optional[dict]:
         for src, dst in LOCATION_PAIRS:
             if src.lower() in new.lower():
                 new = re.sub(re.escape(src), dst, new, flags=re.IGNORECASE)
+        # Mask "on top of" before the single-word pass so bare top/bottom
+        # (the genuine, symmetric usage) can still be swapped freely.
+        on_top_ofs = [m.group(0) for m in _ON_TOP_OF_RE.finditer(new)]
+        new = _ON_TOP_OF_RE.sub("\x00ONTOPOF\x00", new)
         # Single words: \b-anchored to avoid partial-word hits ("left" in "leftmost").
         # Two-phase to avoid double-swaps (left→right→left again).
         placeholders = {}
@@ -284,6 +494,8 @@ def location_swap(reasoning: dict) -> Optional[dict]:
             new = new2
         for marker, dst in placeholders.items():
             new = new.replace(marker, dst)
+        for orig in on_top_ofs:
+            new = new.replace("\x00ONTOPOF\x00", orig, 1)
         if new != v: changed = True
         return new
     plan = edited.get("plan")
@@ -471,6 +683,8 @@ def cross_task_swap(reasoning: dict, alt_reasoning: Optional[dict] = None,
 EDIT_FAMILIES = {
     "subject_swap":         subject_swap,
     "direction_flip":       direction_flip,
+    "direction_flip_no_geom": direction_flip_no_geom,
+    "direction_flip_geom_consistent": direction_flip_geom_consistent,
     "gripper_flip":         gripper_flip,
     "location_swap":        location_swap,
     "verb_swap":            verb_swap,
@@ -542,6 +756,65 @@ def paraphrase_null(reasoning: dict) -> Optional[dict]:
 
 
 EDIT_FAMILIES["paraphrase_null"] = paraphrase_null
+
+
+# ------------- edit family 14: length-exact paraphrase null (4th floor) -----
+# paraphrase_null is meaning-preserving by construction but not length-exact:
+# 8 of its 9 substitution patterns are single-word-to-single-word, but
+# "release" -> "let go of" (1 token -> 3) is common enough in this
+# pick-and-place domain (most tasks end with a release) that it alone is
+# almost certainly why 38/40 judged heads changed word count. That leaves
+# two floors (paraphrase_null, syntactic_scramble) that differ on BOTH axes
+# the paper flags as confounds -- length AND judged fluency (4.92 vs 4.00) --
+# so neither alone can be blamed. This swaps just that one pattern for a
+# single-word synonym ("free"), holding every other substitution identical,
+# to get a null that is meaning-preserving AND length-exact AND (being
+# ordinary synonym substitution, not word-order scrambling) presumptively
+# high-fluency like the original -- decoupling "changes length" from
+# "changes specific words" using one surgical change, not a new mechanism.
+PARAPHRASE_SYNONYMS_LENEXACT = [
+    (pat, ("free" if syn == "let go of" else syn))
+    for pat, syn in PARAPHRASE_SYNONYMS
+]
+
+
+def paraphrase_null_lenexact(reasoning: dict) -> Optional[dict]:
+    """Same as paraphrase_null, with "release"->"free" instead of "let go
+    of" so every substitution is single-word-to-single-word. See module
+    comment above PARAPHRASE_SYNONYMS_LENEXACT for why this family exists.
+    """
+    edited = copy.deepcopy(reasoning)
+    changed = False
+    def _apply(v):
+        nonlocal changed
+        if not isinstance(v, str): return v
+        new = v
+        placeholders = {}
+        for i, (pat, syn) in enumerate(PARAPHRASE_SYNONYMS_LENEXACT):
+            marker = f"__PARALE_{i}__"
+            placeholders[marker] = syn
+            new2 = re.sub(pat, marker, new, flags=re.IGNORECASE)
+            if new2 != new: changed = True
+            new = new2
+        for marker, syn in placeholders.items():
+            new = new.replace(marker, syn)
+        return new
+    for k in ("task", "subtask", "subtask_reasoning", "subtask_reason",
+                "movement", "move", "movement_reasoning", "move_reasoning"):
+        if k in edited:
+            edited[k] = _apply(edited[k])
+    plan = edited.get("plan")
+    if isinstance(plan, dict):
+        edited["plan"] = {k: _apply(v) for k, v in plan.items()}
+    elif isinstance(plan, str):
+        edited["plan"] = _apply(plan)
+    if not changed:
+        return None
+    edited["__edit_meta__"] = {"family": "paraphrase_null_lenexact"}
+    return edited
+
+
+EDIT_FAMILIES["paraphrase_null_lenexact"] = paraphrase_null_lenexact
 
 
 # ------------- edit family 12: bbox-jitter null (second calibration floor) ---

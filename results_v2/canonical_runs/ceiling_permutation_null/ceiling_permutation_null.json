@@ -1,0 +1,23 @@
+{
+  "tau": 0.05,
+  "per_model": {
+    "no-cot": {
+      "n": 300,
+      "real_ceiling": 0.26,
+      "permutation_null": 0.2686176142697882,
+      "ratio": 0.9679186553226811
+    },
+    "r8": {
+      "n": 300,
+      "real_ceiling": 0.8566666666666667,
+      "permutation_null": 0.874247491638796,
+      "ratio": 0.9798903340984443
+    },
+    "ecot-bridge": {
+      "n": 100,
+      "real_ceiling": 0.97,
+      "permutation_null": 0.9905050505050506,
+      "ratio": 0.9792983887415867
+    }
+  }
+}

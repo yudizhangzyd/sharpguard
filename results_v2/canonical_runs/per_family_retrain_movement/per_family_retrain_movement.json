@@ -1,0 +1,31 @@
+{
+  "median": {
+    "direction_flip": 0.03192932671193538,
+    "gripper_flip": 0.025,
+    "verb_swap": 0.11166666666666664,
+    "negation": 0.030000000000000027,
+    "subject_swap": 0.0812297734627832,
+    "location_swap": 0.04437621202327085,
+    "adversarial_plausible": 0.05412621359223302
+  },
+  "max": {
+    "direction_flip": 0.08120401337792638,
+    "gripper_flip": 0.09333333333333332,
+    "verb_swap": 0.31666666666666665,
+    "negation": 0.17000000000000004,
+    "subject_swap": 0.12815533980582527,
+    "location_swap": 0.10290885585003233,
+    "adversarial_plausible": 0.1344660194174757
+  },
+  "n_pairs": 6,
+  "configs": [
+    "ours_lora-r8",
+    "ours_lora-r16",
+    "ours_lora-r32",
+    "ours_lora-r64",
+    "ours_data-50A",
+    "ours_data-50B"
+  ],
+  "fbar_median": 0.044352648745311724,
+  "fbar_max": 0.10566759223090477
+}

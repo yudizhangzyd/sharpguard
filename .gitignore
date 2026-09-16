@@ -37,3 +37,7 @@ sharpguard.env
 build/
 # Same, for the full-length manuscript: pdflatex -output-directory=build_iclr
 build_iclr/
+
+# Session/tool state (not repo content)
+.aris/
+.claude/

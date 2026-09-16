@@ -1,0 +1,102 @@
+% Extracted verbatim from cot_faith_iclr.tex by hand-run; the ARR body
+% and the full-length version must cite the same entries.
+\begin{thebibliography}{99}
+% Bibliography provenance. Every entry below is checked against a live registry by
+% experiments/verify_citations.py, whose report is released as
+% results_v2/canonical_runs/citation_check/citation_check.json and asserted by
+% scripts/verify_paper_numbers.py. That check found six real defects on its first run:
+% five entries printed exactly five authors joined by "and" -- reading as complete lists
+% where the registry gives 7, 7, 7, 11 and 14 -- and one carried our own shorthand
+% "(OpenVLA-OFT)" inside the registered title. All six are corrected below.
+%
+% All 61 of 61 entries CONFIRM on title, author-surname order and year against
+% export.arxiv.org. Two obstacles had to be removed to get there, and both were
+% ours rather than the registries'.
+%
+% (1) An accidental precondition. The check only queried arXiv when the entry itself
+% printed an arXiv id, so venue-only citations (datasheets, cotvla, turpin2023,
+% libero, colosseum) were unverifiable because of our formatting, not because of
+% theirs. They are now resolved by exact-title search. The search accepts a hit only
+% on an exact normalized-title match, never on arXiv's relevance rank, because
+% confirming a citation against a neighbouring paper is worse than leaving it
+% unconfirmed. Six candidate additions did not resolve exactly and were replaced by
+% resolvable equivalents rather than written from memory.
+%
+% (2) Rate limiting, which appeared only when the bibliography grew. arXiv answers
+% HTTP 429 above one request per three seconds. At 15 entries the run finished inside
+% that window; at 51 it tripped the limit on 26 of them, and because the client
+% counted any HTTP status as "registry reachable", the report showed arXiv up while
+% 26 entries sat UNVERIFIED -- entries nobody had managed to ask about, filed as
+% though they had been asked. The client now waits between calls, retries a 429, and
+% records rate limiting as its own state, which the audit asserts against.
+%
+% DBLP was never the answer. It returns "CONNECT tunnel failed, 403" from the
+% authoring network -- a proxy host allowlist, not throttling; doi.org,
+% api.crossref.org, api.openalex.org, aclanthology.org, openreview.net and
+% scholar.google.com are blocked the same way -- and times out on the TLS handshake
+% from bolt task qrpd3f8z58, so falling back to it resolved nothing from anywhere.
+%
+% [VERIFY] datasheets: arXiv 1803.09010 confirms the title, all seven authors in order,
+% and the comment "Published in CACM in December, 2021" (consistent with volume 64(12)).
+% Volume, page range 86-92 and doi:10.1145/3458723 are still unresolved -- CHECK them
+% against the publisher record before submission.
+\bibitem[Adebayo et~al.(2018)]{adebayo2018} J.~Adebayo, J.~Gilmer, M.~Muelly, I.~Goodfellow, M.~Hardt, and B.~Kim. Sanity Checks for Saliency Maps. \emph{NeurIPS}, 2018. arXiv:1810.03292.
+\bibitem[Arcuschin et~al.(2025)]{arcuschin2025} I.~Arcuschin, J.~Janiak, R.~Krzyzanowski, S.~Rajamanoharan, N.~Nanda, and A.~Conmy. Chain-of-Thought Reasoning In The Wild Is Not Always Faithful. arXiv:2503.08679, 2025.
+\bibitem[Atanasova et~al.(2023)]{atanasova2023} P.~Atanasova, O.~Camburu, C.~Lioma, T.~Lukasiewicz, J.~G.~Simonsen, and I.~Augenstein. Faithfulness Tests for Natural Language Explanations. \emph{ACL}, 2023. arXiv:2305.18029.
+\bibitem[Beyer et~al.(2024)]{paligemma} L.~Beyer, A.~Steiner, A.~S.~Pinto, A.~Kolesnikov, X.~Wang, D.~Salz, et~al. PaliGemma: A versatile 3B VLM for transfer. arXiv:2407.07726, 2024.
+\bibitem[Brohan et~al.(2023a)]{rt2} A.~Brohan, N.~Brown, J.~Carbajal, Y.~Chebotar, X.~Chen, K.~Choromanski, et~al. RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control. \emph{CoRL}, 2023a. arXiv:2307.15818.
+\bibitem[Chan et~al.(2022)]{chan2022faithfulness} C.-S.~Chan, et~al. A Comparative Study of Faithfulness Metrics for Model Interpretability Methods. \emph{ACL}, 2022.
+\bibitem[Chen et~al.(2025a)]{ecotlite} W.~Chen, S.~Belkhale, S.~Mirchandani, O.~Mees, D.~Driess, et~al. Training Strategies for Efficient Embodied Reasoning. arXiv:2505.08243, 2025a.
+\bibitem[Chen et~al.(2025b)]{chen2025reasoning} Y.~Chen, J.~Benton, A.~Radhakrishnan, J.~Uesato, C.~Denison, J.~Schulman, et~al. Reasoning Models Don't Always Say What They Think. arXiv:2505.05410, 2025b.
+\bibitem[Collaboration et~al.(2024)]{openx} O.~X.~Collaboration, A.~O'Neill, A.~Rehman, A.~Gupta, A.~Maddukuri, A.~Gupta, et~al. Open X-Embodiment: Robotic Learning Datasets and RT-X Models. \emph{ICRA}, 2024. arXiv:2310.08864.
+\bibitem[Cui et~al.(2026)]{liberosafety} R.~Cui, Z.~Zhang, J.~Pang, H.~Chi, J.~Guo, et~al. {LIBERO-Safety}: A Comprehensive Benchmark for Physical and Semantic Safety in Vision-Language-Action Models. arXiv:2606.23686, 2026.
+\bibitem[Dehghani et~al.(2021)]{dehghani2021} M.~Dehghani, Y.~Tay, A.~A.~Gritsenko, Z.~Zhao, N.~Houlsby, F.~Diaz, et~al. The Benchmark Lottery. arXiv:2107.07002, 2021.
+\bibitem[DeYoung et~al.(2020)]{eraser} J.~DeYoung, S.~Jain, N.~F.~Rajani, E.~Lehman, C.~Xiong, R.~Socher, and B.~C.~Wallace. {ERASER}: A Benchmark to Evaluate Rationalized NLP Models. \emph{ACL}, 2020.
+\bibitem[Dodge et~al.(2019)]{dodge2019} J.~Dodge, S.~Gururangan, D.~Card, R.~Schwartz, and N.~A.~Smith. Show Your Work: Improved Reporting of Experimental Results. \emph{EMNLP}, 2019. arXiv:1909.03004.
+\bibitem[Foutter et~al.(2026)]{pinocchio} M.~Foutter, M.~Cercola, L.~Wild, Y.~Wang, M.~Li, et~al. Do vision-language-action models mean what they say? On the role of faithfulness in embodied reasoning. arXiv:2607.04681, 2026.
+\bibitem[Friedman et~al.(2024)]{friedman2024} D.~Friedman, A.~Lampinen, L.~Dixon, D.~Chen, and A.~Ghandeharioun. Interpretability Illusions in the Generalization of Simplified Models. \emph{ICML}, 2024. arXiv:2312.03656.
+\bibitem[Gebru et~al.(2021)]{datasheets} T.~Gebru, J.~Morgenstern, B.~Vecchione, J.~Wortman~Vaughan, H.~Wallach, H.~Daum\'e~III, and K.~Crawford. Datasheets for datasets. \emph{Communications of the ACM}, 64(12):86--92, 2021.
+\bibitem[Geiger et~al.(2022)]{geiger2022das} A.~Geiger, Z.~Wu, H.~Lu, J.~Rozner, E.~Kreiss, T.~Icard, N.~D.~Goodman, and C.~Potts. Inducing Causal Structure for Interpretable Neural Networks. \emph{ICML}, 2022.
+\bibitem[Henderson et~al.(2018)]{henderson2018} P.~Henderson, R.~Islam, P.~Bachman, J.~Pineau, D.~Precup, and D.~Meger. Deep Reinforcement Learning that Matters. \emph{AAAI}, 2018. arXiv:1709.06560.
+\bibitem[Hooker et~al.(2019)]{roar} S.~Hooker, D.~Erhan, P.-J.~Kindermans, and B.~Kim. A Benchmark for Interpretability Methods in Deep Neural Networks. \emph{NeurIPS}, 2019.
+\bibitem[Hu et~al.(2022)]{lora} E.~J.~Hu, Y.~Shen, P.~Wallis, Z.~Allen-Zhu, Y.~Li, S.~Wang, et~al. LoRA: Low-Rank Adaptation of Large Language Models. \emph{ICLR}, 2022. arXiv:2106.09685.
+\bibitem[Jacobs and Wallach(2021)]{jacobs2021} A.~Z.~Jacobs, and H.~Wallach. Measurement and Fairness. \emph{FAccT}, 2021. arXiv:1912.05511.
+\bibitem[Jacovi and Goldberg(2020)]{jacovigoldberg2020} A.~Jacovi, and Y.~Goldberg. Towards Faithfully Interpretable NLP Systems: How Should We Define and Evaluate Faithfulness?. \emph{ACL}, 2020.
+\bibitem[Jain and Wallace(2019)]{jain2019attention} S.~Jain, and B.~C.~Wallace. Attention is not Explanation. \emph{NAACL}, 2019. arXiv:1902.10186.
+\bibitem[Jiang et~al.(2023)]{mistral7b} A.~Q.~Jiang, A.~Sablayrolles, A.~Mensch, C.~Bamford, D.~S.~Chaplot, D.~de~las~Casas, et~al. Mistral 7B. arXiv:2310.06825, 2023.
+\bibitem[Kim et~al.(2024)]{openvla} M.~J.~Kim, K.~Pertsch, S.~Karamcheti, T.~Xiao, A.~Balakrishna, S.~Nair, et~al. OpenVLA: An Open-Source Vision-Language-Action Model. \emph{CoRL}, 2024. arXiv:2406.09246.
+\bibitem[Kim et~al.(2025)]{openvlaoft} M.~J.~Kim, C.~Finn, and P.~Liang. Fine-Tuning Vision-Language-Action Models: Optimizing Speed and Success. arXiv:2502.19645, 2025. Referred to as OpenVLA-OFT.
+\bibitem[Krishna et~al.(2022)]{krishna2022} S.~Krishna, T.~Han, A.~Gu, S.~Wu, S.~Jabbari, and H.~Lakkaraju. The Disagreement Problem in Explainable Machine Learning: A Practitioner's Perspective. arXiv:2202.01602, 2022.
+\bibitem[Lanham et~al.(2023)]{lanham2023} T.~Lanham et~al. Measuring faithfulness in chain-of-thought reasoning. arXiv:2307.13702, 2023.
+\bibitem[Li et~al.(2024)]{simplerenv} X.~Li, K.~Hsu, J.~Gu, K.~Pertsch, O.~Mees, H.~R.~Walke, et~al. Evaluating Real-World Robot Manipulation Policies in Simulation. \emph{CoRL}, 2024. arXiv:2405.05941.
+\bibitem[Lipton(2016)]{lipton2016} Z.~C.~Lipton. The Mythos of Model Interpretability. \emph{ICML Workshop on Human Interpretability in Machine Learning}, 2016. arXiv:1606.03490.
+\bibitem[Liu et~al.(2023)]{libero} B.~Liu, Y.~Zhu, C.~Gao, Y.~Feng, Q.~Liu, Y.~Zhu, and P.~Stone. {LIBERO}: Benchmarking Knowledge Transfer for Lifelong Robot Learning. \emph{NeurIPS Datasets \& Benchmarks Track}, 2023.
+\bibitem[Lu et~al.(2022)]{lu2022order} Y.~Lu, M.~Bartolo, A.~Moore, S.~Riedel, and P.~Stenetorp. Fantastically Ordered Prompts and Where to Find Them: Overcoming Few-Shot Prompt Order Sensitivity. \emph{ACL}, 2022.
+\bibitem[Lyu et~al.(2023)]{lyu2023faithful} Q.~Lyu, S.~Havaldar, A.~Stein, L.~Zhang, D.~Rao, E.~Wong, et~al. Faithful Chain-of-Thought Reasoning. \emph{IJCNLP-AACL}, 2023. arXiv:2301.13379.
+\bibitem[Lyu et~al.(2024)]{lyu2024survey} Q.~Lyu, M.~Apidianaki, and C.~Callison-Burch. Towards Faithful Model Explanation in NLP: A Survey. \emph{Computational Linguistics}, 2024. arXiv:2209.11326.
+\bibitem[Meng et~al.(2022)]{rome} K.~Meng, D.~Bau, A.~Andonian, and Y.~Belinkov. Locating and Editing Factual Associations in GPT. \emph{NeurIPS}, 2022. arXiv:2202.05262.
+\bibitem[Mizrahi et~al.(2024)]{mizrahi2024} L.~Mizrahi, et~al. State of What Art? A Call for Multi-Prompt LLM Evaluation. arXiv:2401.00595, 2024.
+\bibitem[Nguyen et~al.(2026)]{vladrivebench} T.~Nguyen, D.~Guo, T.~Lampo, F.~Wu, and B.~Yaman. {VLADriveBench}: Evaluating CoT-Action Relationship in VLA for Autonomous Driving. arXiv:2606.12706, 2026.
+\bibitem[Parcalabescu and Frank(2024)]{parcalabescu2024} L.~Parcalabescu, and A.~Frank. On Measuring Faithfulness or Self-consistency of Natural Language Explanations. \emph{ACL}, 2024. arXiv:2311.07466.
+\bibitem[Pertsch et~al.(2025)]{fast2025} K.~Pertsch, K.~Stachowicz, B.~Ichter, D.~Driess, S.~Nair, Q.~Vuong, O.~Mees, C.~Finn, and S.~Levine. FAST: Efficient Action Tokenization for Vision-Language-Action Models. arXiv:2501.09747, 2025.
+\bibitem[Pineau et~al.(2021)]{pineau2021} J.~Pineau, P.~Vincent-Lamarre, K.~Sinha, V.~Larivière, A.~Beygelzimer, F.~d'Alché-Buc, et~al. Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program). \emph{JMLR}, 22(164):1--20, 2021. arXiv:2003.12206.
+\bibitem[Pumacay et~al.(2024)]{colosseum} W.~Pumacay et~al. The Colosseum: a benchmark for evaluating generalization for robotic manipulation. \emph{RSS}, 2024.
+\bibitem[Qwen et~al.(2024)]{qwen25} Qwen, A.~Yang, B.~Yang, B.~Zhang, B.~Hui, et~al. Qwen2.5 Technical Report. arXiv:2412.15115, 2024.
+\bibitem[Radhakrishnan et~al.(2023)]{radhakrishnan2023} A.~Radhakrishnan, K.~Nguyen, A.~Chen, C.~Chen, C.~Denison, D.~Hernandez, et~al. Question Decomposition Improves the Faithfulness of Model-Generated Reasoning. arXiv:2307.11768, 2023.
+\bibitem[Raji et~al.(2021)]{raji2021} I.~D.~Raji, E.~M.~Bender, A.~Paullada, E.~Denton, and A.~Hanna. AI and the Everything in the Whole Wide World Benchmark. \emph{NeurIPS Datasets \& Benchmarks Track}, 2021. arXiv:2111.15366.
+\bibitem[Schaeffer et~al.(2023)]{schaeffer2023} R.~Schaeffer, B.~Miranda, and S.~Koyejo. Are Emergent Abilities of Large Language Models a Mirage?. \emph{NeurIPS}, 2023. arXiv:2304.15004.
+\bibitem[Sclar et~al.(2024)]{sclar2024} M.~Sclar, Y.~Choi, Y.~Tsvetkov, and A.~Suhr. Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design, or: How I Learned to Start Worrying about Prompt Formatting. \emph{ICLR}, 2024.
+\bibitem[Serrano and Smith(2019)]{serrano2019} S.~Serrano, and N.~A.~Smith. Is Attention Interpretable?. \emph{ACL}, 2019. arXiv:1906.03731.
+\bibitem[Team et~al.(2024)]{octo} O.~M.~Team, D.~Ghosh, H.~Walke, K.~Pertsch, K.~Black, O.~Mees, et~al. Octo: An Open-Source Generalist Robot Policy. \emph{RSS}, 2024. arXiv:2405.12213.
+\bibitem[Trinh et~al.(2026)]{doubleedged} T.~D.~Trinh, N.~Akhtar, and B.~Azam. Reasoning as a double-edged sword: architecture and cross-stage robustness in vision-language-action models. arXiv:2607.17786, 2026.
+\bibitem[Turpin et~al.(2023)]{turpin2023} M.~Turpin, J.~Michael, E.~Perez, and S.~R.~Bowman. Language models don't always say what they think: unfaithful explanations in chain-of-thought prompting. \emph{NeurIPS}, 2023.
+\bibitem[Walke et~al.(2023)]{bridgev2} H.~Walke, K.~Black, A.~Lee, M.~J.~Kim, M.~Du, C.~Zheng, et~al. BridgeData V2: A Dataset for Robot Learning at Scale. \emph{CoRL}, 2023. arXiv:2308.12952.
+\bibitem[Wei et~al.(2022)]{wei2022cot} J.~Wei, X.~Wang, D.~Schuurmans, M.~Bosma, B.~Ichter, F.~Xia, et~al. Chain-of-Thought Prompting Elicits Reasoning in Large Language Models. \emph{NeurIPS}, 2022. arXiv:2201.11903.
+\bibitem[Ye and Durrett(2022)]{ye2022unreliability} X.~Ye, and G.~Durrett. The Unreliability of Explanations in Few-shot Prompting for Textual Reasoning. \emph{NeurIPS}, 2022. arXiv:2205.03401.
+\bibitem[Yin et~al.(2025)]{deepthinkvla} C.~Yin, Y.~Lin, W.~Xu, S.~Tam, X.~Zeng, et~al. DeepThinkVLA: Enhancing Reasoning Capability of Vision-Language-Action Models. arXiv:2511.15669, 2025.
+\bibitem[Zawalski et~al.(2024)]{ecot} M.~Zawalski, W.~Chen, K.~Pertsch, O.~Mees, C.~Finn, and S.~Levine. Robotic control via embodied chain-of-thought reasoning. \emph{CoRL}, 2024. arXiv:2407.08693.
+\bibitem[Zhang and Nanda(2024)]{zhang2024patching} F.~Zhang, and N.~Nanda. Towards Best Practices of Activation Patching in Language Models: Metrics and Methods. \emph{ICLR}, 2024. arXiv:2309.16042.
+\bibitem[Zhang et~al.(2024)]{vlabench} S.~Zhang, Z.~Xu, P.~Liu, X.~Yu, Y.~Li, et~al. {VLABench}: A Large-Scale Benchmark for Language-Conditioned Robotics Manipulation with Long-Horizon Reasoning Tasks. arXiv:2412.18194, 2024.
+\bibitem[Zhao et~al.(2025)]{cotvla} Q.~Zhao, Y.~Lu, M.~J.~Kim, Z.~Fu, et~al. {CoT-VLA}: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models. \emph{CVPR}, 2025.
+\bibitem[Zheng et~al.(2023)]{mtbench} L.~Zheng, W.~Chiang, Y.~Sheng, S.~Zhuang, Z.~Wu, Y.~Zhuang, et~al. Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. \emph{NeurIPS Datasets \& Benchmarks Track}, 2023. arXiv:2306.05685.
+\end{thebibliography}

@@ -47,7 +47,7 @@ print(t, end="")
 PY
 if [ $? -ne 0 ]; then rm -f "$tmp"; echo "[submit] render failed"; exit 4; fi
 
-out=$(bolt task submit --config "$tmp" 2>&1)
+out=$(bolt task submit --config "$tmp" --tar . 2>&1)
 rc=$?
 rm -f "$tmp"
 printf '%s\n' "$out" | tail -20

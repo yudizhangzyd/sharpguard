@@ -175,5 +175,5 @@
     }
   },
   "record_level_correspondence": "NO. Validates the generators on the same reasoning corpus (restricted to the scored demo files when --file-base-from is given), not the exact scored pairs: the released records store actions only, and demo/step identity is not recoverable without re-iterating the 17GB tfds shards.",
-  "elapsed_s": 1502.9
+  "elapsed_s": 1581.6
 }

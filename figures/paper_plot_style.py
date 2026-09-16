@@ -35,6 +35,7 @@ C_NO_COT         = "#EE6677"   # red (no-CoT ablation)
 C_BASELINE       = "#CCBB44"   # yellow (non-CoT OpenVLA)
 C_ECOT_BRIDGE    = "#228833"   # green (Bridge-trained CoT-VLA)
 C_CTRL           = "#BBBBBB"   # gray (controls)
+C_DEEPTHINK      = "#AA3377"   # magenta (DeepThinkVLA lineage)
 
 # 4-bucket palette for attention
 BUCKETS = ["visual", "instr", "cot", "action_prev"]

@@ -57,7 +57,7 @@ PT = [(_LBL[m], ATTN[m]["per_token"]) for m in
 TITLE, TICK, YLAB, LEG, GRP = 6.5, 6.5, 6.6, 6.5, 6.5
 
 fig, (ax1, ax2, ax3) = plt.subplots(
-    1, 3, figsize=(6.28, 2.80),
+    1, 3, figsize=(5.16, 2.30),
     gridspec_kw={"width_ratios": [12, 3.6, 8.4]})
 # Explicit margins: savefig crops to the artists, so the default side margins
 # would emit a page narrower than 6.28in and LaTeX would scale it back up.

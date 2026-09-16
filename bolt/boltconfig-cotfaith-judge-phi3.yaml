@@ -1,0 +1,40 @@
+name: 'CoT-Faith #14b: second-judge validation with Phi-3.5-mini-instruct'
+description: 'Mistral-7B-Instruct-v0.2, run as a corroborating second judge on the same 437 pairs, failed its own negative-control gate (0.943 pooled preserved rate on meaning-destroying families, against the required low rate that rules out a degenerate always-preserved judge) -- so it could not serve as independent corroboration for Qwen2.5-7B-Instruct, the primary (valid) judge. This run tries a third candidate: meta-llama/Meta-Llama-3-8B-Instruct (already anticipated as a fallback in experiments/cotfaith_judge_edits.py) was tried first and failed to load -- it is a gated repo this HF token has no access to -- so this instead uses microsoft/Phi-3.5-mini-instruct, fully open (MIT license, no gate), a different training organization and pretraining corpus from Qwen (Alibaba), Mistral (Mistral AI) and Llama (Meta) alike. Same protocol, same 437 pairs, same seed, so the result is directly comparable to both prior runs rather than a new setup.'
+tags: ['cotfaith', 'judge', 'edit-families', 'second-judge', 'phi3']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 256
+  timeout: 6h
+  cluster: aws_2  # A100, confirmed-working cluster for this docker image (aws_6 stalled twice on the torch download)
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  JUDGE_MODELS: 'microsoft/Phi-3.5-mini-instruct'
+  REASONING_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  REASONING_FILE: 'libero_reasonings.json'
+  # Same corpus restriction as the Qwen/Mistral runs, for a directly
+  # comparable population.
+  FILE_BASE_FROM: 'results_v2/canonical_runs/ecot_bridge_edit_seed1.json'
+  N_SAMPLES: '40'
+  FAMILIES: 'paraphrase_null,bbox_jitter_null,syntactic_scramble,direction_flip,negation,subject_swap,verb_swap,gripper_flip,location_swap,cross_task_swap,adversarial_plausible'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+  MAX_NEW_TOKENS: '160'
+  TIME_BUDGET_H: '5'
+
+setup_command: bash bolt/setup.sh
+command: bash bolt/run_cotfaith_judge_edits.sh

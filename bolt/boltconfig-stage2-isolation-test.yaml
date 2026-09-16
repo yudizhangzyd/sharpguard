@@ -1,0 +1,33 @@
+name: 'CoT-Faith Stage 2 ISOLATION TEST: ecot-bridge alone, no concurrency'
+description: 'Diagnostic, not the real experiment. Two full Stage 2 runs (cbe2xdc9qt, 76twybafqw) ran 3 checkpoints concurrently and died identically: clean model+dataset load, then silence -- no Python exception, no OOM (800+GB host memory free throughout), and the parent shells wait on each child returned an invalid exit status. This runs ecot-bridge alone on 1 GPU in the foreground, no backgrounding, no concurrency, to isolate whether 3-way concurrency was the trigger. Survives -> re-architect the full job to serialize. Dies the same way alone -> concurrency is ruled out and the bug is in the generation call itself. Budget ~2-3 A100-h; timeout 3h.'
+tags: ['cotfaith', 'stage2', 'isolation-test', 'diagnostic']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu                # one process, one checkpoint, no concurrency by design
+  disk_gb: 512                   # LIBERO dataset snapshot (~17GB) + one checkpoint's weights
+  timeout: 3h                    # generous margin over a ~2-3 A100-h / single-GPU estimate
+  cluster: aws_2                  # A100. kt46u8i3uc confirmed aws_10/B200 (sm_100)
+                                  # definitively incompatible with this docker image's
+                                  # torch build (2.4.1+cu118, sm_50-sm_90 only) -- this
+                                  # is not a guess anymore, the preflight caught the exact
+                                  # "no kernel image is available" error directly. Back to
+                                  # the cluster where the original concurrency question
+                                  # this test exists to answer is actually still open.
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_stage2_isolation_test.sh

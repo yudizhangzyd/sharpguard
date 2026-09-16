@@ -1,10 +1,10 @@
 {
-  "note": "Bolt task provenance for the three DeepThinkVLA rows. Recorded separately because these runs are released as flat deepthink_*_13family.json files rather than in a directory with a bolt_task_id.txt, so the task id had no home and was, until this file, present only in a scratch copy of the downloaded artifact. artifact_identical_to_released is the check that the released file IS the job's output byte-for-byte, not a re-derived copy.",
+  "note": "Bolt task provenance for the three DeepThinkVLA rows. Recorded separately because these runs are released as flat deepthink_*_13family.json files rather than in a directory with a bolt_task_id.txt, so the task id had no home and was, until this file, present only in a scratch copy of the downloaded artifact. artifact_identical_to_released is the check that the released file IS the job's output byte-for-byte, not a re-derived copy. All three are now false: the DIRECTION_PAIRS in/out fix (sharpguard/attacks/cot_edit.py) required a direction_flip-only re-run for every configuration in the release, and these three files are the splice of that re-run's direction_flip family onto the original bolt_task's other 12 families -- not a raw job output. direction_flip_refix_bolt_task records the second job.",
   "runs": {
     "deepthinkvla_base": {
       "bolt_task": "zz72kijen8",
       "released_file": "deepthink_base_13family.json",
-      "released_sha256": "74e2c6ce4b56f4f995dce4620a278f14cce144cf18fadd1959e2462fde268db6",
+      "released_sha256": "24b68c9e6c4334287b60f578cb9e29b9f241ec587981aad0691c4bb0d06f28c3",
       "model": "yinchenghust/deepthinkvla_base",
       "n_samples": 100,
       "eval_seed": 0,
@@ -17,12 +17,13 @@
         10,
         7
       ],
-      "artifact_identical_to_released": true
+      "artifact_identical_to_released": false,
+      "direction_flip_refix_bolt_task": "pq7hergfu4"
     },
     "deepthinkvla_libero_cot_rl": {
       "bolt_task": "4r729nfbte",
       "released_file": "deepthink_rl_13family.json",
-      "released_sha256": "de45fbaaab9e3bcec34caeb4007294d91b03d00e39c413c1356c74ed97998201",
+      "released_sha256": "33b563939e8722b5e282a3b94215bf5ef0ec2751415aee064b07c9320cc1feb6",
       "model": "yinchenghust/deepthinkvla_libero_cot_rl",
       "n_samples": 100,
       "eval_seed": 0,
@@ -35,12 +36,13 @@
         10,
         7
       ],
-      "artifact_identical_to_released": true
+      "artifact_identical_to_released": false,
+      "direction_flip_refix_bolt_task": "x2uuikpm5a"
     },
     "deepthinkvla_libero_cot_sft": {
       "bolt_task": "j456ef4usj",
       "released_file": "deepthink_sft_13family.json",
-      "released_sha256": "ee5bd2ae029be10cc961b12ef3128854aec8c6a6fb77f34d85519e5c3dc61e9a",
+      "released_sha256": "886e7f6e419cbe19de2423ea5ceb74e01628161eb12f8b4e9d8614f2bdd73dff",
       "model": "yinchenghust/deepthinkvla_libero_cot_sft",
       "n_samples": 100,
       "eval_seed": 0,
@@ -53,7 +55,8 @@
         10,
         7
       ],
-      "artifact_identical_to_released": true
+      "artifact_identical_to_released": false,
+      "direction_flip_refix_bolt_task": "vdjs6bnmxz"
     }
   }
 }

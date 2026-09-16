@@ -1,0 +1,37 @@
+name: 'CoT-Faith Stage 1 ISOLATION TEST: lora-r64 alone, no concurrency'
+description: 'Diagnostic, not the real experiment. Two full Stage 1 runs (gc9ykqissb, yiertxskku) each launched ecot-bridge/lora-r32/lora-r64 concurrently across 3 GPUs; the first two succeeded reproducibly every time, lora-r64 (launched 3rd) failed identically both times on a transformers ImportError despite a --force-reinstall fix a same-run preflight confirmed had worked moments earlier. Deterministic, not flaky -- survived two targeted fixes. This runs lora-r64 alone on 1 GPU, foreground, no concurrency, to test whether this is a genuine launch-order/concurrency effect or specific to this one checkpoint. Succeeds -> serialize Phase A the way Stage 2 was just re-architected. Fails the same way alone -> the problem is in lora-r64s own fetched files/credentials, not concurrency. Budget ~2 A100-h; timeout 3h.'
+tags: ['cotfaith', 'stage1', 'isolation-test', 'diagnostic']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu                # one process, one checkpoint, no concurrency by design
+  disk_gb: 512                   # LIBERO reasoning file + one LoRA checkpoint's weights
+  timeout: 3h                    # generous margin over a ~2 A100-h / single-GPU estimate
+  cluster: aws_2                 # A100, confirmed-working cluster for this docker image
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  # lora-r64 is this project's own fine-tune, fetched from its training
+  # task's S3 artifacts -- same task id and credential-pair naming as
+  # bolt/boltconfig-stage1-continuous.yaml's lora-r64 row, so
+  # bolt/submit_stage1_r64_isolation_test.sh reuses bolt/submit_stage1.sh's
+  # exact credential-rendering pattern for just this one pair.
+  LORA_R64_CKPT_TASK_ID: '26whnbbrmb'
+  LORA_R64_AWS_ACCESS_KEY_ID: ${LORA_R64_AWS_ACCESS_KEY_ID}
+  LORA_R64_AWS_SECRET_ACCESS_KEY: ${LORA_R64_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_stage1_r64_isolation_test.sh

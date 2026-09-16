@@ -1,0 +1,10 @@
+{
+  "tau": 0.05,
+  "n": 300,
+  "F_paraphrase_null_lenexact": 0.56,
+  "F_paraphrase_null_published": 0.567,
+  "F_syntactic_scramble_published": 0.348,
+  "gap_vs_paraphrase_null": 0.006999999999999895,
+  "gap_vs_syntactic_scramble": 0.21200000000000008,
+  "verdict": "closer to paraphrase_null -- length is not what separates the two existing floors"
+}

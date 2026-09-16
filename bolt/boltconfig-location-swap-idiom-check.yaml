@@ -1,0 +1,23 @@
+name: 'CoT-Faith: does location_swap have the same idiom-collision issue as direction_flip did?'
+description: 'DIRECTION_PAIRS in/out fired on non-spatial idioms ("in order to", "in front of") on movement_reasoning, found and removed. LOCATION_PAIRS (location_swap, on plan/subtask/task instead) contains ("front of", "back of") -- the same "in front of" idiom, as a 2-word literal match. Checks whether the same failure mode recurs here by calling the real location_swap() on the full reasoning dataset and printing every distinct changed-field before/after for manual read. One HF single-file fetch (libero_reasonings.json), no TFDS snapshot, no model, no GPU. Diagnostic only, exits 0.'
+tags: ['cotfaith', 'location-swap', 'data-quality', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 16
+  timeout: 20m
+  cluster: aws_6
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+command: bash bolt/run_location_swap_idiom_check.sh

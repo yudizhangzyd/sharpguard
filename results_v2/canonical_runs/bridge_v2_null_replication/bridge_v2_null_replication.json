@@ -1,0 +1,30 @@
+{
+  "source": "results_v2/canonical_runs/bridge_v2_null_replication/cross_corpus_bridge_v2_n100_5family.json",
+  "model": "Embodied-CoT/ecot-openvla-7b-bridge",
+  "dataset": "IPEC-COMMUNITY/bridge_orig_lerobot",
+  "semantic_families_used": [
+    "direction_flip",
+    "gripper_flip"
+  ],
+  "semantic_families_n0": [
+    "subject_swap"
+  ],
+  "semantic_rates": {
+    "direction_flip": 0.9130434782608695,
+    "gripper_flip": 0.803921568627451
+  },
+  "semantic_ns": {
+    "direction_flip": 92,
+    "gripper_flip": 51
+  },
+  "semantic_mean": 0.8584825234441602,
+  "paraphrase_floor": 0.9090909090909091,
+  "paraphrase_n": 99,
+  "scramble_floor": 0.8023255813953488,
+  "scramble_n": 86,
+  "floor_gap": 0.10676532769556024,
+  "semantic_to_paraphrase_gap": 0.050608385646748855,
+  "semantic_to_scramble_gap": 0.05615694204881139,
+  "floor_gap_exceeds_both": true,
+  "paraphrase_at_least_semantic": true
+}

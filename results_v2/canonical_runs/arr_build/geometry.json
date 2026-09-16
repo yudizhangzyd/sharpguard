@@ -1,11 +1,12 @@
 {
-  "textheight_pt": 704.60031,
-  "textwidth_pt": 455.24411,
-  "columnsep_pt": 17.07182,
+  "textheight_pt": 650.43,
+  "textwidth_pt": 397.48499,
+  "columnwidth_pt": 397.48499,
+  "columnsep_pt": 10.0,
   "overfull_hbox_pt_max": 0.0,
   "overfull_hbox_count": 0,
-  "source": "pdflatex log for cot_faith_arr.tex, scripts/build_local.sh",
-  "body_last_page": 8,
-  "limitations_starts_page": 9,
-  "n_pages": 20
+  "source": "pdflatex log for cot_faith.tex, scripts/build_local.sh",
+  "body_last_page": 9,
+  "ai_use_statement_starts_page": 10,
+  "n_pages": 34
 }

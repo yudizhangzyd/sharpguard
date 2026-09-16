@@ -1,0 +1,425 @@
+{
+  "thresholds": [
+    -0.25,
+    -0.5,
+    -0.75
+  ],
+  "treatment_family": "direction_flip",
+  "null_families": [
+    "paraphrase_null",
+    "syntactic_scramble",
+    "bbox_jitter_null",
+    "cross_task_swap",
+    "verb_swap",
+    "negation",
+    "subject_swap",
+    "instr_random_sub"
+  ],
+  "n_configs": 11,
+  "n_clearing_null_by_threshold": {
+    "-0.25": 7,
+    "-0.5": 7,
+    "-0.75": 8
+  },
+  "which_configs_clear_by_threshold": {
+    "-0.25": [
+      "ecot_bridge",
+      "ours_data-50A",
+      "ours_data-50B",
+      "ours_lora-r16",
+      "ours_lora-r32",
+      "ours_lora-r64",
+      "ours_lora-r8"
+    ],
+    "-0.5": [
+      "ecot_bridge",
+      "ours_data-50A",
+      "ours_data-50B",
+      "ours_lora-r16",
+      "ours_lora-r32",
+      "ours_lora-r64",
+      "ours_lora-r8"
+    ],
+    "-0.75": [
+      "ecot_bridge",
+      "ours_data-50A",
+      "ours_data-50B",
+      "ours_lora-r16",
+      "ours_lora-r32",
+      "ours_lora-r64",
+      "ours_lora-r8",
+      "ours_no-cot"
+    ]
+  },
+  "per_threshold": {
+    "-0.25": [
+      {
+        "config": "ours_no-cot",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.09364548494983277,
+          "n": 299
+        },
+        "null_ceiling": 0.12,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": false
+      },
+      {
+        "config": "ours_lora-r8",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6655518394648829,
+          "n": 299
+        },
+        "null_ceiling": 0.15,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r16",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6688963210702341,
+          "n": 299
+        },
+        "null_ceiling": 0.11,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r32",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5919732441471572,
+          "n": 299
+        },
+        "null_ceiling": 0.11,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r64",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.782608695652174,
+          "n": 299
+        },
+        "null_ceiling": 0.10333333333333333,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50A",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6655518394648829,
+          "n": 299
+        },
+        "null_ceiling": 0.14333333333333334,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50B",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5719063545150501,
+          "n": 299
+        },
+        "null_ceiling": 0.08666666666666667,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ecot_bridge",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.26421404682274247,
+          "n": 299
+        },
+        "null_ceiling": 0.1,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "deepthink_sft",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.01,
+          "n": 100
+        },
+        "null_ceiling": 0.06,
+        "null_ceiling_family": "negation",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_rl",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.01,
+          "n": 100
+        },
+        "null_ceiling": 0.03333333333333333,
+        "null_ceiling_family": "subject_swap",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_base",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.0,
+          "n": 100
+        },
+        "null_ceiling": 0.0,
+        "null_ceiling_family": "paraphrase_null",
+        "clears_null": false
+      }
+    ],
+    "-0.5": [
+      {
+        "config": "ours_no-cot",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.08695652173913043,
+          "n": 299
+        },
+        "null_ceiling": 0.11333333333333333,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": false
+      },
+      {
+        "config": "ours_lora-r8",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6488294314381271,
+          "n": 299
+        },
+        "null_ceiling": 0.07666666666666666,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r16",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6588628762541806,
+          "n": 299
+        },
+        "null_ceiling": 0.09333333333333334,
+        "null_ceiling_family": "verb_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r32",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5819397993311036,
+          "n": 299
+        },
+        "null_ceiling": 0.07333333333333333,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r64",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.7792642140468228,
+          "n": 299
+        },
+        "null_ceiling": 0.07,
+        "null_ceiling_family": "verb_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50A",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6421404682274248,
+          "n": 299
+        },
+        "null_ceiling": 0.09666666666666666,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50B",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5317725752508361,
+          "n": 299
+        },
+        "null_ceiling": 0.056666666666666664,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ecot_bridge",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.11705685618729098,
+          "n": 299
+        },
+        "null_ceiling": 0.04666666666666667,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "deepthink_sft",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.01,
+          "n": 100
+        },
+        "null_ceiling": 0.05,
+        "null_ceiling_family": "negation",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_rl",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.01,
+          "n": 100
+        },
+        "null_ceiling": 0.02,
+        "null_ceiling_family": "paraphrase_null",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_base",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.0,
+          "n": 100
+        },
+        "null_ceiling": 0.0,
+        "null_ceiling_family": "paraphrase_null",
+        "clears_null": false
+      }
+    ],
+    "-0.75": [
+      {
+        "config": "ours_no-cot",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.023411371237458192,
+          "n": 299
+        },
+        "null_ceiling": 0.016666666666666666,
+        "null_ceiling_family": "paraphrase_null",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r8",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6220735785953178,
+          "n": 299
+        },
+        "null_ceiling": 0.023333333333333334,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r16",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5752508361204013,
+          "n": 299
+        },
+        "null_ceiling": 0.01,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r32",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5117056856187291,
+          "n": 299
+        },
+        "null_ceiling": 0.013333333333333334,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_lora-r64",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.6956521739130435,
+          "n": 299
+        },
+        "null_ceiling": 0.013333333333333334,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50A",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.5183946488294314,
+          "n": 299
+        },
+        "null_ceiling": 0.016666666666666666,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ours_data-50B",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.451505016722408,
+          "n": 299
+        },
+        "null_ceiling": 0.01,
+        "null_ceiling_family": "cross_task_swap",
+        "clears_null": true
+      },
+      {
+        "config": "ecot_bridge",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.023411371237458192,
+          "n": 299
+        },
+        "null_ceiling": 0.020202020202020204,
+        "null_ceiling_family": "instr_random_sub",
+        "clears_null": true
+      },
+      {
+        "config": "deepthink_sft",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.0,
+          "n": 100
+        },
+        "null_ceiling": 0.03,
+        "null_ceiling_family": "negation",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_rl",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.0,
+          "n": 100
+        },
+        "null_ceiling": 0.02,
+        "null_ceiling_family": "negation",
+        "clears_null": false
+      },
+      {
+        "config": "deepthink_base",
+        "treatment": {
+          "family": "direction_flip",
+          "F_dir": 0.0,
+          "n": 100
+        },
+        "null_ceiling": 0.0,
+        "null_ceiling_family": "paraphrase_null",
+        "clears_null": false
+      }
+    ]
+  }
+}

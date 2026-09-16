@@ -1,0 +1,13 @@
+{
+  "n_paired": 96,
+  "direction_flip_paired_subset": {
+    "n": 96,
+    "F_dir": 0.0625,
+    "mean_cos": 0.6399187166114553
+  },
+  "direction_flip_geom_consistent": {
+    "n": 96,
+    "F_dir": 0.08333333333333333,
+    "mean_cos": 0.6118394062802642
+  }
+}

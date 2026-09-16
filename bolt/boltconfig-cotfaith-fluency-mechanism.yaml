@@ -1,0 +1,34 @@
+name: 'CoT-Faith fluency mechanism check (r=32, 3 null families)'
+description: 'Limitations discloses this as unresolved: paraphrase_null floor correlates with judged fluency at rho=-0.60, and the existing mechanism_regression.py rules out the policys own log-likelihood (a related but distinct covariate) at partial R2<=0.037. The 437 existing judge-rated pairs and the large scored-edit runs are two independently-seeded draws (10/437 overlap on file_base+sample -- not enough to regress), so this scores TV and judged fluency on the SAME 100 samples x 3 null families (paraphrase_null, syntactic_scramble, bbox_jitter_null) in one pass, on task bcihypv3gu (r=32, the same checkpoint mechanism_regression.py used), to get partial R2(fluency) directly comparable to partial R2(logp).'
+tags: ['cotfaith', 'fluency', 'mechanism', 'floors', 'r32']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 14h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  AWS_ACCESS_KEY_ID: ${CKPT_AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${CKPT_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_TASK_ID: 'bcihypv3gu'
+  N_SAMPLES: '100'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_fluency_mechanism.sh

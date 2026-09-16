@@ -56,6 +56,7 @@ import argparse
 import importlib.util
 import json
 import re
+import statistics
 import sys
 from collections import Counter
 from pathlib import Path
@@ -462,7 +463,7 @@ def main() -> int:
         "max_lerobot_episodes_per_shared_task": max(
             (len(lero_norm[t]) for t in shared), default=0),
         "median_lerobot_episodes_per_shared_task": (
-            sorted(len(lero_norm[t]) for t in shared)[len(shared) // 2]
+            statistics.median(len(lero_norm[t]) for t in shared)
             if shared else 0),
         "shared_sample": sorted(shared)[:10],
         "annotation_only_sample": sorted(set(ann_norm) - set(lero_norm))[:10],

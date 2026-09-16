@@ -57,7 +57,7 @@ n_mono = sum(1 for f in FAMS
              if all(rank_data[f][i] <= rank_data[f][i + 1]
                     for i in range(len(RANKS) - 1)))
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.28, 2.30))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(5.67, 2.08))
 # Explicit margins because savefig crops to the artists, so default margins emit
 # a narrower page that LaTeX scales back up.
 fig.subplots_adjust(left=0.078, right=0.996, top=0.885, bottom=0.245,

@@ -1,0 +1,23 @@
+name: 'CoT-Faith: does the shared in/out DIRECTION_PAIRS substitution stay idiomatic on the main cohort?'
+description: 'DT-RLs direction_flip_text collided up/down with the phrasal verb "pick up" (93.5% of edits corrupted). That reuses the shared DIRECTION_PAIRS/_replace_word_pairs (sharpguard/attacks/cot_edit.py) the MAIN cohorts structured direction_flip() uses for every paper number, on movement/move/*_reasoning fields not free text. in/out is already flagged risky in-file ("in" is very common; scope to MOVE only) but for over-triggering, not idiom quality once it fires. Checks that against the real dataset: total step-0 records, direction_flip-eligible count, per-pair fire counts, before/after examples for in/out. One HF single-file fetch (libero_reasonings.json), no TFDS snapshot, no model, no GPU. Diagnostic only, always exits 0.'
+tags: ['cotfaith', 'direction-flip', 'data-quality', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
+  disk_gb: 16
+  timeout: 20m
+  cluster: aws_6
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+command: bash bolt/run_direction_flip_idiom_check.sh

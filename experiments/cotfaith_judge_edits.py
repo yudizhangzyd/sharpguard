@@ -498,7 +498,17 @@ def main():
             "sample": q["sample"], "family": q["family"],
             "file_base": q.get("file_base"), "demo": q.get("demo"),
             "step": q.get("step"), "edit_meta": q.get("edit_meta", {}),
-            "a_head": q["a"][:400], "b_head": q["b"][:400],
+            # Full text, not a 400-char head: a 400-char prefix put the
+            # families whose edit lands past the first ~80 words outside the
+            # stored window entirely (direction_flip 40/40, negation 39/40,
+            # syntactic_scramble 39/40 byte-identical heads; paraphrase_null/
+            # bbox_jitter_null 0/40 -- the edit was never in the window at
+            # all), so a reader could not check the one verdict the sign-flip
+            # claim rests on from the release, contrary to the "verbatim...
+            # both traces" this appendix section states. See
+            # audit_judge_pairs_differ below for the check this omission let
+            # through silently.
+            "a_head": q["a"], "b_head": q["b"],
             "verdict": v_ab, "verdict_reversed": v_ba,
             "raw_head": raw_ab if v_ab is None else "",
         })

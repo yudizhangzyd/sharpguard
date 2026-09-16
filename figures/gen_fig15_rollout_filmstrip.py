@@ -90,7 +90,7 @@ def die(msg: str) -> None:
     raise SystemExit(2)
 
 
-def load(cap_dir: str):
+def load(cap_dir: str, want_key: "tuple[int, int] | None" = None):
     rep_p = os.path.join(cap_dir, "rollout_edit_report.json")
     if not os.path.exists(rep_p):
         die(f"no rollout_edit_report.json under {cap_dir}. This figure is "
@@ -118,10 +118,23 @@ def load(cap_dir: str):
         die(f"no filmed episode has all three arms {sorted(want)}; got {have}. "
             f"A filmstrip missing a row would invite the reader to compare two "
             f"arms as though the third had not been run.")
-    # The lowest-numbered complete episode, so the choice is not a choice: a
-    # "best-looking" one would be cherry-picked, and this figure's whole value
-    # is that it is not.
-    key = sorted(full)[0]
+    if want_key is not None:
+        # An explicitly NAMED second episode, not a swapped-in "better" one:
+        # --episode requires the caller to say which complete episode they
+        # want, and the figure this draws must print that episode number, so
+        # a reader can tell it apart from the default (lowest-numbered) one
+        # rather than wonder why two "the" filmstrips disagree.
+        if want_key not in full:
+            have = sorted(full)
+            die(f"--episode {want_key[0]}:{want_key[1]} is not a complete "
+                f"filmed episode (all three arms); complete episodes are "
+                f"{have}.")
+        key = want_key
+    else:
+        # The lowest-numbered complete episode, so the choice is not a
+        # choice: a "best-looking" one would be cherry-picked, and this
+        # figure's whole value is that it is not.
+        key = sorted(full)[0]
     return rep, key, full[key], sorted(full)
 
 
@@ -267,6 +280,7 @@ def column_motion(cap_dir, key, arm, steps, eps) -> dict:
 
 
 def main() -> int:
+    global FONT_SIZE
     argv = [a for a in sys.argv[1:] if not a.startswith("--")]
     strip_only = "--strip-only" in sys.argv
     no_strip = "--no-strip" in sys.argv
@@ -276,8 +290,16 @@ def main() -> int:
     no_eef = "--no-eef" in sys.argv or strip_only
     if no_strip and no_eef:
         die("--no-strip with no pose panels leaves nothing to draw.")
+    # --episode T:E names a second complete episode explicitly, so a reader
+    # who compares this to the default filmstrip sees a different episode
+    # number printed, not an unexplained different scene.
+    want_key = None
+    for a in sys.argv[1:]:
+        if a.startswith("--episode="):
+            t_s, e_s = a[len("--episode="):].split(":")
+            want_key = (int(t_s), int(e_s))
     cap_dir = argv[0] if argv else DEFAULT
-    rep, key, eps, all_keys = load(cap_dir)
+    rep, key, eps, all_keys = load(cap_dir, want_key)
     steps = pick_steps(eps)
     print(f"[fig15] {cap_dir}")
     print(f"[fig15] episode task{key[0]}/ep{key[1]} of {len(all_keys)} filmed; "
@@ -322,18 +344,34 @@ def main() -> int:
                            "logged"))
 
     # ---- geometry -------------------------------------------------------
-    # 6.14in, not 6.20: save() trims to the tight bbox and adds 2*pad_inches,
-    # and panel (b)'s y-label overhangs the leftmost axes by ~0.06in. Authoring
-    # at 6.20 landed the PDF at 456.5pt against a 453.6pt \textwidth, so LaTeX
-    # rescaled every captured frame by 0.995 for nothing.
-    # 6.32 rather than 6.14 under --no-strip. save() writes a tight bbox with
-    # 0.05in of pad, and the widest artist is the right edge of panel (c), so the
-    # PDF's width is the panels' own extent: at the strip's 6.14 the drawing came
-    # out 440.6pt against a 453.6pt \textwidth and \includegraphics scaled every
-    # label up 2.9%, which is a different type size from every other figure here.
-    W = 6.32 if no_strip else 6.14
-    cell = (W - 0.62) / len(steps)         # 0.62in of row labels on the left
-    strip_h = 0.0 if no_strip else 3 * (cell + 0.20) + 0.16   # +0.20 per row
+    # ICLR's \textwidth is 397.5pt (5.50in), not ACL's 453.6pt (6.30in) this
+    # was tuned to: a canvas wider than its include slot downscales every
+    # absolute font/frame size with it, which is what
+    # scripts/verify_paper_numbers.py's per-figure width-scale check caught
+    # (fig2_rollout_frames.pdf at 88% of authored width). W below is this
+    # file's own iterative-tuning approach re-applied to the new target: cell
+    # (and therefore strip_h) scales with W but PLOT_H does not, so the two
+    # branches no longer share one scale factor and a pure ratio only gets
+    # the first pass close, not exact -- see the value actually measured in
+    # the PDF, not computed here.
+    # 6.32 (the --no-strip branch, fig15_rollout_paths.pdf) is untouched: that
+    # panel is not currently included anywhere, so it is not the defect this
+    # pass fixes.
+    #
+    # STRIP_SCALE existed to shrink --strip-only's canvas (width, the two
+    # row-geometry constants below and FONT_SIZE together, since everything
+    # is positioned as a fraction of W/H so a uniform scale keeps every
+    # proportion identical) when this figure had to fit the body's 9-page
+    # budget. fig2_rollout_frames.pdf now lives in the appendix, which is
+    # page-unlimited, so this is 1.0 -- full authored size -- but the single
+    # knob is kept rather than inlined, since the next page-budget squeeze
+    # may need it again.
+    STRIP_SCALE = 1.0
+    W = 6.32 if no_strip else 5.40 * STRIP_SCALE
+    label_w, row_gap, top_pad = (v * STRIP_SCALE for v in (0.62, 0.20, 0.16))
+    cell = (W - label_w) / len(steps)
+    strip_h = 0.0 if no_strip else 3 * (cell + row_gap) + top_pad   # +row_gap per row
+    FONT_SIZE = FONT_SIZE * STRIP_SCALE
     # 0.44in for (b)/(c)'s tick labels and axis labels, PLOT_H of axes, 0.11in
     # of air under the last MOVE caption. The first version left 0.38in of dead
     # band between the strip and the plots and gave the plots 0.80in, which read
@@ -345,7 +383,7 @@ def main() -> int:
     # and the "21.8 cm box" annotation could not be checked against the ticks.
     # 1.93in x 1.21in is the box the tracks' own extent asks for (see below).
     PLOT_H = 1.21
-    bot_h = (0.44 + PLOT_H + 0.11) if have_eef else 0.16
+    bot_h = (0.44 + PLOT_H + 0.11) if have_eef else 0.16 * STRIP_SCALE
     # Without the strip above them the two panels lose the 0.16in top pad the
     # strip carried, and their titles then sit on the figure's bbox edge, which
     # save()'s tight bbox crops into the capital letters.
@@ -358,12 +396,12 @@ def main() -> int:
     # Skipped under --no-strip: the body prints this strip as its own float, and
     # the same six frames in the appendix figure is one exhibit drawn twice.
     if not no_strip:
-        y_top = 1.0 - 0.16 / H
+        y_top = 1.0 - top_pad / H
         for r, (arm, label, colour) in enumerate(ARMS):
-            row_top = y_top - r * (cell + 0.20) / H
+            row_top = y_top - r * (cell + row_gap) / H
             for c, st in enumerate(steps):
                 img, rec = frame(cap_dir, key, arm, st, eps)
-                ax = fig.add_axes([(0.62 + c * cell) / W, row_top - cell / H,
+                ax = fig.add_axes([(label_w + c * cell) / W, row_top - cell / H,
                                    cell / W, cell / H])
                 ax.set_xticks([]); ax.set_yticks([])
                 for s in ax.spines.values():
@@ -383,12 +421,12 @@ def main() -> int:
                             transform=ax.transAxes, ha="center", va="top",
                             fontsize=FONT_SIZE - 3.5, color=colour,
                             clip_on=False)
-            fig.text(0.60 / W, row_top - 0.5 * cell / H, label, ha="right",
-                     va="center", fontsize=FONT_SIZE - 2, color=colour,
-                     linespacing=1.15)
+            fig.text(0.60 * STRIP_SCALE / W, row_top - 0.5 * cell / H, label,
+                     ha="right", va="center", fontsize=FONT_SIZE - 2,
+                     color=colour, linespacing=1.15)
 
-        fig.text(0.02 / W, y_top + 0.10 / H, "(a)", fontsize=FONT_SIZE - 1,
-                 fontweight="bold", va="bottom")
+        fig.text(0.02 * STRIP_SCALE / W, y_top + 0.10 * STRIP_SCALE / H, "(a)",
+                 fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
     # Panel letters are positional, not fixed: under --no-strip the pose panels
     # are the figure's first and second, and a figure whose only panels are
@@ -575,7 +613,11 @@ def main() -> int:
         fig.text((X0 + WB + GAP - 0.05) / W, (0.44 + PLOT_H) / H, L_DIST,
                  fontsize=FONT_SIZE - 1, fontweight="bold", va="bottom")
 
-    save(fig, "fig2_rollout_frames" if strip_only
+    # A named --episode gets its own filename (never fig2_rollout_frames,
+    # the one already released and \ref'd): a second real episode is
+    # additional evidence, not a silent replacement for the first.
+    ep_suffix = f"_t{key[0]}ep{key[1]}" if want_key is not None else ""
+    save(fig, ("fig2_rollout_frames" + ep_suffix) if strip_only
               else "fig15_rollout_paths" if no_strip
               else "fig15_rollout_filmstrip")
 
@@ -623,8 +665,8 @@ def main() -> int:
         "cot_clean_xy_span_cm": (None if clean_span_cm is None
                                  else round(clean_span_cm, 2)),
     }
-    p = os.path.join(cap_dir, "fig2_frames_facts.json" if strip_only
-                     else "fig15_facts.json")
+    p = os.path.join(cap_dir, ("fig2_frames_facts" + ep_suffix + ".json")
+                     if strip_only else "fig15_facts.json")
     with open(p, "w") as fh:
         json.dump(facts, fh, indent=2)
     print(json.dumps(facts, indent=2))

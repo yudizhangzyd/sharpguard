@@ -1,0 +1,44 @@
+name: 'CoT-Faith Stage 2: LoRA r=64 self-generated CoT edit sensitivity'
+description: 'Extends the 3-checkpoint self-generated-CoT check (bolt/boltconfig-stage2-selfgen.yaml: ecot-bridge, lora-r32, no-cot, integrated into appendix.tex Limitations) to a 4th checkpoint, LoRA r=64, so the "does the floor collapse survive self-generated CoT" question is answered for a second LoRA rank within the ECoT lineage, not just r=32. Same script (experiments/cotfaith_stage2_selfgen.py) and family/sample settings as the 3-checkpoint job, one checkpoint only.'
+tags: ['cotfaith', 'stage2', 'self-generated-cot', 'construct-validity', 'r64']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 1024
+  timeout: 8h
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  N_SAMPLES: '100'
+  N_SAMPLES_ADDON: '40'
+  SEED: '0'
+  DTYPE: 'bfloat16'
+  KL_EPS: '1e-6'
+  THRESHOLD: '0.05'
+  MAX_NEW_TOKENS: '320'
+
+  LORA_R64_CKPT_TASK_ID: '26whnbbrmb'
+  LORA_R64_AWS_ACCESS_KEY_ID: ${LORA_R64_AWS_ACCESS_KEY_ID}
+  LORA_R64_AWS_SECRET_ACCESS_KEY: ${LORA_R64_AWS_SECRET_ACCESS_KEY}
+  S3_ENDPOINT_URL: 'https://conductor.data.apple.com'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_stage2_selfgen_r64.sh

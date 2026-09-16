@@ -1,0 +1,23 @@
+name: 'CoT-Faith: enumerate every distinct in/out context in the main cohort reasoning data'
+description: 'Fix design step for the in/out idiom-collision bug (found: DIRECTION_PAIRS in/out fires on "in order to", "in front of", "the robot is in the center" etc., not just clean spatial reversals, 12.5% of the papers own judge_edit_families sample and ~15% population-wide). Enumerates every distinct 7-word context around in/out across all movement/movement_reasoning fields in the reasoning dataset, so the fix can mask the real, enumerated idiom set the same way the DT-RL phrasal-verb fix masked "pick up" -- not a guessed pattern list. One HF single-file fetch (libero_reasonings.json), no TFDS snapshot, no model, no GPU. Diagnostic only, exits 0.'
+tags: ['cotfaith', 'direction-flip', 'data-quality', 'preflight']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu   # nothing here uses the GPU; 1gpu is the smallest shape that schedules promptly
+  disk_gb: 16
+  timeout: 20m
+  cluster: aws_6
+
+environment_variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+command: bash bolt/run_enumerate_in_out.sh

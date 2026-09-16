@@ -1,0 +1,2186 @@
+{
+  "tau": 0.05,
+  "source": "results_v2/canonical_runs/judge_edit_families/judge_pairs.json",
+  "families": {
+    "direction_flip": {
+      "n_total_records": 40,
+      "n_applicable": 40,
+      "F_mag": 1.0,
+      "F_dir": 0.925,
+      "mean_cos": -0.925,
+      "n_identical_action": 0,
+      "per_sample": [
+        {
+          "sample": 0,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move back and right",
+          "move_b": "move forward and left"
+        },
+        {
+          "sample": 1,
+          "a_orig": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move right",
+          "move_b": "move left"
+        },
+        {
+          "sample": 2,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move up and left and back",
+          "move_b": "move down and right and forward"
+        },
+        {
+          "sample": 3,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "rotate clockwise and move right and back",
+          "move_b": "rotate clockwise and move left and forward"
+        },
+        {
+          "sample": 4,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down",
+          "move_b": "move up"
+        },
+        {
+          "sample": 5,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and forward",
+          "move_b": "move up and back"
+        },
+        {
+          "sample": 6,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and forward",
+          "move_b": "move up and back"
+        },
+        {
+          "sample": 7,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move back and down",
+          "move_b": "move forward and up"
+        },
+        {
+          "sample": 8,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and forward",
+          "move_b": "move up and back"
+        },
+        {
+          "sample": 9,
+          "a_orig": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move left slowly",
+          "move_b": "move right slowly"
+        },
+        {
+          "sample": 10,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.33333333333333337,
+          "faithful": true,
+          "reversed": false,
+          "move_a": "move down and forward and left and rotate up",
+          "move_b": "move up and back and right and rotate down"
+        },
+        {
+          "sample": 11,
+          "a_orig": [
+            -1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move right and up and back",
+          "move_b": "move left and down and forward"
+        },
+        {
+          "sample": 12,
+          "a_orig": [
+            0.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and right",
+          "move_b": "move up and left"
+        },
+        {
+          "sample": 13,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down",
+          "move_b": "move up"
+        },
+        {
+          "sample": 14,
+          "a_orig": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and left",
+          "move_b": "move up and right"
+        },
+        {
+          "sample": 15,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move forward and down",
+          "move_b": "move back and up"
+        },
+        {
+          "sample": 16,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and back",
+          "move_b": "move up and forward"
+        },
+        {
+          "sample": 17,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down",
+          "move_b": "move up"
+        },
+        {
+          "sample": 18,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down",
+          "move_b": "move up"
+        },
+        {
+          "sample": 19,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move left and up and back",
+          "move_b": "move right and down and forward"
+        },
+        {
+          "sample": 20,
+          "a_orig": [
+            -1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move right and down and back",
+          "move_b": "move left and up and forward"
+        },
+        {
+          "sample": 21,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move up and left and back",
+          "move_b": "move down and right and forward"
+        },
+        {
+          "sample": 22,
+          "a_orig": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move left",
+          "move_b": "move right"
+        },
+        {
+          "sample": 23,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "close gripper and move down",
+          "move_b": "close gripper and move up"
+        },
+        {
+          "sample": 24,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move forward and left and down",
+          "move_b": "move back and right and up"
+        },
+        {
+          "sample": 25,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move right and back",
+          "move_b": "move left and forward"
+        },
+        {
+          "sample": 26,
+          "a_orig": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move up",
+          "move_b": "move down"
+        },
+        {
+          "sample": 27,
+          "a_orig": [
+            0.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move left and up",
+          "move_b": "move right and down"
+        },
+        {
+          "sample": 28,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move right and back",
+          "move_b": "move left and forward"
+        },
+        {
+          "sample": 29,
+          "a_orig": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": 0.33333333333333337,
+          "faithful": true,
+          "reversed": false,
+          "move_a": "move right and down and forward and rotate up and left",
+          "move_b": "move left and up and back and rotate down and right"
+        },
+        {
+          "sample": 30,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "close gripper and move down",
+          "move_b": "close gripper and move up"
+        },
+        {
+          "sample": 31,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and forward",
+          "move_b": "move up and back"
+        },
+        {
+          "sample": 32,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": 0.0,
+          "faithful": true,
+          "reversed": false,
+          "move_a": "move up and back and rotate down",
+          "move_b": "move down and forward and rotate up"
+        },
+        {
+          "sample": 33,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0000000000000002,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move left and down and forward",
+          "move_b": "move right and up and back"
+        },
+        {
+          "sample": 34,
+          "a_orig": [
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move back",
+          "move_b": "move forward"
+        },
+        {
+          "sample": 35,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and forward",
+          "move_b": "move up and back"
+        },
+        {
+          "sample": 36,
+          "a_orig": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down and left",
+          "move_b": "move up and right"
+        },
+        {
+          "sample": 37,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "rotate down slowly",
+          "move_b": "rotate up slowly"
+        },
+        {
+          "sample": 38,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -0.9999999999999998,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move forward and down",
+          "move_b": "move back and up"
+        },
+        {
+          "sample": 39,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 2.0,
+          "cos": -1.0,
+          "faithful": true,
+          "reversed": true,
+          "move_a": "move down",
+          "move_b": "move up"
+        }
+      ]
+    },
+    "paraphrase_null": {
+      "n_total_records": 40,
+      "n_applicable": 40,
+      "F_mag": 0.0,
+      "F_dir": 0.0,
+      "mean_cos": 1.0,
+      "n_identical_action": 40,
+      "per_sample": [
+        {
+          "sample": 0,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move back and right",
+          "move_b": "shift back and right"
+        },
+        {
+          "sample": 1,
+          "a_orig": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right",
+          "move_b": "shift right"
+        },
+        {
+          "sample": 2,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move up and left and back",
+          "move_b": "shift up and left and back"
+        },
+        {
+          "sample": 3,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "rotate clockwise and move right and back",
+          "move_b": "rotate clockwise and shift right and back"
+        },
+        {
+          "sample": 4,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down",
+          "move_b": "shift down"
+        },
+        {
+          "sample": 5,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward",
+          "move_b": "shift down and forward"
+        },
+        {
+          "sample": 6,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward",
+          "move_b": "shift down and forward"
+        },
+        {
+          "sample": 7,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move back and down",
+          "move_b": "shift back and down"
+        },
+        {
+          "sample": 8,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward",
+          "move_b": "shift down and forward"
+        },
+        {
+          "sample": 9,
+          "a_orig": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move left slowly",
+          "move_b": "shift left slowly"
+        },
+        {
+          "sample": 10,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward and left and rotate up",
+          "move_b": "shift down and forward and left and rotate up"
+        },
+        {
+          "sample": 11,
+          "a_orig": [
+            -1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right and up and back",
+          "move_b": "shift right and up and back"
+        },
+        {
+          "sample": 12,
+          "a_orig": [
+            0.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and right",
+          "move_b": "shift down and right"
+        },
+        {
+          "sample": 13,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down",
+          "move_b": "shift down"
+        },
+        {
+          "sample": 14,
+          "a_orig": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and left",
+          "move_b": "shift down and left"
+        },
+        {
+          "sample": 15,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move forward and down",
+          "move_b": "shift forward and down"
+        },
+        {
+          "sample": 16,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and back",
+          "move_b": "shift down and back"
+        },
+        {
+          "sample": 17,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down",
+          "move_b": "shift down"
+        },
+        {
+          "sample": 18,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down",
+          "move_b": "shift down"
+        },
+        {
+          "sample": 19,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move left and up and back",
+          "move_b": "shift left and up and back"
+        },
+        {
+          "sample": 20,
+          "a_orig": [
+            -1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right and down and back",
+          "move_b": "shift right and down and back"
+        },
+        {
+          "sample": 21,
+          "a_orig": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move up and left and back",
+          "move_b": "shift up and left and back"
+        },
+        {
+          "sample": 22,
+          "a_orig": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move left",
+          "move_b": "shift left"
+        },
+        {
+          "sample": 23,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "close gripper and move down",
+          "move_b": "shut gripper and shift down"
+        },
+        {
+          "sample": 24,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move forward and left and down",
+          "move_b": "shift forward and left and down"
+        },
+        {
+          "sample": 25,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right and back",
+          "move_b": "shift right and back"
+        },
+        {
+          "sample": 26,
+          "a_orig": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move up",
+          "move_b": "shift up"
+        },
+        {
+          "sample": 27,
+          "a_orig": [
+            0.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move left and up",
+          "move_b": "shift left and up"
+        },
+        {
+          "sample": 28,
+          "a_orig": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right and back",
+          "move_b": "shift right and back"
+        },
+        {
+          "sample": 29,
+          "a_orig": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move right and down and forward and rotate up and left",
+          "move_b": "shift right and down and forward and rotate up and left"
+        },
+        {
+          "sample": 30,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "close gripper and move down",
+          "move_b": "shut gripper and shift down"
+        },
+        {
+          "sample": 31,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward",
+          "move_b": "shift down and forward"
+        },
+        {
+          "sample": 32,
+          "a_orig": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move up and back and rotate down",
+          "move_b": "shift up and back and rotate down"
+        },
+        {
+          "sample": 33,
+          "a_orig": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0000000000000002,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move left and down and forward",
+          "move_b": "shift left and down and forward"
+        },
+        {
+          "sample": 34,
+          "a_orig": [
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move back",
+          "move_b": "shift back"
+        },
+        {
+          "sample": 35,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and forward",
+          "move_b": "shift down and forward"
+        },
+        {
+          "sample": 36,
+          "a_orig": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down and left",
+          "move_b": "shift down and left"
+        },
+        {
+          "sample": 37,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "rotate down slowly",
+          "move_b": "rotate down slowly"
+        },
+        {
+          "sample": 38,
+          "a_orig": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            1.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 0.9999999999999998,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move forward and down",
+          "move_b": "shift forward and down"
+        },
+        {
+          "sample": 39,
+          "a_orig": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "a_edit": [
+            0.0,
+            0.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_linf": 0.0,
+          "cos": 1.0,
+          "faithful": false,
+          "reversed": false,
+          "move_a": "move down",
+          "move_b": "shift down"
+        }
+      ]
+    }
+  }
+}

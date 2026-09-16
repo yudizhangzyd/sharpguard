@@ -1,0 +1,33 @@
+name: 'CoT-Faith: action-token bin-resolution sweep (ECoT-bridge)'
+description: 'Reviewer ask: is the decode-collision mechanism (S3.2, F approx 1-P(collision), R^2=0.926) a property of this checkpoints specific 256-bin action-token grid, or would coarser/finer discretizations of the SAME softmax show a similar pattern? Reuses experiments/cotfaith_stage1_continuous.py openvla_action_softmax (the exact function behind the paper Table 3/Figure 4 numbers) to get the full 7x256 softmax once per sample/family, then re-derives collision rate and F@tau=0.05 at resolutions 8/16/32/64/128/256 by summing adjacent bins, holding the model and forward pass fixed. B=256 must reproduce cotfaith_edit.py own numbers exactly (regression guard asserted in-script).'
+tags: ['cotfaith', 'collision-mechanism', 'bin-resolution-sweep', 'ecot-bridge']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu
+  disk_gb: 512
+  timeout: 6h
+  cluster: aws_6
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+  CKPT_HF_ID: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  N_SAMPLES: '100'
+  SEED: '0'
+  THRESHOLD: '0.05'
+  DTYPE: 'bfloat16'
+  FAMILIES: 'direction_flip,paraphrase_null,syntactic_scramble,cross_task_swap'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_action_bin_resolution_sweep.sh

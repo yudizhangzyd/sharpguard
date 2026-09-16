@@ -108,7 +108,7 @@ for SEED in ${SEEDS:-0 1 2}; do
         --out       "$SEED_DIR" \
         --n-samples "${N_SAMPLES:-100}" \
         --seed      "$SEED" \
-        --families  all \
+        --families  "${FAMILIES:-all}" \
         --threshold "${THRESHOLD:-0.05}" \
         --dtype     "${DTYPE:-bfloat16}" || rc=$?
     if [ "$rc" -eq 0 ]; then

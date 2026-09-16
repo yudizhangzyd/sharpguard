@@ -40,13 +40,25 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Arc
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FI = os.path.join(ROOT, "results_v2", "canonical_runs", "floor_invariance",
-                  "floor_invariance.json")
+# Panel (b)'s floors and F-bar come from here, not from floor_invariance.json:
+# that file's own top-level per_config fields (f_bar_semantic,
+# floor_paraphrase_null, floor_syntactic_scramble) are frozen at the
+# nine-family convention Table 1's caption explicitly disavows ("an earlier,
+# looser convention... is not defensible"). FCR's convention_b_families is
+# the seven-family set Table 1 actually uses, and its per_config[*].fbar_B /
+# floors matches Table 1's printed digits exactly (checked by hand against
+# ECoT-bridge's row: 0.947 / 0.856 / 0.859) where floor_invariance.json's do
+# not (0.96 / 0.88 / 0.894). This regenerates the figure the manuscript calls
+# "the claim" onto the same numbers the table beside it prints, which an
+# earlier version of this script did not do.
+FCR = os.path.join(ROOT, "results_v2", "canonical_runs",
+                   "floor_convention_robustness",
+                   "floor_convention_robustness.json")
 EX = os.path.join(ROOT, "results_v2", "canonical_runs", "edit_examples",
                   "edit_examples.json")
 
-with open(FI) as fh:
-    FLOORS = json.load(fh)
+with open(FCR) as fh:
+    FCONV = json.load(fh)
 with open(EX) as fh:
     EXAMPLES = json.load(fh)["examples"]
 
@@ -99,17 +111,19 @@ W_ORIG, W_EDIT = diff_words(MOVE_ORIG, MOVE_EDIT)
 # ---------------------------------------------------------------------------
 # Panel (b) inputs: both floors and the semantic mean, per configuration.
 # ---------------------------------------------------------------------------
-PC = FLOORS["per_config"]
+PC = FCONV["per_config"]
 NICE = {"ours_no-cot": "no-CoT", "ours_lora-r8": "r=8", "ours_lora-r16": "r=16",
         "ours_lora-r32": "r=32", "ours_lora-r64": "r=64",
         "ours_data-50A": "data-50A", "ours_data-50B": "data-50B",
         "ecot_bridge": "ECoT-bridge", "deepthink_base": "DT base",
-        "deepthink_sft": "DT SFT", "deepthink_rl": "DT RL",
-        "bridge_subset_4k": "Bridge-4k"}
-rows = [(NICE.get(c["config"], c["config"]),
-         c["floor_paraphrase_null"]["F"],
-         c["floor_syntactic_scramble"]["F"],
-         c["f_bar_semantic"]) for c in PC]
+        "deepthink_sft": "DT SFT", "deepthink_rl": "DT RL"}
+# bridge_subset_4k is in FCONV but not in NICE, and is dropped here on
+# purpose: Table 1's caption excludes it by name ("not comparable in scale"),
+# so this panel plotting all 12 of FCONV's configs against Table 1's 11 rows
+# was the panel's other disagreement with the table beside it.
+rows = [(NICE[cfg], c["floors"]["paraphrase_null"],
+         c["floors"]["syntactic_scramble"], c["fbar_B"])
+        for cfg, c in PC.items() if cfg in NICE]
 # Ordered by the paraphrase floor so the band structure reads left to right
 # instead of following an arbitrary config order.
 rows.sort(key=lambda r: r[1])
@@ -118,8 +132,12 @@ rows.sort(key=lambda r: r[1])
 N_BETWEEN = sum(1 for _, p, s, f in rows if min(p, s) <= f <= max(p, s))
 N_SPREAD = sum(1 for _, p, s, f in rows
                if abs(p - s) > max(abs(f - p), abs(f - s)))
-assert N_SPREAD == FLOORS["n_null_spread_exceeds_margin"], \
-    "recomputed floor-spread count disagrees with floor_invariance.json"
+# Table 1's caption states this same count ("exceeds the larger F_diff on 10
+# of 11 rows"); no cross-check against floor_invariance.json here, since that
+# file's own count was computed under the nine-family convention this figure
+# no longer uses.
+assert N_SPREAD == 10, \
+    f"recomputed floor-spread count ({N_SPREAD}) disagrees with Table 1's caption (10 of 11)"
 
 # ---------------------------------------------------------------------------
 # Panel (c) inputs: the two rankings on direction_flip.
@@ -144,8 +162,11 @@ FLAT = {m: LABELS[m].replace("\n", "") for m in MS}
 # vertical extent is set by its text, and the two data panels below it must
 # keep their own baseline regardless of how tall (a) ends up.
 # ---------------------------------------------------------------------------
-W, H = 6.30, 3.70                      # ACL \textwidth (16cm) x 3.70in
-A_H, GAP, B_H = 1.32, 0.24, 1.64
+W, H = 5.43, 3.70                      # ICLR \textwidth (397.5pt); H is nominal --
+                                        # bbox_inches="tight" crops to A_H+GAP+B_H
+                                        # regardless, so only W is load-bearing here
+A_H, GAP, B_H = 1.32, 0.06, 1.64       # GAP trimmed from 0.24: pure whitespace
+                                        # between panel (a) and (b)/(c), not text
 fig = plt.figure(figsize=(W, H))
 
 TOP = 1.0
@@ -319,7 +340,7 @@ bx.plot(x, [r[1] for r in rows], "o", ms=3.6, mfc="white", mew=1.0,
 bx.plot(x, [r[2] for r in rows], "^", ms=3.8, mfc="white", mew=1.0,
         color="0.25", zorder=3, label="floor: scramble (length-exact)")
 bx.plot(x, [r[3] for r in rows], "s", ms=3.8, color=C_NO_COT, zorder=4,
-        label=r"$\bar{\mathcal{F}}$, nine semantic families")
+        label=r"$\bar{\mathcal{F}}$, seven semantic families")
 bx.set_xticks(x)
 bx.set_xticklabels([r[0] for r in rows], rotation=42, ha="right",
                    fontsize=FONT_SIZE - 3.4)
@@ -343,10 +364,15 @@ cxx = fig.add_axes([0.615, (H - A_H - GAP - B_H) / H, 0.325, B_H / H])
 for m in MS:
     y0, y1 = rank_mag[m], rank_dir[m]
     hero = m == HERO_MODEL
-    # Everything but the hero line is drawn thin and pale on purpose. S8 shows
-    # the retraining error bar swamps adjacent ranks, so a bump chart that drew
-    # all eight lines equally would assert an ordering the paper refuses to
-    # publish. Only the highlighted move is larger than the noise.
+    # Everything but the hero line is drawn thin and pale on purpose. S8's
+    # retraining bar is measured on F_mag (never on F_dir), and it shows ranks
+    # 2-7 tied on F_mag itself -- so their mag-side starting point is not a
+    # reliable ordering to begin with, and a bump chart that drew all eight
+    # lines equally would assert a reordering the paper refuses to publish.
+    # Only the hero's mag-side rank (a 0.140 gap to its nearest neighbor,
+    # against a 0.068 max retraining move) is reliable enough for its landing
+    # rank under F_dir to read as a genuine reversal rather than noise moving
+    # an already-unreliable tie.
     cxx.plot([0, 1], [y0, y1], "-", color=COL[m],
              lw=(2.0 if hero else 0.8), alpha=(1.0 if hero else 0.45),
              zorder=(3 if hero else 2))
@@ -383,8 +409,8 @@ cxx.set_title(f"(c) the same edit, scored for direction:\n"
               loc="left", fontsize=FONT_SIZE - 1.6, style="italic", pad=3.5)
 # "\\S8" here would set as a literal backslash: this is matplotlib text, not
 # LaTeX, and \\S is not a mathtext command.
-cxx.text(0.5, len(MS) + 0.80, "pale lines: reorderings inside the retraining "
-         "error bar (Sec. 8)", ha="center", va="center",
+cxx.text(0.5, len(MS) + 0.80, "ranks 2-7 tie neighbors under retraining "
+         "noise (Sec. 7)", ha="center", va="center",
          # 6.5pt, the floor: this disclaimer is what stops panel (c) from
          # asserting an ordering S8 refuses to publish, so it is the last text
          # in the figure that may be set too small to read.

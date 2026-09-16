@@ -1,345 +1,399 @@
 % !TeX root = cot_faith.tex
+% ============================================================
+% ICLR submission version, using the OFFICIAL iclr2027_conference.sty
+% (copied verbatim from the author's own downloaded
+% iclr-2027-style-files.zip, not reconstructed). Filename kept as
+% cot_faith.tex on purpose -- scripts/verify_paper_numbers.py,
+% scripts/build_arr_appendix.py and the bolt/ build scripts all hardcode
+% this path, and none of that tooling cares what venue the content targets.
+% Renaming would touch five files for a purely cosmetic gain.
+%
+% This file is the main text; the appendix is \input at the bottom via
+% appendix.tex, which is now HAND-MAINTAINED, not regenerated --
+% scripts/build_arr_appendix.py's source (cot_faith_iclr.tex) is stale and
+% does not know about fig:dissociation, fig:collision or tab:tvfloors moving
+% into it when the 9-page main-text limit forced them out of this file, so
+% rerunning that script would silently discard those moves (see
+% appendix.tex's own header). ICLR's page budget does not cap the
+% appendix at all: a strict 9 pages for the main text on initial submission
+% (10 for rebuttal/camera-ready), unlimited additional pages for references
+% and appendix, per iclr2027_conference.tex's own \S2 (the official
+% instructions file, not a secondhand summary).
+%
+% Build: latexmk -pdf cot_faith.tex
+% ============================================================
 \documentclass{article}
-\usepackage[preprint]{neurips_2026}
-\usepackage[utf8]{inputenc}
+\usepackage{iclr2027_conference,times}
 \usepackage[T1]{fontenc}
-\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
 \usepackage{url}
 \usepackage{booktabs}
-\usepackage{amsfonts}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{nicefrac}
-\usepackage{microtype}
-\usepackage{xcolor}
+\usepackage{amsfonts, amsmath, amssymb}
 \usepackage{graphicx}
 \usepackage{multirow}
+\usepackage{placeins}
+% No \usepackage{natbib} here: iclr2027_conference.sty already
+% \RequirePackage{natbib}s and sets \setcitestyle{authoryear,round,...} --
+% loading it again with different options (this file previously passed
+% [numbers, sort&compress], which the official style does not use; ICLR's
+% own citation instructions are author-year, e.g. (Smith et al., 2020), not
+% numbered) would be a package-option clash, and the numbered style was
+% never the target's convention to begin with.
+% No inconsolata: it lives in texlive-fonts-extra, which the build image does
+% not carry, and it only restyles \texttt. A cosmetic package that turns the
+% submission build into a package-availability gamble is not worth the font.
 
-\title{CoT-Faith: A Benchmark for Chain-of-Thought Faithfulness \\
-in Manipulation Vision-Language-Action Models}
+\graphicspath{{figures/}}
+\raggedbottom
+% The ACL body's float-placement tuning (relaxed topfraction/dbltopfraction,
+% tightened textfloatsep) existed to fit six floats into eight two-column
+% pages without a queue draining past the bibliography -- see git history on
+% this file for the postmortem. iclr2027_conference.sty already sets its own
+% \topfraction/\textfraction (0.95/0.05) for the same reason on a
+% single-column page, so nothing here overrides them a second time;
+% \raggedbottom above is kept as a generally good default (a short column
+% reads as the end of the text, not a missing figure) and everything else
+% reverts to LaTeX's own defaults -- except the two float-separation lengths
+% below, which are LaTeX's own defaults (\textfloatsep 20pt, \intextsep 12pt),
+% not anything iclr2027_conference.sty sets, and are tightened, not
+% eliminated, to help close the last part-page of the 9-page limit. This
+% changes white space around floats only: no font, margin or the .sty's own
+% dimensions are touched.
+\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\intextsep}{3pt plus 1pt minus 1pt}
 
-\author{
-  Anonymous \\
-  (submission)
-}
+% Shrink-to-fit, used throughout the tables in this file and the appendix.
+%
+% A bare \resizebox{\textwidth} would also ENLARGE a narrow table to full
+% width, which is worse than the overflow it fixes. This measures first and
+% scales only when the box is genuinely too wide, so a table that already fits
+% is passed through at its natural size and untouched typographically.
+\newsavebox{\fitsavebox}
+\newcommand{\fitwidth}[2]{%
+  \sbox{\fitsavebox}{#2}%
+  \ifdim\wd\fitsavebox>#1\relax
+    \resizebox{#1}{!}{\usebox{\fitsavebox}}%
+  \else
+    \usebox{\fitsavebox}%
+  \fi}
 
+\title{CoT-Faith: Magnitude Scores Do Not Measure Faithfulness in Manipulation VLAs}
+
+% iclr2027_conference.sty's own \@maketitle hardcodes "Anonymous authors /
+% Paper under double-blind review" whenever \iclrfinalcopy is undefined (see
+% its \ificlrfinal branch) -- it does not read \@author at all in that case,
+% so this content only matters once \iclrfinalcopy is uncommented for
+% camera-ready, and is left blank until then rather than guess names now.
+\author{}
+\date{}
+
+%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
+% scripts/build_local.sh's geometry check parses these four lines out of the
+% pdflatex log; acl.sty printed them itself pre-ICLR-migration,
+% iclr2027_conference.sty does not, so this replaces that.
+\typeout{GEOMETRY: \string\textheight=\the\textheight}
+\typeout{GEOMETRY: \string\textwidth=\the\textwidth}
+\typeout{GEOMETRY: \string\columnwidth=\the\columnwidth}
+\typeout{GEOMETRY: \string\columnsep=\the\columnsep}
 \maketitle
 
 \begin{abstract}
-Chain-of-thought (CoT) reasoning has been widely adopted in vision-language-action (VLA) models for manipulation, with the implicit assumption that verbalized reasoning traces reflect and drive the model's action decoding.  We ask: do manipulation CoT-VLAs \emph{mean what they say}?
-We introduce \textbf{CoT-Faith}, the first benchmark measuring chain-of-thought faithfulness for manipulation VLAs on LIBERO. CoT-Faith combines three metric families: (i) a segment-decomposition of action-token attention over the (visual, instruction, CoT, action-history) buckets; (ii) a causal-intervention protocol that mutates the CoT text along ten semantic axes and measures the induced $\Delta$action; and (iii) an attention-based failure predictor.  Across 11 models, 3 seeds, and 10 edit families with a null selfsplice control ($\sim 20\,000$ evaluation calls, $\sim 200$ aggregate cells), we find:
-\begin{itemize}
-\item {\bf Attention on the CoT segment is architecture-determined, not training-determined.} A model trained with \emph{no} CoT reasoning targets shows the same 35-\% attention on the CoT segment ($0.349$) as a fully CoT-trained model ($0.340$).
-\item {\bf Reasoning-target training determines causal effect.} On identical base and data, CoT edits change actions in $74$--$82\%$ of samples for CoT-trained models but only $23\%$ for the no-CoT baseline. Attention pattern does not predict this gap.
-\item {\bf Attention and causation are decoupled.} A null "selfsplice" control shows $0.000$ $\Delta$action across all 6 trained models, validating the metric. Attention distributions have AUROC $= 0.50$ as an action-error predictor ($N{=}200$).
-\item {\bf Bridge-trained CoT-VLAs are $2\times$ more faithful than LIBERO-fine-tuned ones}, even with identical architecture and prompt format.
-\end{itemize}
-CoT-Faith therefore shows that the interpretability guarantee often assumed for CoT-VLAs is a training-data property, not an architectural one.  We release code, checkpoints, and all $\sim 200$ evaluation cells to seed further work on trustworthy VLA reasoning.
+Vision-language-action models that emit chain-of-thought are proposed as a route to interpretable robotics, on the premise that the emitted reasoning drives the action. This benchmark and the one prior line that also tests it score an edit by the \emph{magnitude} of the action change it induces. We show that this scoring rule's validity depends on which meaning-preserving edit is nominated as its floor, and that the more defensible choice does not hold up model by model. A meaning-preserving paraphrase moves the action \emph{at least as much} as semantic edits do on 11 of 11 configurations (9 significant, 7 Holm-corrected); against a second, length-exact floor the semantic mean is higher on 10 of 11 but only 3 reversals are significant (1 Holm-corrected), and the two floors disagree with each other more than either disagrees with the semantic mean on 10 of 11, so neither tested floor can be treated as canonical by the benchmark itself. We establish this with CoT-Faith: one paired-intervention protocol on 15 manipulation VLAs in four model families, ten edit families and three calibration nulls, 324 scored cells. The score is close to a decode-collision counter, and a threshold-free divergence confirms the same collapse. Requiring the action to point the \emph{implied} direction moves the top-ranked model from first of eight to seventh, and the two rankings agree only weakly. A rule-based oracle sanity check recovers high directional faithfulness ($\mathcal{F}_{\text{dir}}=0.925$), showing that the pipeline detects the constructed causal dependence, without validating the diagnostic's calibration on any learned policy. Any score of this kind should be read against a per-model null and an action-space diagnostic before it licenses a claim; ours admits none of our own eight submissions.
 \end{abstract}
 
-% ============================================================
 \section{Introduction}
-% ============================================================
+\label{sec:intro}
 
-Vision-Language-Action models (VLAs) that emit chain-of-thought traces alongside their action tokens have been proposed as a route toward interpretable robotics: the reasoning is expected to expose the model's internal plan for review, correction, or safety monitoring \citep{ecot,cotvla,haiv}.  This assumes that the emitted CoT \emph{drives} the subsequent action decode.  If instead the CoT is post-hoc narration --- generated in parallel with the action and irrelevant to it --- then every downstream claim built on top (safety monitors reading the plan, auditors flagging bad reasoning, corrective interventions edited into the CoT) becomes unreliable.
+Vision-language-action (VLA) models that emit chain-of-thought reasoning alongside their action tokens are widely proposed as a route toward interpretable robotics: the reasoning is expected to expose the model's plan for review, correction, or safety monitoring \citep{ecot}. This premise, that the emitted CoT \emph{drives} the subsequent action decode, underwrites CoT-based safety monitors, corrective interventions, and CoT-derived auditing, and has not been evaluated for manipulation VLAs under uniform conditions. Recent work evaluates CoT-faithfulness for autonomous-driving VLAs \citep{vladrivebench,pinocchio} and probes CoT-based safety monitors on a three-model manipulation cohort \citep{doubleedged}; a cross-model, cross-corpus, standardized manipulation benchmark is missing (related work: Appendix~\ref{sec:related}). We built one, applied it to 15 VLAs across 4 model families, and the result is one claim about the instrument rather than a set of findings about the models. The magnitude-based edit score that this benchmark and the one other perturbation-based precedent we know of is built on is not a calibrated measure of faithfulness: its floor-corrected interpretation is unstable, with all 11 configurations falling below the paraphrase floor while 10 of 11 reverse sign against a length-exact scramble floor (\S\ref{sec:floors}). Three further strands test that verdict, each a way it could fail instead: the score is close to a decode-collision counter (\S\ref{sec:collision}); a direction-aware diagnostic exposes a qualitatively different failure mode and disagrees at the top of the ranking (\S\ref{sec:directional}); and retraining one recipe unchanged moves the floor-corrected statistic by up to $0.068$, more than most between-model gaps (\S\ref{sec:variance}); the negative result is the safety-relevant contribution. This is not a narrow measurement quibble: as CoT-emitting VLAs move from research demonstrations toward settings where a monitor or a human overseer is meant to read the reasoning before trusting the action, the validity of the score used to certify that the reasoning is what moved the action is a precondition for any of those downstream uses, not an optional check on top of them. Figure~\ref{fig:overview} (\S\ref{sec:benchmark}) carries the claim and the first two strands.
 
-Recent work on autonomous-driving VLAs \citep{vladrivebench,pinocchio} began formalising the notion of CoT-faithfulness for embodied reasoning.  However, manipulation --- the primary domain of published CoT-VLAs \citep{ecot,ecotlite,deepthinkvla} --- has been left uncovered.  The closest concurrent manipulation study, \emph{Reasoning as a Double-Edged Sword} \citep{doubleedged}, evaluates three architectures on a single edit family (entity swap) and explicitly defers direction-swap and gripper-state-flip experiments to future work.
+\paragraph{Contributions.} The claim of \S\ref{sec:floors} is the contribution; \S\S\ref{sec:collision}--\ref{sec:variance} are the three strands that make it hard to escape. Two things support them. The benchmark (\S\ref{sec:benchmark}): ten edit families spanning six capability axes (Appendix~\ref{sec:taxonomy}) in a three-tier taxonomy plus three calibration nulls, on $\sim$100 LIBERO first-step samples per family per model, with a self-generated-CoT sweep on Bridge~V2 \citep{bridgev2} via Open X-Embodiment \citep{openx}, and a direction-aware score $\mathcal{F}_{\text{dir}}$, the one instrument here with a measured null, which motivates a six-stage admission protocol (Appendix~\ref{sec:eval_protocol}) rather than a validated replacement. A release built to be checked (\S\ref{sec:release}): all per-sample records, an audit script asserting 1,632 claims against them, and an admission rule that rejects all eight of our own submissions.
 
-\textbf{Contributions.}
-We introduce CoT-Faith, a benchmark for CoT-VLA faithfulness in manipulation.  Concretely:
-\begin{enumerate}
-\item {\bf A methodology combining three complementary probes} of CoT faithfulness --- (1) segment-decomposed attention analysis, (2) causal-intervention $\Delta$action across ten edit families with a selfsplice null control, and (3) prompt-truncation ablation.
-\item {\bf An 11-model benchmark suite}: two public CoT-VLAs (ECoT-bridge and our LIBERO fine-tune), four non-CoT baselines (OpenVLA-7B for the four LIBERO suites), plus six training-ablation variants of our model (three LoRA ranks, two half-data seeds, and one no-CoT baseline that shares the same base and data).
-\item {\bf Four principal empirical findings} (Section~\ref{sec:results}) demonstrating that attention on CoT is decoupled from CoT's causal effect on action decoding, and that faithfulness is a property of training-data \emph{targets}, not architecture.
-\item {\bf Full experimental artefacts}, including training checkpoints, reasoning annotations, edit-target texts, and $\sim 200$ aggregate result cells, released for reproduction and extension.
-\end{enumerate}
-
-% ============================================================
-\section{Related Work}
-% ============================================================
-
-\paragraph{CoT-VLAs for manipulation.}
-ECoT \citep{ecot} was the first manipulation VLA with an explicit nine-tag reasoning trace (TASK, PLAN, VISIBLE OBJECTS, SUBTASK REASONING, SUBTASK, MOVE REASONING, MOVE, GRIPPER POSITION, ACTION), all fine-tuned autoregressively.  ECoT-Lite \citep{ecotlite} released dense per-timestep reasoning annotations over 90 LIBERO tasks, enabling downstream studies.  DeepThinkVLA \citep{deepthinkvla} extends the paradigm with hybrid causal/bidirectional decoders.  A common assumption across these works is that the emitted CoT informs the subsequent action.
-
-\paragraph{CoT faithfulness in language models.}
-For LLMs, \citet{turpin2023} showed that CoT can be post-hoc rationalisation --- the model decides based on features not visible in the CoT.  This finding motivates our manipulation-domain investigation.
-
-\paragraph{CoT faithfulness for embodied AI.}
-VLADriveBench \citep{vladrivebench} introduced the mentioning/hallucination/contradiction/alignment quartet for driving CoT-VLAs and evaluated three planners.  Pinocchio \citep{pinocchio} trained a critic to score functional-vs-faithful CoT via a five-edge consistency check, restricted to driving trajectory outputs.  \emph{Reasoning as a Double-Edged Sword} \citep{doubleedged} evaluated LIBERO on three archetypes (no-reasoning, text-CoT, latent-iterative) under vision/reasoning/action-stage perturbations but performed only one linguistic edit family (entity swap on a single model), and explicitly identified direction-swap and gripper-flip as future work.  CoT-Faith takes up those deferred axes and adds a null selfsplice control that all three concurrent works lack.
-
-\paragraph{Internal-signal failure detection for VLAs.}
-SAFE \citep{safe} and FIPER \citep{fiper} use internal hidden-state signals to predict per-episode failure at inference.  Our Table~\ref{tab:auroc} adopts their AUROC protocol, restricted to CoT-attention buckets.
-
-% ============================================================
-\section{The CoT-Faith Benchmark}
+\FloatBarrier
+\section{The CoT-Faith benchmark}
 \label{sec:benchmark}
-% ============================================================
 
-\subsection{Sample specification and prompt template}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig1_overview.pdf}
+    \caption{One observation, two reasoning traces, and two scoring rules that disagree about which model is most faithful. \emph{(a)} The protocol (below): observation, instruction and decode held fixed, the CoT rewritten in one span, the two 7-DoF actions compared. The \texttt{MOVE} lines are the released \emph{direction\_flip} pair; arrows are drawn at the top-ranked model's measured mean translation cosine, $+0.418$. Magnitude scoring calls that faithful on $0.963$ of samples; requiring the sign calls it faithful on $0.117$. \emph{(b)} Why no absolute $\mathcal{F}$ is a quantity of faithfulness (\S\ref{sec:floors}): each column is one configuration, the grey band its two meaning-preserving floors; the semantic mean falls \emph{inside} that band on 10 of 11. \emph{(c)} The ranking that follows (\S\ref{sec:directional}): $\mathcal{F}_{\text{mag}}$ (Eq.~\ref{eq:faith}) against $\mathcal{F}_{\text{dir}}$ (Eq.~\ref{eq:fdir}), both on \emph{direction\_flip} (Table~\ref{tab:directional}), so this is not the family-mean ordering of the leaderboard. The highlighted model's rank clears the \S\ref{sec:variance} bar against its neighbor (measured on $\mathcal{F}_{\text{mag}}$, not $\mathcal{F}_{\text{dir}}$), so first to seventh of eight is a real reversal; among ranks $2$--$7$, which do not clear that bar against each other, the landing position is not informative. Rank agreement overall is positive but weak (Spearman $\rho = 0.476$).}
+    \label{fig:overview}
+\end{figure*}
 
-We adopt the ECoT prompt template \citep{ecot} verbatim: each sample is a triple \((\mathrm{img}, \mathrm{instr}, \mathrm{cot})\) where \(\mathrm{cot}\) is the nine-tag ECoT reasoning trace from \texttt{Embodied-CoT/embodied\_features\_and\_demos\_libero} \citep{ecotlite}.  The assistant turn given to the model is
-\begin{center}
-\small
-\texttt{USER: What action should the robot take to \{instr\}? ASSISTANT: TASK: \{...\} PLAN: \{...\} $\ldots$ GRIPPER POSITION: \{...\} ACTION: \{7\ tokens\}}
-\end{center}
-Non-CoT baselines use OpenVLA's default template \texttt{"In: what action \ldots ? Out: \{7 tokens\}"}, leaving the CoT segment empty.
+Figure~\ref{fig:overview}(a) shows this protocol on one released example first.
 
-\subsection{Metric families}
+We take a VLA's emitted CoT to be faithful to the extent that the decoded action depends counterfactually on its semantic content, and only on that content, giving two testable model conditions and one instrument condition. \textbf{Selectivity (D1)}: a meaning-changing edit must move the action more reliably than a meaning-preserving one. \textbf{Sign-consistency (D2)}: an edit that reverses an implied direction must reverse the action, not merely displace it. \textbf{Calibration (D3)}: any score must be read against a per-model null, since the same score means different things on models with different decode geometry. Each strand previewed above addresses one of these three; \S\ref{sec:floors}'s is D1.
 
-\paragraph{Attention decomposition.}
-For each sample, we forward the model with \(\mathrm{output\_attentions}\!=\!\mathrm{True}\) and capture attention weights from LLM layers 0--3.  We partition the sequence into four segments: \emph{visual} (positions 0--255, the DINOv2+SigLIP prefix), \emph{instruction} (up to the "ASSISTANT:" marker), \emph{CoT} (up to the "ACTION:" marker), and \emph{action} (last 7 non-EOS tokens).  For action-position source rows we compute the fraction of attention mass falling into each target segment, averaged over heads and layers.
+\subsection{Measurement Protocol}
 
-\paragraph{Causal CoT edits.}
-For each sample and each edit family $f$, we compute
-\[
-\Delta_{\infty}(f) = \max_{i \in [7]} \bigl| a_i(\mathrm{img}, \mathrm{instr}, f(\mathrm{cot})) - a_i(\mathrm{img}, \mathrm{instr}, \mathrm{cot}) \bigr|,
-\]
-where $a_i$ is the $i$-th action dimension after de-quantising the greedy-decoded action tokens.  A sample is \emph{faithful under $f$} iff $\Delta_\infty(f) > 0.05$ (5\% of the normalised action range).  The \emph{faithful rate} is the empirical fraction across $N{=}100$ samples per family.  We use ten families (Section~\ref{sec:edits}), including a selfsplice control $f(\mathrm{cot})=\mathrm{cot}$ (identity replacement) that must show $\approx 0$ faithful rate.
+For each sample $s$ and edit family $f$ we decode greedily twice (once on the unedited CoT, once on the edited CoT), holding the observation, the instruction and the decode fixed, and compare the two 7-DoF actions:
+\begin{equation}
+\Delta_\infty^{s,f} = \max_{i \in [7]}\bigl|\,a_i(s, f(\text{cot}_s)) - a_i(s, \text{cot}_s)\,\bigr|,
+\label{eq:delta}
+\end{equation}
+with $a_i$ normalized to $[-1,1]$. We define the per-sample response indicator $\mathbf{1}[\Delta_\infty^{s,f} > \tau]$, $\tau = 0.05$, and summarize it as
+\begin{equation}
+\mathcal{F}(m,f) = \tfrac{1}{N}\textstyle\sum_s \mathbf{1}[\Delta_\infty^{s,f}(m) > \tau].
+\label{eq:faith}
+\end{equation}
+$\mathcal{F}(m,f)$ is the response statistic this benchmark and its one precedent report as a faithfulness score. Whether that response rate is in fact a valid measure of faithfulness, rather than an assumption this paper makes, is exactly the question \S\ref{sec:floors} tests.
+This is a paired, within-policy, within-observation intervention against the model's own null; it does not presuppose competence and licenses no claim about a policy that completes the task (\S\ref{sec:release}). Figure~\ref{fig:frames} (Appendix~\ref{sec:appendix}) shows what one such edit does over a whole rollout, not one decode, and what the policy read while it did.
 
-\paragraph{Prompt-format ablation.}
-We further truncate the target-side CoT to variants \{full, TASK-only, PLAN-only, TASK+PLAN+SUBTASK, shuffled-tag-order, empty\} and measure $\Delta_\infty$ relative to full.
+Eq.~\ref{eq:delta} credits movement in \emph{any} direction. For families whose semantics imply a signed consequence we require the sign. After \emph{direction\_flip} reverses left$\leftrightarrow$right / up$\leftrightarrow$down / in$\leftrightarrow$out,
+\begin{align}
+\mathcal{F}_{\text{dir}} &= \tfrac{1}{N}\textstyle\sum_s \mathbf{1}\!\left[c^f_s < -0.5\right], \label{eq:fdir}\\
+c^f_s &= \cos\bigl(a_{1:3}(s,\text{cot}_s),\, a_{1:3}(s,f(\text{cot}_s))\bigr) \nonumber
+\end{align}
+with analogous criteria for \emph{gripper\_flip} and \emph{negation}.
 
-\paragraph{Attention $\rightarrow$ failure AUROC.}
-For each sample we also greedy-decode the action tokens and compute L$_1$ error against the ground-truth demo action.  We binarise at the median error and report the non-parametric AUROC of each attention feature as a failure predictor.
+The primary sweep uses teacher-forced CoTs to isolate the intervention instrument, holding the reasoning text itself fixed except for the edit under test; generated-CoT robustness is evaluated separately (\S\ref{sec:floors}).
 
-\subsection{Edit families}
-\label{sec:edits}
+\subsection{Edit Taxonomy}
 
-Our 10 families cover semantic and control edits (Table~\ref{tab:families}).
+Thirteen families: ten in three tiers and three calibration nulls, with a real example per family in Appendix~\ref{app:sec:benchmark}. \emph{paraphrase\_null}, \emph{bbox\_jitter\_null} and \emph{instr\_random\_sub} are the calibration nulls, the part of the design we would keep if we kept nothing else. \emph{selfsplice\_control} must score $0$ and does on 11/11 CoT-VLAs; the judge export names it \emph{identity\_control} and groups it with the nulls, so the judge scores 12 of the 13. Figure~\ref{fig:overview}(a)'s \texttt{MOVE} lines are the released \emph{direction\_flip} pair; full descriptions are in Appendix~\ref{app:sec:benchmark}.
 
-\begin{table}[t]
-\centering\small
-\caption{Ten CoT edit families used in CoT-Faith.}
-\label{tab:families}
-\begin{tabular}{l l l}
-\toprule
-Family & Modifies & Semantic meaning \\
-\midrule
-subject\_swap  & SUBTASK, PLAN, MOVE\_REASONING & primary object $\to$ distractor \\
-direction\_flip & MOVE, MOVE\_REASONING          & left$\leftrightarrow$right, up$\leftrightarrow$down, in$\leftrightarrow$out, $\ldots$ \\
-gripper\_flip   & PLAN, SUBTASK                  & grasp$\leftrightarrow$release, open$\leftrightarrow$close \\
-location\_swap  & PLAN, SUBTASK                  & "left compartment" $\leftrightarrow$ "right compartment" \\
-verb\_swap      & PLAN, SUBTASK, MOVE            & move $\to$ hold, grasp $\to$ push, $\ldots$ \\
-negation        & SUBTASK, MOVE                  & prepend "do not " \\
-adversarial\_plausible & same as subject\_swap  & swap to \emph{second-most} visible object (harder) \\
-\midrule
-\multicolumn{3}{l}{{\emph{control / bounds}}} \\
-selfsplice\_control  & any                       & identity replacement (X$\to$X); expected $\Delta \approx 0$ \\
-syntactic\_scramble  & MOVE, SUBTASK             & shuffle word order (content preserved) \\
-cross\_task\_swap    & all reasoning tags         & replace CoT with unrelated LIBERO sample's CoT \\
-\bottomrule
-\end{tabular}
-\end{table}
+A blind LLM judge (\texttt{Qwen2.5-7B-Instruct} \citep{qwen25}, in neither architecture family under test, following \citet{mtbench}'s protocol; full details in Appendix~\ref{sec:judge_edits}), gated on an identity control ($1.000$) and a pooled negative control ($0.175$), validates the generators over 437 pairs: \emph{paraphrase\_null} preserves meaning at $0.975$, \emph{bbox\_jitter\_null} at $1.000$ (both read against an $0.824$ order-flip agreement floor), so the meaning-preserving labels are supported by an independently gated judge rather than assumed, and one family's name oversells it: \emph{adversarial\_plausible} is judged plausible on only $0.125$ of pairs, corrected in the taxonomy (Appendix~\ref{sec:appendix}). A second judge (\texttt{Mistral-7B-Instruct-v0.2}) fails its own negative-control gate (Appendix~\ref{sec:judge_edits}), so we do not treat its agreement with the first as corroboration.
 
-\subsection{Model set}
-
-Table~\ref{tab:models} lists the 11 evaluated models.
+\subsection{Models}
 
 \begin{table}[t]
 \centering\small
-\caption{Eleven models evaluated in CoT-Faith.  Public checkpoints are used as-is; "ours" variants are LoRA fine-tuned from \texttt{Embodied-CoT/ecot-openvla-7b-bridge}.}
+\setlength{\tabcolsep}{3.5pt}
+\caption{The 15 models in CoT-Faith across 4 model families (full per-model listing: Table~\ref{tab:models_full}, Appendix~\ref{sec:models}). Two base architectures: OpenVLA-7B (A, C, D) and PaliGemma (B), which is what ``both architecture families'' refers to wherever this paper compares across them.}
 \label{tab:models}
-\begin{tabular}{l l l l l}
+\fitwidth{\columnwidth}{\begin{tabular}{l l c l}
 \toprule
-Model               & Base & Training data & LoRA rank & Reasoning target \\
+Family & Base architecture & $N$ & Reasoning target \\
 \midrule
-Ours r=32 (main)    & ECoT-bridge & LIBERO-90 & 32 & full 9-tag CoT \\
-Ours r=8            & ECoT-bridge & LIBERO-90 & 8  & full CoT \\
-Ours r=16           & ECoT-bridge & LIBERO-90 & 16 & full CoT \\
-Ours r=64           & ECoT-bridge & LIBERO-90 & 64 & full CoT \\
-Ours no-CoT         & ECoT-bridge & LIBERO-90 & 32 & \textbf{action-only} \\
-Ours data-50 (A)    & ECoT-bridge & LIBERO-90 (50\%, seed A) & 32 & full CoT \\
-Ours data-50 (B)    & ECoT-bridge & LIBERO-90 (50\%, seed B) & 32 & full CoT \\
-\midrule
-ECoT-bridge         & public       & Bridge-V2 & (public) & full CoT \\
-OpenVLA-libero-spatial & public    & LIBERO-Spatial & (public) & no CoT \\
-OpenVLA-libero-object  & public    & LIBERO-Object  & (public) & no CoT \\
-OpenVLA-libero-goal    & public    & LIBERO-Goal    & (public) & no CoT \\
-OpenVLA-libero-10      & public    & LIBERO-10      & (public) & no CoT \\
+A: OpenVLA non-CoT baselines & OpenVLA-7B      & 4 & no CoT \\
+B: DeepThinkVLA (base/SFT/RL) & PaliGemma      & 3 & none / CoT (SFT) / CoT (RL) \\
+C: ECoT-bridge (public)      & ECoT-OpenVLA-7B & 1 & full 9-tag CoT \\
+D: Ours (LoRA on ECoT-bridge) & ECoT-bridge    & 7 & full CoT (no-CoT: action-only) \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-Only the \emph{no-CoT} variant differs from our main model in the training \emph{target} (action-only); all other "ours" variants share the same nine-tag target.  This clean same-base / same-data pair isolates the effect of reasoning-target training.
+15 VLAs across 4 model families and 2 base architectures (Table~\ref{tab:models}): 4 OpenVLA \citep{openvla} non-CoT baselines, 3 DeepThinkVLA \citep{deepthinkvla} variants (base/SFT/RL, a PaliGemma-based \citep{paligemma} second architecture family), 1 public ECoT-bridge, and 7 LoRA \citep{lora} fine-tunes of our own isolating rank, data quantity, and reasoning-target training. Every trained configuration was trained \emph{twice} at a byte-identical recipe, which supplies the error bar that matters (\S\ref{sec:variance}).
 
-% ============================================================
-\section{Experiments}
-% ============================================================
-
-All experiments run on 1--8 A100 GPUs.  Fine-tuning uses PEFT LoRA on \texttt{"all-linear"} target modules, 15{,}000 steps at LR $2\!\times\!10^{-5}$, bf16.  Attention analyses use $N{=}100$ LIBERO first-step samples per condition (with 3 seeds where computationally feasible).  Causal edits use $N{=}100$ per family.  Prompt ablation and AUROC use $N{=}100$ and $N{=}200$ respectively.
-
-% ============================================================
 \section{Results}
-\label{sec:results}
-% ============================================================
+\subsection{The Magnitude Score's Floor Is Not Canonical}
+\label{sec:floors}
 
-\subsection{Finding 1: attention on CoT is architecture-determined, not training-determined}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{fig3_edit_heatmap.pdf}
+    \caption{$\mathcal{F}$ at $\tau{=}0.05$, all eight leaderboard configurations $\times$ all 13 edit families. \texttt{no-CoT} (red) is low across every semantic column, not just on average; \emph{cross\_task\_swap} (bold), the ceiling, is high for all eight. \texttt{ECoT-bridge}'s two missing cells (\emph{bbox\_jitter\_null}, \emph{instr\_random\_sub}) are inapplicable to its released norm-stats, not zero.}
+    \label{fig:heatmap}
+\end{figure*}
 
-Table~\ref{tab:attn} shows action-token attention distributed over the four segments.
+Figure~\ref{fig:heatmap} is the full $\mathcal{F}$ surface behind this section: all eight leaderboard configurations $\times$ all 13 edit families. \texttt{no-CoT} is low across every semantic column, not just on average, and \emph{cross\_task\_swap}, the ceiling, is high for all eight; \texttt{ECoT-bridge}'s two missing cells (\emph{bbox\_jitter\_null}, \emph{instr\_random\_sub}) are inapplicable to its released norm-stats, not zero.
 
-\begin{table}[t]
-\centering\small
-\caption{Action-token attention distribution across 11 models. Mean $\pm$ std across seeds (three seeds for public/baseline models, one seed for training variants due to compute).  All CoT-VLAs cluster at $\sim (0.29, 0.30, 0.34, 0.07)$; all non-CoT baselines cluster at $\sim (0.52, 0.42, 0.00, 0.05)$.}
-\label{tab:attn}
-\begin{tabular}{l c c c c}
-\toprule
-Model & a$\to$visual & a$\to$instr & a$\to$cot & a$\to$prev \\
-\midrule
-Ours r=32 (main)     & 0.296 & 0.294 & 0.340 & 0.069 \\
-Ours r=8             & 0.282 & 0.285 & 0.358 & 0.076 \\
-Ours r=16            & 0.287 & 0.288 & 0.353 & 0.072 \\
-Ours r=64            & 0.301 & 0.296 & 0.335 & 0.067 \\
-{\bf Ours no-CoT}    & {\bf 0.296} & {\bf 0.290} & {\bf 0.349} & {\bf 0.065} \\
-Ours data-50 (A)     & 0.287 & 0.294 & 0.350 & 0.068 \\
-Ours data-50 (B)     & 0.287 & 0.292 & 0.349 & 0.071 \\
-ECoT-bridge (3 seeds) & 0.290 $\pm$ 0.001 & 0.300 $\pm$ 0.001 & 0.344 $\pm$ 0.001 & 0.065 \\
-\midrule
-OpenVLA-libero-spatial & 0.522 $\pm$ 0.001 & 0.424 $\pm$ 0.001 & 0.000 & 0.054 \\
-OpenVLA-libero-object  & 0.518 $\pm$ 0.001 & 0.424 $\pm$ 0.001 & 0.000 & 0.059 \\
-OpenVLA-libero-goal    & 0.510 $\pm$ 0.001 & 0.433 $\pm$ 0.001 & 0.000 & 0.057 \\
-OpenVLA-libero-10      & 0.535 $\pm$ 0.000 & 0.411 $\pm$ 0.000 & 0.000 & 0.054 \\
-\bottomrule
-\end{tabular}
-\end{table}
+A faithful model should be \emph{insensitive} to an edit that preserves meaning, so $\mathcal{F}$ on \emph{paraphrase\_null} is a \emph{floor} a faithful model should stay \emph{under}, not a lower bound on anything good. Write $\bar{\mathcal{F}}$ for the mean of $\mathcal{F}$ over the seven non-control semantic families (\emph{direction\_flip}, \emph{gripper\_flip}, \emph{verb\_swap}, \emph{negation}, \emph{subject\_swap}, \emph{location\_swap}, \emph{adversarial\_plausible}); the quantity of interest is the floor-corrected $\bar{\mathcal{F}}_{\text{diff}} = \bar{\mathcal{F}} - \mathcal{F}(\text{floor})$, computed the one way, over these seven families only, everywhere in this paper. \emph{verb\_swap} is judged meaning-preserving on only $57.5\%$ of pairs, the least reliable of the seven (Appendix~\ref{sec:judge_edits}); we keep it in $\bar{\mathcal{F}}$ rather than drop the least favorable family. A \emph{ceiling} is always a maximum-effect reference an edit is compared up to: \emph{cross\_task\_swap} for $\mathcal{F}$, and for $\mathcal{F}_{\text{dir}}$ the largest score over the families with no direction to reverse (\S\ref{sec:directional}).
+It is negative on 11 of 11 configurations (Table~\ref{tab:floors}), across both architecture families (2 base checkpoints, not 11 replications): 8 rows are \texttt{ECoT-bridge} or a LoRA adapter on it, 3 are \texttt{DeepThinkVLA-base} stages, with $\bar{\mathcal{F}}_{\text{diff}}$ from $-0.180$ to $-0.013$, and significant on 9 of 11 (7 of 8 ECoT-lineage, 2 of 3 DeepThinkVLA-lineage: two independent confirmations, not nine, once pseudo-replication is priced in) by a paired, observation-clustered bootstrap (20,000 resamples of the shared observation ids) that also holds against the stricter retraining bar of \S\ref{sec:variance}: a meaning-preserving synonym swap moves the action \emph{at least as reliably} as a semantic edit does. The two exceptions (\texttt{no-CoT} and \texttt{DT base}) are the two rows closest to their own floor, which is what a null control should look like. The one genuinely positive entry in our calibration set is off this table: the retrained no-CoT \emph{replicate} ($+0.014$), an independent second training of the action-only ablation, illustrates retraining variability rather than evidence of faithfulness, since a floor-corrected statistic \emph{should} return its own floor regardless of which replicate is drawn.
 
-The seven "ours" variants and ECoT-bridge cluster tightly at CoT-attention $\approx 0.34$, and the four non-CoT baselines at $\approx 0.00$ (with visual $\approx 0.52$, instruction $\approx 0.42$).  Critically, the no-CoT variant --- trained on the same LIBERO-90 data as our main model but with the reasoning tags stripped from the loss target --- shows CoT attention of {\bf 0.349}, essentially identical to the fully CoT-trained r=32 model (0.340).  In other words, once a CoT-formatted prompt is fed at inference, the LLM allocates attention to the CoT segment \emph{regardless} of whether it was trained to produce that reasoning.  This is the first negative result: attention on CoT does not distinguish "was reasoning trained".
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{fig16_calibration_gap.pdf}
+    \caption{Per-model calibration ladder. Each row plots one configuration's mean score over semantic edits ($\bar{\mathcal{F}}$, filled) against its own paraphrase floor ($\mathcal{F}(\text{floor})$, open), joined by a segment; the gap is $\bar{\mathcal{F}}_{\text{diff}} = \bar{\mathcal{F}} - \mathcal{F}(\text{floor})$ (Table~\ref{tab:floors}'s own column). The floor sits to the right of the mean on all 11 rows, split by checkpoint lineage.}
+    \label{fig:calibration_gap}
+\end{figure}
+The relevant comparison is not whether semantic edits move the action by a large absolute amount, but whether they move it more than a meaning-preserving edit on the same model does; Figure~\ref{fig:calibration_gap} makes that comparison directly, across both checkpoint lineages, though as two confirmations rather than eleven, per the pseudo-replication accounting just above.
 
-\subsection{Finding 2: reasoning-target training is required for CoT to be causal}
-
-Table~\ref{tab:edit} shows causal-edit faithful rates across the seven "ours" variants plus ECoT-bridge on 10 edit families ($N{=}100$ each).
-
-\begin{table}[t]
-\centering\scriptsize
-\caption{Causal-edit faithful rates (higher $=$ CoT drove the action).  A rate of 0.00 for \emph{selfsplice\_control} (identity replacement) verifies the metric has no tokenization noise; \emph{cross\_task\_swap} (replace whole CoT with unrelated sample) provides an upper bound.  {\bf Ours no-CoT collapses across all semantic edits} despite identical base and data.}
-\label{tab:edit}
-\begin{tabular}{l r r r r r r r r r r}
-\toprule
-Model & subj. & dir. & grip. & loc. & verb & neg. & adv. & self. & scram. & cross \\
-\midrule
-Ours r=8       & 0.40 & 0.74 & 0.10 & 0.17 & 0.70 & 0.71 & 0.38 & \bf{0.00} & 0.44 & 0.86 \\
-Ours r=16      & 0.40 & 0.78 & 0.16 & 0.25 & 0.69 & 0.70 & 0.32 & \bf{0.00} & 0.44 & 0.91 \\
-Ours r=32 (main) & 0.37 & 0.77 & 0.24 &  --- &  --- &  --- &  --- &  --- &  --- &  --- \\
-Ours r=64      & 0.35 & 0.82 & 0.22 & 0.25 & 0.84 & 0.78 & 0.35 & \bf{0.00} & 0.47 & 0.94 \\
-{\bf Ours no-CoT} & {\bf 0.13} & {\bf 0.23} & {\bf 0.07} & 0.25 & {\bf 0.14} & {\bf 0.14} & {\bf 0.12} & \bf{0.00} & {\bf 0.11} & {\bf 0.24} \\
-Ours data-50 (A) & 0.30 & 0.72 & 0.14 & 0.17 & 0.69 & 0.60 & 0.35 & \bf{0.00} & 0.44 & 0.74 \\
-Ours data-50 (B) & 0.33 & 0.66 & 0.14 & 0.08 & 0.52 & 0.52 & 0.30 & \bf{0.00} & 0.38 & 0.73 \\
-ECoT-bridge     & {\bf 0.97} & {\bf 0.96} & {\bf 0.67} &  --- &  --- &  --- &  --- &  --- &  --- &  --- \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The no-CoT variant's faithful rate collapses across all semantic edits (subject\_swap $0.13$, direction\_flip $0.23$, verb\_swap $0.14$, negation $0.14$, cross\_task\_swap $0.24$), while every CoT-trained variant of the same base and data delivers $0.7$--$0.8$ on direction\_flip and $0.7$+ on verb\_swap and negation.  Combined with Finding~1 --- that attention on the CoT segment is the same for the no-CoT variant --- this establishes the second principal result: {\bf reasoning-target training is what makes CoT causal, and attention distribution is not a proxy for causal effect}.
-
-\subsection{Finding 3: attention distribution does not predict action error}
-
-Table~\ref{tab:auroc} reports AUROC of the four attention features as predictors of high-vs-low action-decoding error ($N{=}200$).
+The effect is per-task, not an artifact of averaging, which Table~\ref{tab:floors}'s point estimates cannot show alone. Recomputing $\mathcal{F}_{\text{sem}}$ \emph{within} each of the $85$ LIBERO-90 \citep{libero} episode files every leaderboard row was scored on, with no new inference, the semantic mean is below that task's own paraphrase floor on more tasks than above it on all $8$ configurations that support the decomposition (Table~\ref{tab:per_task_headline}), $p$ from $9.0{\times}10^{-11}$ to $0.020$ on the seven full-CoT rows: all seven survive Holm correction across the eight tests at $\alpha{=}0.05$. The eighth, the no-CoT control, is null ($25$ below, $29$ above, $p = 0.683$), a coherence check, not a counterexample.
 
 \begin{table}[t]
 \centering\small
-\caption{Non-parametric AUROC of attention features as action-error predictors.  All four features are at chance, showing that per-sample attention allocation is uninformative of downstream L$_1$ decoding error.}
-\label{tab:auroc}
-\begin{tabular}{l r r}
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{0.92}
+\begin{tabular}{@{}l ccc c@{}}
 \toprule
-Attention feature & raw AUROC & $|$AUROC$-0.5|$ \\
+Model & below/above/tied & $p$ & median $\mathcal{F}_{\text{diff}}$ & task IQR \\
 \midrule
-action$\to$cot        & 0.500 & 0.000 \\
-action$\to$visual     & 0.500 & 0.000 \\
-action$\to$instr      & 0.500 & 0.000 \\
-action$\to$action-prev & 0.500 & 0.000 \\
+\texttt{r=8}         & $60/14/11$ & $6.2{\times}10^{-8}$  & $-0.160$ & $0.286$ \\
+\texttt{r=16}        & $49/25/11$ & $0.007$  & $-0.080$ & $0.343$ \\
+\texttt{r=32}        & $64/10/11$ & $9.0{\times}10^{-11}$ & $-0.167$ & $0.333$ \\
+\texttt{r=64}        & $57/23/5$  & $1.8{\times}10^{-4}$  & $-0.143$ & $0.211$ \\
+\texttt{data-50A}    & $57/16/12$ & $1.5{\times}10^{-6}$  & $-0.133$ & $0.314$ \\
+\texttt{data-50B}    & $48/27/10$ & $0.020$  & $-0.050$ & $0.298$ \\
+\texttt{ECoT-bridge} & $60/15/10$ & $1.6{\times}10^{-7}$  & $-0.083$ & $0.129$ \\
+\texttt{no-CoT}      & $\mathbf{25/29/31}$ & $\mathbf{0.683}$ & $+0.000$ & $0.286$ \\
 \bottomrule
 \end{tabular}
+\caption{The below-floor result holds task by task. Same $85$ LIBERO-90 episode files for all $8$ models (full decomposition and a $\geq 3$-sample robustness re-run: Appendix~\ref{sec:per_task}). \emph{below/above/tied} counts tasks whose $\mathcal{F}_{\text{sem}}$ is under, over, or exactly at that task's own paraphrase floor; $p$ is an exact two-sided binomial test on the untied tasks. 7 of 8 have a majority of tasks below their own floor; \texttt{no-CoT} is the one null exception.}
+\label{tab:per_task_headline}
 \end{table}
 
-Together with the null selfsplice control (Table~\ref{tab:edit}, always $0.00$), this rules out any "signal fishing" explanation for our other findings.  Attention on CoT is not diagnostic of decoding quality either, further supporting the attention$\ne$causation claim.
+\paragraph{The obvious repair does not fully work, and the reason is itself informative.} \emph{paraphrase\_null} is the one family that changes sequence length (mean $+0.97$ words on 38/40 judged heads), so the floor may be partly a length effect. \emph{syntactic\_scramble} is the length-exact control: judged meaning-preserving at $1.000$, but its judged fluency is $4.00$ against $4.92$ and $5.00$ for the two true nulls (Appendix~\ref{sec:judge_edits}), sitting between them and the semantic families ($2.58$--$3.66$), and its same\_direction\_rate is the lowest of the three nulls ($0.925$ vs.\ $0.975$/$1.000$): fluency, not meaning, is where it departs. Across all thirteen families $\mathcal{F}$ correlates with judged fluency at Spearman $\rho = -0.60$. We cannot rule out that this floor tracks surface fluency rather than meaning, and flag it as unresolved in Limitations. Neither the policy's own log-likelihood of the edited CoT (partial $R^2 \in [0.001, 0.037]$ across all 6 Stage~1 checkpoints, beyond edit-distance and length) nor the judge's fluency rating itself (partial $R^2(\text{fluency}) = 0.056$ and the wrong sign, \texttt{r=32}, $n{=}236$) explains the gap between the two floors, and neither does length: \emph{paraphrase\_null\_lenexact}, meaning-preserving and length-exact like \emph{syntactic\_scramble} but lexical like \emph{paraphrase\_null}, floors at $\mathbf{0.560}$ on \texttt{r=32} ($n{=}300$), $0.007$ from \emph{paraphrase\_null} and $0.212$ from \emph{syntactic\_scramble} (Appendix~\ref{sec:appendix} has all three checks in full). The remaining unresolved alternative is surface naturalness, not length: an automated judge alone cannot fully separate semantic preservation from human-perceived fluency. We therefore read this as a calibration failure under a tested operational null, not evidence that semantic content is causally irrelevant to the action.
 
-\subsection{Finding 4: Bridge-trained CoT-VLAs are far more faithful than LIBERO-fine-tuned ones}
+Against the paraphrase floor, $\bar{\mathcal{F}}_{\text{diff}} < 0$ on all 11 calibrated configurations. Among the seven \texttt{Ours} configurations with a retraining replicate, 6 of 7 exceed \S\ref{sec:variance}'s $0.068$ deviation; for \texttt{ECoT-bridge}/DeepThinkVLA, which lack one, $0.068$ is a reference, not a measured bound (Limitations). Against the length-exact scramble floor, $\bar{\mathcal{F}}_{\text{diff}}$ is positive on 10 of 11, but only 3 of those 10 are individually significant (\texttt{r=32}, \texttt{DT SFT}, \texttt{DT RL}), and none of the seven exceeds it on this floor. We therefore report both floors everywhere rather than treat either as canonical: the magnitude metric cannot identify a stable semantic floor on its own, so swapping floors would trade a well-supported negative finding for a poorly-supported positive one, and we do not read the floors as interchangeable options. Threshold-free $\overline{\text{TV}}$ confirms the same collapse with no $\tau$ to sweep (\S\ref{sec:collision}); the $\tau$-sweep and the out-of-CoT \emph{instr\_random\_sub} control that bounds how much of any score is CoT-specific are in Appendix~\ref{sec:appendix}. The pattern also replicates out of distribution: a Bridge~V2 follow-up that adds both calibration nulls to \texttt{ECoT-bridge}'s self-generated CoT on its own training corpus reproduces it (paraphrase floor above the semantic mean, the two floors disagreeing with each other more than either disagrees with the mean; full detail in Appendix~\ref{sec:cross_corpus}).
 
-Comparing the two public-quality CoT-VLAs on the three families that fit both --- Ours r=32 (LIBERO fine-tune) vs. ECoT-bridge (Bridge-V2 trained):
-\begin{center}\small
-\begin{tabular}{l r r}
-\toprule
-Family & Ours r=32 & ECoT-bridge \\
-\midrule
-subject\_swap    & 0.37 & 0.97 \\
-direction\_flip  & 0.77 & 0.96 \\
-gripper\_flip    & 0.24 & 0.67 \\
-\bottomrule
-\end{tabular}
-\end{center}
-ECoT-bridge is $\mathbf{2\times}$ more faithful on average across the three families, despite having identical architecture and prompt template.  The two models also have near-identical attention distributions (Table~\ref{tab:attn}, difference $<0.01$ per bucket).  This is a strong demonstration that {\bf CoT-faith is a training-data-domain effect}, not an architectural or attention-allocation effect.
+\paragraph{The floor-above-semantic pattern is not confined to teacher-forced reasoning.} Every result above edits a teacher-forced, ground-truth CoT annotation. On self-generated CoT, the same floor comparison replicates on \texttt{ECoT-bridge} and \texttt{DT-RL}, is directionally consistent on \texttt{DT-SFT} but not significant at this $n$, reverses on \texttt{r=32}, is mixed depending on which statistic is read on \texttt{r=64}, and is inconclusive on \texttt{no-CoT}; full per-checkpoint numbers are in Appendix~\ref{sec:limitations_full}. The calibration failure this section reports therefore extends beyond teacher-forced CoT, but is heterogeneous rather than universal.
 
-\subsection{Prompt-truncation ablation}
-
-Table~\ref{tab:prompt} shows that removing \emph{any} portion of the CoT causes near-100\% action change (measured as $\Delta_\infty > 0.05$), confirming ECoT-bridge is strongly conditioned on the full 9-tag structured target.
+\paragraph{A positive-control sanity check.} To verify that the benchmark can recover faithfulness when the causal dependence is explicit, we construct a rule-based oracle policy whose action is deterministically controlled by the edited directional content, applied to the released judge-validation pairs (Appendix~\ref{sec:appendix}). On this known-faithful control, $\mathcal{F}_{\text{dir}}=0.925$, against $0.000$ on the matched non-faithful control (\emph{paraphrase\_null}). This establishes that the intervention-and-scoring pipeline can distinguish a known causal dependence from a matched null; it does not validate $\mathcal{F}_{\text{dir}}$ as a calibrated metric for learned VLAs.
 
 \begin{table}[t]
 \centering\small
-\caption{Prompt-format ablation on ECoT-bridge ($N{=}100$): faithful rate vs. the full-CoT baseline. Removing even a single-word tag (task\_only) causes $\ge 96\%$ of samples to change action.}
-\label{tab:prompt}
-\begin{tabular}{l r r r}
+\setlength{\tabcolsep}{2.0pt}
+\renewcommand{\arraystretch}{1.0}
+\fitwidth{\columnwidth}{%
+\begin{tabular}{@{}l rr r rr r@{}}
 \toprule
-Variant & $L_\infty$ median & $L_1$ mean & faithful rate \\
+& \multicolumn{2}{c}{floor $\mathcal{F}$} & &
+  \multicolumn{2}{c}{$\bar{\mathcal{F}}_{\text{diff}}$ vs.\ floor} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){5-6}
+Model & para & scram & $\bar{\mathcal{F}}$ & para & scram &
+  $|\text{p}-\text{s}|$ \\
 \midrule
-full (baseline)      & 0.000 & 0.000 & 0.000 \\
-task\_only           & 0.582 & 0.266 & 0.980 \\
-plan\_only           & 0.594 & 0.243 & 0.969 \\
-task+plan+subtask    & 0.578 & 0.253 & 0.968 \\
-shuffled             & 0.402 & 0.189 & 0.950 \\
-empty                & 0.711 & 0.260 & 1.000 \\
+\texttt{no-CoT}      & $0.193$ & $0.154$ & $0.166$ & $-0.027$ & $+0.012$ & $0.039$ \\
+\texttt{r=8}         & $0.587$ & $0.408$ & $0.406$ & $-0.180^{\ast}$ & $-0.002$ & $0.179$ \\
+\texttt{r=16}        & $0.547$ & $0.438$ & $0.447$ & $-0.100^{\ast}$ & $+0.008$ & $0.109$ \\
+\texttt{r=32}        & $0.567$ & $0.348$ & $0.395$ & $-0.172^{\ast}$ & $+0.047^{\ast}$ & $0.219$ \\
+\texttt{r=64}        & $0.657$ & $0.472$ & $0.515$ & $-0.142^{\ast}$ & $+0.043$ & $0.185$ \\
+\texttt{data-50A}    & $0.537$ & $0.391$ & $0.393$ & $-0.144^{\ast}$ & $+0.002$ & $0.145$ \\
+\texttt{data-50B}    & $0.447$ & $0.348$ & $0.352$ & $-0.095^{\ast}$ & $+0.004$ & $0.099$ \\
+\texttt{ECoT-bridge} & $0.947$ & $0.856$ & $0.859$ & $-0.088^{\ast}$ & $+0.003$ & $0.090$ \\
+\addlinespace[2pt]\midrule\addlinespace[2pt]
+\texttt{DT base}     & $0.960$ & $0.910$ & $0.947$ & $-0.013$ & $+0.037$ & $0.050$ \\
+\texttt{DT SFT}      & $0.810$ & $0.590$ & $0.701$ & $-0.109^{\ast}$ & $+0.111^{\ast}$ & $0.220$ \\
+\texttt{DT RL}       & $0.820$ & $0.550$ & $0.725$ & $-0.095^{\ast}$ & $+0.175^{\ast}$ & $0.270$ \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{all 11 configurations}}
+  & $-$ 11/11 & $+$ 10/11 & \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
+\caption{Both meaning-preserving floors, on every configuration we can calibrate; $\bar{\mathcal{F}}$ is the mean over the seven non-control semantic families throughout. $^{\ast}$: $95\%$ paired-bootstrap interval excludes zero ($12$ of $22$ cells). Both floors certified meaning-preserving by the same blind judge ($0.975$, $1.000$; Appendix~\ref{sec:judge_edits}). Last column: the gap between the two floors; bottom row is a sign count, not a mean. The $4$k Bridge-subset checkpoint calibrates but is excluded (faithful samples move only the gripper bit, not comparable in scale).}
+\label{tab:floors}
 \end{table}
 
-Combined with Finding 2, this reveals that the model \emph{is} highly sensitive to the CoT text as a whole, but --- as Finding 2 showed with the no-CoT variant --- only when it was trained on such CoT targets.
+\subsection{Mechanism: The Score Is a Decode-Collision Counter}
+\label{sec:collision}
 
-\subsection{Perturbation robustness}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=1.0\textwidth]{fig13_collision.pdf}
+    \caption{$\mathcal{F}$ is close to a decode-collision counter. \emph{(a)} The one real camera frame all three rollout arms of Figure~\ref{fig:frames} share at $t{=}0$, with the two real MOVE phrases decoded from it: own CoT and its direction-flipped edit. \emph{(b)} The two decoded 7-DoF actions for that one frame: 5 of 7 dimensions tie exactly, so the whole $\Delta_\infty{=}1.741$ comes from translation-$y$ and -$z$ alone, an $n{=}1$ instance of the mechanism (c) shows at scale. \emph{(c)} The same fact stated as an identity: across the 324 (run, family) cells with $n \geq 20$, $\mathcal{F}$ at $\tau{=}0.05$ correlates with $1 - P(\Delta_\infty{=}0)$ at Pearson $R^2 = 0.926$; scored against the drawn $y{=}x$ line itself rather than the best-fit line, $R^2 = 0.893$. \emph{(d)} The resolution sweep: re-grouping the identical \texttt{ECoT-bridge} softmax into coarser action-token bins swings the collision rate $12.3\%\to2.9\%$ (8 to 256 bins) while the mean continuous $\Delta_\infty$ it is derived from barely moves ($0.656\to0.640$), so (c)'s correlation is not an artifact of this checkpoint's own 256-bin grid.}
+    \label{fig:collision}
+\end{figure*}
 
-Attention buckets are extremely stable across 6 visual perturbations (brightness low/high, gaussian noise, colour jitter, patch occlude, plus clean control): every bucket shifts by less than 0.01.  This shows the segment-attention metric is robust to routine visual distribution shift, but is a limitation of the current perturbation suite: stronger perturbations (occlusion of task-relevant regions, adversarial patches) would likely stress the metric more.
+Were the floor failure an offset to correct, $\mathcal{F}$ would still be measuring displacement. It barely does. The per-sample $\Delta_\infty$ distribution is strongly bimodal: over the $28{,}443$ scored records of the 30 runs covered here (one seed per configuration) $46.2\%$ are \emph{exactly} zero (the argmax over action bins landed on the identical bin despite a different prompt) and $44.5\%$ exceed $0.10$. Of the records that move at all, only $9.8\%$ land below $\tau$, and if almost no mass lies near the threshold then $\mathcal{F}$ is close to $1 - P(\Delta_\infty = 0)$: not a measure of how far the action moved, but a count of how often the decode failed to collide, a symptom of the same per-bin argmax decode that action-tokenizer scaling work treats as a design axis in its own right \citep{fast2025}, not a defect specific to our instrument, so we would expect it on any de-quantized argmax action space, ours included (bin-width detail: Appendix~\ref{sec:appendix}).
+That is measurable, so we measured it (Figure~\ref{fig:collision}(c); (a)--(b) show the same tie at the one frame Figure~\ref{fig:frames}'s three arms share). Across the 324 (run, family) cells with $n \geq 20$, $\mathcal{F}$ at $\tau{=}0.05$ tracks $1 - P(\Delta_\infty{=}0)$ at $r = 0.963$, $R^2 = 0.926$, with 80 cells identical to the last digit; the relation is one-sided, not a two-sided identity, since $\{\Delta_\infty{>}\tau\} \subseteq \{\Delta_\infty{\neq}0\}$ by construction (cell-by-cell count: Appendix~\ref{sec:appendix}). Threshold-insensitivity is a consequence of the metric being nearly a collision counter, not evidence that it is robust. This invalidates no comparison here (a collision rate is well-defined and self-consistent, and every $\mathcal{F}$ we report is computed the same way), but it changes what the quantity is called, and it is why \S\ref{sec:floors}'s floor collapse is not decisive on its own: a score whose dynamic range is dominated by argmax collisions cannot be told apart from one where two edit types simply collide at different rates for reasons that have nothing to do with meaning. \S\ref{sec:floors} rules out length and judged fluency as that reason; per-family collision-rate heterogeneity is part of it, and tracks which of the seven semantic families clear the paraphrase floor at all (Spearman $\rho=0.883$, Appendix~\ref{sec:family_heterogeneity}). We release $P(\Delta_\infty{=}0)$ beside $\mathcal{F}$ for all 324 cells in the release.
 
-% ============================================================
-\section{Discussion}
-% ============================================================
+\paragraph{A threshold-free metric gives the same answer.} If $\mathcal{F}$'s dynamic range is dominated by decode collisions, the direct check is a statistic with no argmax and no threshold to collide: $D_{\text{TV}}^{s,f} = \tfrac{1}{7}\sum_{d=1}^{7}\mathrm{TV}\bigl(P_{\text{orig}}^d, P_{\text{edit}}^d\bigr)$, the total-variation distance between the policy's own softmax over action-token bins at each of the 7 action dimensions under the original vs.\ edited CoT, averaged over dimensions, continuous by construction, with nothing for a threshold to be one bin away from. Write $\overline{\text{TV}}$ for its mean over the same seven semantic families as $\bar{\mathcal{F}}$. On the six configurations we reran this way (Table~\ref{tab:tvfloors}, Appendix~\ref{sec:appendix}), $\overline{\text{TV}}$ is below the paraphrase floor on 6 of 6 configurations, all six significant by the same paired, observation-clustered bootstrap as \S\ref{sec:floors}, and above the scramble floor on 6 of 6, five of six significant: uncorrected, that is a larger fraction on both floors than $\mathcal{F}$'s eleven-configuration cohort ($9$/$11$, $3$/$11$, Table~\ref{tab:floors}); Holm-corrected (\S\ref{sec:variance}), it reverses on paraphrase, holds only on scramble. A metric with no collisions to count shows the same qualitative pattern on every configuration tested, and for the first time this cohort includes all three DeepThinkVLA checkpoints under a continuous instrument rather than only the thresholded one.
 
-\paragraph{Attention $\ne$ causation, at both the token and model level.}
-The clearest single takeaway is that segment-attention (Table~\ref{tab:attn}) does not distinguish faithful from unfaithful CoT-VLAs.  The no-CoT variant and the r=32 CoT-trained variant have essentially identical action-token attention allocation to the CoT segment (0.349 vs 0.340), yet differ 3--5$\times$ on causal-edit faithful rates.  Similarly, Ours r=32 and ECoT-bridge match on attention but differ 2$\times$ on faithful rates.  Attention allocation is a property of what tokens are \emph{visible} to the LLM at decode time; causal effect is a property of what the model was \emph{trained to produce}.
+\paragraph{A resolution sweep links the instability directly to action-token granularity.} Re-deriving the collision rate and the mean $\Delta_\infty$ of the same softmax at coarser groupings of \texttt{ECoT-bridge}'s own 256 action-token bins (8/16/32/64/128/256, same forward pass, same four families, $n{=}171$ pooled; 256 bins reproduces this section's own numbers exactly, a regression check asserted in-script; full sweep: Figure~\ref{fig:collision}(d)): collision frequency changes substantially across resolutions ($12.3\%$ at 8 bins to $2.3\%$--$3.5\%$ from 32 bins on) while the underlying continuous displacement stays nearly constant ($0.640$--$0.656$). This directly demonstrates that the collision component of $\mathcal{F}$ is sensitive to action-grid granularity, even when the underlying continuous displacement is unchanged; it is one checkpoint's own softmax re-grouped, not a claim about models trained with different action tokenizers. Together with the collision analysis above, it indicates that a substantial part of $\mathcal{F}$'s dynamic range is set by the discrete action representation rather than by the semantic content of the intervention.
 
-\paragraph{Implications for CoT-based safety monitors.}
-Downstream systems that read the CoT to flag unsafe behaviour --- or that edit the CoT to correct the model --- assume the CoT is load-bearing.  Our results indicate this holds only when the CoT-VLA was trained on rich reasoning targets in-distribution.  A model whose training data was CoT-heavy on one domain (Bridge) but is deployed on another (LIBERO) may retain surface CoT structure but lose substantial causal influence.  Practitioners should verify CoT-faith on their own deployment distribution before trusting CoT-based monitors.
+\subsection{A Direction-Aware Diagnostic}
+\label{sec:directional}
 
-\paragraph{Relation to concurrent work.}
-Compared with VLADriveBench and Pinocchio, our benchmark differs in domain (manipulation vs.\ driving) and in method (edit-based causal intervention with a validated null control vs.\ observational or critic-based scoring).  Compared with \emph{Reasoning as a Double-Edged Sword}, we (a) extend the single edit family to ten, including the deferred direction-flip and gripper-flip; (b) evaluate seven training variants of a same-base same-data model set to isolate training-target from base-and-data effects; and (c) validate the metric with a null selfsplice control.
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{1.9pt}
+\renewcommand{\arraystretch}{1.0}
+\fitwidth{\textwidth}{%
+\begin{tabular}{@{}l c@{\ }l c c@{\ }l c c c l c@{}}
+\toprule
+& \multicolumn{2}{c}{magnitude} & &
+  \multicolumn{2}{c}{direction-aware} & & & \multicolumn{2}{c}{ceiling} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){5-6}\cmidrule(lr){9-10}
+Model & $\mathcal{F}_{\text{mag}}$ & {\footnotesize$\pm$sd} & rank
+      & $\mathcal{F}_{\text{dir}}$ & {\footnotesize$\pm$sd} & $\cos$ & $N$
+      & value & family & $\times$ \\
+\midrule
+\texttt{ECoT-bridge} & 0.963 & {\footnotesize$.006$} & 1
+  & 0.117 & {\footnotesize$.032$} & $\mathbf{+0.418}$ & 299 & 0.047 & {\footnotesize\emph{cross\_task}} & 2.5 \\
+\texttt{r=64}     & 0.823 & {\footnotesize$.016$} & 2
+  & 0.779 & {\footnotesize$.021$} & $-0.510$ & 299 & 0.070 & {\footnotesize\emph{verb\_swap}}  & 11.1 \\
+\texttt{r=16}     & 0.749 & {\footnotesize$.028$} & 3
+  & 0.659 & {\footnotesize$.046$} & $-0.309$ & 299 & 0.093 & {\footnotesize\emph{verb\_swap}}  & 7.1 \\
+\texttt{data-50A} & 0.699 & {\footnotesize$.022$} & 4
+  & 0.642 & {\footnotesize$.004$} & $-0.261$ & 299 & 0.097 & {\footnotesize\emph{cross\_task}} & 6.6 \\
+\texttt{r=8}      & 0.696 & {\footnotesize$.041$} & 5
+  & 0.649 & {\footnotesize$.020$} & $-0.313$ & 299 & 0.077 & {\footnotesize\emph{cross\_task}} & 8.5 \\
+\texttt{r=32}     & 0.652 & {\footnotesize$.024$} & 6
+  & 0.582 & {\footnotesize$.034$} & $-0.147$ & 299 & 0.073 & {\footnotesize\emph{cross\_task}} & 7.9 \\
+\texttt{data-50B} & 0.635 & {\footnotesize$.017$} & 7
+  & 0.532 & {\footnotesize$.013$} & $-0.097$ & 299 & 0.057 & {\footnotesize\emph{cross\_task}} & 9.4 \\
+\midrule
+\texttt{no-CoT} & 0.274 & {\footnotesize$.032$} & 8
+  & 0.087 & {\footnotesize$.021$} & $\mathbf{+0.760}$ & 299 & 0.113 & {\footnotesize\emph{cross\_task}} & $\mathbf{0.8}$ \\
+\texttt{DT RL} & 0.640 & {\footnotesize 1 seed} & n/a
+  & 0.010 & {\footnotesize 1 seed} & $+0.915$ & 100 & 0.020 & {\footnotesize\emph{paraphrase}} & $\mathbf{0.5}$ \\
+\texttt{DT SFT} & 0.650 & {\footnotesize 1 seed} & n/a
+  & 0.010 & {\footnotesize 1 seed} & $+0.902$ & 100 & 0.050 & {\footnotesize\emph{negation}} & $\mathbf{0.2}$ \\
+\texttt{DT base} & 0.970 & {\footnotesize 1 seed} & n/a
+  & 0.000 & {\footnotesize 1 seed} & $+0.900$ & 100 & 0.000 & {\footnotesize\emph{paraphrase}} & n/a \\
+\bottomrule
+\end{tabular}}
+\caption{Magnitude vs.\ direction-aware faithfulness on \emph{direction\_flip} (\S\ref{sec:directional}), and $\mathcal{F}_{\text{dir}}$ against its ceiling (max over eight families with no left$\leftrightarrow$right semantics, per checkpoint's own de-quantization grid). $\mathcal{F}_{\text{mag}}$ (Eq.~\ref{eq:faith}), $\mathcal{F}_{\text{dir}}$ (Eq.~\ref{eq:fdir}); $\cos$ is the mean original-vs-edited xyz translation cosine, so faithful is \emph{negative}. 3-seed means, $\pm$sd seed std; DeepThinkVLA rows are single-seed (no sd). $\times$ is treatment over ceiling; ceiling family named per row, $N$ pooled across the three sampling seeds for the eight-model cohort. Seven rows above the rule clear; the four below do not, and a null control among them is the result, not a gap: \texttt{no-CoT} sits below its own ceiling. \emph{Rank} orders $\mathcal{F}_{\text{mag}}$ within the eight-model cohort only (ranks $2$--$7$ are within the retraining bar, \S\ref{sec:variance}, and not otherwise ordered); \texttt{DT base}'s ratio is $0/0$, undefined (Limitations).}
+\label{tab:directional}
+\label{tab:fdirnull}
+\end{table}
 
-% ============================================================
-\section{Limitations}
-% ============================================================
+The ranking reverses at the top. ECoT-bridge has $\mathcal{F}_{\text{mag}} = 0.963 \pm 0.006$ on \emph{direction\_flip} but $\mathcal{F}_{\text{dir}} = 0.117 \pm 0.032$, with mean translation cosine $+0.418$: it moves in substantially the \emph{same} direction after the direction is reversed. A natural alternative explanation is that the model reads the still-unedited scene geometry rather than the MOVE sentence; three geometry conditions (contradicting, absent, agreeing) leave $\mathcal{F}_{\text{dir}}$ near-constant, arguing against this (Appendix~\ref{sec:limitations_full}). The LoRA variants it outscores by $1.2$--$1.5\times$ on magnitude genuinely reverse ($\cos$ from $-0.097$ to $-0.510$) and outscore it by $4.5$--$6.7\times$ on $\mathcal{F}_{\text{dir}}$.
+The two orderings correlate at Spearman $\rho = 0.476$ (Kendall $\tau_b = 0.500$; 21 concordant against 7 discordant pairs), positive on all three sampling seeds ($0.400$--$0.500$) but with a Fisher-$z$ 95\% interval of $[-0.34, 0.88]$ at $n{=}8$: not enough to establish general agreement, and we claim none. What the two rules disagree about is one configuration, which shifts 6 rank positions while no other shifts more than 2 -- the row a reader would act on, which is why we publish none.
+$\mathcal{F}_{\text{dir}}$ is also the one instrument here that clears a null; it is a proof of concept, not a validated replacement (confounds: this section and Limitations). $\mathcal{F}_{\text{dir}}$ tests directional consistency with the edited cue: necessary for faithfulness to signed content, not sufficient for the full reasoning trace. The $-0.5$ cosine threshold is a deliberately conservative directional criterion, not the loosest one that separates the two floors (threshold sweep: Appendix~\ref{sec:limitations_full}); $\mathcal{F}_{\text{dir}}$'s absolute value is therefore interpreted only relative to each model's own null and ceiling. We calibrate it against a \emph{ceiling}: the largest $\mathcal{F}_{\text{dir}}$ any of the eight families with no left$\leftrightarrow$right semantics reaches (named per row in Table~\ref{tab:fdirnull}); none gives a model any reason to \emph{reverse} a translation vector, so their maximum is a ceiling the treatment must clear.
 
-\begin{itemize}
-\item {\bf Domain.} All experiments are on LIBERO first-step observations.  Rollout-level faithfulness --- whether faithful CoT at every step translates to full-episode task success --- is left for future work; we approximate it here via the action-error AUROC and prompt-truncation.
-\item {\bf Model diversity.} Only two independent CoT-VLA families (ECoT-family and our fine-tune of it).  DeepThinkVLA, ZR-0, and CoT-VLA were not runnable in our stack (missing weights or incompatible transformers versions); the community lacks a broad set of independent CoT-VLA implementations.
-\item {\bf Attention-only for non-CoT baselines.} OpenVLA baselines cannot be evaluated on causal-edit metrics (no CoT to edit) and enter only Tables~\ref{tab:attn}~and~\ref{tab:prompt}.
-\item {\bf Perturbation weakness.} Our 6-way perturbation suite induces $<1\%$ shift in attention buckets, suggesting we should extend to stronger, task-relevant occlusion or adversarial patches to fully test attention robustness.
-\end{itemize}
+Table~\ref{tab:fdirnull} is that calibration. On the six CoT-trained LoRA and data variants \emph{direction\_flip} clears the ceiling by $\mathbf{6.6}$--$\mathbf{11.1\times}$ and ECoT-bridge clears it at $2.5\times$, while the no-CoT control sits \emph{below} its own ceiling, as a calibrated instrument should. $\bar{\mathcal{F}}$ fails a comparable test (\S\ref{sec:floors}): on the no-CoT control it reads $0.166$ against its own $0.193$ floor, so the direction check distinguishes this action-only control from the CoT-trained models on this signed intervention, whereas magnitude scoring does not. The six clearing variants have a near-degenerate action space that cheapens, not manufactures, the clearance (permutation null still clears by $1.5$--$1.8\times$; Limitations). All three DeepThinkVLA checkpoints return $\mathcal{F}_{\text{dir}} \leq 0.010$ and do \emph{not} clear; on \texttt{DT SFT} and \texttt{DT RL} this is below their own permutation-null chance rate, but \texttt{DT base} is a harder case geometrically (Limitations). 7 of 11 configurations clear their own null. A candidate admission protocol for signed edits should therefore combine $\mathcal{F}_{\text{dir}}$ with its model-specific null and action-space diagnostic, not use $\mathcal{F}_{\text{mag}}$ alone, whose floor question \S\ref{sec:floors} shows to be unanswerable in either direction.
 
-% ============================================================
+\paragraph{The diagnostic also recovers a constructed dependence in the oracle sanity check (\S\ref{sec:floors}).} A rule-based oracle reaches $\mathcal{F}_{\text{dir}}=0.925$ against $0.000$ on a matched non-faithful control, showing the pipeline detects this constructed causal dependence; this validates the pipeline's sensitivity, not $\mathcal{F}_{\text{dir}}$'s calibration on learned policies, which the confounds above still apply to in full.
+
+We therefore recommend that any use of an edit-based faithfulness score report a model-specific null and, for signed families, an action-space diagnostic alongside $\mathcal{F}_{\text{dir}}$ (full admission rule: Appendix~\ref{sec:limitations_full}).
+
+\subsection{Retraining Variance}
+\label{sec:variance}
+
+All leaderboard rows are 3-seed means with Wilson 95\% CIs (half-widths $\leq 0.067$), but sampling seeds does not measure the error bar that matters: seeds hold the checkpoint fixed, so we also retrained all seven configurations at a byte-identical recipe, scoring each replicate on the same 100 samples. In $\mathcal{F}$, per-family $\mathcal{F}$ moves across the six released pairs by up to $\mathbf{0.317}$, which is about $4.8\times$ that widest Wilson half-width (worst of $13$ families per pair; \emph{data-50A}'s is a control, so the bound is conservative), and $\bar{\mathcal{F}}$ by up to $0.106$, which is $1.6\times$ it. This bar (median $0.035$, max $0.068$) is what \S\ref{sec:floors}'s headline count is re-tested against (LoRA-rank non-monotonicity: Appendix~\ref{sec:appendix}, Figure~\ref{fig:ablation}); gaps below it should not be read as evidence of different faithfulness. \emph{Multiplicity.} Holm-correcting \S\ref{sec:floors}/\S\ref{sec:collision}'s $22$/$12$ tests lowers them to $7$/$11$, $1$/$11$, $2$/$6$, $5$/$6$ (Appendix~\ref{sec:multiplicity}); sign, not significance, is what \S\ref{sec:floors} turns on.
+
+\enlargethispage{2\baselineskip}
+\paragraph{What the benchmark establishes.} Single-step magnitude-based CoT edit scores require model-specific calibration and can be dominated by discrete action decoding, not semantic dependence. The direction-aware diagnostic remains confound-sensitive, and self-generated CoT extends the issue beyond teacher forcing, though not universally. Neither establishes rollout-level or cross-architecture generality.
+
 \section{Conclusion}
-% ============================================================
 
-CoT-Faith is the first benchmark measuring chain-of-thought faithfulness for manipulation vision-language-action models.  Across 11 models, 10 edit families, and $\sim 200$ aggregate cells, we show that attention on the CoT segment is architecture-determined --- essentially independent of whether the model was trained to produce reasoning --- while causal effect of the CoT on the action decode is entirely a property of reasoning-target training and the training-data domain.  The dissociation between attention and causation cautions against using CoT-attention as a proxy for CoT-based interpretability, and grounds trust in CoT-VLAs in the specific training regime that produced them.
+CoT-Faith cannot rank manipulation VLAs by how much their reasoning drives their actions: magnitude-based edit scoring is not a calibrated measure of faithfulness under this protocol. Published gaps may not survive either floor. The direction-aware diagnostic (\S\ref{sec:directional}) is a starting point; more architectures and closed-loop rollouts are next.
 
-\bibliographystyle{plainnat}
-\begin{thebibliography}{99}
-\bibitem[Zawalski et al.(2024)]{ecot} M. Zawalski et al. Robotic control via embodied chain-of-thought reasoning. \emph{CoRL}, 2024. arXiv:2407.08693.
-\bibitem[Chen et al.(2025)]{ecotlite} X. Chen et al. ECoT-Lite: Reasoning as pretraining for VLA. arXiv:2505.08243.
-\bibitem[Yin et al.(2026)]{deepthinkvla} C. Yin et al. DeepThinkVLA: causal alignment. arXiv:2511.15669.
-\bibitem[Zhao et al.(2025)]{cotvla} Y. Zhao et al. CoT-VLA. \emph{CVPR}, 2025. arXiv:2503.22020.
-\bibitem[Turpin et al.(2023)]{turpin2023} M. Turpin et al. Language models don't always say what they think. \emph{NeurIPS}, 2023.
-\bibitem[VLADriveBench.(2026)]{vladrivebench} VLADriveBench authors. Faithfulness for driving VLAs. arXiv:2606.12706.
-\bibitem[Foutter et al.(2026)]{pinocchio} M. Foutter et al. Do vision-language-action models mean what they say? arXiv:2607.04681.
-\bibitem[Trinh et al.(2026)]{doubleedged} T. Trinh et al. Reasoning as a double-edged sword. arXiv:2607.17786.
-\bibitem[Gu et al.(2025)]{safe} T. Gu et al. SAFE: unsupervised runtime failure detection for VLA. \emph{NeurIPS D\&B}, 2025. arXiv:2506.09937.
-\bibitem[R\"omer et al.(2025)]{fiper} R. R\"omer et al. FIPER: failure-data-free monitors. \emph{NeurIPS}, 2025. arXiv:2510.09459.
-\bibitem[Liu et al.(2023)]{libero} B. Liu et al. LIBERO: benchmarking lifelong learning for robotic manipulation. \emph{NeurIPS D\&B}, 2023. arXiv:2306.03310.
-\end{thebibliography}
+% \FloatBarrier (placeins), not \clearpage: this must still flush every
+% pending body float before the bibliography -- without a flush, the four
+% body figures once survived the float queue into the appendix and printed on
+% page 41 of a 49-page submission, numbered and cross-referenced and forty
+% pages from the text arguing from them (the body-only build placed them at
+% pages 6-8, so the page-count metric the build job reports showed nothing).
+% A hard \clearpage did that too, and under this single-column ICLR layout
+% left a large blank tail on whichever page the Conclusion happened to end
+% on. \FloatBarrier keeps the flush and drops the forced break.
+\FloatBarrier
+\subsection*{AI use statement}
+
+In this work, we used generative AI tools to help write code and to check the grammar of the paper's text. We did not use generative AI for research ideation, experimental design, or the interpretation of results, and all AI-assisted code is checked against the released data (1,632 assertions against the raw data, non-zero exit on any mismatch) rather than trusted on its own output. We take responsibility for the final content of this work.
+
+\subsection*{Ethics statement}
+
+The motivation is a safety concern: CoT-based monitors and CoT-edit interventions are proposed for deployed robots on the assumption that the reasoning is load-bearing, and our results indicate that the standard test of that assumption does not measure what it claims to. The negative result is the safety-relevant contribution, and \S\ref{sec:floors} withdraws a headline we submitted rather than overclaim the other way.
+
+All experiments are in simulation (LIBERO) or on public offline corpora: no physical robot was operated, and no human subjects or personal data involved. We release measurement records, not new capability. Upstream licenses are resolved from the Hugging Face Hub API rather than from memory and released machine-readably; 3 of the 15 assets declare no license upstream, and we grant no rights to them rather than assign a license we cannot verify. The release states the uses it does not support, including that no number in it is rollout-conditioned and that the leaderboard is a diagnostic, not a ranking. The blind judge that certifies both floors is an LLM run as a method component (\texttt{Qwen2.5-7B-Instruct}, locally, under a fixed released prompt gated on two controls; \S\ref{sec:benchmark}); every number here is produced by the released scripts and re-checked by the audit.
+
+\subsection*{Reproducibility statement}
+
+Every number in this paper is derived from the released per-sample records by a released script, and an audit script (\texttt{scripts/verify\_paper\_numbers.py}) re-derives and checks each one against those records rather than against the printed text, exiting non-zero on any mismatch (\S\ref{sec:release}). The $77.4$\,MB release is self-contained JSON requiring no network access to re-derive; it carries the datasheet \citep{datasheets} with the per-asset licence table, the LLM-judge prompt and its full validation report, and every generator, scoring and figure script used here, so a reader can recompute any figure or table from raw records rather than trust the manuscript's arithmetic. Model and dataset provenance (Hugging Face repo IDs, internal training-job identifiers for our own trained checkpoints) is recorded per artifact rather than only in prose. The one thing this release cannot reproduce is the LLM-judge verdicts token-for-token, since the judge model's weights are pulled from the Hugging Face Hub and not pinned to a specific commit hash; the released prompt, seed and both presentation orders are fixed, so a re-run should reproduce the reported rates to within the same order-flip noise floor we report (\S\ref{sec:benchmark}).
+
+\input{bibliography}
+
+\appendix
+
+\section{Related work}
+\label{sec:related}
+
+\paragraph{CoT faithfulness in language models.} Chain-of-thought prompting \citep{wei2022cot} is read as a window on the computation, on a definition of faithfulness that requires the stated reasoning to be the actual reason for the output \citep{jacovigoldberg2020}, and the literature that tests that reading finds it does not hold: stated reasoning often does not determine the output \citep{turpin2023,lanham2023,ye2022unreliability}, reasoning-trained models are no exception \citep{chen2025reasoning}, and unfaithfulness appears on natural rather than adversarially constructed prompts \citep{arcuschin2025}. The proposed repairs are architectural (decomposition \citep{radhakrishnan2023}, constrained decoding \citep{lyu2023faithful}) rather than metrological, and the field's own faithfulness tests are themselves contested \citep{atanasova2023,parcalabescu2024,lyu2024survey}. Our central empirical finding, that a meaning-preserving edit moves the output at least as reliably as a meaning-changing one, is that field's prompt-order and prompt-format sensitivity result \citep{lu2022order,sclar2024,mizrahi2024} transposed into a continuous action space rather than a new phenomenon. Our contribution is on the measurement side of that literature rather than the model side: we ask what an edit-magnitude score can license, not how to make a model more faithful.
+
+\paragraph{The same question in VLAs.} Transferring the perturb-and-observe method to VLAs \citep{openvla,rt2,octo,ecot,cotvla,ecotlite} is attractive because the ``answer'' is a continuous action rather than a token, so the effect size is directly measurable. One line does this for autonomous driving with the same perturb-and-observe recipe \citep{vladrivebench}; it alone shares the specific flaw \S\ref{sec:floors} diagnoses, since it scores an edit by the \emph{magnitude} of the induced change, which is what makes our result a claim about a rule shared with it rather than about our implementation of it. \citet{doubleedged} probes manipulation safety monitors under perturbation on three models spanning a reasoning spectrum (no reasoning, text CoT, a latent iterative loop) across LIBERO and SimplerEnv, but its reasoning-stage entity-swap (the perturbation comparable to ours) is scored categorically (detection AUC, TPR@FPR, flag rate), not by magnitude; continuous displacement metrics in that paper apply only to its vision- and action-stage attacks, a different intervention class. \citet{pinocchio}, also driving, is a third measurement paradigm rather than a second instance of the same rule: a learned critic trained to classify edge-level consistency in a reasoning graph, used as a dense reward for RL post-training of the policy rather than a perturbation score on a frozen one, with a separate categorical (appropriate-response-or-not, not magnitude-of-change) counterfactual check for downstream robustness. Grouping either non-magnitude precedent in would overstate how much of the field shares the specific flaw \S\ref{sec:floors} diagnoses. The one magnitude-scoring line reports the same pattern in its own ablations, not framed as a critique of the scoring rule: \citet{vladrivebench}'s word-shuffled control on their highest-effect meaning-bearing prompt (\emph{origbrake}) produces, in their own words, ``an indistinguishable effect'' from the original ($-0.417$\,m vs.\ $-0.426$\,m mean displacement, their Table 13), and a control built from a repeated nonsense token produces ``nearly twice'' origbrake's effect ($-0.818$\,m): a meaning-destroying and a meaning-free edit both moving their continuous output at least as much as a meaningful one, in a driving VLA, under the same magnitude-only rule \S\ref{sec:floors} indicts here, reported as a property of their specific prompts rather than generalized into one. The manipulation benchmarks these models are graded on measure task success under distribution shift \citep{colosseum,vlabench}, in simulation standing in for hardware \citep{simplerenv}, or safety-relevant behaviour \citep{liberosafety}; none of them scores whether the emitted reasoning drove the action, which is the gap CoT-Faith is built for. \S\ref{sec:floors} and \S\ref{sec:collision} argue that this scoring rule needs a per-model null before any of its outputs can be read; \S\ref{sec:directional} says what to use instead.
+
+\paragraph{Attention as a proxy, and why we do not use it.} Attention mass on the CoT segment is the obvious cheap proxy for this kind of interpretability claim, though no VLA work we know of has validated it as one. That attention weight is not by itself an explanation is argued widely in NLP \citep{jain2019attention,serrano2019}, as is the more general point that a plausible-looking attribution can survive controls it should fail \citep{adebayo2018,friedman2024}. We do not add a further measurement here, relying instead on the causal edit protocol \S\ref{sec:benchmark} defines directly. Causal intervention on the intermediate representation \citep{rome,zhang2024patching,geiger2022das} is the closer analogue of what we do, and our $\Delta_\infty$ is that intervention read out in action space rather than in a hidden representation.
+
+\paragraph{Construct validity in benchmarks.} Our claim is of a kind that recurs: that a widely reported number does not measure the thing its name says. It has been made about fairness metrics \citep{jacobs2021}, about benchmark choice \citep{dehghani2021,raji2021}, and about experimental reporting in RL \citep{henderson2018,dodge2019,pineau2021}. The closest structural analogy is emergence: \citet{schaeffer2023} show that several claimed sudden capability jumps are an artifact of which metric, discontinuous or continuous, is used to read the same underlying model outputs, not a discontinuity in the outputs themselves. The diagnosis here is the same move with the floor in place of the metric: which edit is nominated as meaning-preserving, not anything about the model, decides whether a semantic edit "passes." Perturbation-based interpretability metrics carry the same problem and the same fix: comprehensiveness and sufficiency \citep{eraser} and retrain-and-evaluate calibration \citep{roar} pair a perturbation score with an explicit null, the design our two floors extend to a continuous action space, and that different faithfulness metrics disagree with each other by more than chance is itself a documented, general phenomenon \citep{krishna2022,chan2022faithfulness} rather than a defect specific to our instrument. The remedy in each case is the same one we adopt here: publish the null, the variance and the artifact rather than the ranking \citep{lipton2016}. This bears directly on the one-prior-instance count above: a magnitude score with no validated null is not a quirk of \citet{vladrivebench} or of manipulation VLAs, it is the specific failure mode ERASER and ROAR were introduced to correct in the much older, much more populated text- and vision-interpretability literatures they come from, now recurring in a model class young enough that only one paper has reached for this specific scoring convention. The modeling substrate that convention would be applied to is not similarly rare: our own citations span three distinct CoT-VLA lines \citep{ecot,cotvla,deepthinkvla}, released between July 2024 and November 2025, and one of them, DeepThinkVLA, is itself among the 15 models evaluated here, where the floor-collapse \S\ref{sec:floors} diagnoses is significant on $2$ of its $3$ configurations (\S\ref{sec:pseudoreplication}): not a hypothetical future risk but one already live inside this benchmark's own evaluation set. \citet{cotvla} is cited but not evaluated here: as of this submission its project page (\url{https://cot-vla.github.io/}) lists no code or checkpoint release, and neither its authors' GitHub organization nor Hugging Face host one, so it is not a lineage this release could add without training one from scratch. (\citet{ecotlite}, also cited above, is not a fourth line either: it shares \citet{ecot}'s ``Embodied-CoT'' template and two authors, and supplies the LIBERO-90 CoT annotations \S\ref{app:sec:benchmark} uses, so it is the same lineage under a different citation, not independent evidence of substrate breadth.) A field where the modeling substrate is this active but only one paper has reached for an unvalidated scoring convention is exactly where establishing the check is cheapest: fixing it now is a one-time cost against a still-small denominator, not a retrofit against a hardened convention later.
+
+The mechanism is not specific to faithfulness scoring, either. \S\ref{sec:collision}'s argument is that any magnitude score computed by comparing two de-quantized, argmax-decoded continuous actions inherits the same collision floor, for the same reason \citep{fast2025}, regardless of what perturbation produced the two decodes being compared. A perturbation-based VLA robustness or out-of-distribution-sensitivity score built the same way (perturb the input, measure how far the action moved) would need the same per-model null this paper argues a faithfulness score needs, and for the same reason. We do not test this: no such score is in our release, and the claim is about the shared decode mechanism, not about any specific robustness benchmark's numbers.
+
+\input{appendix}
 
 \end{document}

@@ -1,0 +1,12 @@
+{
+  "n_paired": 41,
+  "paraphrase_rate_on_paired": 0.4634146341463415,
+  "direction_rate_on_paired": 0.2682926829268293,
+  "obs_diff_direction_minus_paraphrase": -0.1951219512195122,
+  "ci95": [
+    -0.3902439024390244,
+    0.0
+  ],
+  "significant": false,
+  "method": "paired bootstrap, resample the 41 shared sample indices jointly, 20000 draws, seed=42, percentile 95% interval"
+}

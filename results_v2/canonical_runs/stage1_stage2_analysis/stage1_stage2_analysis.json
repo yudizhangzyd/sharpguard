@@ -1,0 +1,558 @@
+{
+  "tau_default": 0.05,
+  "core7": [
+    "direction_flip",
+    "gripper_flip",
+    "verb_swap",
+    "negation",
+    "subject_swap",
+    "location_swap",
+    "adversarial_plausible"
+  ],
+  "core5_selfgen": [
+    "direction_flip",
+    "gripper_flip",
+    "verb_swap",
+    "negation",
+    "location_swap"
+  ],
+  "floors": [
+    "paraphrase_null",
+    "syntactic_scramble"
+  ],
+  "stage1": {
+    "ecot-bridge": {
+      "n_obs": 61,
+      "family_n": {
+        "direction_flip": 61,
+        "gripper_flip": 49,
+        "verb_swap": 36,
+        "negation": 28,
+        "subject_swap": 8,
+        "location_swap": 15,
+        "adversarial_plausible": 7,
+        "paraphrase_null": 17,
+        "syntactic_scramble": 14
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.6624680304635007,
+        "syntactic_scramble": 0.5382412849246545
+      },
+      "tv_fbar": 0.5900870660154783,
+      "tv_diff": {
+        "paraphrase_null": -0.07238096444802233,
+        "syntactic_scramble": 0.05184578109082383
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.07238096444802222,
+          "ci95": [
+            -0.12930134029746887,
+            -0.018264975468085032
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 61
+        },
+        "syntactic_scramble": {
+          "point": 0.05184578109082383,
+          "ci95": [
+            -0.060784797982001426,
+            0.16904924556032225
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 61
+        }
+      }
+    },
+    "lora-r32": {
+      "n_obs": 84,
+      "family_n": {
+        "direction_flip": 84,
+        "gripper_flip": 79,
+        "verb_swap": 75,
+        "negation": 75,
+        "subject_swap": 43,
+        "location_swap": 47,
+        "adversarial_plausible": 40,
+        "paraphrase_null": 68,
+        "syntactic_scramble": 62
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.13618806241403913,
+        "syntactic_scramble": 0.06261255266726434
+      },
+      "tv_fbar": 0.10529582724558285,
+      "tv_diff": {
+        "paraphrase_null": -0.03089223516845628,
+        "syntactic_scramble": 0.04268327457831851
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.03089223516845628,
+          "ci95": [
+            -0.04244614777644813,
+            -0.0191206922805483
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 84
+        },
+        "syntactic_scramble": {
+          "point": 0.0426832745783185,
+          "ci95": [
+            0.029614832880606998,
+            0.05578740209479498
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 84
+        }
+      }
+    },
+    "lora-r64": {
+      "n_obs": 80,
+      "family_n": {
+        "direction_flip": 80,
+        "gripper_flip": 74,
+        "verb_swap": 68,
+        "negation": 64,
+        "subject_swap": 36,
+        "location_swap": 35,
+        "adversarial_plausible": 33,
+        "paraphrase_null": 50,
+        "syntactic_scramble": 47
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.14053968828418018,
+        "syntactic_scramble": 0.07964520239504388
+      },
+      "tv_fbar": 0.12676505591866877,
+      "tv_diff": {
+        "paraphrase_null": -0.013774632365511408,
+        "syntactic_scramble": 0.04711985352362488
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.013774632365511408,
+          "ci95": [
+            -0.02647013481207905,
+            -0.0008217172829144137
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 80
+        },
+        "syntactic_scramble": {
+          "point": 0.04711985352362488,
+          "ci95": [
+            0.03140166761059508,
+            0.06301840564379849
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 80
+        }
+      }
+    },
+    "deepthink-base": {
+      "n_obs": 100,
+      "family_n": {
+        "direction_flip": 100,
+        "gripper_flip": 100,
+        "verb_swap": 100,
+        "negation": 100,
+        "subject_swap": 60,
+        "location_swap": 58,
+        "adversarial_plausible": 60,
+        "paraphrase_null": 100,
+        "syntactic_scramble": 100
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.5888036450327745,
+        "syntactic_scramble": 0.4592208721236428
+      },
+      "tv_fbar": 0.5570768298225114,
+      "tv_diff": {
+        "paraphrase_null": -0.031726815210263104,
+        "syntactic_scramble": 0.09785595769886857
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.031726815210263104,
+          "ci95": [
+            -0.05176248571389874,
+            -0.011655545548911794
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        },
+        "syntactic_scramble": {
+          "point": 0.0978559576988684,
+          "ci95": [
+            0.06907545331164483,
+            0.1260130263678238
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        }
+      }
+    },
+    "deepthink-sft": {
+      "n_obs": 100,
+      "family_n": {
+        "direction_flip": 100,
+        "gripper_flip": 100,
+        "verb_swap": 100,
+        "negation": 100,
+        "subject_swap": 60,
+        "location_swap": 58,
+        "adversarial_plausible": 60,
+        "paraphrase_null": 100,
+        "syntactic_scramble": 100
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.2866055465469376,
+        "syntactic_scramble": 0.16846147719587853
+      },
+      "tv_fbar": 0.26892062822065443,
+      "tv_diff": {
+        "paraphrase_null": -0.01768491832628316,
+        "syntactic_scramble": 0.1004591510247759
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.017684918326283106,
+          "ci95": [
+            -0.03303878662594223,
+            -0.002577581479801583
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        },
+        "syntactic_scramble": {
+          "point": 0.10045915102477596,
+          "ci95": [
+            0.0840466859294759,
+            0.11684361637452159
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        }
+      }
+    },
+    "deepthink-rl": {
+      "n_obs": 100,
+      "family_n": {
+        "direction_flip": 100,
+        "gripper_flip": 100,
+        "verb_swap": 100,
+        "negation": 100,
+        "subject_swap": 60,
+        "location_swap": 58,
+        "adversarial_plausible": 60,
+        "paraphrase_null": 100,
+        "syntactic_scramble": 100
+      },
+      "tv_floor": {
+        "paraphrase_null": 0.28830188229411285,
+        "syntactic_scramble": 0.16660474932190183
+      },
+      "tv_fbar": 0.2673669323203658,
+      "tv_diff": {
+        "paraphrase_null": -0.020934949973747063,
+        "syntactic_scramble": 0.10076218299846396
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.020934949973747063,
+          "ci95": [
+            -0.036917848130606556,
+            -0.00491971057783086
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        },
+        "syntactic_scramble": {
+          "point": 0.10076218299846396,
+          "ci95": [
+            0.08400689133733424,
+            0.1172682621079453
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 100
+        }
+      }
+    }
+  },
+  "stage2": {
+    "ecot-bridge": {
+      "n_obs": 67,
+      "families_used": [
+        "direction_flip",
+        "gripper_flip",
+        "verb_swap",
+        "negation",
+        "location_swap"
+      ],
+      "family_n": {
+        "direction_flip": 53,
+        "gripper_flip": 34,
+        "verb_swap": 50,
+        "negation": 45,
+        "subject_swap": 0,
+        "location_swap": 33,
+        "adversarial_plausible": 0,
+        "paraphrase_null": 23,
+        "syntactic_scramble": 31
+      },
+      "dropped_families_n0": [
+        "subject_swap",
+        "adversarial_plausible"
+      ],
+      "tv_floor": {
+        "paraphrase_null": 0.6631630456711562,
+        "syntactic_scramble": 0.5635299637921208
+      },
+      "tv_fbar": 0.5907666856012763,
+      "tv_diff": {
+        "paraphrase_null": -0.07239636006987993,
+        "syntactic_scramble": 0.027236721809155484
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": -0.07239636006987993,
+          "ci95": [
+            -0.12657870521982317,
+            -0.015037781338632539
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 67
+        },
+        "syntactic_scramble": {
+          "point": 0.027236721809155373,
+          "ci95": [
+            -0.048682216977651294,
+            0.1049930631970315
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 67
+        }
+      },
+      "rate_floor": {
+        "paraphrase_null": 1.0,
+        "syntactic_scramble": 0.8387096774193549
+      },
+      "rate_fbar": 0.8214201504501173,
+      "rate_diff": {
+        "paraphrase_null": -0.1785798495498827,
+        "syntactic_scramble": -0.01728952696923758
+      },
+      "bootstrap_rate": {
+        "paraphrase_null": {
+          "point": -0.1785798495498827,
+          "ci95": [
+            -0.24122117139538746,
+            -0.11975877192982465
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 67
+        },
+        "syntactic_scramble": {
+          "point": -0.01728952696923758,
+          "ci95": [
+            -0.1561358118777474,
+            0.13470837806613323
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 67
+        }
+      }
+    },
+    "lora-r32": {
+      "n_obs": 71,
+      "families_used": [
+        "direction_flip",
+        "gripper_flip",
+        "verb_swap",
+        "negation",
+        "location_swap"
+      ],
+      "family_n": {
+        "direction_flip": 71,
+        "gripper_flip": 62,
+        "verb_swap": 49,
+        "negation": 47,
+        "subject_swap": 0,
+        "location_swap": 32,
+        "adversarial_plausible": 0,
+        "paraphrase_null": 33,
+        "syntactic_scramble": 42
+      },
+      "dropped_families_n0": [
+        "subject_swap",
+        "adversarial_plausible"
+      ],
+      "tv_floor": {
+        "paraphrase_null": 0.13295857678826487,
+        "syntactic_scramble": 0.12189642761428726
+      },
+      "tv_fbar": 0.154342780415682,
+      "tv_diff": {
+        "paraphrase_null": 0.021384203627417137,
+        "syntactic_scramble": 0.03244635280139474
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": 0.021384203627417164,
+          "ci95": [
+            0.006545509352682832,
+            0.036598014630323056
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 71
+        },
+        "syntactic_scramble": {
+          "point": 0.032446352801394754,
+          "ci95": [
+            0.013875460285152935,
+            0.05064576214829909
+          ],
+          "excludes_zero": true,
+          "n_boot_used": 20000,
+          "n_obs": 71
+        }
+      },
+      "rate_floor": {
+        "paraphrase_null": 0.48484848484848486,
+        "syntactic_scramble": 0.5238095238095238
+      },
+      "rate_fbar": 0.5040890282374707,
+      "rate_diff": {
+        "paraphrase_null": 0.019240543388985842,
+        "syntactic_scramble": -0.01972049557205313
+      },
+      "bootstrap_rate": {
+        "paraphrase_null": {
+          "point": 0.019240543388985842,
+          "ci95": [
+            -0.12051786286173749,
+            0.16358561317159603
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 71
+        },
+        "syntactic_scramble": {
+          "point": -0.01972049557205313,
+          "ci95": [
+            -0.1350289246044939,
+            0.09934142868909362
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 71
+        }
+      }
+    },
+    "no-cot": {
+      "n_obs": 91,
+      "families_used": [
+        "direction_flip",
+        "gripper_flip",
+        "verb_swap",
+        "negation",
+        "location_swap"
+      ],
+      "family_n": {
+        "direction_flip": 38,
+        "gripper_flip": 34,
+        "verb_swap": 64,
+        "negation": 46,
+        "subject_swap": 0,
+        "location_swap": 42,
+        "adversarial_plausible": 0,
+        "paraphrase_null": 56,
+        "syntactic_scramble": 40
+      },
+      "dropped_families_n0": [
+        "subject_swap",
+        "adversarial_plausible"
+      ],
+      "tv_floor": {
+        "paraphrase_null": 0.12745284281018193,
+        "syntactic_scramble": 0.11175923483892011
+      },
+      "tv_fbar": 0.1307348109830106,
+      "tv_diff": {
+        "paraphrase_null": 0.0032819681728286643,
+        "syntactic_scramble": 0.018975576144090484
+      },
+      "bootstrap_tv": {
+        "paraphrase_null": {
+          "point": 0.0032819681728286365,
+          "ci95": [
+            -0.018562644389719413,
+            0.025783796287239813
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 91
+        },
+        "syntactic_scramble": {
+          "point": 0.018975576144090525,
+          "ci95": [
+            -0.004353264049001271,
+            0.04140650905070477
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 91
+        }
+      },
+      "rate_floor": {
+        "paraphrase_null": 0.14285714285714285,
+        "syntactic_scramble": 0.2
+      },
+      "rate_fbar": 0.16787452967457006,
+      "rate_diff": {
+        "paraphrase_null": 0.025017386817427212,
+        "syntactic_scramble": -0.03212547032542995
+      },
+      "bootstrap_rate": {
+        "paraphrase_null": {
+          "point": 0.025017386817427212,
+          "ci95": [
+            -0.05189288762312863,
+            0.10392306973169485
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 91
+        },
+        "syntactic_scramble": {
+          "point": -0.03212547032542995,
+          "ci95": [
+            -0.14568522756165775,
+            0.07317281469816012
+          ],
+          "excludes_zero": false,
+          "n_boot_used": 20000,
+          "n_obs": 91
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+name: 'CoT-Faith Stage 3 (gate): 8x-budget LoRA fine-tune, competence check'
+description: 'Reviewer Stage 3: tests whether the papers 0/40 rollout SR is a training-budget artifact rather than a fundamental limit. libero_spatial (the reviewers literal suggestion) has no CoT-reasoning annotations anywhere in Embodied-CoT/embodied_features_and_demos_libero -- only libero_lm_90 does -- so this stays on the same suite/annotations every existing checkpoint trains on, but at 8x the steps (15000->120000, ~30k->~240k samples at the same batch_size=2), same LoRA r=32/LR=2e-5/seed=0 recipe otherwise. Measured per-step cost from the existing r=32 run (task bcihypv3gu: 6245s/15000 steps) puts this at ~13.9h of training alone on 1 GPU. Gate: if the resulting checkpoints paired rollout SR < 0.4 on libero_lm_90, stop and report the negative training result -- do not spend Stage 4s budget.'
+tags: ['cotfaith', 'stage3', 'competence-gate', 'reviewer-priority']
+
+project_id: ads_algo_signal_qucacheoffline
+
+permissions:
+  owners: 'yudi_zhang2'
+  viewers: 'yudi_zhang2'
+
+priority: 1
+
+resources:
+  docker_image: docker.apple.com/iris/iris:2.15.0
+  task_type: 1gpu                # run_cotfaith_train.sh pins CUDA_VISIBLE_DEVICES=0; matches the existing recipe's own resource shape
+  disk_gb: 1024
+  timeout: 18h                   # ~13.9h measured training + setup/download margin
+  cluster: aws_2
+
+environment_variables:
+  HF_HOME: /tmp/hf
+  HF_HUB_OFFLINE: '0'
+  HF_TOKEN: ${HF_TOKEN}
+  TRANSFORMERS_VERBOSITY: 'error'
+
+  BASE_MODEL: 'Embodied-CoT/ecot-openvla-7b-bridge'
+  DATASET_REPO: 'Embodied-CoT/embodied_features_and_demos_libero'
+  TFDS_SUBDIR: 'libero_lm_90/1.0.0'
+  REASONING_JSON: 'libero_reasonings.json'
+
+  LORA_R: '32'
+  LORA_ALPHA: '16'
+  LR: '2e-5'
+  STEPS: '120000'                 # 8x the existing r=32 recipe's 15000
+  BATCH_SIZE: '2'                 # unchanged -- proven memory-safe on 1 GPU; only steps scale
+  MAX_STEPS_PER_EP: '0'
+  DTYPE: 'bfloat16'
+  SEED: '0'
+
+setup_command: bash bolt/setup-openvla.sh
+command: bash bolt/run_cotfaith_train.sh

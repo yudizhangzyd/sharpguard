@@ -1,0 +1,183 @@
+{
+  "per_config": {
+    "ours_no-cot": {
+      "direction_flip": 0.27424749163879597,
+      "gripper_flip": 0.06666666666666667,
+      "verb_swap": 0.16333333333333333,
+      "negation": 0.19666666666666666,
+      "subject_swap": 0.1650485436893204,
+      "location_swap": 0.11764705882352941,
+      "adversarial_plausible": 0.1796116504854369,
+      "paraphrase_null": 0.19333333333333333
+    },
+    "ours_lora-r8": {
+      "direction_flip": 0.6956521739130435,
+      "gripper_flip": 0.11,
+      "verb_swap": 0.6433333333333333,
+      "negation": 0.6733333333333333,
+      "subject_swap": 0.3106796116504854,
+      "location_swap": 0.09954751131221719,
+      "adversarial_plausible": 0.3106796116504854,
+      "paraphrase_null": 0.5866666666666667
+    },
+    "ours_lora-r16": {
+      "direction_flip": 0.7491638795986622,
+      "gripper_flip": 0.16666666666666666,
+      "verb_swap": 0.6766666666666666,
+      "negation": 0.66,
+      "subject_swap": 0.36893203883495146,
+      "location_swap": 0.14027149321266968,
+      "adversarial_plausible": 0.3640776699029126,
+      "paraphrase_null": 0.5466666666666666
+    },
+    "ours_lora-r32": {
+      "direction_flip": 0.6521739130434783,
+      "gripper_flip": 0.13,
+      "verb_swap": 0.5866666666666667,
+      "negation": 0.5933333333333334,
+      "subject_swap": 0.33495145631067963,
+      "location_swap": 0.13122171945701358,
+      "adversarial_plausible": 0.33495145631067963,
+      "paraphrase_null": 0.5666666666666667
+    },
+    "ours_lora-r64": {
+      "direction_flip": 0.822742474916388,
+      "gripper_flip": 0.17333333333333334,
+      "verb_swap": 0.84,
+      "negation": 0.7766666666666666,
+      "subject_swap": 0.4029126213592233,
+      "location_swap": 0.2171945701357466,
+      "adversarial_plausible": 0.36893203883495146,
+      "paraphrase_null": 0.6566666666666666
+    },
+    "ours_data-50A": {
+      "direction_flip": 0.6989966555183946,
+      "gripper_flip": 0.11666666666666667,
+      "verb_swap": 0.6466666666666666,
+      "negation": 0.5666666666666667,
+      "subject_swap": 0.3058252427184466,
+      "location_swap": 0.09954751131221719,
+      "adversarial_plausible": 0.3155339805825243,
+      "paraphrase_null": 0.5366666666666666
+    },
+    "ours_data-50B": {
+      "direction_flip": 0.6354515050167224,
+      "gripper_flip": 0.14666666666666667,
+      "verb_swap": 0.54,
+      "negation": 0.51,
+      "subject_swap": 0.27184466019417475,
+      "location_swap": 0.09954751131221719,
+      "adversarial_plausible": 0.25728155339805825,
+      "paraphrase_null": 0.44666666666666666
+    },
+    "ecot_bridge": {
+      "direction_flip": 0.96,
+      "gripper_flip": 0.67,
+      "verb_swap": 0.98,
+      "negation": 0.96,
+      "subject_swap": 0.9666666666666667,
+      "location_swap": 0.6142857142857143,
+      "adversarial_plausible": 0.9333333333333333,
+      "paraphrase_null": 0.96
+    },
+    "deepthink_base": {
+      "direction_flip": 0.97,
+      "gripper_flip": 0.83,
+      "verb_swap": 0.99,
+      "negation": 0.99,
+      "subject_swap": 1.0,
+      "location_swap": 0.8793103448275862,
+      "adversarial_plausible": 0.9666666666666667,
+      "paraphrase_null": 0.96
+    },
+    "deepthink_sft": {
+      "direction_flip": 0.65,
+      "gripper_flip": 0.43,
+      "verb_swap": 0.73,
+      "negation": 0.83,
+      "subject_swap": 0.8833333333333333,
+      "location_swap": 0.46551724137931033,
+      "adversarial_plausible": 0.9166666666666666,
+      "paraphrase_null": 0.81
+    },
+    "deepthink_rl": {
+      "direction_flip": 0.64,
+      "gripper_flip": 0.54,
+      "verb_swap": 0.73,
+      "negation": 0.86,
+      "subject_swap": 0.85,
+      "location_swap": 0.5517241379310345,
+      "adversarial_plausible": 0.9,
+      "paraphrase_null": 0.82
+    }
+  },
+  "per_family": {
+    "direction_flip": {
+      "below": 2,
+      "above": 9,
+      "n_scored": 11,
+      "clear_rate": 0.8181818181818182,
+      "mean_1_minus_collision": 0.7462975766405718
+    },
+    "gripper_flip": {
+      "below": 11,
+      "above": 0,
+      "n_scored": 11,
+      "clear_rate": 0.0,
+      "mean_1_minus_collision": 0.3488004138592374
+    },
+    "verb_swap": {
+      "below": 3,
+      "above": 8,
+      "n_scored": 11,
+      "clear_rate": 0.7272727272727273,
+      "mean_1_minus_collision": 0.7081481481481482
+    },
+    "negation": {
+      "below": 0,
+      "above": 11,
+      "n_scored": 11,
+      "clear_rate": 1.0,
+      "mean_1_minus_collision": 0.6892592592592592
+    },
+    "subject_swap": {
+      "below": 7,
+      "above": 4,
+      "n_scored": 11,
+      "clear_rate": 0.36363636363636365,
+      "mean_1_minus_collision": 0.508641975308642
+    },
+    "location_swap": {
+      "below": 11,
+      "above": 0,
+      "n_scored": 11,
+      "clear_rate": 0.0,
+      "mean_1_minus_collision": 0.32751231527093594
+    },
+    "adversarial_plausible": {
+      "below": 8,
+      "above": 3,
+      "n_scored": 11,
+      "clear_rate": 0.2727272727272727,
+      "mean_1_minus_collision": 0.4975308641975309
+    }
+  },
+  "spearman_clear_rate_vs_noncollision": 0.8829187134416477,
+  "spearman_clear_rate_vs_noncollision_ci95": [
+    0.3875000022962164,
+    0.9826347339998059
+  ],
+  "latex_matrix_rows": [
+    "Ours no-CoT & $0.193$ & $\\mathbf{0.197}$ & $\\mathbf{0.274}$ & $0.163$ & $0.165$ & $0.180$ & $0.067$ & $0.118$ \\\\",
+    "Ours r=8 & $0.587$ & $\\mathbf{0.673}$ & $\\mathbf{0.696}$ & $\\mathbf{0.643}$ & $0.311$ & $0.311$ & $0.110$ & $0.100$ \\\\",
+    "Ours r=16 & $0.547$ & $\\mathbf{0.660}$ & $\\mathbf{0.749}$ & $\\mathbf{0.677}$ & $0.369$ & $0.364$ & $0.167$ & $0.140$ \\\\",
+    "Ours r=32 & $0.567$ & $\\mathbf{0.593}$ & $\\mathbf{0.652}$ & $\\mathbf{0.587}$ & $0.335$ & $0.335$ & $0.130$ & $0.131$ \\\\",
+    "Ours r=64 & $0.657$ & $\\mathbf{0.777}$ & $\\mathbf{0.823}$ & $\\mathbf{0.840}$ & $0.403$ & $0.369$ & $0.173$ & $0.217$ \\\\",
+    "Ours data-50A & $0.537$ & $\\mathbf{0.567}$ & $\\mathbf{0.699}$ & $\\mathbf{0.647}$ & $0.306$ & $0.316$ & $0.117$ & $0.100$ \\\\",
+    "Ours data-50B & $0.447$ & $\\mathbf{0.510}$ & $\\mathbf{0.635}$ & $\\mathbf{0.540}$ & $0.272$ & $0.257$ & $0.147$ & $0.100$ \\\\",
+    "ECoT-bridge$^\\dagger$ & $0.960$ & $\\mathbf{0.960}$ & $\\mathbf{0.960}$ & $\\mathbf{0.980}$ & $\\mathbf{0.967}$ & $0.933$ & $0.670$ & $0.614$ \\\\",
+    "DeepThinkVLA-base$^\\dagger$ & $0.960$ & $\\mathbf{0.990}$ & $\\mathbf{0.970}$ & $\\mathbf{0.990}$ & $\\mathbf{1.000}$ & $\\mathbf{0.967}$ & $0.830$ & $0.879$ \\\\",
+    "DeepThinkVLA-SFT$^\\dagger$ & $0.810$ & $\\mathbf{0.830}$ & $0.650$ & $0.730$ & $\\mathbf{0.883}$ & $\\mathbf{0.917}$ & $0.430$ & $0.466$ \\\\",
+    "DeepThinkVLA-RL$^\\dagger$ & $0.820$ & $\\mathbf{0.860}$ & $0.640$ & $0.730$ & $\\mathbf{0.850}$ & $\\mathbf{0.900}$ & $0.540$ & $0.552$ \\\\"
+  ]
+}

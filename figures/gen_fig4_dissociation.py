@@ -50,7 +50,7 @@ FLAT = [LABELS[m].replace("\n", "") for m in MS]
 # ONLY through its 5.0pt value labels -- see the panel's own comment block.
 TITLE, TICK, VAL, YLAB, NOTE = 7.2, 6.5, 6.5, 6.6, 6.5
 
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6.31, 2.15))
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(5.50, 1.87))
 # Explicit margins, not the defaults: savefig(bbox_inches="tight") crops to the
 # artists, so a canvas with the default 10% side margins comes out ~380pt wide
 # and then LaTeX scales it back up to \textwidth -- reintroducing exactly the

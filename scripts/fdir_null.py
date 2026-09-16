@@ -28,6 +28,9 @@ import math
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from derive_metrics import _to_checkpoint_grid  # noqa: E402
+
 # direction_flip is the treatment: it reverses a direction word in the CoT, so a
 # faithful policy should reverse its translation. Every other family below
 # leaves direction alone (or destroys the trace wholesale), so none of them has
@@ -63,9 +66,22 @@ def cos(u, v):
 
 
 def f_dir(records, family):
-    """Fraction of samples whose xyz translation reverses after the edit."""
+    """Fraction of samples whose xyz translation reverses after the edit.
+
+    a_orig/a_edit are restated on the checkpoint's own de-quantization grid
+    before the cosine is computed -- the same regridding derive_metrics.py
+    applies (see its _to_checkpoint_grid docstring and
+    verify_paper_numbers.py's audit_dequant_convention), and for the same
+    reason: bin 127 is negative under the release's raw P2 grid but exactly
+    zero under the checkpoint's own, which is exactly the near-zero bin the
+    collapsed LoRA action spaces concentrate mass on. Without this, this
+    script's numbers disagree with tab:directional's on the same underlying
+    quantity (e.g. r=8: 0.666 here vs. 0.649 there) -- not a second, real
+    effect, just this script alone still reading the pre-fix grid.
+    """
     kept = [r for r in records if r.get("family") == family and not r.get("skipped")]
-    cs = [cos(r["a_orig"][:3], r["a_edit"][:3]) for r in kept]
+    cs = [cos(_to_checkpoint_grid(r["a_orig"])[:3], _to_checkpoint_grid(r["a_edit"])[:3])
+          for r in kept]
     cs = [c for c in cs if c is not None]
     if not cs:
         return None, 0

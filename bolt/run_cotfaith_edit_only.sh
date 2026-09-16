@@ -27,6 +27,7 @@ python experiments/cotfaith_edit.py \
     --n-samples "${N_SAMPLES:-100}" \
     --seed "${SEED:-0}" \
     --threshold "${THRESHOLD:-0.05}" \
+    --families "${FAMILIES:-all}" \
     --dtype "${DTYPE:-bfloat16}"
 
 echo ""
